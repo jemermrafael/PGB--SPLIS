@@ -17,6 +17,10 @@ export default defineConfig({
         tailwindcss(),
     ],
     server: {
+        host: 'splis.test',
+        hmr: {
+            host: 'splis.test',
+        },
         watch: {
             ignored: ['**/storage/framework/views/**'],
         },
