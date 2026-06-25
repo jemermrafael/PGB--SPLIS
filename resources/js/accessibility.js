@@ -1,9 +1,8 @@
 export function initAccessibility() {
     const root = document.documentElement;
-    const trigger = document.getElementById('splis-a11y-trigger');
     const panel = document.getElementById('splis-a11y-panel');
 
-    if (!trigger || !panel) {
+    if (!panel) {
         return;
     }
 
@@ -14,19 +13,6 @@ export function initAccessibility() {
     applyTextSize(savedText);
     setActiveButtons('splis-theme-btn', savedTheme);
     setActiveButtons('splis-text-btn', savedText);
-
-    trigger.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const isOpen = panel.classList.toggle('open');
-        trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-    });
-
-    document.addEventListener('click', (event) => {
-        if (!panel.contains(event.target) && !trigger.contains(event.target)) {
-            panel.classList.remove('open');
-            trigger.setAttribute('aria-expanded', 'false');
-        }
-    });
 
     panel.querySelectorAll('[data-theme]').forEach((button) => {
         button.addEventListener('click', () => {

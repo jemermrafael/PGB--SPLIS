@@ -1,3 +1,8 @@
+{{--
+    SPLIS pagination for server-rendered lists (First / Prev / page numbers / Next / Last / Go).
+    Registered as the default in AppServiceProvider — use {{ $items->links() }} on any list.
+    AJAX lists use resources/js/pagination.js (same markup and classes).
+--}}
 @php
     use Illuminate\Pagination\LengthAwarePaginator;
 

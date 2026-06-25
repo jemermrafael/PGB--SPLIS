@@ -13,6 +13,20 @@ class Resolution extends Model
 
     protected $fillable = [
         'legacy_sp_id',
+        'incoming_document_id',
+        'legacy_file_id',
+        'legacy_sp_res_no',
+        'sp_sequence',
+        'mun_resolution_no',
+        'mun_title',
+        'mun_series',
+        'date_received',
+        'action_taken',
+        'agenda',
+        'concerned_agency',
+        'remarks',
+        'sp_pdf_url',
+        'mun_pdf_url',
         'resolution_no',
         'resolution_title',
         'document_type',
@@ -78,5 +92,10 @@ class Resolution extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function incomingDocument(): BelongsTo
+    {
+        return $this->belongsTo(IncomingDocument::class);
     }
 }

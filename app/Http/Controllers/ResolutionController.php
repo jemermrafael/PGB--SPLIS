@@ -50,7 +50,7 @@ class ResolutionController extends Controller
 
     public function show(Resolution $resolution): View
     {
-        $resolution->load(['department', 'category', 'category2', 'category3', 'category4', 'municipality', 'creator']);
+        $resolution->load(['department', 'category', 'category2', 'category3', 'category4', 'municipality', 'creator', 'incomingDocument']);
         $hasPdf = $this->pdfService->existsFor($resolution);
 
         return view('resolutions.show', compact('resolution', 'hasPdf'));

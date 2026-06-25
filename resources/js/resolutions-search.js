@@ -141,7 +141,9 @@ export function initResolutionsSearch() {
     function setViewMode(mode) {
         viewMode = mode;
         viewToggle?.querySelectorAll('[data-view]').forEach((button) => {
-            button.classList.toggle('active', button.dataset.view === mode);
+            const isActive = button.dataset.view === mode;
+            button.classList.toggle('active', isActive);
+            button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
         });
         listWrap?.classList.toggle('hidden', mode !== 'list');
         grid?.classList.toggle('hidden', mode !== 'grid');

@@ -1,4 +1,4 @@
-<div id="splis-a11y-panel" class="splis-a11y-panel" role="dialog" aria-label="Accessibility settings">
+<div id="splis-a11y-panel" class="splis-a11y-panel" data-dropdown-panel role="dialog" aria-label="Accessibility settings">
     <h3 class="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Accessibility</h3>
     <div class="mb-4">
         <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Theme</p>

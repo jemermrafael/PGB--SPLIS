@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:where(html.dark, html.dark *));
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../views/**/*.blade.php';
@@ -113,15 +115,15 @@
     }
 
     .splis-user-menu-trigger {
-        @apply list-none cursor-pointer;
-    }
-
-    .splis-user-menu-trigger::-webkit-details-marker {
-        display: none;
+        @apply cursor-pointer;
     }
 
     .splis-user-menu-panel {
-        @apply absolute right-0 top-[calc(100%+0.5rem)] z-50 min-w-48 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl;
+        @apply absolute right-0 top-[calc(100%+0.5rem)] z-50 hidden min-w-48 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl;
+    }
+
+    .splis-user-menu-panel.open {
+        @apply block;
     }
 
     .splis-user-menu-signout {
@@ -146,6 +148,38 @@
 
     .splis-navbar-link-placeholder {
         @apply cursor-default text-slate-400 hover:text-slate-400;
+    }
+
+    .splis-nav-dropdown {
+        @apply relative;
+    }
+
+    .splis-nav-dropdown-trigger {
+        @apply inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0;
+    }
+
+    .splis-nav-dropdown-panel {
+        @apply absolute left-0 top-[calc(100%+0.25rem)] z-50 hidden min-w-[12rem] overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl;
+    }
+
+    .splis-nav-dropdown-panel.open {
+        @apply block;
+    }
+
+    .splis-nav-dropdown-link {
+        @apply block px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-brand-900;
+    }
+
+    .splis-nav-dropdown-link-active {
+        @apply font-bold text-brand-900;
+    }
+
+    .splis-badge-linked {
+        @apply inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800;
+    }
+
+    .splis-badge-unlinked {
+        @apply inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800;
     }
 
     .splis-header {
@@ -346,6 +380,14 @@
         @apply min-w-[16rem] max-w-xl whitespace-normal break-words text-slate-800 leading-snug;
     }
 
+    .splis-queue-meta {
+        @apply mt-1 text-slate-600;
+    }
+
+    .splis-queue-heading {
+        @apply font-semibold text-slate-800;
+    }
+
     .splis-table-title--list {
         @apply max-w-md;
     }
@@ -423,8 +465,22 @@
         background-size: 48px 48px;
     }
 
-    .splis-view-toggle button.active,
-    .splis-view-toggle-btn.active,
+    .splis-view-toggle {
+        @apply inline-flex gap-0.5 rounded-xl border border-slate-200/90 bg-white p-1 shadow-sm;
+    }
+
+    .splis-view-toggle-btn {
+        @apply inline-flex h-9 w-9 items-center justify-center rounded-lg text-brand-900 transition;
+    }
+
+    .splis-view-toggle-btn:hover:not(.active) {
+        @apply bg-slate-50;
+    }
+
+    .splis-view-toggle-btn.active {
+        @apply bg-brand-900 text-white shadow-sm;
+    }
+
     .splis-theme-btn.active,
     .splis-text-btn.active {
         @apply bg-brand-700 text-white;
@@ -470,8 +526,73 @@
         @apply text-xs text-slate-500;
     }
 
+    .splis-detail-nav {
+        @apply mt-8 grid grid-cols-1 gap-3 border-t border-slate-200 pt-6 sm:grid-cols-2;
+    }
+
+    .splis-detail-nav-link {
+        @apply flex flex-col gap-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-brand-gold/50 hover:bg-slate-50;
+    }
+
+    .splis-detail-nav-link--next {
+        @apply sm:items-end sm:text-right;
+    }
+
+    .splis-detail-nav-direction {
+        @apply inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500;
+    }
+
+    .splis-detail-nav-title {
+        @apply text-sm font-semibold text-brand-900;
+    }
+
+    .splis-detail-nav-placeholder {
+        @apply hidden sm:block;
+    }
+
+    .splis-combobox {
+        @apply relative;
+    }
+
+    .splis-combobox-control {
+        @apply relative;
+    }
+
+    .splis-combobox-input {
+        @apply pr-10;
+    }
+
+    .splis-combobox-trigger {
+        @apply absolute right-1 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-brand-900;
+    }
+
+    .splis-combobox-panel {
+        @apply absolute left-0 right-0 top-[calc(100%+0.35rem)] z-40 hidden max-h-60 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg;
+    }
+
+    .splis-combobox-panel.open {
+        @apply block;
+    }
+
+    .splis-combobox-list {
+        @apply max-h-60 overflow-y-auto p-1;
+    }
+
+    .splis-combobox-option {
+        @apply w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50;
+    }
+
+    .splis-combobox-option.is-active,
+    .splis-combobox-option:hover {
+        @apply bg-brand-500/10 text-brand-900;
+    }
+
+    .splis-combobox-empty {
+        @apply px-3 py-2 text-sm text-slate-500;
+    }
+
     @media (width >= 64rem) {
-        #resolutions-search .splis-pagination {
+        .splis-pagination {
             flex-flow: wrap;
             justify-content: flex-start;
             align-items: center;
@@ -491,6 +612,51 @@
         @apply text-slate-300 hover:bg-slate-800;
     }
 
+    html.dark .splis-detail-nav {
+        @apply border-slate-700;
+    }
+
+    html.dark .splis-detail-nav-link {
+        @apply border-slate-700 bg-slate-900 hover:bg-slate-800;
+    }
+
+    html.dark .splis-detail-nav-title {
+        @apply text-brand-gold;
+    }
+
+    html.dark .splis-view-toggle {
+        @apply border-slate-600 bg-slate-900 shadow-none;
+    }
+
+    html.dark .splis-view-toggle-btn {
+        @apply text-slate-300;
+    }
+
+    html.dark .splis-view-toggle-btn:hover:not(.active) {
+        @apply bg-slate-800;
+    }
+
+    html.dark .splis-view-toggle-btn.active {
+        @apply bg-brand-gold text-brand-950;
+    }
+
+    html.dark .splis-combobox-panel {
+        @apply border-slate-700 bg-slate-900;
+    }
+
+    html.dark .splis-combobox-option {
+        @apply text-slate-200 hover:bg-slate-800;
+    }
+
+    html.dark .splis-combobox-option.is-active,
+    html.dark .splis-combobox-option:hover {
+        @apply bg-brand-900/40 text-brand-gold;
+    }
+
+    html.dark .splis-combobox-trigger {
+        @apply text-slate-400 hover:bg-slate-800 hover:text-white;
+    }
+
     html.dark .splis-header-navbar {
         @apply border-brand-gold bg-slate-900;
     }
@@ -501,6 +667,27 @@
 
     html.dark .splis-navbar-link-active {
         @apply text-brand-gold;
+    }
+
+    html.dark .splis-nav-dropdown-panel,
+    html.dark .splis-nav-dropdown-panel.open {
+        @apply border-slate-700 bg-slate-900;
+    }
+
+    html.dark .splis-nav-dropdown-link {
+        @apply text-slate-300 hover:bg-slate-800 hover:text-white;
+    }
+
+    html.dark .splis-nav-dropdown-link-active {
+        @apply text-brand-gold;
+    }
+
+    html.dark .splis-badge-linked {
+        @apply bg-emerald-900/50 text-emerald-300;
+    }
+
+    html.dark .splis-badge-unlinked {
+        @apply bg-amber-900/50 text-amber-300;
     }
 
     html.dark .splis-user-menu-panel,
@@ -580,6 +767,15 @@
     html.dark .splis-detail-label,
     html.dark .splis-table-title {
         @apply text-slate-200;
+    }
+
+    html.dark .splis-queue-heading,
+    html.dark .splis-detail-value {
+        @apply text-slate-100;
+    }
+
+    html.dark .splis-queue-meta {
+        @apply text-slate-300;
     }
 
     html.dark .splis-input,

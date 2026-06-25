@@ -16,13 +16,13 @@
                 @if ($resolution->legacy_sp_id)
                     <span class="splis-badge-legacy">Imported</span>
                 @endif
+                @if ($resolution->incomingDocument)
+                    <a href="{{ route('incoming.show', $resolution->incomingDocument) }}" class="splis-badge-linked">Incoming linked</a>
+                @endif
                 <span class="splis-badge-approved capitalize">{{ $resolution->status }}</span>
                 <span class="text-sm text-slate-500">Series {{ $resolution->series }}</span>
             </div>
-            <h1 class="splis-page-title">{{ $resolution->resolution_no }}</h1>
-            @if ($resolution->resolution_title)
-                <p class="splis-page-subtitle mt-2 text-base leading-relaxed text-slate-700">{{ $resolution->resolution_title }}</p>
-            @endif
+            <h1 class="splis-page-title">Resolution No.: {{ $resolution->resolution_no }}</h1>
         </div>
         <div class="flex flex-wrap gap-2">
             @can('update', $resolution)

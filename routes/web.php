@@ -3,6 +3,8 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DashboardSearchController;
+use App\Http\Controllers\IncomingDocumentController;
+use App\Http\Controllers\IncomingSearchController;
 use App\Http\Controllers\ResolutionController;
 use App\Http\Controllers\ResolutionPdfController;
 use App\Http\Controllers\ResolutionSearchController;
@@ -36,4 +38,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/resolutions/{resolution}/edit', [ResolutionController::class, 'edit'])->name('resolutions.edit');
     Route::put('/resolutions/{resolution}', [ResolutionController::class, 'update'])->name('resolutions.update');
     Route::delete('/resolutions/{resolution}', [ResolutionController::class, 'destroy'])->name('resolutions.destroy');
+
+    Route::get('/incoming', [IncomingDocumentController::class, 'index'])->name('incoming.index');
+    Route::get('/incoming/search', IncomingSearchController::class)->name('incoming.search');
+    Route::get('/incoming/create', [IncomingDocumentController::class, 'create'])->name('incoming.create');
+    Route::post('/incoming', [IncomingDocumentController::class, 'store'])->name('incoming.store');
+    Route::get('/incoming/resolutions/search', [IncomingDocumentController::class, 'searchResolutions'])->name('incoming.resolutions.search');
+    Route::get('/incoming/{incoming}/publish', [IncomingDocumentController::class, 'publish'])->name('incoming.publish');
+    Route::post('/incoming/{incoming}/publish', [IncomingDocumentController::class, 'publishStore'])->name('incoming.publish.store');
+    Route::get('/incoming/{incoming}', [IncomingDocumentController::class, 'show'])->name('incoming.show');
+    Route::get('/incoming/{incoming}/edit', [IncomingDocumentController::class, 'edit'])->name('incoming.edit');
+    Route::put('/incoming/{incoming}', [IncomingDocumentController::class, 'update'])->name('incoming.update');
+    Route::post('/incoming/{incoming}/link', [IncomingDocumentController::class, 'link'])->name('incoming.link');
+
+    Route::redirect('/admin/sptrack', '/incoming')->name('admin.sptrack.index');
+    Route::redirect('/admin/sptrack/queue', '/incoming');
 });

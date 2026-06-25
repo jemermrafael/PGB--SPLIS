@@ -98,6 +98,16 @@ php artisan resolutions:link-pdfs
 php artisan resolutions:verify-pdfs --limit=100
 ```
 
+**Incoming documents (sptrack workflow):**
+
+```bash
+php artisan splis:import-incoming-from-sptrack
+```
+
+Use **Resolutions → Incoming** in the app to review items, then **Publish to Resolution** on an incoming detail page to create the final resolution (with PDF upload for the embed viewer).
+
+Configure `SPTRACK_DB_*` in `.env` for live `sptrack.Files` data, or use `--source=csv --csv="oldsp/Databases/SPBataan/sptrack (1).csv"`.
+
 Without Herd, use `npm run dev:full` and open http://127.0.0.1:8000 instead.
 
 ## Tech Stack
