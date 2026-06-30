@@ -12,12 +12,28 @@ COPY public/ ./public/
 
 RUN npm run build
 
-# 2. Main execution stage
+# 2. Composer dependencies (isolated from app image — avoids Alpine PHP platform/script issues)
+FROM public.ecr.aws/docker/library/composer:2 AS vendor
+WORKDIR /app
+
+ENV COMPOSER_ALLOW_SUPERUSER=1 \
+    COMPOSER_MEMORY_LIMIT=-1
+
+COPY composer.json composer.lock ./
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --prefer-dist \
+    --optimize-autoloader \
+    --no-scripts \
+    --ignore-platform-reqs
+
+# 3. Main execution stage
 FROM public.ecr.aws/docker/library/php:8.3-fpm-alpine
 
-RUN apk add --no-cache nginx supervisor curl libpng-dev libjpeg-turbo-dev freetype-dev zip libzip-dev git bash mysql-client \
+RUN apk add --no-cache nginx supervisor curl libpng-dev libjpeg-turbo-dev freetype-dev zip libzip-dev git bash mysql-client icu-dev oniguruma-dev libxml2-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_mysql gd zip bcmath opcache
+    && docker-php-ext-install pdo pdo_mysql gd zip bcmath opcache intl pcntl
 
 RUN echo "clear_env = no" >> /usr/local/etc/php-fpm.d/www.conf
 
@@ -29,13 +45,15 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 WORKDIR /var/www/html
 
-COPY --chown=www-data:www-data . .
+COPY --from=vendor /app/vendor ./vendor
+COPY composer.json composer.lock ./
 
+COPY --chown=www-data:www-data . .
 COPY --from=frontend-builder --chown=www-data:www-data /app/public/build ./public/build
 
 COPY --from=public.ecr.aws/docker/library/composer:2 /usr/bin/composer /usr/bin/composer
-RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader \
-    && chown -R www-data:www-data storage bootstrap/cache
+RUN composer dump-autoload --optimize --no-dev --no-scripts \
+    && chown -R www-data:www-data storage bootstrap/cache vendor
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
