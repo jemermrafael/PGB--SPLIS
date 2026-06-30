@@ -4,7 +4,7 @@ Laboratory Information System built with [Laravel](https://laravel.com) and [Vit
 
 ## Requirements
 
-- PHP 8.3+
+- PHP 8.4+
 - Composer
 - Node.js 18+
 - npm
@@ -112,7 +112,7 @@ Without Herd, use `npm run dev:full` and open http://127.0.0.1:8000 instead.
 
 ## Tech Stack
 
-- **Backend:** Laravel 13, PHP 8.3
+- **Backend:** Laravel 13, PHP 8.4
 - **Frontend:** Vite 8, Tailwind CSS 4
 - **Database:** MySQL (`splis`)
 - **Runtime:** Nginx + PHP-FPM (Alpine)
