@@ -19,7 +19,7 @@
         $navItems = [
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'active' => request()->routeIs('dashboard')],
             ['label' => 'Ordinances', 'url' => '#', 'active' => false, 'placeholder' => true],
-            ['label' => 'Agenda', 'url' => '#', 'active' => false, 'placeholder' => true],
+            ['label' => 'Agenda', 'url' => route('agenda.index'), 'active' => request()->routeIs('agenda.*')],
             ['label' => 'Order of Business', 'url' => '#', 'active' => false, 'placeholder' => true],
             ['label' => 'Committees', 'url' => '#', 'active' => false, 'placeholder' => true],
             ['label' => 'Reference', 'url' => '#', 'active' => false, 'placeholder' => true],

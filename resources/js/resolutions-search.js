@@ -1,4 +1,5 @@
 import { renderAjaxPagination } from './pagination';
+import { applyKeywordFromQuery } from './search-query';
 import { bindTitleTooltips, renderTruncatedTitle, truncateWords } from './title-tooltip';
 
 function escapeHtml(value) {
@@ -103,6 +104,7 @@ export function initResolutionsSearch() {
     let debounceTimer;
 
     setViewMode(viewMode);
+    applyKeywordFromQuery(form);
     fetchResults();
 
     form.addEventListener('submit', (event) => {

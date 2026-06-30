@@ -9,27 +9,14 @@
 <body class="min-h-screen bg-surface antialiased">
     <div class="flex min-h-screen">
         <div class="splis-login-panel">
-            <div class="splis-login-grid"></div>
-            <div class="relative z-10 flex flex-col justify-between p-12 text-white">
+            <div class="relative z-10 flex h-full flex-col justify-between p-12 text-white">
                 <div>
                     <img src="{{ asset('images/bataan-seal.png') }}" alt="Province of Bataan official seal" class="mb-8 h-16 w-16 rounded-full object-cover ring-2 ring-white/20">
                     <h1 class="max-w-md text-4xl font-semibold leading-tight tracking-tight">PGB - SPLIS</h1>
                     <p class="mt-2 text-lg text-slate-300">Sangguniang Panlalawigan</p>
                     <p class="mt-4 max-w-md text-base text-slate-400">Legislative Information System for ordinances, resolutions, and archival records.</p>
                 </div>
-                <div class="space-y-6">
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div class="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10 backdrop-blur-sm">
-                            <p class="text-2xl font-bold text-white">11K+</p>
-                            <p class="mt-1 text-sm text-slate-400">Archived resolutions</p>
-                        </div>
-                        <div class="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10 backdrop-blur-sm">
-                            <p class="text-2xl font-bold text-white">Secure</p>
-                            <p class="mt-1 text-sm text-slate-400">Role-based access control</p>
-                        </div>
-                    </div>
-                    <p class="text-sm text-slate-500">Sangguniang Panlalawigan · Bataan</p>
-                </div>
+                <p class="text-sm text-slate-400">Sangguniang Panlalawigan · Bataan</p>
             </div>
         </div>
 

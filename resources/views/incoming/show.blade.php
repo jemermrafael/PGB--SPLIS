@@ -3,7 +3,7 @@
 @section('title', $incoming->displayLabel().' — Incoming — '.config('app.name'))
 
 @section('content')
-<div class="max-w-5xl">
+<div class="max-w-6xl">
     <div class="splis-page-header !mb-6">
         <div>
             <div class="mb-2 flex flex-wrap items-center gap-2">
@@ -30,6 +30,15 @@
         </div>
     </div>
 
+    @if ($incoming->agendaItem)
+        <div class="splis-alert-success mb-6">
+            From agenda item
+            <a href="{{ route('agenda.show', $incoming->agendaItem) }}" class="font-semibold underline">
+                {{ $incoming->agendaItem->displayLabel() }}
+            </a>.
+        </div>
+    @endif
+
     @if ($incoming->isLinked() && $incoming->resolution)
         <div class="splis-alert-success mb-6">
             Linked to resolution
@@ -40,67 +49,117 @@
         </div>
     @endif
 
-    <div class="splis-card">
-        <div class="splis-card-header">
-            <h2 class="splis-card-title">Incoming Details</h2>
-        </div>
-        <dl>
-            @foreach ([
-                'Municipal Resolution No.' => $incoming->mun_resolution_no,
-                'Date Received' => $incoming->date_received?->format('M d, Y'),
-                'Municipal Series' => $incoming->mun_series,
-                'Municipality' => $incoming->municipality,
-                'Title' => $incoming->title,
-                'Action Taken' => $incoming->action_taken,
-                'Referral' => $incoming->referral,
-                'Agenda' => $incoming->agenda,
-                'Status' => $incoming->workflow_status,
-                'SP Resolution No.' => $incoming->sp_res_no,
-                'SP Series' => $incoming->sp_series,
-                'SP Title' => $incoming->sp_title,
-                'SP Date Approved' => $incoming->sp_date_approved?->format('M d, Y'),
-                'Keyword' => $incoming->keyword,
-                'Concerned Agency' => $incoming->concerned_agency,
-                'Remarks' => $incoming->remarks,
-                'Created by' => $incoming->creator?->name,
-            ] as $label => $value)
-                @if ($value !== null && $value !== '')
+    <div class="splis-detail-with-sidebar">
+        <div class="splis-card min-w-0">
+            <div class="splis-card-header">
+                <h2 class="splis-card-title">Incoming Details</h2>
+            </div>
+            <dl>
+                @foreach ([
+                    'Municipal Resolution No.' => $incoming->mun_resolution_no,
+                    'Date Received' => $incoming->date_received?->format('M d, Y'),
+                    'Municipal Series' => $incoming->mun_series,
+                    'Municipality' => $incoming->municipality,
+                    'Title' => $incoming->title,
+                    'Action Taken' => $incoming->action_taken,
+                    'Referral' => $incoming->referral,
+                    'Agenda' => $incoming->agenda,
+                    'Status' => $incoming->workflow_status,
+                    'SP Resolution No.' => $incoming->sp_res_no,
+                    'SP Series' => $incoming->sp_series,
+                    'SP Title' => $incoming->sp_title,
+                    'SP Date Approved' => $incoming->sp_date_approved?->format('M d, Y'),
+                    'Concerned Agency' => $incoming->concerned_agency,
+                    'Remarks' => $incoming->remarks,
+                    'Created by' => $incoming->creator?->name,
+                ] as $label => $value)
+                    @if ($value !== null && $value !== '')
+                        <div class="splis-detail-row">
+                            <dt class="splis-detail-label">{{ $label }}</dt>
+                            <dd class="splis-detail-value">{{ $value }}</dd>
+                        </div>
+                    @endif
+                @endforeach
+                @if ($incoming->keyword)
                     <div class="splis-detail-row">
-                        <dt class="splis-detail-label">{{ $label }}</dt>
-                        <dd class="splis-detail-value">{{ $value }}</dd>
+                        <dt class="splis-detail-label">Keyword</dt>
+                        <dd class="splis-detail-value">
+                            @include('partials.keyword-links', [
+                                'value' => $incoming->keyword,
+                                'searchUrl' => route('incoming.index'),
+                            ])
+                        </dd>
                     </div>
                 @endif
-            @endforeach
-        </dl>
+            </dl>
+        </div>
+
+        <div class="splis-detail-sidebar-column">
+            <aside class="splis-card">
+                <div class="splis-card-header">
+                    <h2 class="splis-card-title">Activity Logs</h2>
+                </div>
+                <div class="splis-card-body space-y-5">
+                    <div class="splis-activity-log-entry">
+                        <p class="splis-detail-label">Record Modified</p>
+                        <p class="splis-activity-log-date">
+                            {{ $incoming->sp_rec_modified?->format('M d, Y g:i A') ?? '—' }}
+                        </p>
+                        @if ($incoming->sp_rec_modified_by)
+                            <p class="splis-activity-log-by">by {{ $incoming->sp_rec_modified_by }}</p>
+                        @endif
+                    </div>
+                    <div class="splis-activity-log-entry">
+                        <p class="splis-detail-label">Record Created</p>
+                        <p class="splis-activity-log-date">
+                            {{ $incoming->sp_rec_added?->format('M d, Y g:i A') ?? '—' }}
+                        </p>
+                        @if ($incoming->sp_rec_added_by)
+                            <p class="splis-activity-log-by">by {{ $incoming->sp_rec_added_by }}</p>
+                        @endif
+                    </div>
+
+                    @include('incoming.partials.splis-activity-logs', ['splisActivityLogs' => $splisActivityLogs])
+                </div>
+            </aside>
+
+            @if ($incoming->mun_pdf_url || $incoming->sp_pdf_url)
+                <div class="splis-card">
+                    <div class="splis-card-header">
+                        <h2 class="splis-card-title">PDF Links</h2>
+                    </div>
+                    <div class="splis-card-body flex flex-wrap gap-3">
+                        @if ($incoming->mun_pdf_url)
+                            <a href="{{ $incoming->mun_pdf_url }}" target="_blank" rel="noopener" class="splis-btn-secondary text-sm">Municipal PDF</a>
+                        @endif
+                        @if ($incoming->sp_pdf_url)
+                            <a href="{{ $incoming->sp_pdf_url }}" target="_blank" rel="noopener" class="splis-btn-secondary text-sm">SP PDF</a>
+                        @endif
+                    </div>
+                </div>
+            @endif
+        </div>
     </div>
 
-    @if ($incoming->mun_pdf_url || $incoming->sp_pdf_url)
-        <div class="splis-card mt-6">
-            <div class="splis-card-header">
-                <h2 class="splis-card-title">PDF Links</h2>
-            </div>
-            <div class="splis-card-body flex flex-wrap gap-3">
-                @if ($incoming->mun_pdf_url)
-                    <a href="{{ $incoming->mun_pdf_url }}" target="_blank" rel="noopener" class="splis-btn-secondary text-sm">Municipal PDF</a>
-                @endif
-                @if ($incoming->sp_pdf_url)
-                    <a href="{{ $incoming->sp_pdf_url }}" target="_blank" rel="noopener" class="splis-btn-secondary text-sm">SP PDF</a>
-                @endif
-            </div>
-        </div>
-    @endif
-
     @can('link', $incoming)
-        <div class="splis-card mt-6" id="incoming-link-panel" data-search-url="{{ route('incoming.resolutions.search') }}">
+        <div class="splis-card mt-6" id="incoming-link-panel" data-search-url="{{ route('incoming.resolutions.search') }}" data-fallback-queries='@json(array_values(array_filter([$incoming->sp_res_no, $incoming->mun_resolution_no])))'>
             <div class="splis-card-header">
                 <h2 class="splis-card-title">Link to Resolution</h2>
                 <p class="text-sm text-slate-500">Sets IDs only — resolution fields are not changed.</p>
             </div>
             <div class="splis-card-body space-y-4">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <div class="md:col-span-2">
+                    <div class="md:col-span-2 space-y-2">
+                        <p class="splis-page-title !text-xl md:!text-2xl">{{ $incoming->displayLabel() }}</p>
                         <label class="splis-label" for="link-resolution-q">Search resolution</label>
-                        <input type="text" id="link-resolution-q" class="splis-input" placeholder="Resolution number or title…" autocomplete="off">
+                        <input
+                            type="text"
+                            id="link-resolution-q"
+                            class="splis-input"
+                            placeholder="Resolution number or title…"
+                            autocomplete="off"
+                            value="{{ $incoming->sp_title ?: $incoming->title }}"
+                        >
                     </div>
                     <div>
                         <label class="splis-label" for="link-resolution-series">Series (optional)</label>
@@ -143,6 +202,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!panel) return;
 
     const searchUrl = panel.dataset.searchUrl;
+    let fallbackQueries = [];
+    try {
+        fallbackQueries = JSON.parse(panel.dataset.fallbackQueries || '[]');
+    } catch {
+        fallbackQueries = [];
+    }
     const qInput = document.getElementById('link-resolution-q');
     const seriesInput = document.getElementById('link-resolution-series');
     const resultsEl = document.getElementById('link-resolution-results');
@@ -186,6 +251,15 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    function fetchResults(q) {
+        const params = new URLSearchParams({ q: q });
+        if (seriesInput.value) params.set('series', seriesInput.value);
+
+        return fetch(searchUrl + '?' + params.toString(), {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        }).then(function (r) { return r.json(); });
+    }
+
     function search() {
         const q = qInput.value.trim();
         if (q.length < 2) {
@@ -193,18 +267,42 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const params = new URLSearchParams({ q: q });
-        if (seriesInput.value) params.set('series', seriesInput.value);
-
-        fetch(searchUrl + '?' + params.toString(), {
-            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-        })
-            .then(function (r) { return r.json(); })
+        fetchResults(q)
             .then(renderResults)
             .catch(function () {
                 resultsEl.innerHTML = '<p class="px-4 py-3 text-sm text-red-600">Search failed.</p>';
                 resultsEl.classList.remove('hidden');
             });
+    }
+
+    function autoSearch() {
+        const queries = [qInput.value.trim()]
+            .concat(fallbackQueries.map(function (value) { return String(value || '').trim(); }))
+            .filter(function (value, index, list) {
+                return value.length >= 2 && list.indexOf(value) === index;
+            });
+
+        if (!queries.length) {
+            return;
+        }
+
+        function tryQuery(index) {
+            fetchResults(queries[index])
+                .then(function (items) {
+                    if (items.length || index >= queries.length - 1) {
+                        renderResults(items);
+                        return;
+                    }
+
+                    tryQuery(index + 1);
+                })
+                .catch(function () {
+                    resultsEl.innerHTML = '<p class="px-4 py-3 text-sm text-red-600">Search failed.</p>';
+                    resultsEl.classList.remove('hidden');
+                });
+        }
+
+        tryQuery(0);
     }
 
     qInput.addEventListener('input', function () {
@@ -216,6 +314,10 @@ document.addEventListener('DOMContentLoaded', function () {
     seriesInput.addEventListener('change', function () {
         if (qInput.value.trim().length >= 2) search();
     });
+
+    if (qInput.value.trim().length >= 2) {
+        autoSearch();
+    }
 });
 </script>
 @endpush

@@ -140,6 +140,7 @@ class SptrackAnalyzer
                 'remarks',
                 'sp_pdf_url',
                 'mun_pdf_url',
+                'sp_rec_added',
                 'sp_rec_modified',
                 'suggested_resolution_id',
                 'confidence',

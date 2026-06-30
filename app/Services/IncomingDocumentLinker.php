@@ -29,4 +29,32 @@ class IncomingDocumentLinker
             ]);
         });
     }
+
+    public function unlink(IncomingDocument $incoming): void
+    {
+        if (! $incoming->isLinked()) {
+            throw new \RuntimeException('This incoming document is not linked to a resolution.');
+        }
+
+        $resolution = $incoming->resolution;
+        if (! $resolution) {
+            $incoming->update([
+                'resolution_id' => null,
+                'link_status' => IncomingDocument::LINK_UNLINKED,
+            ]);
+
+            return;
+        }
+
+        DB::transaction(function () use ($incoming, $resolution) {
+            $incoming->update([
+                'resolution_id' => null,
+                'link_status' => IncomingDocument::LINK_UNLINKED,
+            ]);
+
+            if ($resolution->incoming_document_id === $incoming->id) {
+                $resolution->update(['incoming_document_id' => null]);
+            }
+        });
+    }
 }

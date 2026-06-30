@@ -28,6 +28,14 @@ class IncomingDocumentImporter
                 $total++;
 
                 if (IncomingDocument::query()->where('legacy_file_id', $row['legacy_file_id'])->exists()) {
+                    IncomingDocument::query()
+                        ->where('legacy_file_id', $row['legacy_file_id'])
+                        ->update([
+                            'sp_rec_added' => $row['sp_rec_added'],
+                            'sp_rec_modified' => $row['sp_rec_modified'],
+                            'sp_rec_added_by' => $row['sp_rec_added_by'],
+                            'sp_rec_modified_by' => $row['sp_rec_modified_by'],
+                        ]);
                     $skipped++;
 
                     continue;
@@ -70,7 +78,10 @@ class IncomingDocumentImporter
             'remarks' => $row['remarks'],
             'mun_pdf_url' => $row['mun_pdf_url'],
             'sp_pdf_url' => $row['sp_pdf_url'],
+            'sp_rec_added' => $row['sp_rec_added'],
             'sp_rec_modified' => $row['sp_rec_modified'],
+            'sp_rec_added_by' => $row['sp_rec_added_by'],
+            'sp_rec_modified_by' => $row['sp_rec_modified_by'],
             'created_by' => null,
         ];
     }

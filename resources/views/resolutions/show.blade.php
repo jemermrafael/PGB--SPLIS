@@ -28,6 +28,7 @@
             @can('update', $resolution)
                 <a href="{{ route('resolutions.edit', $resolution) }}" class="splis-btn-secondary">Edit</a>
             @endcan
+            <a href="{{ route('resolutions.index') }}" class="splis-btn-secondary">Back to list</a>
         </div>
     </div>
 
@@ -48,7 +49,6 @@
                 'Department' => $resolution->department?->description,
                 'Municipality' => $resolution->municipality?->description,
                 'Province-wide' => $resolution->province ? 'Yes' : 'No',
-                'Keyword' => $resolution->keyword,
                 'Committee' => $resolution->committee,
                 'App/Ord No.' => $resolution->app_ord_no,
                 'Amount' => $resolution->amount !== null ? number_format($resolution->amount) : null,
@@ -61,6 +61,17 @@
                     </div>
                 @endif
             @endforeach
+            @if ($resolution->keyword)
+                <div class="splis-detail-row">
+                    <dt class="splis-detail-label">Keyword</dt>
+                    <dd class="splis-detail-value">
+                        @include('partials.keyword-links', [
+                            'value' => $resolution->keyword,
+                            'searchUrl' => route('resolutions.index'),
+                        ])
+                    </dd>
+                </div>
+            @endif
         </dl>
     </div>
 
@@ -84,18 +95,24 @@
         </div>
     @endif
 
-    <div class="mt-6 flex items-center justify-between">
-        <a href="{{ route('resolutions.index') }}" class="splis-btn-ghost">
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
-            Back to list
-        </a>
-        @can('delete', $resolution)
+    @include('partials.detail-prev-next', [
+        'previous' => $previousResolution,
+        'next' => $nextResolution,
+        'previousUrl' => $previousResolution ? route('resolutions.show', $previousResolution) : null,
+        'nextUrl' => $nextResolution ? route('resolutions.show', $nextResolution) : null,
+        'previousLabel' => $previousResolution ? 'Resolution No.: '.$previousResolution->resolution_no : null,
+        'nextLabel' => $nextResolution ? 'Resolution No.: '.$nextResolution->resolution_no : null,
+        'label' => 'Resolution navigation',
+    ])
+
+    @can('delete', $resolution)
+        <div class="mt-4 flex justify-end">
             <form method="POST" action="{{ route('resolutions.destroy', $resolution) }}" onsubmit="return confirm('Delete this resolution? PDF file will not be deleted.')">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="splis-btn-danger">Delete resolution</button>
             </form>
-        @endcan
-    </div>
+        </div>
+    @endcan
 </div>
 @endsection

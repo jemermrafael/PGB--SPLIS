@@ -16,28 +16,27 @@
 
 <div>
     <label class="splis-label" for="resolution_title">Title *</label>
-    <textarea name="resolution_title" id="resolution_title" rows="3" required class="splis-textarea">{{ old('resolution_title', $resolution->resolution_title ?? '') }}</textarea>
+    <textarea name="resolution_title" id="resolution_title" rows="6" required class="splis-textarea">{{ old('resolution_title', $resolution->resolution_title ?? '') }}</textarea>
 </div>
 
 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-    <div>
-        <label class="splis-label" for="category_id">Category</label>
-        <select name="category_id" id="category_id" class="splis-select">
-            <option value="">—</option>
-            @foreach ($categories as $cat)
-                <option value="{{ $cat->id }}" @selected(old('category_id', $resolution->category_id ?? '') == $cat->id)>{{ $cat->description }}</option>
-            @endforeach
-        </select>
-    </div>
-    <div>
-        <label class="splis-label" for="department_id">Department</label>
-        <select name="department_id" id="department_id" class="splis-select">
-            <option value="">—</option>
-            @foreach ($departments as $dept)
-                <option value="{{ $dept->id }}" @selected(old('department_id', $resolution->department_id ?? '') == $dept->id)>{{ $dept->description }}</option>
-            @endforeach
-        </select>
-    </div>
+    @include('partials.combobox-field', [
+        'name' => 'category',
+        'id' => 'category',
+        'label' => 'Category',
+        'value' => old('category', $resolution->category?->description ?? ''),
+        'options' => $categoryOptions,
+        'placeholder' => 'Search or type category…',
+    ])
+
+    @include('partials.combobox-field', [
+        'name' => 'department',
+        'id' => 'department',
+        'label' => 'Department',
+        'value' => old('department', $resolution->department?->description ?? ''),
+        'options' => $departmentOptions,
+        'placeholder' => 'Search or type department…',
+    ])
     <div>
         <label class="splis-label" for="municipality_id">Municipality</label>
         <select name="municipality_id" id="municipality_id" class="splis-select">
@@ -51,10 +50,14 @@
         <label class="splis-label" for="date_approved">Date Approved</label>
         <input type="date" name="date_approved" id="date_approved" value="{{ old('date_approved', isset($resolution) && $resolution->date_approved ? $resolution->date_approved->format('Y-m-d') : '') }}" class="splis-input">
     </div>
-    <div>
-        <label class="splis-label" for="sponsored_by">Sponsored By</label>
-        <input type="text" name="sponsored_by" id="sponsored_by" value="{{ old('sponsored_by', $resolution->sponsored_by ?? '') }}" class="splis-input">
-    </div>
+    @include('partials.combobox-field', [
+        'name' => 'sponsored_by',
+        'id' => 'sponsored_by',
+        'label' => 'Sponsored By',
+        'value' => $resolution->sponsored_by ?? '',
+        'options' => $sponsoredByOptions,
+        'placeholder' => 'Search or type sponsor…',
+    ])
     <div>
         <label class="splis-label" for="status">Status</label>
         <select name="status" id="status" class="splis-select">
@@ -63,18 +66,31 @@
             @endforeach
         </select>
     </div>
-    <div>
-        <label class="splis-label" for="keyword">Keyword</label>
-        <input type="text" name="keyword" id="keyword" value="{{ old('keyword', $resolution->keyword ?? '') }}" class="splis-input">
-    </div>
-    <div>
-        <label class="splis-label" for="committee">Committee</label>
-        <input type="text" name="committee" id="committee" value="{{ old('committee', $resolution->committee ?? '') }}" class="splis-input">
-    </div>
+
+    @include('partials.combobox-field', [
+        'name' => 'committee',
+        'id' => 'committee',
+        'label' => 'Committee',
+        'value' => $resolution->committee ?? '',
+        'options' => $committeeOptions,
+        'placeholder' => 'Search committees…',
+    ])
+
     <div>
         <label class="splis-label" for="app_ord_no">App/Ord No.</label>
         <input type="text" name="app_ord_no" id="app_ord_no" value="{{ old('app_ord_no', $resolution->app_ord_no ?? '') }}" class="splis-input">
     </div>
+
+    @include('partials.keyword-tags-field', [
+        'name' => 'keyword',
+        'id' => 'keyword',
+        'label' => 'Keywords',
+        'value' => $resolution->keyword ?? '',
+        'keywordsUrl' => $keywordsUrl,
+        'maxLength' => 100,
+        'placeholder' => 'Add keyword…',
+    ])
+
     <div>
         <label class="splis-label" for="amount">Amount</label>
         <input type="number" name="amount" id="amount" value="{{ old('amount', $resolution->amount ?? '') }}" min="0" class="splis-input">

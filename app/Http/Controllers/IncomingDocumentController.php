@@ -12,9 +12,12 @@ use App\Models\SeriesYear;
 use App\Services\IncomingDocumentLinker;
 use App\Services\IncomingDocumentPublisher;
 use App\Services\PdfAttachmentService;
+use App\Services\ResolutionLinkSearch;
+use App\Support\ActivityChangeRecorder;
 use App\Support\DocumentType;
 use App\Support\IncomingFieldOptions;
-use App\Support\ResolutionNumberParser;
+use App\Support\ResolutionFieldOptions;
+use App\Support\ResolutionLookupResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,7 +32,7 @@ class IncomingDocumentController extends Controller
     public function index(): View
     {
         return view('incoming.index', [
-            'categories' => Category::orderBy('description')->get(),
+            'categories' => Category::forSelect(),
             'departments' => Department::orderBy('description')->get(),
             'municipalities' => Municipality::orderBy('description')->get(),
             'seriesYears' => SeriesYear::orderByDesc('year')->pluck('year'),
@@ -54,6 +57,15 @@ class IncomingDocumentController extends Controller
 
         $incoming = IncomingDocument::create($data);
 
+        ActivityLog::log('incoming.created', $incoming, [
+            'label' => $incoming->displayLabel(),
+            'source' => $incoming->source,
+            'fields' => ActivityChangeRecorder::presentFields(
+                $incoming,
+                ActivityChangeRecorder::incomingLoggableKeys(),
+            ),
+        ]);
+
         return redirect()
             ->route('incoming.show', $incoming)
             ->with('status', 'Incoming document created.');
@@ -61,10 +73,11 @@ class IncomingDocumentController extends Controller
 
     public function show(IncomingDocument $incoming): View
     {
-        $incoming->load(['resolution', 'creator']);
+        $incoming->load(['resolution', 'creator', 'agendaItem']);
 
         return view('incoming.show', [
             'incoming' => $incoming,
+            'splisActivityLogs' => $incoming->splisActivityLogs(),
             'previousIncoming' => $incoming->previousInList(),
             'nextIncoming' => $incoming->nextInList(),
         ]);
@@ -81,7 +94,19 @@ class IncomingDocumentController extends Controller
     {
         $this->authorize('update', $incoming);
 
-        $incoming->update($this->validated($request));
+        $data = $this->validated($request);
+        $before = $incoming->getAttributes();
+        $incoming->update($data);
+        $changes = ActivityChangeRecorder::diff(
+            $before,
+            $incoming->getAttributes(),
+            array_keys($data),
+        );
+
+        ActivityLog::log('incoming.updated', $incoming, [
+            'label' => $incoming->displayLabel(),
+            'changes' => $changes,
+        ]);
 
         return redirect()
             ->route('incoming.show', $incoming)
@@ -99,10 +124,24 @@ class IncomingDocumentController extends Controller
         $resolution = Resolution::query()->findOrFail($data['resolution_id']);
 
         try {
+            $before = $incoming->only(['link_status', 'resolution_id']);
             $linker->link($incoming, $resolution);
         } catch (\RuntimeException $e) {
             return back()->withErrors(['resolution_id' => $e->getMessage()]);
         }
+
+        $incoming->refresh();
+
+        ActivityLog::log('incoming.linked', $incoming, [
+            'label' => $incoming->displayLabel(),
+            'resolution_id' => $resolution->id,
+            'resolution_no' => $resolution->resolution_no,
+            'changes' => ActivityChangeRecorder::diff(
+                $before,
+                $incoming->only(['link_status', 'resolution_id']),
+                ['link_status', 'resolution_id'],
+            ),
+        ], $request->user()->id);
 
         return redirect()
             ->route('incoming.show', $incoming)
@@ -132,6 +171,7 @@ class IncomingDocumentController extends Controller
         $this->authorize('create', Resolution::class);
 
         $data = $this->validatedResolution($request);
+        $data = ResolutionLookupResolver::apply($data);
         $data = array_merge($publisher->workflowAttributes($incoming), $data);
         $data['created_by'] = $request->user()->id;
         $data['status'] = $data['status'] ?? 'draft';
@@ -157,45 +197,14 @@ class IncomingDocumentController extends Controller
             ->with('status', 'Resolution published and linked to incoming '.$incoming->displayLabel().'.');
     }
 
-    public function searchResolutions(Request $request): JsonResponse
+    public function searchResolutions(Request $request, ResolutionLinkSearch $search): JsonResponse
     {
         $term = trim((string) $request->input('q', ''));
-        if (mb_strlen($term) < 2) {
-            return response()->json([]);
-        }
-
         $series = $request->filled('series') ? (int) $request->input('series') : null;
-        if ($series === null && preg_match('/^(\d{4})-/', $term, $m)) {
-            $series = (int) $m[1];
-        }
 
-        $results = Resolution::query()
-            ->whereNull('incoming_document_id')
-            ->where(function ($q) use ($term) {
-                $like = '%'.$term.'%';
-                $q->where('resolution_no', 'like', $like)
-                    ->orWhere('resolution_title', 'like', $like);
-
-                if (preg_match('/^(\d{4})-(\d+)$/', $term, $m)) {
-                    $year = (int) $m[1];
-                    $sequence = (int) $m[2];
-                    $q->orWhere('resolution_no', ResolutionNumberParser::buildOfficialNumber($year, $sequence))
-                        ->orWhere('resolution_no', 'like', '%'.$year.'%-%'.sprintf('%04d', $sequence))
-                        ->orWhere('resolution_no', 'like', '%'.$year.'%-%'.$sequence);
-                }
-
-                $sequence = ResolutionNumberParser::extractSequence($term);
-                if ($sequence !== null) {
-                    $q->orWhere('resolution_no', 'like', '%'.sprintf('%04d', $sequence))
-                        ->orWhere('resolution_no', 'like', '%-'.$sequence);
-                }
-            })
-            ->when($series, fn ($q) => $q->where('series', $series))
-            ->orderByDesc('series')
-            ->limit(15)
-            ->get(['id', 'resolution_no', 'series', 'resolution_title', 'date_approved']);
-
-        return response()->json($results);
+        return response()->json(
+            $search->search($term, $series)->values()
+        );
     }
 
     /**
@@ -231,10 +240,13 @@ class IncomingDocumentController extends Controller
     protected function resolutionFormData(): array
     {
         return [
-            'categories' => Category::orderBy('description')->get(),
-            'departments' => Department::orderBy('description')->get(),
             'municipalities' => Municipality::orderBy('description')->get(),
             'seriesYears' => SeriesYear::orderByDesc('year')->pluck('year'),
+            'categoryOptions' => ResolutionFieldOptions::categories(),
+            'departmentOptions' => ResolutionFieldOptions::departments(),
+            'sponsoredByOptions' => ResolutionFieldOptions::sponsoredBy(),
+            'committeeOptions' => IncomingFieldOptions::committees(),
+            'keywordsUrl' => route('incoming.keywords'),
         ];
     }
 
@@ -247,10 +259,10 @@ class IncomingDocumentController extends Controller
             'resolution_no' => ['required', 'string', 'max:50'],
             'resolution_title' => ['required', 'string'],
             'series' => ['required', 'integer', 'min:1900', 'max:2100'],
-            'department_id' => ['nullable', 'exists:departments,id'],
+            'department' => ['nullable', 'string', 'max:200'],
             'date_approved' => ['nullable', 'date'],
             'sponsored_by' => ['nullable', 'string', 'max:100'],
-            'category_id' => ['nullable', 'exists:categories,id'],
+            'category' => ['nullable', 'string', 'max:200'],
             'category2_id' => ['nullable', 'exists:category2s,id'],
             'category3_id' => ['nullable', 'exists:category3s,id'],
             'category4_id' => ['nullable', 'exists:category4s,id'],

@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasActivityLogs;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Resolution extends Model
 {
+    use HasActivityLogs;
     use SoftDeletes;
 
     protected $fillable = [
@@ -97,5 +98,21 @@ class Resolution extends Model
     public function incomingDocument(): BelongsTo
     {
         return $this->belongsTo(IncomingDocument::class);
+    }
+
+    public function previousInList(): ?self
+    {
+        return static::query()
+            ->where('id', '>', $this->id)
+            ->orderBy('id')
+            ->first();
+    }
+
+    public function nextInList(): ?self
+    {
+        return static::query()
+            ->where('id', '<', $this->id)
+            ->orderByDesc('id')
+            ->first();
     }
 }

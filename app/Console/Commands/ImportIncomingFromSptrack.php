@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\ActivityLog;
 use App\Services\IncomingDocumentImporter;
 use App\Services\SptrackReader;
 use Illuminate\Console\Command;
@@ -32,6 +33,16 @@ class ImportIncomingFromSptrack extends Command
             ['Total rows', 'Imported', 'Skipped (existing)'],
             [[$stats['total'], $stats['imported'], $stats['skipped']]]
         );
+
+        if ($stats['imported'] > 0 || $stats['skipped'] > 0) {
+            ActivityLog::log('incoming.imported_from_sptrack', null, [
+                'source' => $source,
+                'total' => $stats['total'],
+                'imported' => $stats['imported'],
+                'skipped' => $stats['skipped'],
+            ], null);
+        }
+
         $this->comment('Link incoming items to resolutions manually under Incoming → detail page.');
 
         return self::SUCCESS;
@@ -45,6 +56,10 @@ class ImportIncomingFromSptrack extends Command
         }
 
         if ($this->option('csv')) {
+            return 'csv';
+        }
+
+        if ($reader->defaultCsvPathExists()) {
             return 'csv';
         }
 

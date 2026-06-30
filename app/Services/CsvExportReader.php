@@ -35,6 +35,16 @@ class CsvExportReader
      */
     public function rows(string $filePath): \Generator
     {
+        foreach ($this->indexedRows($filePath) as $row) {
+            yield $row['assoc'];
+        }
+    }
+
+    /**
+     * @return \Generator<int, array{assoc: array<string, string|null>, columns: list<string|null>}>
+     */
+    public function indexedRows(string $filePath): \Generator
+    {
         $handle = fopen($filePath, 'r');
         if ($handle === false) {
             return;
@@ -54,12 +64,19 @@ class CsvExportReader
                 continue;
             }
 
+            $columns = [];
             $assoc = [];
+
             foreach ($headers as $i => $header) {
-                $assoc[$header] = isset($row[$i]) ? $this->cleanValue($row[$i]) : null;
+                $value = isset($row[$i]) ? $this->cleanValue($row[$i]) : null;
+                $columns[$i] = $value;
+                $assoc[$header] = $value;
             }
 
-            yield $assoc;
+            yield [
+                'assoc' => $assoc,
+                'columns' => $columns,
+            ];
         }
 
         fclose($handle);

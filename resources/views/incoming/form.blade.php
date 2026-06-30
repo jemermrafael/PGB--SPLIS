@@ -43,7 +43,7 @@
 
         <div>
             <label class="splis-label" for="title">Title</label>
-            <textarea name="title" id="title" rows="3" class="splis-textarea">{{ old('title', $incoming->title ?? '') }}</textarea>
+            <textarea name="title" id="title" rows="6" class="splis-textarea">{{ old('title', $incoming->title ?? '') }}</textarea>
         </div>
 
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -84,15 +84,11 @@
             </div>
             <div class="md:col-span-2">
                 <label class="splis-label" for="sp_title">SP Title</label>
-                <textarea name="sp_title" id="sp_title" rows="2" class="splis-textarea">{{ old('sp_title', $incoming->sp_title ?? '') }}</textarea>
+                <textarea name="sp_title" id="sp_title" rows="6" class="splis-textarea">{{ old('sp_title', $incoming->sp_title ?? '') }}</textarea>
             </div>
             <div>
                 <label class="splis-label" for="sp_date_approved">SP Date Approved</label>
                 <input type="date" name="sp_date_approved" id="sp_date_approved" value="{{ old('sp_date_approved', isset($incoming) && $incoming->sp_date_approved ? $incoming->sp_date_approved->format('Y-m-d') : '') }}" class="splis-input">
-            </div>
-            <div>
-                <label class="splis-label" for="keyword">Keyword</label>
-                <input type="text" name="keyword" id="keyword" value="{{ old('keyword', $incoming->keyword ?? '') }}" class="splis-input">
             </div>
 
             @include('partials.combobox-field', [
@@ -102,6 +98,15 @@
                 'value' => $incoming->concerned_agency ?? '',
                 'options' => $concernedAgencyOptions,
                 'placeholder' => 'Search agency…',
+            ])
+
+            @include('partials.keyword-tags-field', [
+                'name' => 'keyword',
+                'id' => 'keyword',
+                'label' => 'Keywords',
+                'value' => $incoming->keyword ?? '',
+                'keywordsUrl' => route('incoming.keywords'),
+                'placeholder' => 'Add keyword…',
             ])
 
             <div class="md:col-span-2">

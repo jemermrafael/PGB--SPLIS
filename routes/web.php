@@ -1,9 +1,13 @@
 <?php
 
+use App\Http\Controllers\AgendaDeadlinePreviewController;
+use App\Http\Controllers\AgendaItemController;
+use App\Http\Controllers\AgendaSearchController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DashboardSearchController;
 use App\Http\Controllers\IncomingDocumentController;
+use App\Http\Controllers\IncomingKeywordController;
 use App\Http\Controllers\IncomingSearchController;
 use App\Http\Controllers\ResolutionController;
 use App\Http\Controllers\ResolutionPdfController;
@@ -41,6 +45,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/incoming', [IncomingDocumentController::class, 'index'])->name('incoming.index');
     Route::get('/incoming/search', IncomingSearchController::class)->name('incoming.search');
+    Route::get('/incoming/keywords', IncomingKeywordController::class)->name('incoming.keywords');
     Route::get('/incoming/create', [IncomingDocumentController::class, 'create'])->name('incoming.create');
     Route::post('/incoming', [IncomingDocumentController::class, 'store'])->name('incoming.store');
     Route::get('/incoming/resolutions/search', [IncomingDocumentController::class, 'searchResolutions'])->name('incoming.resolutions.search');
@@ -50,6 +55,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/incoming/{incoming}/edit', [IncomingDocumentController::class, 'edit'])->name('incoming.edit');
     Route::put('/incoming/{incoming}', [IncomingDocumentController::class, 'update'])->name('incoming.update');
     Route::post('/incoming/{incoming}/link', [IncomingDocumentController::class, 'link'])->name('incoming.link');
+
+    Route::get('/agenda', [AgendaItemController::class, 'index'])->name('agenda.index');
+    Route::get('/agenda/search', AgendaSearchController::class)->name('agenda.search');
+    Route::get('/agenda/preview-deadline', AgendaDeadlinePreviewController::class)->name('agenda.preview-deadline');
+    Route::get('/agenda/create', [AgendaItemController::class, 'create'])->name('agenda.create');
+    Route::post('/agenda', [AgendaItemController::class, 'store'])->name('agenda.store');
+    Route::get('/agenda/{agenda}', [AgendaItemController::class, 'show'])->name('agenda.show');
+    Route::get('/agenda/{agenda}/edit', [AgendaItemController::class, 'edit'])->name('agenda.edit');
+    Route::put('/agenda/{agenda}', [AgendaItemController::class, 'update'])->name('agenda.update');
+    Route::delete('/agenda/{agenda}', [AgendaItemController::class, 'destroy'])->name('agenda.destroy');
+    Route::post('/agenda/{agenda}/promote-incoming', [AgendaItemController::class, 'promote'])->name('agenda.promote-incoming');
+    Route::post('/agenda/{agenda}/unlink-incoming', [AgendaItemController::class, 'unlinkIncoming'])->name('agenda.unlink-incoming');
+    Route::post('/agenda/{agenda}/unlink-resolution', [AgendaItemController::class, 'unlinkResolution'])->name('agenda.unlink-resolution');
 
     Route::redirect('/admin/sptrack', '/incoming')->name('admin.sptrack.index');
     Route::redirect('/admin/sptrack/queue', '/incoming');

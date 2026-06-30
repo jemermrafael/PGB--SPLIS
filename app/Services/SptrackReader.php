@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Legacy\SptrackFile;
 use App\Services\CsvExportReader;
+use App\Support\SptrackRecordDatetime;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -49,7 +50,7 @@ class SptrackReader
                     'FileId', 'ResNo', 'DateReceived', 'Series', 'Municipality', 'Title',
                     'ActionTaken', 'Referral', 'Agenda', 'Status', 'SPDateApproved',
                     'SPResNo', 'SPSeries', 'SPTitle', 'ConcernedAgency', 'PDFLink',
-                    'PDFLinkMun', 'Keyword', 'Remarks', 'RecModified',
+                    'PDFLinkMun', 'Keyword', 'Remarks', 'RecAdded', 'RecModified',
                 ])
                 ->orderBy('FileId')
                 ->chunkById($size, function ($chunk) use ($callback, &$count) {
@@ -133,6 +134,11 @@ class SptrackReader
         return $count;
     }
 
+    public function defaultCsvPathExists(): bool
+    {
+        return is_file($this->defaultCsvPath());
+    }
+
     protected function defaultCsvPath(): string
     {
         $candidates = [
@@ -175,6 +181,7 @@ class SptrackReader
             'PDFLinkMun' => $row['PDFLinkMun'] ?? null,
             'Keyword' => $row['Keyword'] ?? null,
             'Remarks' => $row['Remarks'] ?? null,
+            'RecAdded' => $row['RecAdded'] ?? null,
             'RecModified' => $row['RecModified'] ?? null,
         ];
     }
@@ -205,7 +212,10 @@ class SptrackReader
             'sp_date_approved' => $this->dateOrNull($row['SPDateApproved'] ?? null),
             'sp_pdf_url' => $this->stringOrNull($row['PDFLink'] ?? null),
             'mun_pdf_url' => $this->stringOrNull($row['PDFLinkMun'] ?? null),
+            'sp_rec_added' => $this->datetimeOrNull($row['RecAdded'] ?? null),
             'sp_rec_modified' => $this->datetimeOrNull($row['RecModified'] ?? null),
+            'sp_rec_added_by' => $this->legacyUsernameOrNull($row['RecAdded'] ?? null),
+            'sp_rec_modified_by' => $this->legacyUsernameOrNull($row['RecModified'] ?? null),
         ];
     }
 
@@ -241,19 +251,11 @@ class SptrackReader
 
     protected function datetimeOrNull(mixed $value): ?string
     {
-        $value = trim((string) ($value ?? ''));
-        if ($value === '') {
-            return null;
-        }
+        return SptrackRecordDatetime::parse(is_string($value) || is_numeric($value) ? (string) $value : null);
+    }
 
-        if (preg_match('/^(\d{1,2}\/\d{1,2}\/\d{4}\s+\d{1,2}:\d{2}:\d{2}\s+[AP]M)/i', $value, $m)) {
-            $value = $m[1];
-        }
-
-        try {
-            return Carbon::parse($value)->toDateTimeString();
-        } catch (\Throwable) {
-            return null;
-        }
+    protected function legacyUsernameOrNull(mixed $value): ?string
+    {
+        return SptrackRecordDatetime::extractUsername(is_string($value) || is_numeric($value) ? (string) $value : null);
     }
 }

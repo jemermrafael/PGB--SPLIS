@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', ($resolution->resolution_no ?: 'New Resolution').' — '.config('app.name'))
+@section('title', (($resolution->resolution_no ?? '') !== '' ? $resolution->resolution_no : 'New Resolution').' — '.config('app.name'))
 
 @section('content')
 <div class="max-w-3xl">
@@ -19,9 +19,9 @@
 
         @include('resolutions._form-fields', ['resolution' => $resolution])
 
-        <div class="flex gap-3 border-t border-slate-100 pt-5 dark:border-slate-700">
+        <div class="flex gap-2 pt-2">
             <button type="submit" class="splis-btn-primary">Save resolution</button>
-            <a href="{{ route('resolutions.index') }}" class="splis-btn-ghost">Cancel</a>
+            <a href="{{ route('resolutions.index') }}" class="splis-btn-secondary">Cancel</a>
         </div>
     </form>
 </div>
