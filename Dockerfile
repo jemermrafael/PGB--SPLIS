@@ -31,6 +31,9 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install pdo pdo_mysql gd zip bcmath opcache intl pcntl \
     && echo "clear_env = no" >> /usr/local/etc/php-fpm.d/www.conf
 
+RUN rm -f /etc/nginx/sites-enabled/default /etc/nginx/sites-available/default \
+    && sed -i 's|listen = /var/run/php-fpm.sock|listen = 127.0.0.1:9000|g' /usr/local/etc/php-fpm.d/www.conf 2>/dev/null || true
+
 COPY .docker/nginx.conf /etc/nginx/nginx.conf
 COPY .docker/php-uploads.ini /usr/local/etc/php/conf.d/99-uploads.ini
 COPY .docker/supervisor.conf /etc/supervisor/conf.d/supervisor.conf
