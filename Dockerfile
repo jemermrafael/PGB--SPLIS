@@ -19,6 +19,7 @@ RUN apk add --no-cache nginx supervisor curl libpng-dev libjpeg-turbo-dev freety
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo pdo_mysql gd zip bcmath opcache intl pcntl \
     && mkdir -p /var/run/nginx /var/cache/nginx/client_body /var/cache/nginx/proxy /var/cache/nginx/fastcgi /var/cache/nginx/uwsgi /var/cache/nginx/scgi
+    && chown -R www-data:www-data /var/run/nginx /var/cache/nginx
 
 RUN echo "clear_env = no" >> /usr/local/etc/php-fpm.d/www.conf
 
