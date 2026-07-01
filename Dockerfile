@@ -51,3 +51,10 @@ VOLUME ["/var/www/html/storage"]
 EXPOSE 80
 
 CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisor.conf"]
+# Start via Supervisor to run Nginx and PHP-FPM together
+COPY .docker/supervisor.conf /etc/supervisor/conf.d/supervisor.conf
+CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisor.conf"]
+
+# Start via Supervisor to run Nginx and PHP-FPM together
+#COPY .docker/supervisor.conf /etc/supervisor/conf.d/supervisor.conf
+#CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisor.conf"]
