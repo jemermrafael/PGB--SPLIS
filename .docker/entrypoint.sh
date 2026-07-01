@@ -13,9 +13,11 @@ done
 
 cd /var/www/html
 
-NGINX_RUNTIME=/var/www/html/storage/app/nginx
+NGINX_RUNTIME=/dev/shm/nginx
 mkdir -p "$NGINX_RUNTIME/client_body" "$NGINX_RUNTIME/proxy" "$NGINX_RUNTIME/fastcgi" "$NGINX_RUNTIME/uwsgi" "$NGINX_RUNTIME/scgi"
-chown -R www-data:www-data "$NGINX_RUNTIME" storage bootstrap/cache 2>/dev/null || true
+chmod -R 1777 "$NGINX_RUNTIME"
+
+chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
 
 # Wait for MySQL (up to ~60s) when DB_HOST is set
 if [ -n "$DB_HOST" ] && [ "$DB_CONNECTION" = "mysql" ]; then

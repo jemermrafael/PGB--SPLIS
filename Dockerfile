@@ -13,7 +13,7 @@ COPY public/ ./public/
 RUN npm run build
 
 # 2. Main execution stage
-FROM public.ecr.aws/docker/library/php:8.4-fpm
+FROM public.ecr.aws/docker/library/php:8.4-fpm-alpine
 
 RUN apk add --no-cache nginx supervisor curl libpng-dev libjpeg-turbo-dev freetype-dev zip libzip-dev git unzip bash mysql-client icu-dev oniguruma-dev libxml2-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
@@ -45,8 +45,8 @@ RUN composer install \
     --no-scripts \
     && chown -R www-data:www-data storage bootstrap/cache vendor
 
-RUN mkdir -p storage/app/nginx \
-    && chown -R www-data:www-data storage bootstrap/cache vendor /var/log/nginx /etc/nginx
+RUN mkdir -p /dev/shm/nginx \
+    && chown -R www-data:www-data storage bootstrap/cache vendor
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
