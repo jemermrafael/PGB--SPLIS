@@ -48,13 +48,19 @@ if [ -n "$DB_HOST" ] && [ "$DB_CONNECTION" = "mysql" ]; then
 fi
 
 php artisan package:discover --ansi --no-interaction
+php artisan optimize:clear --no-interaction
 php artisan storage:link --force 2>/dev/null || true
-php artisan migrate --force --no-interaction 2>/dev/null || true
+
+echo "Running migrations..."
+if ! php artisan migrate --force --no-interaction; then
+  echo "ERROR: Migrations failed. Check DB_HOST, DB_USERNAME, DB_PASSWORD, and that the database user exists."
+  exit 1
+fi
 
 if [ "$APP_ENV" = "production" ]; then
-  php artisan config:cache --no-interaction 2>/dev/null || true
-  php artisan route:cache --no-interaction 2>/dev/null || true
-  php artisan view:cache --no-interaction 2>/dev/null || true
+  php artisan config:cache --no-interaction
+  php artisan route:cache --no-interaction
+  php artisan view:cache --no-interaction
 fi
 
 exec "$@"

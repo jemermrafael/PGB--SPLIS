@@ -1,6 +1,5 @@
-# Coolify: set Build Pack to "Nixpacks" (not Dockerfile).
-# Mount persistent storage at: /app/storage
-# Exposed port: 80
+# Coolify: Build Pack = Nixpacks. Mount storage at /app/storage, port 80.
+# Uses Ubuntu PHP 8.4 (apt) at runtime for MySQL 8.4 caching_sha2_password support.
 
 [variables]
 NIXPACKS_NODE_VERSION = "22"
@@ -10,12 +9,15 @@ nixPkgs = ["...", "python311Packages.supervisor"]
 
 [phases.build]
 cmds = [
+    "chmod +x /assets/install-apt-php.sh",
+    "/assets/install-apt-php.sh",
     "mkdir -p /etc/supervisor/conf.d/",
     "cp /assets/worker-*.conf /etc/supervisor/conf.d/",
     "cp /assets/supervisord.conf /etc/supervisord.conf",
     "chmod +x /assets/start.sh",
     "mkdir -p storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs",
     "chmod -R 775 storage || true",
+    "test -f public/build/manifest.json || (echo 'ERROR: Vite build did not produce public/build/manifest.json' && exit 1)",
     "..."
 ]
 
@@ -23,36 +25,103 @@ cmds = [
 cmd = "/assets/start.sh"
 
 [staticAssets]
+"install-apt-php.sh" = '''
+#!/bin/bash
+set -euo pipefail
+
+export DEBIAN_FRONTEND=noninteractive
+
+if command -v php8.4 >/dev/null 2>&1; then
+  echo "PHP 8.4 already installed."
+else
+  echo "Installing PHP 8.4 from apt (mysqlnd for MySQL 8.4)..."
+  apt-get update
+  apt-get install -y ca-certificates curl gnupg software-properties-common
+
+  if ! apt-cache show php8.4-cli >/dev/null 2>&1; then
+    install -d -m 0755 /etc/apt/keyrings
+    curl -fsSL https://packages.sury.org/php/apt.gpg -o /etc/apt/keyrings/php.gpg
+    echo "deb [signed-by=/etc/apt/keyrings/php.gpg] https://packages.sury.org/php/ $(. /etc/os-release && echo ${VERSION_CODENAME}) main" > /etc/apt/sources.list.d/php.list
+    apt-get update
+  fi
+
+  apt-get install -y \
+    php8.4-cli php8.4-fpm php8.4-mysql php8.4-mbstring php8.4-xml \
+    php8.4-curl php8.4-zip php8.4-gd php8.4-bcmath php8.4-intl \
+    php8.4-opcache php8.4-tokenizer
+fi
+
+PHP_FPM_POOL=/etc/php/8.4/fpm/pool.d/www.conf
+if [ -f "$PHP_FPM_POOL" ]; then
+  sed -i 's|^listen = .*|listen = 127.0.0.1:9000|' "$PHP_FPM_POOL"
+  grep -q '^clear_env = no' "$PHP_FPM_POOL" || echo 'clear_env = no' >> "$PHP_FPM_POOL"
+fi
+
+cat > /etc/php/8.4/fpm/conf.d/99-uploads.ini <<'EOF'
+upload_max_filesize = 200M
+post_max_size = 210M
+memory_limit = 256M
+max_execution_time = 300
+EOF
+
+cp /etc/php/8.4/fpm/conf.d/99-uploads.ini /etc/php/8.4/cli/conf.d/99-uploads.ini
+
+php8.4 -m | grep -qi pdo_mysql || (echo "ERROR: php8.4-mysql (pdo_mysql) not loaded" && exit 1)
+echo "PHP 8.4 apt install OK: $(php8.4 -v | head -1)"
+'''
+
 "start.sh" = '''
 #!/bin/bash
 set -e
 cd /app
 
-mkdir -p storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs
-chmod -R 775 storage || true
+PHP="${PHP_BIN:-/usr/bin/php8.4}"
+if [ ! -x "$PHP" ]; then
+  PHP=php
+fi
+
+mkdir -p storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+chmod -R 775 storage bootstrap/cache || true
+
+if [ -z "$APP_KEY" ]; then
+  echo "ERROR: APP_KEY is not set in Coolify environment variables."
+  exit 1
+fi
+
+if [ ! -f public/build/manifest.json ]; then
+  echo "ERROR: public/build/manifest.json is missing. Frontend assets were not built."
+  exit 1
+fi
 
 if [ -n "$DB_HOST" ] && [ "$DB_CONNECTION" = "mysql" ]; then
   echo "Waiting for MySQL at ${DB_HOST}:${DB_PORT:-3306}..."
   for i in $(seq 1 30); do
     if (echo > /dev/tcp/"$DB_HOST"/"${DB_PORT:-3306}") 2>/dev/null; then
-      echo "MySQL is ready."
+      echo "MySQL port is open."
       break
     fi
     if [ "$i" -eq 30 ]; then
-      echo "Warning: MySQL not reachable; continuing anyway."
+      echo "ERROR: MySQL not reachable at ${DB_HOST}:${DB_PORT:-3306}"
+      exit 1
     fi
     sleep 2
   done
 fi
 
-php artisan package:discover --ansi --no-interaction
-php artisan storage:link --force 2>/dev/null || true
-php artisan migrate --force --no-interaction 2>/dev/null || true
+$PHP artisan package:discover --ansi --no-interaction
+$PHP artisan optimize:clear --no-interaction
+$PHP artisan storage:link --force 2>/dev/null || true
+
+echo "Running migrations (PHP: $($PHP -v | head -1))..."
+if ! $PHP artisan migrate --force --no-interaction; then
+  echo "ERROR: Migrations failed. Verify DB_USERNAME, DB_PASSWORD, and that database ${DB_DATABASE} exists."
+  exit 1
+fi
 
 if [ "$APP_ENV" = "production" ]; then
-  php artisan config:cache --no-interaction 2>/dev/null || true
-  php artisan route:cache --no-interaction 2>/dev/null || true
-  php artisan view:cache --no-interaction 2>/dev/null || true
+  $PHP artisan config:cache --no-interaction
+  $PHP artisan route:cache --no-interaction
+  $PHP artisan view:cache --no-interaction
 fi
 
 node /assets/scripts/prestart.mjs /assets/nginx.template.conf /etc/nginx.conf
@@ -95,7 +164,7 @@ stderr_logfile_maxbytes=0
 "worker-phpfpm.conf" = '''
 [program:worker-phpfpm]
 process_name=%(program_name)s
-command=php-fpm -y /assets/php-fpm.conf -F
+command=/usr/sbin/php-fpm8.4 -F
 autostart=true
 autorestart=true
 stdout_logfile=/dev/stdout
@@ -105,22 +174,7 @@ stderr_logfile_maxbytes=0
 '''
 
 "php-fpm.conf" = '''
-[www]
-listen = 127.0.0.1:9000
-user = www-data
-group = www-data
-listen.owner = www-data
-listen.group = www-data
-pm = dynamic
-pm.max_children = 20
-pm.min_spare_servers = 2
-pm.max_spare_servers = 10
-pm.start_servers = 4
-clear_env = no
-php_admin_value[post_max_size] = 210M
-php_admin_value[upload_max_filesize] = 200M
-php_admin_value[memory_limit] = 256M
-php_admin_value[max_execution_time] = 300
+; Unused — runtime uses /usr/sbin/php-fpm8.4 with /etc/php/8.4/fpm/
 '''
 
 "nginx.template.conf" = '''
