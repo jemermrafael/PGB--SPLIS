@@ -52,4 +52,14 @@ class User extends Authenticatable
     {
         return $this->role->canDelete();
     }
+
+    public function canManageUsers(): bool
+    {
+        return $this->role->canManageUsers();
+    }
+
+    public function isSuperadmin(): bool
+    {
+        return $this->role === UserRole::Superadmin;
+    }
 }

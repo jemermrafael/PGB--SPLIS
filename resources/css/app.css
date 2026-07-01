@@ -133,6 +133,10 @@
         @apply w-full px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50;
     }
 
+    .splis-user-menu-link {
+        @apply block w-full border-b border-slate-100 px-3 py-2 text-left text-sm font-medium text-brand-800 transition hover:bg-slate-50;
+    }
+
     .splis-header-navbar {
         @apply border-t-[3px] border-brand-gold bg-white;
     }

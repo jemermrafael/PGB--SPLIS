@@ -64,6 +64,9 @@
                             <div class="splis-user-menu-panel" data-dropdown-panel>
                                 <p class="px-3 py-2 text-sm font-medium text-slate-800 dark:text-slate-100">{{ auth()->user()->name }}</p>
                                 <p class="px-3 pb-2 text-xs text-slate-500">{{ auth()->user()->role->label() }}</p>
+                                @if (auth()->user()->canManageUsers())
+                                    <a href="{{ route('users.index') }}" class="splis-user-menu-link">Manage users</a>
+                                @endif
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
                                     <button type="submit" class="splis-user-menu-signout">Sign out</button>

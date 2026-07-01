@@ -12,6 +12,7 @@ use App\Http\Controllers\IncomingSearchController;
 use App\Http\Controllers\ResolutionController;
 use App\Http\Controllers\ResolutionPdfController;
 use App\Http\Controllers\ResolutionSearchController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -71,4 +72,13 @@ Route::middleware('auth')->group(function () {
 
     Route::redirect('/admin/sptrack', '/incoming')->name('admin.sptrack.index');
     Route::redirect('/admin/sptrack/queue', '/incoming');
+
+    Route::middleware('role:superadmin')->prefix('admin')->name('users.')->group(function () {
+        Route::get('/users', [UserController::class, 'index'])->name('index');
+        Route::get('/users/create', [UserController::class, 'create'])->name('create');
+        Route::post('/users', [UserController::class, 'store'])->name('store');
+        Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('edit');
+        Route::put('/users/{user}', [UserController::class, 'update'])->name('update');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('destroy');
+    });
 });

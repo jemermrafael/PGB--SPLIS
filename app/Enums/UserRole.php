@@ -47,4 +47,23 @@ enum UserRole: string
     {
         return in_array($this, [self::Admin, self::Superadmin], true);
     }
+
+    public function canManageUsers(): bool
+    {
+        return $this === self::Superadmin;
+    }
+
+    /**
+     * @return list<self>
+     */
+    public static function assignable(): array
+    {
+        return [
+            self::Guest,
+            self::Encoder,
+            self::EncoderDelete,
+            self::Admin,
+            self::Superadmin,
+        ];
+    }
 }
