@@ -36,7 +36,9 @@ FROM public.ecr.aws/docker/library/php:8.4-fpm-alpine
 
 RUN apk add --no-cache nginx supervisor curl libpng-dev libjpeg-turbo-dev freetype-dev zip libzip-dev git bash mysql-client icu-dev oniguruma-dev libxml2-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_mysql gd zip bcmath opcache intl pcntl
+    && docker-php-ext-install pdo pdo_mysql gd zip bcmath opcache intl pcntl \
+    && mkdir -p /tmp/nginx/client_body /tmp/nginx/proxy /tmp/nginx/fastcgi /tmp/nginx/uwsgi /tmp/nginx/scgi \
+    && chmod -R 1777 /tmp/nginx
 
 RUN echo "clear_env = no" >> /usr/local/etc/php-fpm.d/www.conf
 
