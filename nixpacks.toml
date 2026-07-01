@@ -1,0 +1,195 @@
+# Coolify: set Build Pack to "Nixpacks" (not Dockerfile).
+# Mount persistent storage at: /app/storage
+# Exposed port: 80
+
+[phases.setup]
+nixPkgs = ["...", "mariadb", "python311Packages.supervisor"]
+
+[phases.build]
+cmds = [
+    "mkdir -p /etc/supervisor/conf.d/",
+    "cp /assets/worker-*.conf /etc/supervisor/conf.d/",
+    "cp /assets/supervisord.conf /etc/supervisord.conf",
+    "chmod +x /assets/start.sh",
+    "mkdir -p storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs",
+    "chmod -R 775 storage || true",
+    "..."
+]
+
+[start]
+cmd = "/assets/start.sh"
+
+[staticAssets]
+"start.sh" = '''
+#!/bin/bash
+set -e
+cd /app
+
+mkdir -p storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs
+chmod -R 775 storage || true
+
+if [ -n "$DB_HOST" ] && [ "$DB_CONNECTION" = "mysql" ]; then
+  echo "Waiting for MySQL at ${DB_HOST}:${DB_PORT:-3306}..."
+  export MYSQL_PWD="${DB_PASSWORD:-}"
+  for i in $(seq 1 30); do
+    if mysqladmin ping -h"$DB_HOST" -P"${DB_PORT:-3306}" -u"${DB_USERNAME:-root}" --silent 2>/dev/null; then
+      echo "MySQL is ready."
+      break
+    fi
+    if [ "$i" -eq 30 ]; then
+      echo "Warning: MySQL not reachable; continuing anyway."
+    fi
+    sleep 2
+  done
+  unset MYSQL_PWD
+fi
+
+php artisan package:discover --ansi --no-interaction
+php artisan storage:link --force 2>/dev/null || true
+php artisan migrate --force --no-interaction 2>/dev/null || true
+
+if [ "$APP_ENV" = "production" ]; then
+  php artisan config:cache --no-interaction 2>/dev/null || true
+  php artisan route:cache --no-interaction 2>/dev/null || true
+  php artisan view:cache --no-interaction 2>/dev/null || true
+fi
+
+node /assets/scripts/prestart.mjs /assets/nginx.template.conf /etc/nginx.conf
+exec supervisord -c /etc/supervisord.conf -n
+'''
+
+"supervisord.conf" = '''
+[unix_http_server]
+file=/assets/supervisor.sock
+
+[supervisord]
+logfile=/dev/null
+logfile_maxbytes=0
+pidfile=/assets/supervisord.pid
+nodaemon=false
+silent=false
+
+[rpcinterface:supervisor]
+supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
+
+[supervisorctl]
+serverurl=unix:///assets/supervisor.sock
+
+[include]
+files = /etc/supervisor/conf.d/*.conf
+'''
+
+"worker-nginx.conf" = '''
+[program:worker-nginx]
+process_name=%(program_name)s
+command=nginx -c /etc/nginx.conf
+autostart=true
+autorestart=true
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+stderr_logfile=/dev/stderr
+stderr_logfile_maxbytes=0
+'''
+
+"worker-phpfpm.conf" = '''
+[program:worker-phpfpm]
+process_name=%(program_name)s
+command=php-fpm -y /assets/php-fpm.conf -F
+autostart=true
+autorestart=true
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+stderr_logfile=/dev/stderr
+stderr_logfile_maxbytes=0
+'''
+
+"php-fpm.conf" = '''
+[www]
+listen = 127.0.0.1:9000
+user = www-data
+group = www-data
+listen.owner = www-data
+listen.group = www-data
+pm = dynamic
+pm.max_children = 20
+pm.min_spare_servers = 2
+pm.max_spare_servers = 10
+pm.start_servers = 4
+clear_env = no
+php_admin_value[post_max_size] = 210M
+php_admin_value[upload_max_filesize] = 200M
+php_admin_value[memory_limit] = 256M
+php_admin_value[max_execution_time] = 300
+'''
+
+"nginx.template.conf" = '''
+user www-data www-data;
+worker_processes auto;
+daemon off;
+pid /dev/null;
+error_log /dev/stderr warn;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include $!{nginx}/conf/mime.types;
+    index index.html index.htm index.php;
+    default_type application/octet-stream;
+
+    log_format main '$remote_addr - $remote_user [$time_local] $status '
+                    '"$request" $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
+    access_log /dev/stdout main;
+
+    sendfile on;
+    keepalive_timeout 65;
+    client_max_body_size 210M;
+
+    server {
+        listen ${PORT};
+        listen [::]:${PORT};
+        server_name _;
+
+        $if(NIXPACKS_PHP_ROOT_DIR) (
+            root ${NIXPACKS_PHP_ROOT_DIR};
+        ) else (
+            root /app/public;
+        )
+
+        add_header X-Content-Type-Options "nosniff";
+        index index.php;
+        charset utf-8;
+
+        $if(NIXPACKS_PHP_FALLBACK_PATH) (
+            location / {
+                try_files $uri $uri/ ${NIXPACKS_PHP_FALLBACK_PATH}?$query_string;
+            }
+        ) else (
+            location / {
+                try_files $uri $uri/ /index.php?$query_string;
+            }
+        )
+
+        location = /favicon.ico { access_log off; log_not_found off; }
+        location = /robots.txt  { access_log off; log_not_found off; }
+
+        $if(IS_LARAVEL) (
+            error_page 404 /index.php;
+        ) else ()
+
+        location ~ \.php$ {
+            fastcgi_pass 127.0.0.1:9000;
+            fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+            include $!{nginx}/conf/fastcgi_params;
+            include $!{nginx}/conf/fastcgi.conf;
+            fastcgi_read_timeout 300;
+        }
+
+        location ~ /\.(?!well-known).* {
+            deny all;
+        }
+    }
+}
+'''
