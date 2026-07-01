@@ -12,29 +12,10 @@ COPY public/ ./public/
 
 RUN npm run build
 
-# 2. Composer dependencies (PHP 8.4 must match runtime for Symfony 8 / platform_check)
-FROM public.ecr.aws/docker/library/php:8.4-cli-alpine AS vendor
-WORKDIR /app
-
-COPY --from=public.ecr.aws/docker/library/composer:2 /usr/bin/composer /usr/bin/composer
-
-ENV COMPOSER_ALLOW_SUPERUSER=1 \
-    COMPOSER_MEMORY_LIMIT=-1
-
-RUN apk add --no-cache git unzip
-
-COPY composer.json composer.lock ./
-RUN composer install \
-    --no-dev \
-    --no-interaction \
-    --prefer-dist \
-    --optimize-autoloader \
-    --no-scripts
-
-# 3. Main execution stage
+# 2. Main execution stage
 FROM public.ecr.aws/docker/library/php:8.4-fpm-alpine
 
-RUN apk add --no-cache nginx supervisor curl libpng-dev libjpeg-turbo-dev freetype-dev zip libzip-dev git bash mysql-client icu-dev oniguruma-dev libxml2-dev \
+RUN apk add --no-cache nginx supervisor curl libpng-dev libjpeg-turbo-dev freetype-dev zip libzip-dev git unzip bash mysql-client icu-dev oniguruma-dev libxml2-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo pdo_mysql gd zip bcmath opcache intl pcntl \
     && mkdir -p /var/run/nginx /var/cache/nginx/client_body /var/cache/nginx/proxy /var/cache/nginx/fastcgi /var/cache/nginx/uwsgi /var/cache/nginx/scgi
@@ -49,14 +30,20 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 WORKDIR /var/www/html
 
-COPY --from=vendor /app/vendor ./vendor
-COPY composer.json composer.lock ./
-
 COPY --chown=www-data:www-data . .
 COPY --from=frontend-builder --chown=www-data:www-data /app/public/build ./public/build
 
 COPY --from=public.ecr.aws/docker/library/composer:2 /usr/bin/composer /usr/bin/composer
-RUN composer dump-autoload --optimize --no-dev --no-scripts \
+
+ENV COMPOSER_ALLOW_SUPERUSER=1 \
+    COMPOSER_MEMORY_LIMIT=-1
+
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --prefer-dist \
+    --optimize-autoloader \
+    --no-scripts \
     && chown -R www-data:www-data storage bootstrap/cache vendor
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
