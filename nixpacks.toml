@@ -2,8 +2,11 @@
 # Mount persistent storage at: /app/storage
 # Exposed port: 80
 
+[variables]
+NIXPACKS_NODE_VERSION = "22"
+
 [phases.setup]
-nixPkgs = ["...", "mariadb", "python311Packages.supervisor"]
+nixPkgs = ["...", "python311Packages.supervisor"]
 
 [phases.build]
 cmds = [
@@ -30,9 +33,8 @@ chmod -R 775 storage || true
 
 if [ -n "$DB_HOST" ] && [ "$DB_CONNECTION" = "mysql" ]; then
   echo "Waiting for MySQL at ${DB_HOST}:${DB_PORT:-3306}..."
-  export MYSQL_PWD="${DB_PASSWORD:-}"
   for i in $(seq 1 30); do
-    if mysqladmin ping -h"$DB_HOST" -P"${DB_PORT:-3306}" -u"${DB_USERNAME:-root}" --silent 2>/dev/null; then
+    if (echo > /dev/tcp/"$DB_HOST"/"${DB_PORT:-3306}") 2>/dev/null; then
       echo "MySQL is ready."
       break
     fi
@@ -41,7 +43,6 @@ if [ -n "$DB_HOST" ] && [ "$DB_CONNECTION" = "mysql" ]; then
     fi
     sleep 2
   done
-  unset MYSQL_PWD
 fi
 
 php artisan package:discover --ansi --no-interaction
