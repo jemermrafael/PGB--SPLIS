@@ -6,9 +6,6 @@ use Pdo\Mysql;
 $mysqlPdoOptions = extension_loaded('pdo_mysql')
     ? array_filter([
         Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-        ...(defined(Mysql::class.'::ATTR_SERVER_PUBLIC_KEY')
-            ? [Mysql::ATTR_SERVER_PUBLIC_KEY => true]
-            : []),
     ])
     : [];
 
