@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\AgendaItem;
+use App\Models\LegislativeSession;
 use App\Services\AgendaIncomingPromoter;
 use App\Services\AgendaLinkService;
 use App\Services\AgendaItemRepository;
+use App\Services\ObDocumentService;
 use App\Support\AgendaFieldOptions;
 use App\Support\AgendaMeasureType;
 use Illuminate\Http\RedirectResponse;
@@ -48,10 +50,24 @@ class AgendaItemController extends Controller
 
     public function show(AgendaItem $agenda): View
     {
-        $agenda->load(['incomingDocument', 'resolution', 'creator']);
+        $agenda->load([
+            'incomingDocument',
+            'resolution',
+            'creator',
+            'obBlocks.obDocument.legislativeSession',
+        ]);
+
+        $obSessions = LegislativeSession::query()
+            ->with('obDocument')
+            ->whereHas('obDocument')
+            ->orderByDesc('session_date')
+            ->orderByDesc('id')
+            ->limit(30)
+            ->get();
 
         return view('agenda.show', [
             'agenda' => $agenda,
+            'obSessions' => $obSessions,
         ]);
     }
 
@@ -127,6 +143,33 @@ class AgendaItemController extends Controller
         return redirect()
             ->route('agenda.show', $agenda)
             ->with('status', 'Resolution link removed from this agenda item.');
+    }
+
+    public function addToOrderOfBusiness(Request $request, AgendaItem $agenda, ObDocumentService $documentService): RedirectResponse
+    {
+        $this->authorize('addToOrderOfBusiness', $agenda);
+
+        $validated = $request->validate([
+            'legislative_session_id' => ['required', 'integer', 'exists:legislative_sessions,id'],
+            'agenda_section' => ['nullable', 'string', 'in:'.implode(',', array_keys(config('order_of_business.agenda_sections', [])))],
+        ]);
+
+        $session = LegislativeSession::query()
+            ->with('obDocument')
+            ->findOrFail($validated['legislative_session_id']);
+
+        abort_unless($session->obDocument, 404, 'This session has no Order of Business document.');
+
+        $documentService->addAgendaItems(
+            $session->obDocument,
+            [$agenda->id],
+            null,
+            $validated['agenda_section'] ?? 'unassigned_regular',
+        );
+
+        return redirect()
+            ->route('ob.document.maker', $session)
+            ->with('status', 'Agenda '.$agenda->displayLabel().' added to '.$session->displayTitle().'.');
     }
 
     /**

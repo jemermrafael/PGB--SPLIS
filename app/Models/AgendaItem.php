@@ -6,6 +6,7 @@ use App\Support\AgendaDeadline;
 use App\Support\AgendaMeasureType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AgendaItem extends Model
@@ -98,6 +99,11 @@ class AgendaItem extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function obBlocks(): HasMany
+    {
+        return $this->hasMany(ObBlock::class);
     }
 
     public function hasIncoming(): bool

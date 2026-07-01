@@ -3,11 +3,17 @@
 namespace App\Providers;
 
 use App\Models\AgendaItem;
+use App\Models\Committee;
 use App\Models\IncomingDocument;
+use App\Models\LegislativeSession;
+use App\Models\ObDocument;
 use App\Models\Resolution;
 use App\Models\User;
 use App\Policies\AgendaItemPolicy;
+use App\Policies\CommitteePolicy;
 use App\Policies\IncomingDocumentPolicy;
+use App\Policies\LegislativeSessionPolicy;
+use App\Policies\ObDocumentPolicy;
 use App\Policies\ResolutionPolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Pagination\Paginator;
@@ -26,6 +32,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Resolution::class, ResolutionPolicy::class);
         Gate::policy(IncomingDocument::class, IncomingDocumentPolicy::class);
         Gate::policy(AgendaItem::class, AgendaItemPolicy::class);
+        Gate::policy(Committee::class, CommitteePolicy::class);
+        Gate::policy(LegislativeSession::class, LegislativeSessionPolicy::class);
+        Gate::policy(ObDocument::class, ObDocumentPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
 
         Paginator::defaultView('partials.splis-pagination');

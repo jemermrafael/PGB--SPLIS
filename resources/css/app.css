@@ -1440,4 +1440,248 @@
     html.dark .splis-badge-doc-type--ordinance {
         @apply bg-brand-green/20 text-emerald-300;
     }
+
+    /* Order of Business maker */
+    .splis-ob-maker-page-header {
+        @apply sticky top-0 z-40 -mx-4 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/95;
+    }
+
+    .splis-ob-maker-actions {
+        @apply shrink-0;
+    }
+
+    .splis-ob-maker-layout {
+        @apply flex flex-col gap-4 xl:flex-row xl:items-start;
+    }
+
+    .splis-ob-maker-sidebar {
+        @apply w-full shrink-0 xl:w-80;
+    }
+
+    .splis-ob-maker-canvas {
+        @apply min-h-[420px];
+    }
+
+    .splis-ob-chip {
+        @apply rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 transition hover:border-brand-800 hover:text-brand-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200;
+    }
+
+    .splis-ob-pool-tab {
+        @apply rounded-md px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800;
+    }
+
+    .splis-ob-pool-tab.is-active {
+        @apply bg-brand-800 text-white hover:bg-brand-800;
+    }
+
+    .splis-ob-agenda-pool {
+        @apply max-h-72 space-y-2 overflow-y-auto;
+    }
+
+    .splis-ob-agenda-item {
+        @apply flex cursor-pointer gap-2 rounded-lg border border-slate-200 p-2 text-sm hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800/50;
+    }
+
+    .splis-ob-block {
+        @apply rounded-xl border border-slate-200 bg-slate-50/50 dark:border-slate-700 dark:bg-slate-800/30;
+    }
+
+    .splis-ob-block.is-selected {
+        @apply border-brand-800 ring-2 ring-brand-800/20;
+    }
+
+    .splis-ob-block-head {
+        @apply flex items-center gap-2 border-b border-slate-200 px-3 py-2 dark:border-slate-700;
+    }
+
+    .splis-ob-block-order {
+        @apply flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-200;
+    }
+
+    .splis-ob-block-type {
+        @apply flex-1 text-xs font-semibold uppercase tracking-wide text-slate-500;
+    }
+
+    .splis-ob-block-actions {
+        @apply flex gap-1;
+    }
+
+    .splis-ob-icon-btn {
+        @apply flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-white text-sm text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300;
+    }
+
+    .splis-ob-icon-btn--danger {
+        @apply text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30;
+    }
+
+    .splis-ob-block-body {
+        @apply p-3;
+    }
+
+    body.splis-ob-dialog-open {
+        @apply overflow-hidden;
+    }
+
+    .splis-ob-dialog {
+        @apply pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4 opacity-0 transition-opacity duration-150;
+    }
+
+    .splis-ob-dialog.is-open {
+        @apply pointer-events-auto opacity-100;
+    }
+
+    .splis-ob-dialog-backdrop {
+        @apply absolute inset-0 bg-slate-900/50 backdrop-blur-[1px];
+    }
+
+    .splis-ob-dialog-panel {
+        @apply relative z-10 w-full max-w-md rounded-xl border border-slate-200 bg-white p-5 shadow-xl dark:border-slate-700 dark:bg-slate-900;
+    }
+
+    .splis-ob-dialog-title {
+        @apply text-lg font-semibold text-slate-900 dark:text-slate-100;
+    }
+
+    .splis-ob-dialog-message {
+        @apply mt-2 text-sm text-slate-600 dark:text-slate-300;
+    }
+
+    .splis-ob-dialog-actions {
+        @apply mt-5 flex justify-end gap-2;
+    }
+
+    .splis-ob-table-row {
+        @apply flex flex-wrap items-center gap-2;
+    }
+
+    .splis-ob-session-selected-item {
+        @apply flex items-start justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2 text-sm dark:border-slate-700 dark:bg-slate-800/40;
+    }
+
+    .ob-print-document {
+        font-family: 'Times New Roman', Times, serif;
+        line-height: 1.5;
+    }
+
+    .ob-print-header {
+        @apply text-center;
+    }
+
+    .ob-print-header-brand {
+        @apply flex items-center justify-center gap-5;
+    }
+
+    .ob-print-header-title {
+        @apply text-3xl font-bold uppercase leading-tight tracking-wide text-slate-900;
+    }
+
+    .ob-print-header-date {
+        @apply mt-4 text-base text-slate-800;
+    }
+
+    .ob-print-header-meta {
+        @apply mt-2 text-base text-slate-700;
+    }
+
+    .ob-print-logo {
+        @apply h-24 w-24 shrink-0 rounded-full object-cover ring-1 ring-slate-300;
+    }
+
+    .ob-print-table-head th {
+        @apply bg-slate-100 font-bold uppercase;
+    }
+
+    .ob-print-announce-col {
+        @apply w-2/5 align-top;
+    }
+
+    .ob-print-heading {
+        @apply mt-6 mb-3 text-base font-bold uppercase;
+    }
+
+    .ob-print-committee {
+        @apply mt-4 mb-2 text-sm font-bold;
+    }
+
+    .ob-print-paragraph {
+        @apply mb-3 text-sm;
+    }
+
+    .ob-print-agenda-line {
+        @apply mb-4 ml-4;
+    }
+
+    .ob-print-agenda-no {
+        @apply font-bold;
+    }
+
+    .ob-print-agenda-meta {
+        @apply text-sm;
+    }
+
+    .ob-print-agenda-title {
+        @apply mt-1 text-sm font-medium;
+    }
+
+    .ob-print-table {
+        @apply mb-4 w-full border-collapse text-sm;
+    }
+
+    .ob-print-table th,
+    .ob-print-table td {
+        @apply border border-slate-400 px-2 py-1 text-left align-top;
+    }
+
+    .ob-print-col-no {
+        @apply w-10 text-center;
+    }
+
+    .ob-print-col-agenda {
+        @apply w-36;
+    }
+
+    .ob-print-subsection {
+        @apply bg-slate-100 font-bold uppercase;
+    }
+
+    .ob-print-committee-header {
+        @apply bg-slate-50 font-bold uppercase;
+    }
+
+    .ob-print-committee-name {
+        @apply font-medium;
+    }
+
+    .ob-print-chair {
+        @apply mt-1 text-sm;
+    }
+
+    .ob-print-unfinished-meta {
+        @apply w-2/5 text-sm;
+    }
+
+    .ob-print-unfinished-title {
+        @apply text-sm;
+    }
+
+    .ob-print-roman {
+        @apply w-16 font-bold;
+    }
+
+    .ob-print-roman-label {
+        @apply font-bold uppercase;
+    }
+
+    .ob-print-announce-date {
+        @apply w-2/5 text-sm;
+    }
+
+    .ob-print-empty {
+        @apply text-center text-slate-500 italic;
+    }
+
+    .ob-print-page-break {
+        page-break-before: always;
+        break-before: page;
+    }
 }

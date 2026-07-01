@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', config('app.name'))</title>
     <script>
         (function () {
@@ -20,8 +21,8 @@
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'active' => request()->routeIs('dashboard')],
             ['label' => 'Ordinances', 'url' => '#', 'active' => false, 'placeholder' => true],
             ['label' => 'Agenda', 'url' => route('agenda.index'), 'active' => request()->routeIs('agenda.*')],
-            ['label' => 'Order of Business', 'url' => '#', 'active' => false, 'placeholder' => true],
-            ['label' => 'Committees', 'url' => '#', 'active' => false, 'placeholder' => true],
+            ['label' => 'Order of Business', 'url' => route('ob.sessions.index'), 'active' => request()->routeIs('ob.*')],
+            ['label' => 'Committees', 'url' => route('committees.index'), 'active' => request()->routeIs('committees.*')],
             ['label' => 'Reference', 'url' => '#', 'active' => false, 'placeholder' => true],
         ];
 

@@ -34,6 +34,10 @@
         </div>
     </div>
 
+    @if (session('status'))
+        <div class="splis-alert-success mb-6">{{ session('status') }}</div>
+    @endif
+
     @if ($errors->has('promote') || $errors->has('unlink'))
         <div class="splis-alert-error mb-6">{{ $errors->first('promote') ?: $errors->first('unlink') }}</div>
     @endif
@@ -120,7 +124,7 @@
         </div>
 
         <div class="splis-detail-sidebar-column">
-            @if ($agenda->hasIncoming() || $agenda->resolution)
+            @if ($agenda->hasIncoming() || $agenda->resolution || $agenda->obBlocks->isNotEmpty() || auth()->user()?->can('addToOrderOfBusiness', $agenda))
                 <aside class="splis-card">
                     <div class="splis-card-header">
                         <h2 class="splis-card-title">Connections</h2>
@@ -158,6 +162,56 @@
                                 @endcan
                             </div>
                         @endif
+                        @if ($agenda->obBlocks->isNotEmpty())
+                            <div>
+                                <p class="splis-detail-label">Order of Business</p>
+                                <ul class="mt-2 space-y-2">
+                                    @foreach ($agenda->obBlocks as $block)
+                                        @if ($block->obDocument?->legislativeSession)
+                                            <li>
+                                                <a href="{{ route('ob.document.maker', $block->obDocument->legislativeSession) }}" class="font-medium text-brand-700 hover:underline dark:text-brand-200">
+                                                    {{ $block->obDocument->legislativeSession->displayTitle() }}
+                                                </a>
+                                                @if (filled($block->content['agenda_no'] ?? $block->content['session_agenda_no'] ?? null))
+                                                    <span class="block text-xs text-slate-500">Agenda no. {{ $block->content['agenda_no'] ?? $block->content['session_agenda_no'] }}</span>
+                                                @endif
+                                            </li>
+                                        @endif
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+                        @can('addToOrderOfBusiness', $agenda)
+                            <div class="border-t border-slate-200 pt-4 dark:border-slate-700">
+                                <p class="splis-detail-label">Add to Order of Business</p>
+                                @if ($obSessions->isEmpty())
+                                    <p class="mt-2 text-sm text-slate-500">
+                                        No sessions yet.
+                                        <a href="{{ route('ob.sessions.create') }}" class="splis-link">Create a session</a>
+                                        to add this agenda item.
+                                    </p>
+                                @else
+                                    <form method="POST" action="{{ route('agenda.add-to-order-of-business', $agenda) }}" class="mt-2 space-y-2">
+                                        @csrf
+                                        <select name="legislative_session_id" class="splis-select" required>
+                                            <option value="">Select session…</option>
+                                            @foreach ($obSessions as $obSession)
+                                                <option value="{{ $obSession->id }}">{{ $obSession->displayTitle() }}</option>
+                                            @endforeach
+                                        </select>
+                                        <select name="agenda_section" class="splis-select">
+                                            @foreach (config('order_of_business.agenda_sections', []) as $value => $label)
+                                                <option value="{{ $value }}" @selected($value === 'unassigned_regular')>{{ $label }}</option>
+                                            @endforeach
+                                        </select>
+                                        <button type="submit" class="splis-btn-secondary w-full text-sm">Add to OB document</button>
+                                    </form>
+                                    <p class="mt-2 text-xs text-slate-500">
+                                        Or <a href="{{ route('ob.sessions.create') }}" class="splis-link">create a new session</a> and add this item in the OB Maker.
+                                    </p>
+                                @endif
+                            </div>
+                        @endcan
                     </div>
                 </aside>
             @endif

@@ -1,0 +1,13 @@
+@php
+    $isEmpty = $empty ?? false;
+    $agendaNo = \App\Support\ObAgendaSnapshot::displayAgendaNo($row ?? []);
+@endphp
+@if ($isEmpty)
+    <p>Agenda No.</p>
+@else
+    <p>Agenda No. {{ $agendaNo }}</p>
+    <p>Date of Receipt:</p>
+    <p>{{ $row['date_received'] ?? '—' }}</p>
+    <p>Prescription:</p>
+    <p>{{ $row['prescription'] ?? '—' }}</p>
+@endif

@@ -1,0 +1,220 @@
+@foreach ($segments as $segment)
+    @switch($segment['type'])
+        @case('roman_section')
+            <table class="ob-print-table ob-print-table--roman">
+                <tbody>
+                    <tr>
+                        <td class="ob-print-roman">{{ \App\Support\ObRomanNumeral::display($segment['numeral'] ?? '') }}</td>
+                        <td class="ob-print-roman-label">
+                            @if (filled($segment['title'] ?? null))
+                                {{ $segment['title'] }}
+                            @else
+                                {!! nl2br(e($segment['body'] ?? '')) !!}
+                            @endif
+                        </td>
+                    </tr>
+                    @if (filled($segment['title'] ?? null) && filled($segment['body'] ?? null))
+                        <tr>
+                            <td></td>
+                            <td>{!! nl2br(e($segment['body'])) !!}</td>
+                        </tr>
+                    @endif
+                </tbody>
+            </table>
+            @break
+
+        @case('calendar_section')
+            <table class="ob-print-table ob-print-table--roman">
+                <tbody>
+                    <tr>
+                        <td class="ob-print-roman">{{ \App\Support\ObRomanNumeral::display($segment['numeral'] ?? '') }}</td>
+                        <td class="ob-print-roman-label">{{ $segment['title'] ?? '' }}</td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td class="ob-print-subsection">{{ $segment['sub_label'] ?? '' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            @break
+
+        @case('subsection')
+            <table class="ob-print-table ob-print-table--section">
+                <tbody>
+                    <tr>
+                        <td colspan="2" class="ob-print-subsection">{{ $segment['text'] }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            @break
+
+        @case('paragraph')
+            @if (filled($segment['text'] ?? null))
+                <p class="ob-print-paragraph">{!! nl2br(e($segment['text'])) !!}</p>
+            @endif
+            @break
+
+        @case('committee_reports_table')
+            <table class="ob-print-table ob-print-table--committee">
+                <tbody>
+                    <tr>
+                        <td class="ob-print-roman">{{ \App\Support\ObRomanNumeral::display('IV') }}</td>
+                        <td colspan="2" class="ob-print-roman-label">COMMITTEE REPORT</td>
+                    </tr>
+                    <tr class="ob-print-table-head">
+                        <th class="ob-print-col-no">No.</th>
+                        <th>Agenda Item</th>
+                        <th>Committee/s</th>
+                    </tr>
+                    @forelse ($segment['rows'] as $row)
+                        <tr>
+                            <td class="ob-print-col-no">{{ $row['row_no'] ?? '' }}</td>
+                            <td class="ob-print-col-agenda">Agenda No. {{ \App\Support\ObAgendaSnapshot::displayAgendaNo($row) }}</td>
+                            <td>
+                                <p class="ob-print-committee-name">{{ $row['committee_name'] ?? '' }}</p>
+                                <p class="ob-print-chair">{{ \App\Support\ObCommitteeFormatter::chairedByLine($row['chair_name'] ?? '') }}</p>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="3" class="ob-print-empty">&nbsp;</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+            @break
+
+        @case('unfinished_group')
+            <table class="ob-print-table ob-print-table--unfinished">
+                <tbody>
+                    <tr>
+                        <td colspan="2" class="ob-print-committee-header">
+                            <p>{{ $segment['committee_name'] ?: '—' }}</p>
+                            <p>{{ \App\Support\ObCommitteeFormatter::chairLine($segment['chair_name'] ?? '') }}</p>
+                        </td>
+                    </tr>
+                    @forelse ($segment['items'] as $item)
+                        <tr>
+                            <td class="ob-print-unfinished-meta">
+                                @include('order-of-business.partials.print-agenda-meta', ['row' => $item])
+                            </td>
+                            <td class="ob-print-unfinished-title">
+                                @include('order-of-business.partials.print-agenda-title', ['row' => $item])
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="2" class="ob-print-empty">&nbsp;</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+            @break
+
+        @case('reading_2nd_table')
+        @case('reading_3rd_table')
+        @case('unassigned_urgent_table')
+            <table class="ob-print-table ob-print-table--agenda-items">
+                <tbody>
+                    @if (! empty($segment['none']))
+                        <tr>
+                            <td class="ob-print-unfinished-meta">
+                                @include('order-of-business.partials.print-agenda-meta', ['row' => [], 'empty' => true])
+                            </td>
+                            <td class="ob-print-unfinished-title">None</td>
+                        </tr>
+                    @else
+                        @forelse ($segment['rows'] as $row)
+                            <tr>
+                                <td class="ob-print-unfinished-meta">
+                                    @include('order-of-business.partials.print-agenda-meta', ['row' => $row])
+                                </td>
+                                <td class="ob-print-unfinished-title">
+                                    @include('order-of-business.partials.print-agenda-title', ['row' => $row])
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td class="ob-print-unfinished-meta">
+                                    @include('order-of-business.partials.print-agenda-meta', ['row' => [], 'empty' => true])
+                                </td>
+                                <td class="ob-print-unfinished-title">None</td>
+                            </tr>
+                        @endforelse
+                    @endif
+                </tbody>
+            </table>
+            @break
+
+        @case('unassigned_regular_table')
+            <table class="ob-print-table ob-print-table--unfinished">
+                <tbody>
+                    @forelse ($segment['rows'] as $row)
+                        <tr>
+                            <td class="ob-print-unfinished-meta">
+                                @include('order-of-business.partials.print-agenda-meta', ['row' => $row])
+                            </td>
+                            <td class="ob-print-unfinished-title">
+                                @include('order-of-business.partials.print-agenda-title', ['row' => $row])
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="2" class="ob-print-empty">&nbsp;</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+            @break
+
+        @case('announcements_closing')
+            <table class="ob-print-table ob-print-table--roman ob-print-table--announcements">
+                <tbody>
+                    <tr>
+                        <td class="ob-print-roman">{{ \App\Support\ObRomanNumeral::display('VII') }}</td>
+                        <td class="ob-print-roman-label">ANNOUNCEMENTS/INFORMATION/CORRESPONDENCE</td>
+                    </tr>
+                    @forelse ($segment['rows'] as $row)
+                        <tr>
+                            <td class="ob-print-announce-col">{!! nl2br(e($row['column_1'] ?? $row['date_received'] ?? '')) !!}</td>
+                            <td>{!! nl2br(e($row['column_2'] ?? $row['title'] ?? '')) !!}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                        </tr>
+                    @endforelse
+                    @if ($segment['include_adjournment'] ?? true)
+                        <tr>
+                            <td class="ob-print-roman">{{ \App\Support\ObRomanNumeral::display('VIII') }}</td>
+                            <td class="ob-print-roman-label">ADJOURNMENT</td>
+                        </tr>
+                    @endif
+                </tbody>
+            </table>
+            @break
+
+        @case('page_break')
+            <div class="ob-print-page-break" aria-hidden="true"></div>
+            @break
+
+        @case('heading')
+            @break
+
+        @case('legacy_agenda')
+            <table class="ob-print-table ob-print-table--agenda-items">
+                <tbody>
+                    <tr>
+                        <td class="ob-print-unfinished-meta">
+                            @include('order-of-business.partials.print-agenda-meta', ['row' => $segment['content'] ?? []])
+                        </td>
+                        <td class="ob-print-unfinished-title">
+                            @include('order-of-business.partials.print-agenda-title', ['row' => $segment['content'] ?? []])
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            @break
+    @endswitch
+@endforeach

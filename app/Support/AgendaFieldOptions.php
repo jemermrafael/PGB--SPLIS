@@ -2,8 +2,6 @@
 
 namespace App\Support;
 
-use Illuminate\Support\Collection;
-
 class AgendaFieldOptions
 {
     /**
@@ -19,7 +17,7 @@ class AgendaFieldOptions
      */
     public static function committees(): array
     {
-        return self::mergeStored('committee_referred', config('agenda.committee_seeds', []));
+        return CommitteeOptions::names();
     }
 
     /**

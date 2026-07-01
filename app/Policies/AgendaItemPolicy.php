@@ -46,4 +46,9 @@ class AgendaItemPolicy
     {
         return $user->canEncode() && $agendaItem->resolution_id !== null;
     }
+
+    public function addToOrderOfBusiness(User $user, AgendaItem $agendaItem): bool
+    {
+        return $user->canEncode();
+    }
 }

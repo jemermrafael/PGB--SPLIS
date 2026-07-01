@@ -1,5 +1,9 @@
 <?php
 
+use App\Http\Controllers\CommitteeController;
+use App\Http\Controllers\LegislativeSessionController;
+use App\Http\Controllers\ObAgendaPoolController;
+use App\Http\Controllers\ObDocumentController;
 use App\Http\Controllers\AgendaDeadlinePreviewController;
 use App\Http\Controllers\AgendaItemController;
 use App\Http\Controllers\AgendaSearchController;
@@ -69,6 +73,33 @@ Route::middleware('auth')->group(function () {
     Route::post('/agenda/{agenda}/promote-incoming', [AgendaItemController::class, 'promote'])->name('agenda.promote-incoming');
     Route::post('/agenda/{agenda}/unlink-incoming', [AgendaItemController::class, 'unlinkIncoming'])->name('agenda.unlink-incoming');
     Route::post('/agenda/{agenda}/unlink-resolution', [AgendaItemController::class, 'unlinkResolution'])->name('agenda.unlink-resolution');
+    Route::post('/agenda/{agenda}/add-to-order-of-business', [AgendaItemController::class, 'addToOrderOfBusiness'])->name('agenda.add-to-order-of-business');
+
+    Route::get('/committees', [CommitteeController::class, 'index'])->name('committees.index');
+    Route::get('/committees/create', [CommitteeController::class, 'create'])->name('committees.create');
+    Route::post('/committees', [CommitteeController::class, 'store'])->name('committees.store');
+    Route::get('/committees/{committee}/edit', [CommitteeController::class, 'edit'])->name('committees.edit');
+    Route::put('/committees/{committee}', [CommitteeController::class, 'update'])->name('committees.update');
+    Route::delete('/committees/{committee}', [CommitteeController::class, 'destroy'])->name('committees.destroy');
+
+    Route::prefix('order-of-business')->name('ob.')->group(function () {
+        Route::get('/', [LegislativeSessionController::class, 'index'])->name('sessions.index');
+        Route::get('/create', [LegislativeSessionController::class, 'create'])->name('sessions.create');
+        Route::post('/', [LegislativeSessionController::class, 'store'])->name('sessions.store');
+        Route::get('/{legislativeSession}/document/maker', [ObDocumentController::class, 'maker'])->name('document.maker');
+        Route::get('/{legislativeSession}/document/print', [ObDocumentController::class, 'print'])->name('document.print');
+        Route::put('/{legislativeSession}/document', [ObDocumentController::class, 'update'])->name('document.update');
+        Route::get('/{legislativeSession}/document/agenda-pool', ObAgendaPoolController::class)->name('document.agenda-pool');
+        Route::post('/{legislativeSession}/document/blocks', [ObDocumentController::class, 'storeBlock'])->name('document.blocks.store');
+        Route::put('/{legislativeSession}/document/blocks/reorder', [ObDocumentController::class, 'reorderBlocks'])->name('document.blocks.reorder');
+        Route::post('/{legislativeSession}/document/blocks/from-agenda', [ObDocumentController::class, 'addFromAgenda'])->name('document.blocks.from-agenda');
+        Route::put('/{legislativeSession}/document/blocks/{block}', [ObDocumentController::class, 'updateBlock'])->name('document.blocks.update');
+        Route::delete('/{legislativeSession}/document/blocks/{block}', [ObDocumentController::class, 'destroyBlock'])->name('document.blocks.destroy');
+        Route::get('/{legislativeSession}', [LegislativeSessionController::class, 'show'])->name('sessions.show');
+        Route::get('/{legislativeSession}/edit', [LegislativeSessionController::class, 'edit'])->name('sessions.edit');
+        Route::put('/{legislativeSession}', [LegislativeSessionController::class, 'update'])->name('sessions.update');
+        Route::delete('/{legislativeSession}', [LegislativeSessionController::class, 'destroy'])->name('sessions.destroy');
+    });
 
     Route::redirect('/admin/sptrack', '/incoming')->name('admin.sptrack.index');
     Route::redirect('/admin/sptrack/queue', '/incoming');
