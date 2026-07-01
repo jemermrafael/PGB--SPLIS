@@ -20,17 +20,10 @@ mkdir -p \
   storage/framework/sessions \
   storage/framework/views \
   storage/logs \
-  storage/nginx/client_body \
-  storage/nginx/proxy \
-  storage/nginx/fastcgi \
-  storage/nginx/uwsgi \
-  storage/nginx/scgi
+  storage/caddy
 
 chmod -R 775 storage 2>/dev/null || true
 chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
-
-# Remove stale pid files from earlier configs (nginx now uses pid /dev/null)
-rm -f storage/nginx/nginx.pid 2>/dev/null || true
 
 # Wait for MySQL (up to ~60s) when DB_HOST is set
 if [ -n "$DB_HOST" ] && [ "$DB_CONNECTION" = "mysql" ]; then

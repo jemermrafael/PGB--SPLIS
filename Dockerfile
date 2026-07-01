@@ -29,13 +29,13 @@ RUN composer install \
 # 3. Main execution stage
 FROM php:8.4-fpm-alpine
 
-RUN apk add --no-cache nginx supervisor curl libpng-dev libjpeg-turbo-dev freetype-dev zip libzip-dev git unzip bash mariadb-client icu-dev oniguruma-dev libxml2-dev \
+RUN apk add --no-cache caddy supervisor curl libpng-dev libjpeg-turbo-dev freetype-dev zip libzip-dev git unzip bash mariadb-client icu-dev oniguruma-dev libxml2-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" pdo pdo_mysql gd zip bcmath opcache intl pcntl
 
 RUN echo "clear_env = no" >> /usr/local/etc/php-fpm.d/www.conf
 
-COPY .docker/nginx.conf /etc/nginx/nginx.conf
+COPY .docker/Caddyfile /etc/caddy/Caddyfile
 COPY .docker/php-uploads.ini /usr/local/etc/php/conf.d/99-uploads.ini
 COPY .docker/supervisor.conf /etc/supervisor/conf.d/supervisor.conf
 COPY .docker/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
@@ -58,7 +58,7 @@ RUN composer dump-autoload --optimize --no-dev --no-scripts \
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
-# Persist uploads, Laravel writable dirs, and nginx runtime — mount in Coolify at /var/www/html/storage
+# Persist uploads and Laravel writable dirs — mount in Coolify at /var/www/html/storage
 VOLUME ["/var/www/html/storage"]
 
 EXPOSE 80
