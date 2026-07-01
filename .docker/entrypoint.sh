@@ -20,7 +20,11 @@ mkdir -p \
   storage/framework/sessions \
   storage/framework/views \
   storage/logs \
-  storage/caddy
+  storage/nginx/client_body \
+  storage/nginx/proxy \
+  storage/nginx/fastcgi \
+  storage/nginx/uwsgi \
+  storage/nginx/scgi
 
 chmod -R 775 storage 2>/dev/null || true
 chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
