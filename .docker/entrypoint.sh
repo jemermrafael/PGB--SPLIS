@@ -29,6 +29,9 @@ mkdir -p \
 chmod -R 775 storage 2>/dev/null || true
 chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
 
+# Remove stale pid files from earlier configs (nginx now uses pid /dev/null)
+rm -f storage/nginx/nginx.pid 2>/dev/null || true
+
 # Wait for MySQL (up to ~60s) when DB_HOST is set
 if [ -n "$DB_HOST" ] && [ "$DB_CONNECTION" = "mysql" ]; then
   echo "Waiting for MySQL at ${DB_HOST}:${DB_PORT:-3306}..."
