@@ -27,8 +27,8 @@ mkdir -p \
   storage/nginx/scgi \
   storage/nginx
 
-touch storage/nginx/nginx.pid 2>/dev/null || true
-chmod 664 storage/nginx/nginx.pid 2>/dev/null || true
+#touch storage/nginx/nginx.pid 2>/dev/null || true
+#chmod 664 storage/nginx/nginx.pid 2>/dev/null || true
 
 chmod -R 775 storage 2>/dev/null || true
 chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
