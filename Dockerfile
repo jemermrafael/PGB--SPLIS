@@ -13,13 +13,11 @@ COPY public/ ./public/
 RUN npm run build
 
 # 2. Main execution stage
-FROM public.ecr.aws/docker/library/php:8.4-fpm-alpine
+FROM public.ecr.aws/docker/library/php:8.4-fpm
 
 RUN apk add --no-cache nginx supervisor curl libpng-dev libjpeg-turbo-dev freetype-dev zip libzip-dev git unzip bash mysql-client icu-dev oniguruma-dev libxml2-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_mysql gd zip bcmath opcache intl pcntl \
-    && mkdir -p /var/run/nginx /var/cache/nginx/client_body /var/cache/nginx/proxy /var/cache/nginx/fastcgi /var/cache/nginx/uwsgi /var/cache/nginx/scgi \
-    && chown -R www-data:www-data /var/run/nginx /var/cache/nginx
+    && docker-php-ext-install pdo pdo_mysql gd zip bcmath opcache intl pcntl
 
 RUN echo "clear_env = no" >> /usr/local/etc/php-fpm.d/www.conf
 
@@ -47,12 +45,8 @@ RUN composer install \
     --no-scripts \
     && chown -R www-data:www-data storage bootstrap/cache vendor
 
-    RUN chown -R www-data:www-data \
-    /var/run/nginx \
-    /var/cache/nginx \
-    /var/log/nginx \
-    /etc/nginx \
-    /var/www/html
+RUN mkdir -p storage/app/nginx \
+    && chown -R www-data:www-data storage bootstrap/cache vendor /var/log/nginx /etc/nginx
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 

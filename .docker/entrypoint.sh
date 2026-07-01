@@ -13,10 +13,9 @@ done
 
 cd /var/www/html
 
-mkdir -p /var/run/nginx /var/cache/nginx/client_body /var/cache/nginx/proxy /var/cache/nginx/fastcgi /var/cache/nginx/uwsgi /var/cache/nginx/scgi
-chmod -R 755 /var/run/nginx /var/cache/nginx
-
-chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
+NGINX_RUNTIME=/var/www/html/storage/app/nginx
+mkdir -p "$NGINX_RUNTIME/client_body" "$NGINX_RUNTIME/proxy" "$NGINX_RUNTIME/fastcgi" "$NGINX_RUNTIME/uwsgi" "$NGINX_RUNTIME/scgi"
+chown -R www-data:www-data "$NGINX_RUNTIME" storage bootstrap/cache 2>/dev/null || true
 
 # Wait for MySQL (up to ~60s) when DB_HOST is set
 if [ -n "$DB_HOST" ] && [ "$DB_CONNECTION" = "mysql" ]; then
