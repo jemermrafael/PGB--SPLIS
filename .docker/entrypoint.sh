@@ -64,6 +64,7 @@ if ! php artisan migrate --force --no-interaction; then
   exit 1
 fi
 
+
 if [ "$APP_ENV" = "production" ]; then
   php artisan config:cache --no-interaction
   php artisan route:cache --no-interaction

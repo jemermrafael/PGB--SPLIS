@@ -62,4 +62,4 @@ VOLUME ["/var/www/html/storage"]
 EXPOSE 80
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisor.conf"]
+CMD sh -c "php-fpm -D && nginx -g 'daemon off;'"
