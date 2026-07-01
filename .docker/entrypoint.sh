@@ -30,11 +30,8 @@ mkdir -p \
 #touch storage/nginx/nginx.pid 2>/dev/null || true
 #chmod 664 storage/nginx/nginx.pid 2>/dev/null || true
 
-# Pre-allocate the PID tracking handle in volatile memory to bypass kernel blocks
-touch /tmp/nginx.pid
-chmod 777 /tmp/nginx.pid
-chown -R www-data:www-data /tmp/nginx.pid 2>/dev/null || true
-
+touch /dev/shm/nginx.pid
+chmod 777 /dev/shm/nginx.pid
 
 chmod -R 775 storage 2>/dev/null || true
 chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
