@@ -9,6 +9,8 @@
 node_modules
 vendor
 oldsp
+manual
+README.md
 .env
 .env.*
 !.env.example

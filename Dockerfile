@@ -1,23 +1,37 @@
 # 1. Build stage for frontend assets
-FROM public.ecr.aws/docker/library/node:20-alpine AS frontend-builder
+FROM node:20-alpine AS frontend-builder
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install
+COPY package.json package-lock.json ./
+RUN npm ci
 
-# Laravel 13 + Tailwind v4: Vite plugin only (no postcss/tailwind config files)
 COPY vite.config.js ./
 COPY resources/ ./resources/
 COPY public/ ./public/
 
 RUN npm run build
 
-# 2. Main execution stage
-FROM public.ecr.aws/docker/library/php:8.4-fpm-alpine
+# 2. Composer dependencies (cached layer; PHP 8.4 matches runtime)
+FROM composer:2 AS vendor
+WORKDIR /app
 
-RUN apk add --no-cache nginx supervisor curl libpng-dev libjpeg-turbo-dev freetype-dev zip libzip-dev git unzip bash mysql-client icu-dev oniguruma-dev libxml2-dev \
+ENV COMPOSER_ALLOW_SUPERUSER=1 \
+    COMPOSER_MEMORY_LIMIT=-1
+
+COPY composer.json composer.lock ./
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --prefer-dist \
+    --optimize-autoloader \
+    --no-scripts
+
+# 3. Main execution stage
+FROM php:8.4-fpm-alpine
+
+RUN apk add --no-cache nginx supervisor curl libpng-dev libjpeg-turbo-dev freetype-dev zip libzip-dev git unzip bash mariadb-client icu-dev oniguruma-dev libxml2-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_mysql gd zip bcmath opcache intl pcntl
+    && docker-php-ext-install -j"$(nproc)" pdo pdo_mysql gd zip bcmath opcache intl pcntl
 
 RUN echo "clear_env = no" >> /usr/local/etc/php-fpm.d/www.conf
 
@@ -29,23 +43,17 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 WORKDIR /var/www/html
 
+COPY --from=vendor /app/vendor ./vendor
+COPY composer.json composer.lock ./
+
 COPY --chown=www-data:www-data . .
 COPY --from=frontend-builder --chown=www-data:www-data /app/public/build ./public/build
 
-COPY --from=public.ecr.aws/docker/library/composer:2 /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-ENV COMPOSER_ALLOW_SUPERUSER=1 \
-    COMPOSER_MEMORY_LIMIT=-1
+ENV COMPOSER_ALLOW_SUPERUSER=1
 
-RUN composer install \
-    --no-dev \
-    --no-interaction \
-    --prefer-dist \
-    --optimize-autoloader \
-    --no-scripts \
-    && chown -R www-data:www-data storage bootstrap/cache vendor
-
-RUN mkdir -p /dev/shm/nginx \
+RUN composer dump-autoload --optimize --no-dev --no-scripts \
     && chown -R www-data:www-data storage bootstrap/cache vendor
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
