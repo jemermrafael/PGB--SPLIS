@@ -13,10 +13,20 @@ done
 
 cd /var/www/html
 
-NGINX_RUNTIME=/dev/shm/nginx
-mkdir -p "$NGINX_RUNTIME/client_body" "$NGINX_RUNTIME/proxy" "$NGINX_RUNTIME/fastcgi" "$NGINX_RUNTIME/uwsgi" "$NGINX_RUNTIME/scgi"
-chmod -R 1777 "$NGINX_RUNTIME"
+# Writable paths on the mounted storage volume (Coolify read-only root elsewhere)
+mkdir -p \
+  storage/app/public \
+  storage/framework/cache/data \
+  storage/framework/sessions \
+  storage/framework/views \
+  storage/logs \
+  storage/nginx/client_body \
+  storage/nginx/proxy \
+  storage/nginx/fastcgi \
+  storage/nginx/uwsgi \
+  storage/nginx/scgi
 
+chmod -R 775 storage 2>/dev/null || true
 chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
 
 # Wait for MySQL (up to ~60s) when DB_HOST is set

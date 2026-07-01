@@ -58,8 +58,8 @@ RUN composer dump-autoload --optimize --no-dev --no-scripts \
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
-# Persist uploads (PDFs, etc.) across redeploys — mount in Coolify/Docker Compose
-VOLUME ["/var/www/html/storage/app"]
+# Persist uploads, Laravel writable dirs, and nginx runtime — mount in Coolify at /var/www/html/storage
+VOLUME ["/var/www/html/storage"]
 
 EXPOSE 80
 
