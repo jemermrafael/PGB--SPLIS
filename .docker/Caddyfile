@@ -1,7 +1,9 @@
 {
     admin off
     auto_https off
-    storage /var/www/html/storage/caddy
+    storage file_system {
+        root /var/www/html/storage/caddy
+    }
 }
 
 :80 {
