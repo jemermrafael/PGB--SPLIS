@@ -12,20 +12,20 @@ COPY resources ./resources
 COPY public ./public
 RUN npm run build
 
-FROM php:8.4-fpm-alpine
+FROM php:8.4-fpm
 
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y \
         nginx \
         supervisor \
         curl \
         bash \
         mariadb-client \
         libpng-dev \
-        libjpeg-turbo-dev \
-        freetype-dev \
+        libjpeg-dev \
+        libfreetype6-dev \
         libzip-dev \
-        icu-dev \
-        oniguruma-dev \
+        libicu-dev \
+        libonig-dev \
         libxml2-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo pdo_mysql gd zip bcmath opcache intl pcntl \
@@ -40,7 +40,6 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 WORKDIR /var/www/html
 
 COPY --from=frontend-builder /app/public/build ./public/build
-
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 ENV COMPOSER_ALLOW_SUPERUSER=1 \
@@ -62,4 +61,5 @@ VOLUME ["/var/www/html/storage"]
 EXPOSE 80
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD sh -c "php-fpm -D && nginx -g 'daemon off;'"
+# Restore Supervisor as the clean execution daemon
+CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisor.conf"]
