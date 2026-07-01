@@ -47,6 +47,13 @@ RUN composer install \
     --no-scripts \
     && chown -R www-data:www-data storage bootstrap/cache vendor
 
+    RUN chown -R www-data:www-data \
+    /var/run/nginx \
+    /var/cache/nginx \
+    /var/log/nginx \
+    /etc/nginx \
+    /var/www/html
+
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 # Persist uploads (PDFs, etc.) across redeploys — mount in Coolify/Docker Compose
