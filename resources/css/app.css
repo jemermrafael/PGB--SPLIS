@@ -621,6 +621,26 @@
         @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 focus:ring-slate-300;
     }
 
+    .splis-ordinance-status-btn {
+        @apply cursor-default select-none pointer-events-none;
+    }
+
+    .splis-btn-ordinance-for-publication {
+        @apply border-slate-300 bg-slate-100 text-slate-700 hover:border-slate-300 hover:bg-slate-100;
+    }
+
+    .splis-ordinance-status-btn-icon {
+        @apply h-5 w-5 shrink-0 object-contain;
+    }
+
+    .splis-ordinance-status-btn--compact {
+        @apply px-3 py-1.5 text-xs;
+    }
+
+    .splis-ordinance-status-btn--compact .splis-ordinance-status-btn-icon {
+        @apply h-4 w-4;
+    }
+
     .splis-btn-ghost {
         @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900;
     }
@@ -685,6 +705,58 @@
 
     .splis-badge-approved {
         @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100;
+    }
+
+    .splis-badge-ordinance-published {
+        @apply inline-flex items-center gap-1.5 bg-cyan-100 text-cyan-900 ring-1 ring-cyan-300;
+    }
+
+    .splis-badge-ordinance-for-publication {
+        @apply inline-flex items-center gap-1.5 bg-yellow-100 text-yellow-900 ring-1 ring-yellow-300;
+    }
+
+    .splis-ordinance-marker-dot {
+        @apply inline-block h-2.5 w-2.5 shrink-0 rounded-full ring-2;
+    }
+
+    .splis-ordinance-marker-dot--published {
+        @apply bg-cyan-400 ring-cyan-200;
+    }
+
+    .splis-ordinance-marker-dot--for-publication {
+        @apply bg-yellow-400 ring-yellow-200;
+    }
+
+    .splis-ordinance-publication-marker {
+        @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold;
+    }
+
+    .splis-ordinance-publication-panel {
+        @apply border;
+    }
+
+    .splis-ordinance-publication-panel--published {
+        @apply border-cyan-200 bg-cyan-50 text-cyan-900 dark:border-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-100;
+    }
+
+    .splis-ordinance-publication-panel--for-publication {
+        @apply border-yellow-200 bg-yellow-50 text-yellow-900 dark:border-yellow-800 dark:bg-yellow-950/40 dark:text-yellow-100;
+    }
+
+    .splis-ordinance-publication-icon {
+        @apply h-7 w-7 shrink-0 object-contain;
+    }
+
+    .splis-ordinance-publication-icon--sm {
+        @apply h-[18px] w-[18px];
+    }
+
+    .splis-ordinance-row--published {
+        @apply bg-cyan-50/40 dark:bg-cyan-950/20;
+    }
+
+    .splis-ordinance-row--for-publication {
+        @apply bg-yellow-50/50 dark:bg-yellow-950/20;
     }
 
     .splis-alert-success {
@@ -1439,6 +1511,18 @@
 
     html.dark .splis-badge-doc-type--ordinance {
         @apply bg-brand-green/20 text-emerald-300;
+    }
+
+    html.dark .splis-badge-ordinance-published {
+        @apply bg-cyan-900/40 text-cyan-100 ring-cyan-700;
+    }
+
+    html.dark .splis-badge-ordinance-for-publication {
+        @apply bg-yellow-900/40 text-yellow-100 ring-yellow-700;
+    }
+
+    html.dark .splis-btn-ordinance-for-publication {
+        @apply border-slate-600 bg-slate-700 text-slate-100 hover:border-slate-600 hover:bg-slate-700;
     }
 
     /* Order of Business maker */

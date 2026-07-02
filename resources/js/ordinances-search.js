@@ -1,4 +1,5 @@
 import { renderAjaxPagination } from './pagination';
+import { applyKeywordFromQuery } from './search-query';
 import { bindTitleTooltips, renderTruncatedTitle, truncateWords } from './title-tooltip';
 
 function escapeHtml(value) {
@@ -30,33 +31,47 @@ function renderTitleCell(title) {
     return `<td class="splis-table-title splis-table-title--list">${renderTruncatedTitle(display, full, truncated)}</td>`;
 }
 
-function renderListItem(doc) {
-    const seriesLine = doc.series_label
-        ? `<span class="mt-0.5 block text-xs font-normal text-slate-500 dark:text-slate-400">${escapeHtml(doc.series_label)}</span>`
-        : (doc.series
-            ? `<span class="mt-0.5 block text-xs font-normal text-slate-500 dark:text-slate-400">Series of ${escapeHtml(doc.series)}</span>`
-            : '');
+function renderPdfCell(doc) {
+    return `<td class="text-center">
+        ${doc.has_pdf
+            ? `<a href="${escapeHtml(doc.pdf_url)}" target="_blank" rel="noopener noreferrer" class="splis-doc-pdf-icon" title="View PDF" aria-label="View PDF">${pdfListIcon}</a>`
+            : '<span class="text-slate-300">—</span>'}
+    </td>`;
+}
 
+function renderPublicationStatusButton(doc, compact = false) {
+    if (!doc.publication_status_label) {
+        return '—';
+    }
+
+    const compactClass = compact ? ' splis-ordinance-status-btn--compact' : '';
+    const btnClass = `${doc.publication_status_button_class || ''}${compactClass}`.trim();
+    const iconSize = compact ? 16 : 20;
+    const icon = doc.publication_status_icon_url
+        ? `<img src="${escapeHtml(doc.publication_status_icon_url)}" alt="" class="splis-ordinance-status-btn-icon" width="${iconSize}" height="${iconSize}">`
+        : '';
+
+    return `<span class="${escapeHtml(btnClass)}" role="status">${icon}<span>${escapeHtml(doc.publication_status_label)}</span></span>`;
+}
+
+function renderNumberCell(doc) {
+    return `<td class="whitespace-nowrap">
+        <a href="${escapeHtml(doc.url)}" class="splis-doc-list-link font-semibold">${escapeHtml(doc.number)}</a>
+        <p class="mt-0.5 text-xs font-normal text-slate-500 dark:text-slate-400">${escapeHtml(doc.series_label)}</p>
+    </td>`;
+}
+
+function renderListItem(doc) {
     return `
         <tr>
-            <td class="whitespace-nowrap font-semibold">
-                <a href="${escapeHtml(doc.url)}" class="splis-doc-list-link font-semibold">${escapeHtml(doc.number)}</a>
-                ${seriesLine}
-            </td>
-            <td class="hidden sm:table-cell">
-                <span class="${escapeHtml(doc.document_type_badge_class || 'splis-badge-doc-type splis-badge-doc-type--resolution')}">${escapeHtml(doc.document_type_label || 'Resolution')}</span>
-            </td>
+            ${renderPdfCell(doc)}
+            ${renderNumberCell(doc)}
             ${renderTitleCell(doc.title)}
-            <td class="hidden md:table-cell">${escapeHtml(doc.author || '—')}</td>
-            <td class="hidden lg:table-cell">${escapeHtml(doc.committee || '—')}</td>
-            <td class="hidden sm:table-cell whitespace-nowrap">${formatDate(doc.date)}</td>
-            <td class="hidden xl:table-cell">${escapeHtml(doc.category || '—')}</td>
-            <td><span class="splis-badge-approved capitalize">${escapeHtml(doc.status || '—')}</span></td>
-            <td class="text-center">
-                ${doc.has_pdf
-                    ? `<a href="${escapeHtml(doc.pdf_url)}" target="_blank" class="splis-doc-pdf-icon" title="View PDF" aria-label="View PDF">${pdfListIcon}</a>`
-                    : '<span class="text-slate-300">—</span>'}
-            </td>
+            <td class="hidden lg:table-cell whitespace-nowrap">${formatDate(doc.date)}</td>
+            <td class="hidden lg:table-cell whitespace-nowrap">${formatDate(doc.date_approved)}</td>
+            <td class="hidden xl:table-cell whitespace-nowrap">${formatDate(doc.effectivity_date)}</td>
+            <td class="hidden xl:table-cell">${escapeHtml(doc.authored_sponsored_by || '—')}</td>
+            <td class="hidden sm:table-cell whitespace-nowrap">${renderPublicationStatusButton(doc, true)}</td>
         </tr>
     `;
 }
@@ -67,83 +82,43 @@ function renderGridItem(doc) {
     return `
         <article class="splis-doc-card flex flex-col gap-3">
             <div class="flex items-start justify-between gap-2">
-                <a href="${escapeHtml(doc.url)}" class="splis-doc-card-number">${escapeHtml(doc.number)}</a>
-                <span class="${escapeHtml(doc.document_type_badge_class || 'splis-badge-doc-type splis-badge-doc-type--resolution')} shrink-0">${escapeHtml(doc.document_type_label || 'Resolution')}</span>
+                <div>
+                    <a href="${escapeHtml(doc.url)}" class="splis-doc-card-number">${escapeHtml(doc.number)}</a>
+                    <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">${escapeHtml(doc.series_label)}</p>
+                </div>
+                ${doc.publication_status_label ? renderPublicationStatusButton(doc, true) : ''}
             </div>
             <p class="splis-doc-card-title">${renderTruncatedTitle(display, full, truncated)}</p>
             <dl class="splis-doc-card-meta">
-                <div><dt>Author</dt><dd>${escapeHtml(doc.author || '—')}</dd></div>
-                <div><dt>Date</dt><dd>${formatDate(doc.date)}</dd></div>
-                <div class="col-span-2"><dt>Committee</dt><dd>${escapeHtml(doc.committee || '—')}</dd></div>
-                <div class="col-span-2"><dt>Subject</dt><dd>${escapeHtml(doc.category || '—')}</dd></div>
+                <div><dt>Enacted</dt><dd>${formatDate(doc.date)}</dd></div>
+                <div><dt>Approved</dt><dd>${formatDate(doc.date_approved)}</dd></div>
+                <div><dt>Effectivity</dt><dd>${formatDate(doc.effectivity_date)}</dd></div>
+                ${doc.authored_sponsored_by ? `<div class="col-span-2"><dt>Authored &amp; sponsored by</dt><dd>${escapeHtml(doc.authored_sponsored_by)}</dd></div>` : ''}
             </dl>
             <div class="mt-auto flex items-center justify-between gap-2 border-t border-slate-100 pt-3 dark:border-slate-700">
-                <span class="splis-badge-approved capitalize">${escapeHtml(doc.status || '—')}</span>
+                <span class="text-xs text-slate-500">${escapeHtml(doc.series_label)}</span>
                 ${doc.has_pdf
                     ? `<a href="${escapeHtml(doc.pdf_url)}" target="_blank" class="splis-doc-list-link text-xs font-semibold">View PDF</a>`
-                    : ''}
+                    : '<span class="text-xs text-slate-400">No PDF</span>'}
             </div>
         </article>
     `;
 }
 
-const ADVANCED_FILTER_FIELDS = [
-    'author',
-    'committee',
-    'keyword',
-    'date_from',
-    'date_to',
-    'status',
-    'has_pdf',
-    'category_id',
-    'department_id',
-    'municipality_id',
-];
-
-function advancedFiltersActive(form) {
-    return ADVANCED_FILTER_FIELDS.some((name) => {
-        const field = form.elements.namedItem(name);
-        if (!field) {
-            return false;
-        }
-
-        if (field instanceof RadioNodeList) {
-            return Array.from(field).some((input) => input.type === 'checkbox' ? input.checked : String(input.value).trim() !== '');
-        }
-
-        if (field.type === 'checkbox') {
-            return field.checked;
-        }
-
-        return String(field.value).trim() !== '';
-    });
-}
-
-function syncAdvancedFiltersPanel(form) {
-    const advanced = document.getElementById('dashboard-advanced-filters');
-    if (!advanced) {
-        return;
-    }
-
-    if (advancedFiltersActive(form)) {
-        advanced.open = true;
-    }
-}
-
-export function initDashboardSearch() {
-    const root = document.getElementById('dashboard-search');
+export function initOrdinancesSearch() {
+    const root = document.getElementById('ordinances-search');
     if (!root) {
         return;
     }
 
-    const form = document.getElementById('dashboard-search-form');
-    const results = document.getElementById('dashboard-search-results');
-    const listBody = document.getElementById('dashboard-list-body');
-    const grid = document.getElementById('dashboard-grid');
-    const listWrap = document.getElementById('dashboard-list-wrap');
-    const meta = document.getElementById('dashboard-search-meta');
-    const pagination = document.getElementById('dashboard-search-pagination');
-    const viewToggle = document.getElementById('dashboard-view-toggle');
+    const form = document.getElementById('ordinances-search-form');
+    const results = document.getElementById('ordinances-search-results');
+    const listBody = document.getElementById('ordinances-list-body');
+    const grid = document.getElementById('ordinances-grid');
+    const listWrap = document.getElementById('ordinances-list-wrap');
+    const meta = document.getElementById('ordinances-search-meta');
+    const pagination = document.getElementById('ordinances-search-pagination');
+    const viewToggle = document.getElementById('ordinances-view-toggle');
     const searchUrl = root.dataset.searchUrl;
 
     let currentPage = 1;
@@ -151,7 +126,7 @@ export function initDashboardSearch() {
     let debounceTimer;
 
     setViewMode(viewMode);
-    syncAdvancedFiltersPanel(form);
+    applyKeywordFromQuery(form);
     fetchResults();
 
     form.addEventListener('submit', (event) => {
@@ -175,10 +150,6 @@ export function initDashboardSearch() {
 
     form.addEventListener('reset', () => {
         setTimeout(() => {
-            const advanced = document.getElementById('dashboard-advanced-filters');
-            if (advanced) {
-                advanced.open = false;
-            }
             currentPage = 1;
             fetchResults();
         }, 0);
@@ -235,7 +206,7 @@ export function initDashboardSearch() {
             const payload = await response.json();
             renderResults(payload);
         } catch {
-            meta.textContent = 'Unable to load documents.';
+            meta.textContent = 'Unable to load ordinances.';
             listBody.innerHTML = '';
             grid.innerHTML = '';
             pagination.innerHTML = '';
@@ -248,11 +219,11 @@ export function initDashboardSearch() {
         const docs = payload.data || [];
         const { total, current_page: page, last_page: lastPage } = payload.meta || {};
 
-        meta.textContent = `${Number(total || 0).toLocaleString()} document(s) found`;
+        meta.textContent = `${Number(total || 0).toLocaleString()} ordinance(s) found`;
 
         if (docs.length === 0) {
-            listBody.innerHTML = '<tr><td colspan="9" class="py-12 text-center text-slate-400">No documents match your filters.</td></tr>';
-            grid.innerHTML = '<p class="col-span-full py-12 text-center text-slate-400">No documents match your filters.</p>';
+            listBody.innerHTML = '<tr><td colspan="8" class="py-12 text-center text-slate-400">No ordinances match your filters.</td></tr>';
+            grid.innerHTML = '<p class="col-span-full py-12 text-center text-slate-400">No ordinances match your filters.</p>';
             pagination.innerHTML = '';
             return;
         }

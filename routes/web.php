@@ -15,6 +15,8 @@ use App\Http\Controllers\DashboardSearchController;
 use App\Http\Controllers\IncomingDocumentController;
 use App\Http\Controllers\IncomingKeywordController;
 use App\Http\Controllers\IncomingSearchController;
+use App\Http\Controllers\OrdinanceController;
+use App\Http\Controllers\OrdinanceSearchController;
 use App\Http\Controllers\ResolutionController;
 use App\Http\Controllers\ResolutionPdfController;
 use App\Http\Controllers\ResolutionSearchController;
@@ -52,6 +54,15 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/incoming', [IncomingDocumentController::class, 'index'])->name('incoming.index');
     Route::get('/incoming/search', IncomingSearchController::class)->name('incoming.search');
+    Route::get('/ordinances', [OrdinanceController::class, 'index'])->name('ordinances.index');
+    Route::get('/ordinances/search', OrdinanceSearchController::class)->name('ordinances.search');
+    Route::get('/ordinances/create', [OrdinanceController::class, 'create'])->name('ordinances.create');
+    Route::post('/ordinances', [OrdinanceController::class, 'store'])->name('ordinances.store');
+    Route::get('/ordinances/{ordinance}', [OrdinanceController::class, 'show'])->name('ordinances.show');
+    Route::get('/ordinances/{ordinance}/edit', [OrdinanceController::class, 'edit'])->name('ordinances.edit');
+    Route::put('/ordinances/{ordinance}', [OrdinanceController::class, 'update'])->name('ordinances.update');
+    Route::delete('/ordinances/{ordinance}', [OrdinanceController::class, 'destroy'])->name('ordinances.destroy');
+
     Route::get('/incoming/keywords', IncomingKeywordController::class)->name('incoming.keywords');
     Route::get('/incoming/create', [IncomingDocumentController::class, 'create'])->name('incoming.create');
     Route::post('/incoming', [IncomingDocumentController::class, 'store'])->name('incoming.store');

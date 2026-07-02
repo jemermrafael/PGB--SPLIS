@@ -63,6 +63,21 @@ class BoardMemberRosterService
             ->first();
     }
 
+    public function termForSeriesYear(int $seriesYear): CommitteeTerm
+    {
+        $term = CommitteeTerm::query()
+            ->where('year_from', '<=', $seriesYear)
+            ->where(function (Builder $query) use ($seriesYear): void {
+                $query->whereNull('year_to')
+                    ->orWhere('year_to', '>=', $seriesYear);
+            })
+            ->orderByDesc('is_current')
+            ->orderByDesc('year_from')
+            ->first();
+
+        return $term ?? CommitteeTerm::currentOrCreate();
+    }
+
     /**
      * @return Builder<BoardMember>
      */

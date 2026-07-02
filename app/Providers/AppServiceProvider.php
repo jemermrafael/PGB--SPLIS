@@ -9,6 +9,7 @@ use App\Models\CommitteeTerm;
 use App\Models\IncomingDocument;
 use App\Models\LegislativeSession;
 use App\Models\ObDocument;
+use App\Models\Ordinance;
 use App\Models\Resolution;
 use App\Models\User;
 use App\Policies\AgendaItemPolicy;
@@ -18,6 +19,7 @@ use App\Policies\CommitteeTermPolicy;
 use App\Policies\IncomingDocumentPolicy;
 use App\Policies\LegislativeSessionPolicy;
 use App\Policies\ObDocumentPolicy;
+use App\Policies\OrdinancePolicy;
 use App\Policies\ResolutionPolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Pagination\Paginator;
@@ -40,6 +42,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(BoardMember::class, BoardMemberPolicy::class);
         Gate::policy(CommitteeTerm::class, CommitteeTermPolicy::class);
         Gate::policy(LegislativeSession::class, LegislativeSessionPolicy::class);
+        Gate::policy(Ordinance::class, OrdinancePolicy::class);
         Gate::policy(ObDocument::class, ObDocumentPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
 

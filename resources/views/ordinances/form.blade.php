@@ -1,0 +1,182 @@
+@extends('layouts.app')
+
+@php
+    $isEdit = $ordinance->exists;
+    $classifications = config('ordinances.classifications', []);
+@endphp
+
+@section('title', ($isEdit ? 'Edit Ordinance' : 'New Ordinance').' — '.config('app.name'))
+
+@section('content')
+<div class="max-w-3xl">
+    <div class="splis-page-header !mb-6">
+        <div>
+            <h1 class="splis-page-title">{{ $isEdit ? 'Edit ordinance' : 'New ordinance' }}</h1>
+            <p class="splis-page-subtitle">Provincial ordinance record — enactment through publication and effectivity.</p>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ $isEdit ? route('ordinances.update', $ordinance) : route('ordinances.store') }}" class="splis-card splis-card-body space-y-6">
+        @csrf
+        @if ($isEdit)
+            @method('PUT')
+        @endif
+
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div>
+                <label class="splis-label" for="ordinance_no">Ordinance no.</label>
+                <input type="number" name="ordinance_no" id="ordinance_no" value="{{ old('ordinance_no', $ordinance->ordinance_no) }}" min="1" required class="splis-input">
+            </div>
+            <div>
+                <label class="splis-label" for="series_year">Series year</label>
+                <input type="number" name="series_year" id="series_year" value="{{ old('series_year', $ordinance->series_year) }}" min="1900" max="2100" required class="splis-input">
+            </div>
+            <div>
+                <label class="splis-label" for="classification">Classification</label>
+                <select name="classification" id="classification" class="splis-input">
+                    <option value="">— Select —</option>
+                    @foreach ($classifications as $option)
+                        <option value="{{ $option }}" @selected(old('classification', $ordinance->classification) === $option)>{{ $option }}</option>
+                    @endforeach
+                    @php $currentClassification = old('classification', $ordinance->classification); @endphp
+                    @if ($currentClassification && ! in_array($currentClassification, $classifications, true))
+                        <option value="{{ $currentClassification }}" selected>{{ $currentClassification }}</option>
+                    @endif
+                </select>
+            </div>
+        </div>
+
+        <div>
+            <label class="splis-label" for="subject">Subject</label>
+            <textarea name="subject" id="subject" rows="4" class="splis-input">{{ old('subject', $ordinance->subject) }}</textarea>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-800/50">
+            <h2 class="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Authored &amp; sponsored by</h2>
+            <p class="mb-4 text-xs text-slate-500 dark:text-slate-400">Optional — select one or two board members from the {{ $rosterTerm->label }} roster.</p>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                    <label class="splis-label" for="authored_sponsored_member_id_1">Board member</label>
+                    <select name="authored_sponsored_member_id_1" id="authored_sponsored_member_id_1" class="splis-input">
+                        <option value="">— None —</option>
+                        @foreach ($boardMembers as $member)
+                            @php $assignment = $member->termAssignments->first(); @endphp
+                            <option value="{{ $member->id }}" @selected((string) $selectedMemberId1 === (string) $member->id)>
+                                {{ $member->displayName() }}@if ($assignment?->district) — {{ $assignment->district }}@endif
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="splis-label" for="authored_sponsored_member_id_2">Second board member (optional)</label>
+                    <select name="authored_sponsored_member_id_2" id="authored_sponsored_member_id_2" class="splis-input">
+                        <option value="">— None —</option>
+                        @foreach ($boardMembers as $member)
+                            @php $assignment = $member->termAssignments->first(); @endphp
+                            <option value="{{ $member->id }}" @selected((string) $selectedMemberId2 === (string) $member->id)>
+                                {{ $member->displayName() }}@if ($assignment?->district) — {{ $assignment->district }}@endif
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <label class="splis-label" for="publication_status">Publication status</label>
+            <select name="publication_status" id="publication_status" class="splis-input">
+                <option value="">— Not set —</option>
+                @foreach (App\Enums\OrdinancePublicationStatus::cases() as $status)
+                    <option value="{{ $status->value }}" @selected(old('publication_status', $ordinance->publication_status?->value) === $status->value)>{{ $status->label() }}</option>
+                @endforeach
+            </select>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Matches the spreadsheet legend: cyan = published, yellow = for publication.</p>
+        </div>
+
+        <div>
+            <label class="splis-label" for="pdf_url">Ordinance PDF URL</label>
+            <input type="url" name="pdf_url" id="pdf_url" value="{{ old('pdf_url', $ordinance->pdf_url) }}" class="splis-input" placeholder="Google Drive link">
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-800/50">
+            <h2 class="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Key dates</h2>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                    <label class="splis-label" for="date_enacted">Date enacted</label>
+                    <input type="date" name="date_enacted" id="date_enacted" value="{{ old('date_enacted', $ordinance->date_enacted?->format('Y-m-d')) }}" class="splis-input">
+                </div>
+                <div>
+                    <label class="splis-label" for="date_approved">Date approved</label>
+                    <input type="date" name="date_approved" id="date_approved" value="{{ old('date_approved', $ordinance->date_approved?->format('Y-m-d')) }}" class="splis-input">
+                </div>
+                <div>
+                    <label class="splis-label" for="date_posted">Posted in conspicuous places</label>
+                    <input type="date" name="date_posted" id="date_posted" value="{{ old('date_posted', $ordinance->date_posted?->format('Y-m-d')) }}" class="splis-input">
+                </div>
+                <div>
+                    <label class="splis-label" for="date_published_newspaper">Published in newspaper</label>
+                    <input type="date" name="date_published_newspaper" id="date_published_newspaper" value="{{ old('date_published_newspaper', $ordinance->date_published_newspaper?->format('Y-m-d')) }}" class="splis-input">
+                </div>
+                <div>
+                    <label class="splis-label" for="effectivity_date">Effectivity date</label>
+                    <input type="date" name="effectivity_date" id="effectivity_date" value="{{ old('effectivity_date', $ordinance->effectivity_date?->format('Y-m-d')) }}" class="splis-input">
+                </div>
+            </div>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-800/50">
+            <h2 class="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Means of verification</h2>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div class="md:col-span-2">
+                    <label class="splis-label" for="mov_bulletin">Bulletin</label>
+                    <textarea name="mov_bulletin" id="mov_bulletin" rows="2" class="splis-input">{{ old('mov_bulletin', $ordinance->mov_bulletin) }}</textarea>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="splis-label" for="mov_bulletin_url">Bulletin PDF URL</label>
+                    <input type="url" name="mov_bulletin_url" id="mov_bulletin_url" value="{{ old('mov_bulletin_url', $ordinance->mov_bulletin_url) }}" class="splis-input" placeholder="Google Drive link">
+                </div>
+                <div>
+                    <label class="splis-label" for="mov_certification">Certification</label>
+                    <input type="text" name="mov_certification" id="mov_certification" value="{{ old('mov_certification', $ordinance->mov_certification) }}" class="splis-input">
+                </div>
+                <div>
+                    <label class="splis-label" for="mov_certification_url">Certification PDF URL</label>
+                    <input type="url" name="mov_certification_url" id="mov_certification_url" value="{{ old('mov_certification_url', $ordinance->mov_certification_url) }}" class="splis-input" placeholder="Google Drive link">
+                </div>
+                <div>
+                    <label class="splis-label" for="mov_newspaper">Newspaper</label>
+                    <input type="text" name="mov_newspaper" id="mov_newspaper" value="{{ old('mov_newspaper', $ordinance->mov_newspaper) }}" class="splis-input">
+                </div>
+                <div>
+                    <label class="splis-label" for="mov_newspaper_url">Newspaper PDF URL</label>
+                    <input type="url" name="mov_newspaper_url" id="mov_newspaper_url" value="{{ old('mov_newspaper_url', $ordinance->mov_newspaper_url) }}" class="splis-input" placeholder="Google Drive link">
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <label class="splis-label" for="implementing_bodies">Implementing bodies / departments</label>
+            <textarea name="implementing_bodies" id="implementing_bodies" rows="2" class="splis-input">{{ old('implementing_bodies', $ordinance->implementing_bodies) }}</textarea>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+                <label class="splis-label" for="mandate_ppa">Mandate / PPA</label>
+                <input type="text" name="mandate_ppa" id="mandate_ppa" value="{{ old('mandate_ppa', $ordinance->mandate_ppa) }}" class="splis-input">
+            </div>
+            <div>
+                <label class="splis-label" for="remarks">Remarks</label>
+                <input type="text" name="remarks" id="remarks" value="{{ old('remarks', $ordinance->remarks) }}" class="splis-input">
+            </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2 pt-2">
+            <button type="submit" class="splis-btn-primary">Save</button>
+            @if ($isEdit)
+                <a href="{{ route('ordinances.show', $ordinance) }}" class="splis-btn-secondary">View record</a>
+            @endif
+            <a href="{{ route('ordinances.index') }}" class="splis-btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+@endsection

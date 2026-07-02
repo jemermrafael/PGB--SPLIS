@@ -6,6 +6,7 @@ import { initDashboardSearch } from './dashboard-search';
 import { initDropdowns } from './dropdown';
 import { initIncomingSearch } from './incoming-search';
 import { initKeywordTags } from './keyword-tags';
+import { initOrdinancesSearch } from './ordinances-search';
 import { initResolutionsSearch } from './resolutions-search';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -16,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initAgendaSearch();
     initAgendaDeadlinePreview();
     initDashboardSearch();
+    initOrdinancesSearch();
     initResolutionsSearch();
     initIncomingSearch();
 });

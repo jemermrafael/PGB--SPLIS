@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -29,6 +30,16 @@ class BoardMember extends Model
     public function committeeMemberships(): HasMany
     {
         return $this->hasMany(CommitteeMembership::class);
+    }
+
+    /**
+     * @return BelongsToMany<Ordinance, $this>
+     */
+    public function ordinances(): BelongsToMany
+    {
+        return $this->belongsToMany(Ordinance::class, 'ordinance_board_member')
+            ->withPivot('sort_order')
+            ->orderByPivot('sort_order');
     }
 
     /**

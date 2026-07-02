@@ -187,6 +187,25 @@ class ResolutionRepository
         return Resolution::query()->count();
     }
 
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Collection<int, ResolutionItem>
+     */
+    public function collectDocuments(array $filters = []): Collection
+    {
+        $items = $this->baseQuery($filters)
+            ->get()
+            ->map(fn (Resolution $r) => $this->map($r));
+
+        if (! empty($filters['has_pdf'])) {
+            return $items
+                ->filter(fn (ResolutionItem $item) => $item->hasPdf)
+                ->values();
+        }
+
+        return $items;
+    }
+
     public function countBySeries(int $limit = 10): Collection
     {
         return Resolution::query()

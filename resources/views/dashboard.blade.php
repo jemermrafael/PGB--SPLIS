@@ -9,7 +9,7 @@
         <div class="relative">
             <p class="splis-dashboard-hero-eyebrow">Legislative archive</p>
             <h1 class="splis-page-title text-white">Dashboard</h1>
-            <p class="splis-dashboard-hero-subtitle">Search and browse legislative documents — {{ number_format($totalResolutions) }} records in the archive.</p>
+            <p class="splis-dashboard-hero-subtitle">Search resolutions and ordinances — {{ number_format($totalDocuments) }} documents in the archive ({{ number_format($totalResolutions) }} resolutions · {{ number_format($totalOrdinances) }} ordinances).</p>
         </div>
     </div>
 
@@ -19,8 +19,8 @@
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
             </div>
             <p class="splis-stat-label">Total Documents</p>
-            <p class="splis-stat-value">{{ number_format($totalResolutions) }}</p>
-            <p class="splis-stat-meta">{{ number_format($legacyCount) }} imported · {{ number_format($newCount) }} new</p>
+            <p class="splis-stat-value">{{ number_format($totalDocuments) }}</p>
+            <p class="splis-stat-meta">{{ number_format($totalResolutions) }} resolutions · {{ number_format($totalOrdinances) }} ordinances</p>
         </div>
         <div class="splis-stat splis-stat--gold">
             <div class="splis-stat-icon splis-stat-icon--gold">
@@ -56,7 +56,7 @@
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div>
                 <label class="splis-label">Number</label>
-                <input type="text" name="number" class="splis-input" placeholder="Resolution / ordinance no.">
+                <input type="text" name="number" class="splis-input" placeholder="Resolution no. or ordinance no.">
             </div>
             <div class="md:col-span-2">
                 <label class="splis-label">Title</label>
@@ -74,9 +74,9 @@
             <div>
                 <label class="splis-label">Document type</label>
                 <select name="document_type" class="splis-select">
-                    <option value="">All types</option>
-                    <option value="resolution">Resolution</option>
-                    <option value="ordinance">Ordinance</option>
+                    <option value="">All document types</option>
+                    <option value="resolution">Resolutions only</option>
+                    <option value="ordinance">Ordinances only</option>
                 </select>
             </div>
         </div>
@@ -173,6 +173,7 @@
                 <thead>
                     <tr>
                         <th>Number</th>
+                        <th class="hidden sm:table-cell">Type</th>
                         <th class="min-w-[12rem] max-w-md">Title</th>
                         <th class="hidden md:table-cell">Author</th>
                         <th class="hidden lg:table-cell">Committee</th>
