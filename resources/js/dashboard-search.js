@@ -24,6 +24,29 @@ function formatDate(value) {
 
 const pdfListIcon = `<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>`;
 
+function renderPublicationStatusButton(doc, compact = true) {
+    if (!doc.publication_status_label) {
+        return '—';
+    }
+
+    const compactClass = compact ? ' splis-ordinance-status-btn--compact' : '';
+    const btnClass = `${doc.publication_status_button_class || ''}${compactClass}`.trim();
+    const iconSize = compact ? 16 : 20;
+    const icon = doc.publication_status_icon_url
+        ? `<img src="${escapeHtml(doc.publication_status_icon_url)}" alt="" class="splis-ordinance-status-btn-icon" width="${iconSize}" height="${iconSize}">`
+        : '';
+
+    return `<span class="${escapeHtml(btnClass)}" role="status">${icon}<span>${escapeHtml(doc.publication_status_label)}</span></span>`;
+}
+
+function renderPublicationCell(doc) {
+    if (doc.document_type !== 'ordinance') {
+        return '<td class="hidden xl:table-cell">—</td>';
+    }
+
+    return `<td class="hidden xl:table-cell whitespace-nowrap">${renderPublicationStatusButton(doc)}</td>`;
+}
+
 function renderTitleCell(title) {
     const { display, full, truncated } = truncateWords(title);
 
@@ -50,7 +73,7 @@ function renderListItem(doc) {
             <td class="hidden md:table-cell">${escapeHtml(doc.author || '—')}</td>
             <td class="hidden lg:table-cell">${escapeHtml(doc.committee || '—')}</td>
             <td class="hidden sm:table-cell whitespace-nowrap">${formatDate(doc.date)}</td>
-            <td class="hidden xl:table-cell">${escapeHtml(doc.category || '—')}</td>
+            ${renderPublicationCell(doc)}
             <td><span class="splis-badge-approved capitalize">${escapeHtml(doc.status || '—')}</span></td>
             <td class="text-center">
                 ${doc.has_pdf
@@ -68,14 +91,16 @@ function renderGridItem(doc) {
         <article class="splis-doc-card flex flex-col gap-3">
             <div class="flex items-start justify-between gap-2">
                 <a href="${escapeHtml(doc.url)}" class="splis-doc-card-number">${escapeHtml(doc.number)}</a>
-                <span class="${escapeHtml(doc.document_type_badge_class || 'splis-badge-doc-type splis-badge-doc-type--resolution')} shrink-0">${escapeHtml(doc.document_type_label || 'Resolution')}</span>
+                <div class="flex shrink-0 flex-col items-end gap-2">
+                    <span class="${escapeHtml(doc.document_type_badge_class || 'splis-badge-doc-type splis-badge-doc-type--resolution')}">${escapeHtml(doc.document_type_label || 'Resolution')}</span>
+                    ${doc.document_type === 'ordinance' && doc.publication_status_label ? renderPublicationStatusButton(doc) : ''}
+                </div>
             </div>
             <p class="splis-doc-card-title">${renderTruncatedTitle(display, full, truncated)}</p>
             <dl class="splis-doc-card-meta">
                 <div><dt>Author</dt><dd>${escapeHtml(doc.author || '—')}</dd></div>
                 <div><dt>Date</dt><dd>${formatDate(doc.date)}</dd></div>
                 <div class="col-span-2"><dt>Committee</dt><dd>${escapeHtml(doc.committee || '—')}</dd></div>
-                <div class="col-span-2"><dt>Subject</dt><dd>${escapeHtml(doc.category || '—')}</dd></div>
             </dl>
             <div class="mt-auto flex items-center justify-between gap-2 border-t border-slate-100 pt-3 dark:border-slate-700">
                 <span class="splis-badge-approved capitalize">${escapeHtml(doc.status || '—')}</span>

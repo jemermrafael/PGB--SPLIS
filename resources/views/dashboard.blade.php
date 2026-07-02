@@ -178,7 +178,7 @@
                         <th class="hidden md:table-cell">Author</th>
                         <th class="hidden lg:table-cell">Committee</th>
                         <th class="hidden sm:table-cell">Date</th>
-                        <th class="hidden xl:table-cell">Subject</th>
+                        <th class="hidden xl:table-cell">Publication</th>
                         <th>Status</th>
                         <th class="w-12">PDF</th>
                     </tr>

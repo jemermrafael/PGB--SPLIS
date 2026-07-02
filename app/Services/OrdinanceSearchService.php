@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Ordinance;
 use App\Support\DocumentType;
+use App\Support\OrdinanceNumberParser;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -45,8 +46,10 @@ class OrdinanceSearchService
         $number = trim((string) ($filters['number'] ?? ''));
 
         if ($number !== '') {
-            if (ctype_digit($number)) {
-                $query->where('ordinance_no', (int) $number);
+            $ordinanceNo = OrdinanceNumberParser::parse($number);
+
+            if ($ordinanceNo !== null) {
+                $query->where('ordinance_no', $ordinanceNo);
             } else {
                 $query->whereRaw('CAST(ordinance_no AS CHAR) LIKE ?', ['%'.$number.'%']);
             }
@@ -55,11 +58,7 @@ class OrdinanceSearchService
         $title = trim((string) ($filters['title'] ?? ''));
 
         if ($title !== '') {
-            $query->where(function (Builder $query) use ($title): void {
-                $query->where('subject', 'like', "%{$title}%")
-                    ->orWhere('implementing_bodies', 'like', "%{$title}%")
-                    ->orWhere('remarks', 'like', "%{$title}%");
-            });
+            $this->applyTextSearch($query, $title);
         }
 
         $series = trim((string) ($filters['series'] ?? ''));
@@ -85,11 +84,7 @@ class OrdinanceSearchService
         $keyword = trim((string) ($filters['keyword'] ?? ''));
 
         if ($keyword !== '') {
-            $query->where(function (Builder $query) use ($keyword): void {
-                $query->where('subject', 'like', "%{$keyword}%")
-                    ->orWhere('implementing_bodies', 'like', "%{$keyword}%")
-                    ->orWhere('remarks', 'like', "%{$keyword}%");
-            });
+            $this->applyTextSearch($query, $keyword);
         }
 
         if (! empty($filters['has_pdf'])) {
@@ -103,6 +98,25 @@ class OrdinanceSearchService
         }
 
         return $query;
+    }
+
+    protected function applyTextSearch(Builder $query, string $term): void
+    {
+        $ordinanceNo = OrdinanceNumberParser::parse($term);
+
+        $query->where(function (Builder $query) use ($term, $ordinanceNo): void {
+            $query->where('subject', 'like', "%{$term}%")
+                ->orWhere('implementing_bodies', 'like', "%{$term}%")
+                ->orWhere('remarks', 'like', "%{$term}%");
+
+            if ($ordinanceNo !== null) {
+                $query->orWhere('ordinance_no', $ordinanceNo);
+            }
+
+            if (ctype_digit($term)) {
+                $query->orWhere('series_year', (int) $term);
+            }
+        });
     }
 
     /**
@@ -164,6 +178,10 @@ class OrdinanceSearchService
             'publication_status' => $ordinance->publication_status?->value,
             'publication_status_label' => $ordinance->publicationStatusLabel(),
             'publication_status_badge_class' => $ordinance->publicationStatusBadgeClass(),
+            'publication_status_button_class' => $ordinance->publication_status?->showButtonClass(),
+            'publication_status_icon_url' => $ordinance->publication_status
+                ? asset($ordinance->publication_status->iconPath())
+                : null,
         ];
     }
 }

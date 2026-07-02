@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\OrdinancePublicationStatus;
+use App\Support\OrdinanceNumberParser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -101,6 +102,12 @@ class Ordinance extends Model
 
         if ($term === '') {
             return $query;
+        }
+
+        $ordinanceNo = OrdinanceNumberParser::parse($term);
+
+        if ($ordinanceNo !== null) {
+            return $query->where('ordinance_no', $ordinanceNo);
         }
 
         if (ctype_digit($term)) {
