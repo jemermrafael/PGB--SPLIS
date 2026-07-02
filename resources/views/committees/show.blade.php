@@ -1,5 +1,18 @@
 @extends('layouts.app')
 
+@php
+    $allowLegacy = $selectedTerm->is_current;
+    $chairName = optional($memberships->get('chair')?->first()?->boardMember)->displayName();
+    $viceChairName = optional($memberships->get('vice_chair')?->first()?->boardMember)->displayName();
+
+    if ($allowLegacy) {
+        $chairName = $chairName ?: ($committee->chair ?: null);
+        $viceChairName = $viceChairName ?: ($committee->vice_chair ?: null);
+    }
+
+    $memberRows = $memberships->get('member') ?? collect();
+@endphp
+
 @section('title', $committee->name.' — Committees — '.config('app.name'))
 
 @section('content')
@@ -43,20 +56,16 @@
         <dl class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
                 <dt class="splis-label">Chair</dt>
-                <dd class="mt-1 text-slate-900 dark:text-slate-100">
-                    {{ optional($memberships->get('chair')?->first()?->boardMember)->displayName() ?: ($committee->chair ?: '—') }}
-                </dd>
+                <dd class="mt-1 text-slate-900 dark:text-slate-100">{{ $chairName ?: '—' }}</dd>
             </div>
             <div>
                 <dt class="splis-label">Vice chair</dt>
-                <dd class="mt-1 text-slate-900 dark:text-slate-100">
-                    {{ optional($memberships->get('vice_chair')?->first()?->boardMember)->displayName() ?: ($committee->vice_chair ?: '—') }}
-                </dd>
+                <dd class="mt-1 text-slate-900 dark:text-slate-100">{{ $viceChairName ?: '—' }}</dd>
             </div>
             <div>
                 <dt class="splis-label">Secretary</dt>
                 <dd class="mt-1 text-slate-900 dark:text-slate-100">
-                    {{ $committee->secretaryDisplayName($selectedTerm->id) ?: '—' }}
+                    {{ $committee->secretaryDisplayName($selectedTerm->id, $allowLegacy) ?: '—' }}
                 </dd>
             </div>
             <div>
@@ -68,16 +77,13 @@
         <div>
             <dt class="splis-label mb-2">Members</dt>
             <dd>
-                @php
-                    $memberRows = $memberships->get('member') ?? collect();
-                @endphp
                 @if ($memberRows->isNotEmpty())
                     <ul class="list-inside list-disc space-y-1 text-slate-900 dark:text-slate-100">
                         @foreach ($memberRows as $membership)
                             <li>{{ $membership->boardMember?->displayName() }}</li>
                         @endforeach
                     </ul>
-                @elseif ($committee->members)
+                @elseif ($allowLegacy && $committee->members)
                     <pre class="whitespace-pre-wrap font-sans text-slate-900 dark:text-slate-100">{{ $committee->members }}</pre>
                 @else
                     <span class="text-slate-500">—</span>
@@ -87,7 +93,7 @@
     </div>
 
     <div class="mt-4">
-        <a href="{{ route('committees.index') }}" class="splis-btn-secondary">Back to committees</a>
+        <a href="{{ route('committees.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary">Back to committees</a>
     </div>
 </div>
 @endsection

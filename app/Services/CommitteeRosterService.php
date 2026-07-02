@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\CommitteeMembershipRole;
 use App\Models\BoardMember;
+use App\Models\BoardMemberTerm;
 use App\Models\Committee;
 use App\Models\CommitteeMembership;
 use App\Models\CommitteeTerm;
@@ -48,12 +49,12 @@ class CommitteeRosterService
     {
         $committee->refresh();
 
-        $memberLines = $committee->memberDisplayNames($term->id);
+        $memberLines = $committee->memberDisplayNames($term->id, allowLegacy: false);
 
         $committee->forceFill([
-            'chair' => $committee->chairDisplayName($term->id) ?: null,
-            'vice_chair' => $committee->viceChairDisplayName($term->id) ?: null,
-            'secretary' => $committee->secretaryDisplayName($term->id) ?: null,
+            'chair' => $committee->chairDisplayName($term->id, allowLegacy: false) ?: null,
+            'vice_chair' => $committee->viceChairDisplayName($term->id, allowLegacy: false) ?: null,
+            'secretary' => $committee->secretaryDisplayName($term->id, allowLegacy: false) ?: null,
             'members' => $memberLines !== [] ? implode("\n", $memberLines) : null,
         ])->saveQuietly();
     }
@@ -70,10 +71,24 @@ class CommitteeRosterService
             return $existing;
         }
 
-        return BoardMember::query()->create([
+        $member = BoardMember::query()->create([
             'name' => $name,
             'is_active' => true,
         ]);
+
+        $term = CommitteeTerm::currentOrCreate();
+
+        BoardMemberTerm::query()->firstOrCreate(
+            [
+                'board_member_id' => $member->id,
+                'committee_term_id' => $term->id,
+            ],
+            [
+                'is_active' => true,
+            ],
+        );
+
+        return $member;
     }
 
     /**

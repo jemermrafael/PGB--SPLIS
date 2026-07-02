@@ -66,7 +66,10 @@
                     <select name="chair_id" id="chair_id" class="splis-input">
                         <option value="">— Select board member —</option>
                         @foreach ($boardMembers as $member)
-                            <option value="{{ $member->id }}" @selected(old('chair_id', $roster['chair_id'] ?? null) == $member->id)>{{ $member->displayName() }}</option>
+                            @php $assignment = $member->termAssignments->first(); @endphp
+                            <option value="{{ $member->id }}" @selected(old('chair_id', $roster['chair_id'] ?? null) == $member->id)>
+                                {{ $member->displayName() }}@if ($assignment?->district) — {{ $assignment->district }}@endif
+                            </option>
                         @endforeach
                     </select>
                 </div>
@@ -75,7 +78,10 @@
                     <select name="vice_chair_id" id="vice_chair_id" class="splis-input">
                         <option value="">— Select board member —</option>
                         @foreach ($boardMembers as $member)
-                            <option value="{{ $member->id }}" @selected(old('vice_chair_id', $roster['vice_chair_id'] ?? null) == $member->id)>{{ $member->displayName() }}</option>
+                            @php $assignment = $member->termAssignments->first(); @endphp
+                            <option value="{{ $member->id }}" @selected(old('vice_chair_id', $roster['vice_chair_id'] ?? null) == $member->id)>
+                                {{ $member->displayName() }}@if ($assignment?->district) — {{ $assignment->district }}@endif
+                            </option>
                         @endforeach
                     </select>
                 </div>
@@ -97,7 +103,10 @@
                 <label class="splis-label" for="member_ids">Members</label>
                 <select name="member_ids[]" id="member_ids" multiple size="8" class="splis-input min-h-[12rem]">
                     @foreach ($boardMembers as $member)
-                        <option value="{{ $member->id }}" @selected(in_array($member->id, $selectedMemberIds, true))>{{ $member->displayName() }}</option>
+                        @php $assignment = $member->termAssignments->first(); @endphp
+                        <option value="{{ $member->id }}" @selected(in_array($member->id, $selectedMemberIds, true))>
+                            {{ $member->displayName() }}@if ($assignment?->district) — {{ $assignment->district }}@endif
+                        </option>
                     @endforeach
                 </select>
                 <p class="mt-1 text-xs text-slate-500">Hold Ctrl (Windows) or Cmd (Mac) to select multiple members.</p>
@@ -115,7 +124,7 @@
         <div class="flex gap-2 pt-2">
             <button type="submit" class="splis-btn-primary">Save committee</button>
             @if ($isEdit)
-                <a href="{{ route('committees.show', $committee) }}" class="splis-btn-secondary">View roster history</a>
+                <a href="{{ route('committees.show', ['committee' => $committee, 'term' => $term->id]) }}" class="splis-btn-secondary">View roster</a>
             @endif
             <a href="{{ route('committees.index') }}" class="splis-btn-secondary">Cancel</a>
         </div>

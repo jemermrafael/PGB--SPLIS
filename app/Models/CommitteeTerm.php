@@ -33,6 +33,14 @@ class CommitteeTerm extends Model
     }
 
     /**
+     * @return HasMany<BoardMemberTerm, $this>
+     */
+    public function boardMemberAssignments(): HasMany
+    {
+        return $this->hasMany(BoardMemberTerm::class);
+    }
+
+    /**
      * @param  Builder<self>  $query
      * @return Builder<self>
      */

@@ -3,7 +3,8 @@
 @php
     $isEdit = $boardMember->exists;
     $districts = config('board_members.districts', []);
-    $selectedDistrict = old('district', $boardMember->district);
+    $selectedDistrict = old('district', $assignment?->district ?? $boardMember->district);
+    $isActive = old('is_active', $assignment?->is_active ?? $boardMember->is_active);
 @endphp
 
 @section('title', ($isEdit ? 'Edit Board Member' : 'New Board Member').' — '.config('app.name'))
@@ -13,7 +14,7 @@
     <div class="splis-page-header !mb-6">
         <div>
             <h1 class="splis-page-title">{{ $isEdit ? 'Edit board member' : 'New board member' }}</h1>
-            <p class="splis-page-subtitle">Personnel record for committee assignments.</p>
+            <p class="splis-page-subtitle">Personnel record and term roster assignment.</p>
         </div>
     </div>
 
@@ -34,33 +35,51 @@
             </div>
         </div>
 
-        <div>
-            <label class="splis-label" for="district">District</label>
-            <select name="district" id="district" class="splis-input">
-                <option value="">— Select district —</option>
-                @foreach ($districts as $district)
-                    <option value="{{ $district }}" @selected($selectedDistrict === $district)>{{ $district }}</option>
-                @endforeach
-                @if ($selectedDistrict && ! in_array($selectedDistrict, $districts, true))
-                    <option value="{{ $selectedDistrict }}" selected>{{ $selectedDistrict }}</option>
-                @endif
-            </select>
-        </div>
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-800/50">
+            <h2 class="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Term roster</h2>
 
-        <div>
-            <label class="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                <input type="hidden" name="is_active" value="0">
-                <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $boardMember->is_active)) class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
-                Active (available for committee assignment)
-            </label>
+            <div class="mb-4">
+                <label class="splis-label" for="committee_term_id">Election term</label>
+                <select name="committee_term_id" id="committee_term_id" required class="splis-input">
+                    @foreach ($terms as $option)
+                        <option value="{{ $option->id }}" @selected(old('committee_term_id', $term->id) == $option->id)>
+                            {{ $option->label }}@if ($option->is_current) (current)@endif
+                        </option>
+                    @endforeach
+                </select>
+                @if ($isEdit)
+                    <p class="mt-1 text-xs text-slate-500">District and status apply to the selected term only.</p>
+                @endif
+            </div>
+
+            <div>
+                <label class="splis-label" for="district">District</label>
+                <select name="district" id="district" class="splis-input">
+                    <option value="">— Select district —</option>
+                    @foreach ($districts as $district)
+                        <option value="{{ $district }}" @selected($selectedDistrict === $district)>{{ $district }}</option>
+                    @endforeach
+                    @if ($selectedDistrict && ! in_array($selectedDistrict, $districts, true))
+                        <option value="{{ $selectedDistrict }}" selected>{{ $selectedDistrict }}</option>
+                    @endif
+                </select>
+            </div>
+
+            <div class="mt-4">
+                <label class="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300">
+                    <input type="hidden" name="is_active" value="0">
+                    <input type="checkbox" name="is_active" value="1" @checked($isActive) class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+                    Active on this term’s roster (available for committee assignment)
+                </label>
+            </div>
         </div>
 
         <div class="flex gap-2 pt-2">
             <button type="submit" class="splis-btn-primary">Save</button>
             @if ($isEdit)
-                <a href="{{ route('board-members.show', $boardMember) }}" class="splis-btn-secondary">View profile</a>
+                <a href="{{ route('board-members.show', ['boardMember' => $boardMember, 'term' => $term->id]) }}" class="splis-btn-secondary">View profile</a>
             @endif
-            <a href="{{ route('board-members.index') }}" class="splis-btn-secondary">Cancel</a>
+            <a href="{{ route('board-members.index', ['term' => $term->id]) }}" class="splis-btn-secondary">Cancel</a>
         </div>
     </form>
 </div>

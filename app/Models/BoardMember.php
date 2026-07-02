@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class BoardMember extends Model
 {
@@ -28,6 +29,48 @@ class BoardMember extends Model
     public function committeeMemberships(): HasMany
     {
         return $this->hasMany(CommitteeMembership::class);
+    }
+
+    /**
+     * @return HasMany<BoardMemberTerm, $this>
+     */
+    public function termAssignments(): HasMany
+    {
+        return $this->hasMany(BoardMemberTerm::class);
+    }
+
+    /**
+     * @return HasOne<BoardMemberTerm, $this>
+     */
+    public function termAssignment(): HasOne
+    {
+        return $this->hasOne(BoardMemberTerm::class);
+    }
+
+    public function districtForTerm(?int $termId): ?string
+    {
+        if ($termId === null) {
+            return $this->district;
+        }
+
+        $assignment = $this->relationLoaded('termAssignments')
+            ? $this->termAssignments->firstWhere('committee_term_id', $termId)
+            : $this->termAssignments()->where('committee_term_id', $termId)->first();
+
+        return $assignment?->district ?? $this->district;
+    }
+
+    public function isActiveForTerm(?int $termId): bool
+    {
+        if ($termId === null) {
+            return (bool) $this->is_active;
+        }
+
+        $assignment = $this->relationLoaded('termAssignments')
+            ? $this->termAssignments->firstWhere('committee_term_id', $termId)
+            : $this->termAssignments()->where('committee_term_id', $termId)->first();
+
+        return $assignment !== null ? $assignment->is_active : (bool) $this->is_active;
     }
 
     public function displayName(): string

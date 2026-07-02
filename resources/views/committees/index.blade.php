@@ -18,8 +18,19 @@
     </div>
 
     <div class="mb-4 flex flex-wrap gap-2 text-sm">
-        <a href="{{ route('board-members.index') }}" class="splis-btn-secondary">Board members</a>
+        <a href="{{ route('board-members.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary">Board members</a>
         <a href="{{ route('committee-terms.index') }}" class="splis-btn-secondary">Election terms</a>
+    </div>
+
+    <div class="mb-6 flex flex-wrap gap-2">
+        @foreach ($terms as $term)
+            <a
+                href="{{ route('committees.index', ['term' => $term->id]) }}"
+                class="{{ $term->id === $selectedTerm->id ? 'splis-btn-primary' : 'splis-btn-secondary' }} text-sm"
+            >
+                {{ $term->label }}@if ($term->is_current) (current)@endif
+            </a>
+        @endforeach
     </div>
 
     @if (session('status'))
@@ -40,13 +51,14 @@
             </thead>
             <tbody>
                 @forelse ($committees as $committee)
+                    @php $allowLegacy = $selectedTerm->is_current; @endphp
                     <tr>
                         <td class="text-slate-500">{{ $committee->sort_order }}</td>
                         <td class="font-medium text-slate-900 dark:text-slate-100">
-                            <a href="{{ route('committees.show', $committee) }}" class="hover:text-brand-700 dark:hover:text-brand-300">{{ $committee->name }}</a>
+                            <a href="{{ route('committees.show', ['committee' => $committee, 'term' => $selectedTerm->id]) }}" class="hover:text-brand-700 dark:hover:text-brand-300">{{ $committee->name }}</a>
                         </td>
-                        <td class="hidden lg:table-cell">{{ $committee->chairDisplayName() ?: '—' }}</td>
-                        <td class="hidden xl:table-cell">{{ $committee->viceChairDisplayName() ?: '—' }}</td>
+                        <td class="hidden lg:table-cell">{{ $committee->chairDisplayName($selectedTerm->id, $allowLegacy) ?: '—' }}</td>
+                        <td class="hidden xl:table-cell">{{ $committee->viceChairDisplayName($selectedTerm->id, $allowLegacy) ?: '—' }}</td>
                         <td>
                             @if ($committee->is_active)
                                 <span class="splis-badge-linked">Active</span>
@@ -56,9 +68,9 @@
                         </td>
                         <td class="text-right">
                             <div class="flex justify-end gap-2">
-                                <a href="{{ route('committees.show', $committee) }}" class="splis-btn-secondary text-sm">Roster</a>
+                                <a href="{{ route('committees.show', ['committee' => $committee, 'term' => $selectedTerm->id]) }}" class="splis-btn-secondary text-sm">Roster</a>
                                 @can('update', $committee)
-                                    <a href="{{ route('committees.edit', $committee) }}" class="splis-btn-secondary text-sm">Edit</a>
+                                    <a href="{{ route('committees.edit', ['committee' => $committee, 'term' => $selectedTerm->id]) }}" class="splis-btn-secondary text-sm">Edit</a>
                                 @endcan
                                 @can('delete', $committee)
                                     <form method="POST" action="{{ route('committees.destroy', $committee) }}" onsubmit="return confirm('Delete this committee?');">
@@ -73,7 +85,11 @@
                 @empty
                     <tr>
                         <td colspan="6" class="py-10 text-center text-slate-500">
-                            No committees yet. Run <code class="rounded bg-slate-100 px-1.5 py-0.5 text-xs dark:bg-slate-800">php artisan splis:import-committees</code> or add one manually.
+                            @if ($selectedTerm->is_current)
+                                No committees yet. Run <code class="rounded bg-slate-100 px-1.5 py-0.5 text-xs dark:bg-slate-800">php artisan splis:import-committees</code> or add one manually.
+                            @else
+                                No committee rosters for {{ $selectedTerm->label }} yet. Edit a committee and save its roster for this term.
+                            @endif
                         </td>
                     </tr>
                 @endforelse

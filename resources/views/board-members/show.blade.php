@@ -1,104 +1,124 @@
 @extends('layouts.app')
 
+@php
+    $district = $assignment?->district;
+    $isActive = $assignment?->is_active ?? false;
+    $hasAssignments = collect($roles)->flatten()->isNotEmpty();
+@endphp
+
 @section('title', $boardMember->displayName().' — Board Members — '.config('app.name'))
 
 @section('content')
 <div class="max-w-4xl">
     <div class="splis-page-header">
         <div>
-            <p class="text-sm text-slate-500">{{ $boardMember->district ?: 'Board member' }}</p>
+            <p class="text-sm text-slate-500">{{ $district ?: 'Board member' }}</p>
             <h1 class="splis-page-title">{{ $boardMember->displayName() }}</h1>
-            <p class="splis-page-subtitle">Committee assignments for the current term and past election periods.</p>
+            <p class="splis-page-subtitle">Committee assignments for the selected election term.</p>
         </div>
         @can('update', $boardMember)
-            <a href="{{ route('board-members.edit', $boardMember) }}" class="splis-btn-primary">Edit profile</a>
+            <a href="{{ route('board-members.edit', ['boardMember' => $boardMember, 'term' => $selectedTerm->id]) }}" class="splis-btn-primary">Edit profile</a>
         @endcan
     </div>
 
+    <div class="mb-6 flex flex-wrap gap-2">
+        @foreach ($terms as $term)
+            <a
+                href="{{ route('board-members.show', ['boardMember' => $boardMember, 'term' => $term->id]) }}"
+                class="{{ $term->id === $selectedTerm->id ? 'splis-btn-primary' : 'splis-btn-secondary' }} text-sm"
+            >
+                {{ $term->label }}@if ($term->is_current) (current)@endif
+            </a>
+        @endforeach
+    </div>
+
     <div class="mb-6 flex flex-wrap items-center gap-2">
-        @if ($boardMember->is_active)
-            <span class="splis-badge-linked">Active</span>
+        @if ($assignment)
+            @if ($isActive)
+                <span class="splis-badge-linked">Active on roster</span>
+            @else
+                <span class="splis-badge-unlinked">Inactive on roster</span>
+            @endif
+            @if ($district === 'Vice Governor')
+                <span class="splis-badge-linked">Presiding officer of the Sangguniang Panlalawigan</span>
+            @endif
         @else
-            <span class="splis-badge-unlinked">Inactive</span>
-        @endif
-        @if ($boardMember->district === 'Vice Governor')
-            <span class="splis-badge-linked">Presiding officer of the Sangguniang Panlalawigan</span>
+            <span class="splis-badge-unlinked">Not on {{ $selectedTerm->label }} roster</span>
         @endif
     </div>
 
     <div class="splis-card splis-card-body mb-8 space-y-6">
         <div>
-            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Current term</p>
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Election term</p>
             <p class="text-lg font-medium text-slate-900 dark:text-slate-100">
-                {{ $currentTerm->label }}
-                <span class="splis-badge-linked ml-2">Current</span>
+                {{ $selectedTerm->label }}
+                @if ($selectedTerm->is_current)
+                    <span class="splis-badge-linked ml-2">Current</span>
+                @endif
             </p>
         </div>
 
-        @php
-            $hasCurrentAssignments = collect($currentRoles)->flatten()->isNotEmpty();
-        @endphp
-
-        @if ($hasCurrentAssignments)
+        @if ($hasAssignments)
             <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 @include('board-members.partials.role-list', [
                     'title' => 'Chairmanship',
-                    'memberships' => $currentRoles['chair'],
+                    'memberships' => $roles['chair'],
                 ])
                 @include('board-members.partials.role-list', [
                     'title' => 'Vice chairmanship',
-                    'memberships' => $currentRoles['vice_chair'],
+                    'memberships' => $roles['vice_chair'],
                 ])
                 @include('board-members.partials.role-list', [
                     'title' => 'Committee membership',
-                    'memberships' => $currentRoles['member'],
+                    'memberships' => $roles['member'],
                 ])
             </div>
         @else
-            <p class="text-sm text-slate-500">No committee assignments for the current term yet. Assign this member from a committee roster.</p>
+            <p class="text-sm text-slate-500">No committee assignments for {{ $selectedTerm->label }} yet. Assign this member from a committee roster.</p>
         @endif
     </div>
 
-    <div class="space-y-6">
-        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Historical assignments</h2>
+    @if ($otherTerms->isNotEmpty())
+        <div class="space-y-6">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Other terms</h2>
 
-        @forelse ($history as $entry)
-            <div class="splis-card splis-card-body space-y-5">
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Past term</p>
-                    <p class="text-base font-medium text-slate-900 dark:text-slate-100">{{ $entry['term']->label }}</p>
-                    @if ($entry['term']->year_from || $entry['term']->year_to)
-                        <p class="text-sm text-slate-500">{{ $entry['term']->year_from ?? '?' }}–{{ $entry['term']->year_to ?? 'present' }}</p>
-                    @endif
-                </div>
+            @foreach ($otherTerms as $entry)
+                <div class="splis-card splis-card-body space-y-5">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Past term</p>
+                            <p class="text-base font-medium text-slate-900 dark:text-slate-100">{{ $entry['term']->label }}</p>
+                            @if ($entry['term']->year_from || $entry['term']->year_to)
+                                <p class="text-sm text-slate-500">{{ $entry['term']->year_from ?? '?' }}–{{ $entry['term']->year_to ?? 'present' }}</p>
+                            @endif
+                        </div>
+                        <a href="{{ route('board-members.show', ['boardMember' => $boardMember, 'term' => $entry['term']->id]) }}" class="splis-btn-secondary text-sm">View term</a>
+                    </div>
 
-                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    @include('board-members.partials.role-list', [
-                        'title' => 'Chairmanship',
-                        'memberships' => $entry['roles']['chair'],
-                        'empty' => '—',
-                    ])
-                    @include('board-members.partials.role-list', [
-                        'title' => 'Vice chairmanship',
-                        'memberships' => $entry['roles']['vice_chair'],
-                        'empty' => '—',
-                    ])
-                    @include('board-members.partials.role-list', [
-                        'title' => 'Committee membership',
-                        'memberships' => $entry['roles']['member'],
-                        'empty' => '—',
-                    ])
+                    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        @include('board-members.partials.role-list', [
+                            'title' => 'Chairmanship',
+                            'memberships' => $entry['roles']['chair'],
+                            'empty' => '—',
+                        ])
+                        @include('board-members.partials.role-list', [
+                            'title' => 'Vice chairmanship',
+                            'memberships' => $entry['roles']['vice_chair'],
+                            'empty' => '—',
+                        ])
+                        @include('board-members.partials.role-list', [
+                            'title' => 'Committee membership',
+                            'memberships' => $entry['roles']['member'],
+                            'empty' => '—',
+                        ])
+                    </div>
                 </div>
-            </div>
-        @empty
-            <div class="splis-card splis-card-body text-sm text-slate-500">
-                No past-term records yet. When you add earlier election periods, this member’s previous chairmanships and memberships will appear here.
-            </div>
-        @endforelse
-    </div>
+            @endforeach
+        </div>
+    @endif
 
     <div class="mt-6">
-        <a href="{{ route('board-members.index') }}" class="splis-btn-secondary">Back to board members</a>
+        <a href="{{ route('board-members.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary">Back to board members</a>
     </div>
 </div>
 @endsection

@@ -62,17 +62,47 @@ class Committee extends Model
         return $query->orderBy('sort_order')->orderBy('name');
     }
 
-    public function chairDisplayName(?int $termId = null): string
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeWithRosterForTerm(Builder $query, int $termId): Builder
     {
-        return $this->roleDisplayName(CommitteeMembershipRole::Chair, $termId) ?: trim((string) ($this->chair ?? ''));
+        return $query->where(function (Builder $query) use ($termId): void {
+            $query->whereHas('memberships', fn (Builder $query) => $query->where('committee_term_id', $termId))
+                ->orWhereHas('termSecretaries', fn (Builder $query) => $query->where('committee_term_id', $termId));
+        });
     }
 
-    public function viceChairDisplayName(?int $termId = null): string
+    public function hasRosterForTerm(int $termId): bool
     {
-        return $this->roleDisplayName(CommitteeMembershipRole::ViceChair, $termId) ?: trim((string) ($this->vice_chair ?? ''));
+        return $this->memberships()->where('committee_term_id', $termId)->exists()
+            || $this->termSecretaries()->where('committee_term_id', $termId)->exists();
     }
 
-    public function secretaryDisplayName(?int $termId = null): string
+    public function chairDisplayName(?int $termId = null, bool $allowLegacy = true): string
+    {
+        $name = $this->roleDisplayName(CommitteeMembershipRole::Chair, $termId);
+
+        if ($name !== '' || ! $allowLegacy) {
+            return $name;
+        }
+
+        return trim((string) ($this->chair ?? ''));
+    }
+
+    public function viceChairDisplayName(?int $termId = null, bool $allowLegacy = true): string
+    {
+        $name = $this->roleDisplayName(CommitteeMembershipRole::ViceChair, $termId);
+
+        if ($name !== '' || ! $allowLegacy) {
+            return $name;
+        }
+
+        return trim((string) ($this->vice_chair ?? ''));
+    }
+
+    public function secretaryDisplayName(?int $termId = null, bool $allowLegacy = true): string
     {
         $termId ??= CommitteeTerm::query()->current()->value('id');
 
@@ -86,18 +116,22 @@ class Committee extends Model
             }
         }
 
+        if (! $allowLegacy) {
+            return '';
+        }
+
         return trim((string) ($this->secretary ?? ''));
     }
 
     /**
      * @return list<string>
      */
-    public function memberDisplayNames(?int $termId = null): array
+    public function memberDisplayNames(?int $termId = null, bool $allowLegacy = true): array
     {
         $termId ??= CommitteeTerm::query()->current()->value('id');
 
         if ($termId === null) {
-            return $this->legacyMemberNames();
+            return $allowLegacy ? $this->legacyMemberNames() : [];
         }
 
         $names = $this->memberships()
@@ -111,7 +145,11 @@ class Committee extends Model
             ->values()
             ->all();
 
-        return $names !== [] ? $names : $this->legacyMemberNames();
+        if ($names !== [] || ! $allowLegacy) {
+            return $names;
+        }
+
+        return $this->legacyMemberNames();
     }
 
     public function roleDisplayName(CommitteeMembershipRole $role, ?int $termId = null): string

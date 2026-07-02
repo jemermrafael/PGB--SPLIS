@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BoardMember;
 use App\Models\Committee;
 use App\Models\CommitteeTerm;
+use App\Services\BoardMemberRosterService;
 use App\Services\CommitteeRosterService;
 use App\Support\CommitteeSecretaryOptions;
+use App\Support\CommitteeTermSelection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -16,17 +17,30 @@ class CommitteeController extends Controller
 {
     public function __construct(
         protected CommitteeRosterService $rosterService,
+        protected BoardMemberRosterService $boardMemberRosterService,
     ) {}
 
-    public function index(): View
+    public function index(Request $request): View
     {
         $this->authorize('viewAny', Committee::class);
 
-        $committees = Committee::query()
-            ->ordered()
-            ->paginate(50);
+        ['terms' => $terms, 'selectedTerm' => $selectedTerm] = CommitteeTermSelection::resolve(
+            $request->integer('term') ?: null,
+        );
+
+        $committeesQuery = Committee::query()->ordered();
+
+        if (! $selectedTerm->is_current) {
+            $committeesQuery->withRosterForTerm($selectedTerm->id);
+        }
+
+        $committees = $committeesQuery
+            ->paginate(50)
+            ->appends(['term' => $selectedTerm->id]);
 
         return view('committees.index', [
+            'terms' => $terms,
+            'selectedTerm' => $selectedTerm,
             'committees' => $committees,
         ]);
     }
@@ -44,7 +58,7 @@ class CommitteeController extends Controller
             ]),
             'term' => $term,
             'terms' => CommitteeTerm::query()->ordered()->get(),
-            'boardMembers' => BoardMember::query()->active()->ordered()->get(),
+            'boardMembers' => $this->boardMemberRosterService->activeMembersForTermQuery($term)->get(),
             'secretaryOptions' => CommitteeSecretaryOptions::names(),
             'secretaryName' => '',
             'roster' => [
@@ -66,11 +80,11 @@ class CommitteeController extends Controller
         $this->rosterService->saveRoster($committee, $term, $this->rosterInput($request));
 
         return redirect()
-            ->route('committees.show', $committee)
+            ->route('committees.show', ['committee' => $committee, 'term' => $term->id])
             ->with('status', 'Committee created.');
     }
 
-    public function show(Committee $committee): View
+    public function show(Request $request, Committee $committee): View
     {
         $this->authorize('view', $committee);
 
@@ -80,11 +94,18 @@ class CommitteeController extends Controller
             ->get();
 
         if ($terms->isEmpty()) {
-            $terms = CommitteeTerm::query()->ordered()->get();
-        }
+            ['terms' => $terms, 'selectedTerm' => $selectedTerm] = CommitteeTermSelection::resolve(
+                $request->integer('term') ?: null,
+            );
+        } else {
+            ['terms' => $allTerms, 'selectedTerm' => $selectedTerm] = CommitteeTermSelection::resolve(
+                $request->integer('term') ?: null,
+            );
 
-        $selectedTermId = (int) request('term', $terms->firstWhere('is_current', true)?->id ?? $terms->first()?->id);
-        $selectedTerm = $terms->firstWhere('id', $selectedTermId) ?? CommitteeTerm::currentOrCreate();
+            if (! $terms->contains('id', $selectedTerm->id)) {
+                $terms = $allTerms;
+            }
+        }
 
         $memberships = $committee->memberships()
             ->where('committee_term_id', $selectedTerm->id)
@@ -114,7 +135,7 @@ class CommitteeController extends Controller
             'committee' => $committee,
             'term' => $term,
             'terms' => CommitteeTerm::query()->ordered()->get(),
-            'boardMembers' => BoardMember::query()->active()->ordered()->get(),
+            'boardMembers' => $this->boardMemberRosterService->activeMembersForTermQuery($term)->get(),
             'secretaryOptions' => CommitteeSecretaryOptions::names(),
             'secretaryName' => $roster['secretary'],
             'roster' => $roster,
@@ -131,7 +152,7 @@ class CommitteeController extends Controller
         $this->rosterService->saveRoster($committee, $term, $this->rosterInput($request));
 
         return redirect()
-            ->route('committees.show', $committee)
+            ->route('committees.show', ['committee' => $committee, 'term' => $term->id])
             ->with('status', 'Committee updated.');
     }
 

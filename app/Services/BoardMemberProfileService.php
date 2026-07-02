@@ -12,14 +12,13 @@ class BoardMemberProfileService
 {
     /**
      * @return array{
-     *     currentTerm: CommitteeTerm,
-     *     current: array<string, Collection<int, CommitteeMembership>>,
-     *     history: Collection<int, array{term: CommitteeTerm, roles: array<string, Collection<int, CommitteeMembership>>}>
+     *     roles: array<string, Collection<int, CommitteeMembership>>,
+     *     otherTerms: Collection<int, array{term: CommitteeTerm, roles: array<string, Collection<int, CommitteeMembership>>}>
      * }
      */
-    public function build(BoardMember $boardMember): array
+    public function build(BoardMember $boardMember, ?CommitteeTerm $selectedTerm = null): array
     {
-        $currentTerm = CommitteeTerm::currentOrCreate();
+        $selectedTerm ??= CommitteeTerm::currentOrCreate();
 
         $memberships = $boardMember->committeeMemberships()
             ->with(['committee', 'term'])
@@ -27,10 +26,10 @@ class BoardMemberProfileService
 
         $byTerm = $memberships->groupBy('committee_term_id')->toBase();
 
-        $current = $this->rolesGrouped($byTerm->get($currentTerm->id) ?? collect());
+        $roles = $this->rolesGrouped($byTerm->get($selectedTerm->id) ?? collect());
 
-        $history = $byTerm
-            ->except([$currentTerm->id])
+        $otherTerms = $byTerm
+            ->except([$selectedTerm->id])
             ->map(function (Collection $termMemberships, int|string $termId) {
                 $term = $termMemberships->first()?->term;
 
@@ -48,9 +47,8 @@ class BoardMemberProfileService
             ->values();
 
         return [
-            'currentTerm' => $currentTerm,
-            'current' => $current,
-            'history' => $history,
+            'roles' => $roles,
+            'otherTerms' => $otherTerms,
         ];
     }
 
