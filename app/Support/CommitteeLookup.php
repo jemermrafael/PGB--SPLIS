@@ -51,9 +51,12 @@ class CommitteeLookup
     public static function chairFor(?int $committeeId, ?string $committeeName = null): string
     {
         $committee = self::findById($committeeId) ?? self::findByName($committeeName);
-        $chair = trim((string) ($committee?->chair ?? ''));
 
-        return $chair;
+        if ($committee === null) {
+            return '';
+        }
+
+        return $committee->chairDisplayName();
     }
 
     public static function normalizeReferralName(string $name): string

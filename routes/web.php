@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\BoardMemberController;
 use App\Http\Controllers\CommitteeController;
+use App\Http\Controllers\CommitteeTermController;
 use App\Http\Controllers\LegislativeSessionController;
 use App\Http\Controllers\ObAgendaPoolController;
 use App\Http\Controllers\ObDocumentController;
@@ -78,9 +80,25 @@ Route::middleware('auth')->group(function () {
     Route::get('/committees', [CommitteeController::class, 'index'])->name('committees.index');
     Route::get('/committees/create', [CommitteeController::class, 'create'])->name('committees.create');
     Route::post('/committees', [CommitteeController::class, 'store'])->name('committees.store');
+    Route::get('/committees/{committee}', [CommitteeController::class, 'show'])->name('committees.show');
     Route::get('/committees/{committee}/edit', [CommitteeController::class, 'edit'])->name('committees.edit');
     Route::put('/committees/{committee}', [CommitteeController::class, 'update'])->name('committees.update');
     Route::delete('/committees/{committee}', [CommitteeController::class, 'destroy'])->name('committees.destroy');
+
+    Route::get('/board-members', [BoardMemberController::class, 'index'])->name('board-members.index');
+    Route::get('/board-members/create', [BoardMemberController::class, 'create'])->name('board-members.create');
+    Route::post('/board-members', [BoardMemberController::class, 'store'])->name('board-members.store');
+    Route::get('/board-members/{boardMember}', [BoardMemberController::class, 'show'])->name('board-members.show');
+    Route::get('/board-members/{boardMember}/edit', [BoardMemberController::class, 'edit'])->name('board-members.edit');
+    Route::put('/board-members/{boardMember}', [BoardMemberController::class, 'update'])->name('board-members.update');
+    Route::delete('/board-members/{boardMember}', [BoardMemberController::class, 'destroy'])->name('board-members.destroy');
+
+    Route::get('/committee-terms', [CommitteeTermController::class, 'index'])->name('committee-terms.index');
+    Route::get('/committee-terms/create', [CommitteeTermController::class, 'create'])->name('committee-terms.create');
+    Route::post('/committee-terms', [CommitteeTermController::class, 'store'])->name('committee-terms.store');
+    Route::get('/committee-terms/{committeeTerm}/edit', [CommitteeTermController::class, 'edit'])->name('committee-terms.edit');
+    Route::put('/committee-terms/{committeeTerm}', [CommitteeTermController::class, 'update'])->name('committee-terms.update');
+    Route::delete('/committee-terms/{committeeTerm}', [CommitteeTermController::class, 'destroy'])->name('committee-terms.destroy');
 
     Route::prefix('order-of-business')->name('ob.')->group(function () {
         Route::get('/', [LegislativeSessionController::class, 'index'])->name('sessions.index');

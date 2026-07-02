@@ -17,6 +17,11 @@
         @endcan
     </div>
 
+    <div class="mb-4 flex flex-wrap gap-2 text-sm">
+        <a href="{{ route('board-members.index') }}" class="splis-btn-secondary">Board members</a>
+        <a href="{{ route('committee-terms.index') }}" class="splis-btn-secondary">Election terms</a>
+    </div>
+
     @if (session('status'))
         <p class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">{{ session('status') }}</p>
     @endif
@@ -37,9 +42,11 @@
                 @forelse ($committees as $committee)
                     <tr>
                         <td class="text-slate-500">{{ $committee->sort_order }}</td>
-                        <td class="font-medium text-slate-900 dark:text-slate-100">{{ $committee->name }}</td>
-                        <td class="hidden lg:table-cell">{{ $committee->chair ?: '—' }}</td>
-                        <td class="hidden xl:table-cell">{{ $committee->vice_chair ?: '—' }}</td>
+                        <td class="font-medium text-slate-900 dark:text-slate-100">
+                            <a href="{{ route('committees.show', $committee) }}" class="hover:text-brand-700 dark:hover:text-brand-300">{{ $committee->name }}</a>
+                        </td>
+                        <td class="hidden lg:table-cell">{{ $committee->chairDisplayName() ?: '—' }}</td>
+                        <td class="hidden xl:table-cell">{{ $committee->viceChairDisplayName() ?: '—' }}</td>
                         <td>
                             @if ($committee->is_active)
                                 <span class="splis-badge-linked">Active</span>
@@ -49,6 +56,7 @@
                         </td>
                         <td class="text-right">
                             <div class="flex justify-end gap-2">
+                                <a href="{{ route('committees.show', $committee) }}" class="splis-btn-secondary text-sm">Roster</a>
                                 @can('update', $committee)
                                     <a href="{{ route('committees.edit', $committee) }}" class="splis-btn-secondary text-sm">Edit</a>
                                 @endcan

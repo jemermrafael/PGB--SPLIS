@@ -22,11 +22,11 @@
             ['label' => 'Ordinances', 'url' => '#', 'active' => false, 'placeholder' => true],
             ['label' => 'Agenda', 'url' => route('agenda.index'), 'active' => request()->routeIs('agenda.*')],
             ['label' => 'Order of Business', 'url' => route('ob.sessions.index'), 'active' => request()->routeIs('ob.*')],
-            ['label' => 'Committees', 'url' => route('committees.index'), 'active' => request()->routeIs('committees.*')],
             ['label' => 'Reference', 'url' => '#', 'active' => false, 'placeholder' => true],
         ];
 
         $resolutionsNavActive = request()->routeIs('resolutions.*') || request()->routeIs('incoming.*');
+        $committeesNavActive = request()->routeIs('committees.*') || request()->routeIs('board-members.*') || request()->routeIs('committee-terms.*');
     @endphp
 
     <div class="flex min-h-screen flex-col">
@@ -124,6 +124,44 @@
                                 ])
                             >
                                 Incoming
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="splis-nav-dropdown" data-dropdown>
+                        <button
+                            type="button"
+                            data-dropdown-trigger
+                            aria-expanded="false"
+                            aria-haspopup="true"
+                            @class([
+                                'splis-navbar-link splis-nav-dropdown-trigger',
+                                'splis-navbar-link-active' => $committeesNavActive,
+                            ])
+                        >
+                            Committees
+                            <svg class="h-3.5 w-3.5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+                        </button>
+                        <div class="splis-nav-dropdown-panel" data-dropdown-panel role="menu">
+                            <a
+                                href="{{ route('committees.index') }}"
+                                role="menuitem"
+                                @class([
+                                    'splis-nav-dropdown-link',
+                                    'splis-nav-dropdown-link-active' => request()->routeIs('committees.*'),
+                                ])
+                            >
+                                Committees
+                            </a>
+                            <a
+                                href="{{ route('board-members.index') }}"
+                                role="menuitem"
+                                @class([
+                                    'splis-nav-dropdown-link',
+                                    'splis-nav-dropdown-link-active' => request()->routeIs('board-members.*'),
+                                ])
+                            >
+                                Board members
                             </a>
                         </div>
                     </div>

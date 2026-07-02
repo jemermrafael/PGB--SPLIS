@@ -142,11 +142,11 @@
     }
 
     .splis-header-navbar-inner {
-        @apply mx-auto flex max-w-7xl flex-wrap items-center justify-start gap-x-1 gap-y-1 px-6 py-2 md:px-8;
+        @apply mx-auto flex max-w-7xl flex-wrap items-center justify-start gap-x-3 gap-y-1 px-6 py-2 md:gap-x-5 md:px-8;
     }
 
     .splis-navbar-link {
-        @apply rounded-md px-3 py-2 text-sm font-medium text-slate-500 transition hover:text-brand-900;
+        @apply rounded-md px-3 py-2 text-sm font-medium text-slate-500 transition hover:text-brand-900 md:px-4;
     }
 
     .splis-navbar-link-active {
@@ -162,7 +162,7 @@
     }
 
     .splis-nav-dropdown-trigger {
-        @apply inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0;
+        @apply inline-flex cursor-pointer items-center gap-1.5 border-0 bg-transparent;
     }
 
     .splis-nav-dropdown-panel {

@@ -20,7 +20,7 @@ class CommitteeOptions
             ->map(fn (Committee $committee) => [
                 'id' => $committee->id,
                 'name' => $committee->name,
-                'chair' => $committee->chair,
+                'chair' => $committee->chairDisplayName() ?: $committee->chair,
             ])
             ->values()
             ->all();

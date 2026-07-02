@@ -344,6 +344,7 @@ export function initObMaker() {
                     `
                         : '';
 
+
                 return `
                     <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                         <div>
@@ -1094,6 +1095,13 @@ export function initObMaker() {
             const blockEl = target.closest('[data-block-id]');
             if (blockEl) {
                 const blockId = Number(blockEl.dataset.blockId);
+                if (target.dataset.field === 'committee_id') {
+                    const committee = committees.find((item) => String(item.id) === target.value);
+                    const chairField = blockEl.querySelector('[data-field="chair_name"]');
+                    if (committee?.chair && chairField) {
+                        chairField.value = committee.chair;
+                    }
+                }
                 syncBlockFromDom(blockId);
                 saveBlock(blockId);
             }
