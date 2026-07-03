@@ -13,6 +13,7 @@ use App\Models\Legacy\SpResolution;
 use App\Models\Resolution;
 use App\Support\DocumentType;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -29,10 +30,6 @@ class ResolutionRepository
 
     public function paginateDocuments(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        if (! empty($filters['has_pdf'])) {
-            return $this->paginateWithPdfFilter($filters, $perPage);
-        }
-
         return $this->baseQuery($filters)
             ->paginate($perPage)
             ->withQueryString()
@@ -65,31 +62,52 @@ class ResolutionRepository
         ];
     }
 
-    protected function paginateWithPdfFilter(array $filters, int $perPage): LengthAwarePaginator
+    protected function baseQuery(array $filters): Builder
     {
-        $items = $this->baseQuery($filters)
-            ->get()
-            ->map(fn (Resolution $r) => $this->map($r))
-            ->filter(fn (ResolutionItem $item) => $item->hasPdf)
-            ->values();
-
-        $page = max(1, (int) ($filters['page'] ?? request()->integer('page', 1)));
-        $total = $items->count();
-        $slice = $items->slice(($page - 1) * $perPage, $perPage)->values();
-
-        return new \Illuminate\Pagination\LengthAwarePaginator(
-            $slice,
-            $total,
-            $perPage,
-            $page,
-            ['path' => request()->url(), 'query' => request()->query()]
-        );
+        return $this->filteredQuery($filters)
+            ->with(['category', 'department', 'municipality'])
+            ->orderByDesc('series')
+            ->orderByDesc('id');
     }
 
-    protected function baseQuery(array $filters)
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Builder<Resolution>
+     */
+    public function filteredQuery(array $filters): Builder
     {
-        $query = Resolution::query()->with(['category', 'department', 'municipality']);
+        return $this->applyDocumentFilters(Resolution::query(), $filters);
+    }
 
+    /**
+     * @param  array<int, int|string>  $ids
+     * @return Collection<int|string, Resolution>
+     */
+    public function loadByIds(array $ids): Collection
+    {
+        if ($ids === []) {
+            return collect();
+        }
+
+        return Resolution::query()
+            ->with(['category', 'department', 'municipality'])
+            ->whereIn('id', $ids)
+            ->get()
+            ->keyBy('id');
+    }
+
+    public function mapModel(Resolution $resolution): ResolutionItem
+    {
+        return $this->map($resolution);
+    }
+
+    /**
+     * @param  Builder<Resolution>  $query
+     * @param  array<string, mixed>  $filters
+     * @return Builder<Resolution>
+     */
+    protected function applyDocumentFilters(Builder $query, array $filters): Builder
+    {
         if (! empty($filters['search'])) {
             $term = '%'.$filters['search'].'%';
             $query->where(function ($q) use ($term) {
@@ -151,7 +169,11 @@ class ResolutionRepository
             $query->where('document_type', $filters['document_type']);
         }
 
-        return $query->orderByDesc('series')->orderByDesc('id');
+        if (! empty($filters['has_pdf'])) {
+            $query->whereNotNull('pdf_path')->where('pdf_path', '!=', '');
+        }
+
+        return $query;
     }
 
     public function findLegacy(int $id): ?SpResolution
@@ -193,17 +215,9 @@ class ResolutionRepository
      */
     public function collectDocuments(array $filters = []): Collection
     {
-        $items = $this->baseQuery($filters)
+        return $this->baseQuery($filters)
             ->get()
             ->map(fn (Resolution $r) => $this->map($r));
-
-        if (! empty($filters['has_pdf'])) {
-            return $items
-                ->filter(fn (ResolutionItem $item) => $item->hasPdf)
-                ->values();
-        }
-
-        return $items;
     }
 
     public function countBySeries(int $limit = 10): Collection
@@ -236,7 +250,7 @@ class ResolutionRepository
             documentType: $documentType,
             documentTypeLabel: DocumentType::label($documentType),
             documentTypeBadgeClass: DocumentType::badgeClass($documentType),
-            hasPdf: $this->pdfService->existsFor($r),
+            hasPdf: $this->pdfService->hasLinkedPdf($r),
             status: $r->status,
         );
     }

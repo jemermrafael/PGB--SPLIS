@@ -41,8 +41,42 @@ class OrdinanceSearchService
      */
     public function query(array $filters): Builder
     {
-        $query = Ordinance::query()->with('authoredSponsoredMembers');
+        return $this->filteredQuery($filters)->with('authoredSponsoredMembers');
+    }
 
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Builder<Ordinance>
+     */
+    public function filteredQuery(array $filters): Builder
+    {
+        return $this->applyFilters(Ordinance::query(), $filters);
+    }
+
+    /**
+     * @param  array<int, int|string>  $ids
+     * @return Collection<int|string, Ordinance>
+     */
+    public function loadByIds(array $ids): Collection
+    {
+        if ($ids === []) {
+            return collect();
+        }
+
+        return Ordinance::query()
+            ->with('authoredSponsoredMembers')
+            ->whereIn('id', $ids)
+            ->get()
+            ->keyBy('id');
+    }
+
+    /**
+     * @param  Builder<Ordinance>  $query
+     * @param  array<string, mixed>  $filters
+     * @return Builder<Ordinance>
+     */
+    public function applyFilters(Builder $query, array $filters): Builder
+    {
         $number = trim((string) ($filters['number'] ?? ''));
 
         if ($number !== '') {

@@ -61,6 +61,11 @@ class PdfAttachmentService
         return $this->resolvePath($resolution->series, $resolution->resolution_no, $resolution->pdf_path) !== null;
     }
 
+    public function hasLinkedPdf(Resolution $resolution): bool
+    {
+        return filled($resolution->pdf_path);
+    }
+
     public function findLegacyFile(int $series, string $resolutionNo): ?string
     {
         $legacy = $this->legacyPath($series, $resolutionNo);
