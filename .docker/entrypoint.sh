@@ -16,6 +16,7 @@ cd /var/www/html
 # Writable paths on the mounted storage volume (Coolify read-only root elsewhere)
 mkdir -p \
   storage/app/public \
+  storage/app/backups \
   storage/framework/cache/data \
   storage/framework/sessions \
   storage/framework/views \

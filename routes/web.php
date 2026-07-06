@@ -10,6 +10,7 @@ use App\Http\Controllers\AgendaDeadlinePreviewController;
 use App\Http\Controllers\AgendaItemController;
 use App\Http\Controllers\AgendaSearchController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Admin\DatabaseBackupController;
 use App\Http\Controllers\Admin\DataSyncController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DashboardSearchController;
@@ -137,6 +138,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/data-sync/incoming', [DataSyncController::class, 'syncIncoming'])->name('data-sync.incoming');
         Route::post('/data-sync/sptrack-resolutions', [DataSyncController::class, 'syncSptrackResolutions'])->name('data-sync.sptrack-resolutions');
         Route::post('/data-sync/agenda', [DataSyncController::class, 'syncAgenda'])->name('data-sync.agenda');
+
+        Route::get('/backups', [DatabaseBackupController::class, 'index'])->name('backups.index');
+        Route::post('/backups', [DatabaseBackupController::class, 'store'])->name('backups.store');
+        Route::get('/backups/{filename}', [DatabaseBackupController::class, 'download'])
+            ->where('filename', 'splis-\d{4}-\d{2}-\d{2}-\d{6}\.sql\.gz')
+            ->name('backups.download');
     });
 
     Route::middleware('role:superadmin')->prefix('admin')->name('users.')->group(function () {
