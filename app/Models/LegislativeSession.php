@@ -92,4 +92,15 @@ class LegislativeSession extends Model
 
         return \Illuminate\Support\Str::of($this->session_time)->substr(0, 5);
     }
+
+    public function formattedSessionTimeForPrint(): ?string
+    {
+        if (! $this->session_time) {
+            return null;
+        }
+
+        $formatted = \Carbon\Carbon::parse($this->session_time)->format('g:i A');
+
+        return str_replace(['AM', 'PM'], ['A.M.', 'P.M.'], $formatted);
+    }
 }

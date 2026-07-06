@@ -35,7 +35,7 @@ class ImportAgendaFromCsv extends Command
         );
 
         if (! is_file(config('agenda.csv_links_path'))) {
-            $this->comment('Tip: add PDF links via oldsp/Agenda3.csv and re-run with --links=oldsp/Agenda3.csv');
+            $this->comment('Tip: Agenda4.csv includes embedded PDF links; a separate links file is optional.');
         }
 
         return self::SUCCESS;

@@ -93,6 +93,6 @@ return [
         'Committee of the Whole',
     ],
 
-    'csv_path' => env('AGENDA_CSV_PATH', base_path('manual/Agenda/Agenda.csv')),
+    'csv_path' => env('AGENDA_CSV_PATH', base_path('oldsp/Agenda4.csv')),
     'csv_links_path' => env('AGENDA_CSV_LINKS_PATH', base_path('oldsp/Agenda3.csv')),
 ];

@@ -13,9 +13,16 @@ class AgendaCsvImporter
     ) {}
 
     /**
-     * @return array{imported: int, updated: int, skipped: int, total: int}
+     * @return array{
+     *     agenda_file: string,
+     *     links_file: ?string,
+     *     imported: int,
+     *     updated: int,
+     *     skipped: int,
+     *     total: int
+     * }
      */
-    public function import(?string $csvPath = null, ?string $linksPath = null): array
+    public function sync(?string $csvPath = null, ?string $linksPath = null, bool $dryRun = false): array
     {
         $csvPath = $csvPath ?: config('agenda.csv_path');
         $linksPath = $linksPath ?: config('agenda.csv_links_path');
@@ -24,7 +31,7 @@ class AgendaCsvImporter
             throw new \RuntimeException('Agenda CSV not found: '.$csvPath);
         }
 
-        $links = $this->loadLinksMap($linksPath);
+        $links = $this->loadLinksMap($this->resolveLinksPath($csvPath, $linksPath));
         $imported = 0;
         $updated = 0;
         $skipped = 0;
@@ -32,35 +39,118 @@ class AgendaCsvImporter
 
         foreach ($this->csv->indexedRows($csvPath) as $indexed) {
             $row = $indexed['assoc'];
-            $trackingNo = $this->trackingNoFromRow($row, $indexed['columns']);
+            $columns = $indexed['columns'];
+            $trackingNo = $this->trackingNoFromRow($row, $columns);
             if ($trackingNo === null) {
                 continue;
             }
 
             $total++;
-            $linkRow = $links[$trackingNo] ?? [];
+            $linkRow = array_merge(
+                $links[$trackingNo] ?? [],
+                array_filter($this->embeddedLinksFromColumns($columns)),
+            );
 
-            $payload = $this->mapRow($row, $linkRow);
+            $payload = $this->mapRow($row, $linkRow, $columns);
 
-            $existing = AgendaItem::query()->where('tracking_no', $trackingNo)->first();
-            if ($existing) {
-                $existing->update($payload);
-                $updated++;
-            } else {
-                AgendaItem::create(array_merge($payload, ['tracking_no' => $trackingNo]));
-                $imported++;
+            try {
+                $existing = AgendaItem::query()->where('tracking_no', $trackingNo)->first();
+                if ($existing) {
+                    if (! $dryRun) {
+                        $existing->update($payload);
+                    }
+                    $updated++;
+                } else {
+                    if (! $dryRun) {
+                        AgendaItem::create(array_merge($payload, ['tracking_no' => $trackingNo]));
+                    }
+                    $imported++;
+                }
+            } catch (\Throwable) {
+                $skipped++;
             }
         }
 
-        return compact('imported', 'updated', 'skipped', 'total');
+        return [
+            'agenda_file' => $csvPath,
+            'links_file' => $this->resolveLinksPath($csvPath, $linksPath),
+            'imported' => $imported,
+            'updated' => $updated,
+            'skipped' => $skipped,
+            'total' => $total,
+        ];
+    }
+
+    /**
+     * @return array{imported: int, updated: int, skipped: int, total: int}
+     */
+    public function import(?string $csvPath = null, ?string $linksPath = null): array
+    {
+        $stats = $this->sync($csvPath, $linksPath);
+
+        return [
+            'imported' => $stats['imported'],
+            'updated' => $stats['updated'],
+            'skipped' => $stats['skipped'],
+            'total' => $stats['total'],
+        ];
+    }
+
+    protected function resolveLinksPath(string $csvPath, ?string $linksPath): ?string
+    {
+        $linksPath = $linksPath ?: config('agenda.csv_links_path');
+
+        if (! is_file((string) $linksPath)) {
+            return null;
+        }
+
+        if (realpath($csvPath) === realpath((string) $linksPath)) {
+            return null;
+        }
+
+        return $linksPath;
+    }
+
+    /**
+     * PDF URLs embedded in Agenda4-style exports (tracking col + request PDF col).
+     *
+     * @param  list<string|null>  $columns
+     * @return array<string, string>
+     */
+    protected function embeddedLinksFromColumns(array $columns): array
+    {
+        return array_filter([
+            'request_pdf_url' => $this->urlOrNull($columns[1] ?? null),
+            'committee_report_url' => $this->firstUrl($columns, [16, 15]),
+            'reso_ord_ao_url' => $this->firstUrl($columns, [20]),
+            'journal_url' => $this->firstUrl($columns, [23]),
+            'minutes_url' => $this->firstUrl($columns, [25]),
+        ]);
+    }
+
+    /**
+     * @param  list<string|null>  $columns
+     * @param  list<int>  $indices
+     */
+    protected function firstUrl(array $columns, array $indices): ?string
+    {
+        foreach ($indices as $index) {
+            $url = $this->urlOrNull($columns[$index] ?? null);
+            if ($url !== null) {
+                return $url;
+            }
+        }
+
+        return null;
     }
 
     /**
      * @param  array<string, string|null>  $row
      * @param  array<string, string|null>  $links
+     * @param  list<string|null>  $columns
      * @return array<string, mixed>
      */
-    protected function mapRow(array $row, array $links): array
+    protected function mapRow(array $row, array $links, array $columns = []): array
     {
         $dateReceived = $this->parseDate($this->cell($row, ['Date Received', 'date_received']));
         $datePassed = $this->parseDate($this->cell($row, ['Date passed', 'date_passed']));
@@ -78,11 +168,13 @@ class AgendaCsvImporter
             'sender' => $this->cell($row, ['Sender', 'sender']),
             'title' => $this->cell($row, ['Title', 'title']),
             'committee_referred' => $this->cell($row, ['Committee Referred', 'committee_referred']),
-            'date_of_referral' => $this->parseDate($this->cell($row, ['Date of Referral', 'date_of_referral'])),
+            'date_of_referral' => $this->parseDate($this->cell($row, ['Date of Referral', 'date_of_referral']))
+                ?? $this->dateOrNull($columns[11] ?? null),
             'date_of_committee_meeting' => $this->parseDate($this->cell($row, ['Date of Commitee Meeting', 'Date of Committee Meeting', 'date_of_committee_meeting'])),
             'committee_meeting_minutes' => $this->cell($row, ['Com. Meeting Minutes', 'committee_meeting_minutes']),
             'outcome' => $this->cell($row, ['Outcome', 'outcome']),
-            'committee_report_url' => $links['committee_report_url'] ?? $this->urlOrNull($this->cell($row, ['Committee Report Link', 'committee_report_url'])),
+            'committee_report_url' => $links['committee_report_url']
+                ?? $this->urlOrNull($this->cell($row, ['Committee Report Link', 'committee_report_url'])),
             'date_passed' => $datePassed,
             'date_signed_by_gov' => $dateSigned,
             'reso_ord_ao_no' => $this->normalizeResoNo($this->cell($row, ['Reso./Ord./AO No.', 'reso_ord_ao_no'])),
@@ -106,7 +198,22 @@ class AgendaCsvImporter
             $item->days_left_label = 'Accomplished';
         }
 
-        return $item->getAttributes();
+        return $this->sanitizePayload($item->getAttributes());
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    protected function sanitizePayload(array $payload): array
+    {
+        foreach ($payload as $key => $value) {
+            if (is_string($value)) {
+                $payload[$key] = $this->normalizeText($value) ?? '';
+            }
+        }
+
+        return $payload;
     }
 
     /**
@@ -151,14 +258,23 @@ class AgendaCsvImporter
      */
     protected function trackingNoFromRow(array $row, array $columns): ?string
     {
-        $trackingNo = $this->cell($row, [' ', 'tracking_no', 'no', '#'])
-            ?? ($columns[0] ?? null);
+        $trackingNo = $this->normalizeText(
+            $this->cell($row, [' ', '', 'tracking_no', 'no', '#'])
+                ?? ($columns[0] ?? null),
+        );
 
         if ($trackingNo === null || trim($trackingNo) === '') {
             return null;
         }
 
-        return str_pad(ltrim($trackingNo, '0') ?: '0', 3, '0', STR_PAD_LEFT);
+        $trackingNo = trim($trackingNo);
+        $digits = ltrim($trackingNo, '0') ?: '0';
+
+        if (! ctype_digit($digits)) {
+            return null;
+        }
+
+        return str_pad($digits, 3, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -169,11 +285,42 @@ class AgendaCsvImporter
     {
         foreach ($keys as $key) {
             if (array_key_exists($key, $row) && trim((string) ($row[$key] ?? '')) !== '') {
-                return trim((string) $row[$key]);
+                return $this->normalizeText(trim((string) $row[$key]));
             }
         }
 
         return null;
+    }
+
+    protected function normalizeText(?string $value): ?string
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return null;
+        }
+
+        $value = (string) @iconv('UTF-8', 'UTF-8//IGNORE', $value);
+
+        if (! mb_check_encoding($value, 'UTF-8')) {
+            $converted = @mb_convert_encoding($value, 'UTF-8', 'Windows-1252');
+            if ($converted !== false) {
+                $value = (string) @iconv('UTF-8', 'UTF-8//IGNORE', $converted);
+            }
+        }
+
+        if (function_exists('mb_scrub')) {
+            $value = mb_scrub($value, 'UTF-8');
+        }
+
+        return str_replace(
+            [
+                "\u{201C}", "\u{201D}", "\u{2018}", "\u{2019}",
+                "\u{2013}", "\u{2014}",
+                "\x93", "\x94", "\x91", "\x92", "\x96", "\x97",
+            ],
+            ['"', '"', "'", "'", '-', '-', '"', '"', "'", "'", '-', '-'],
+            $value,
+        );
     }
 
     protected function mapStatus(?string $value, ?int $prescribed): string
@@ -187,6 +334,16 @@ class AgendaCsvImporter
             $prescribed === 0 => AgendaItem::STATUS_NO_DUE_DATE,
             default => AgendaItem::STATUS_PENDING,
         };
+    }
+
+    protected function dateOrNull(?string $value): ?string
+    {
+        $value = trim((string) $value);
+        if ($value === '' || filter_var($value, FILTER_VALIDATE_URL)) {
+            return null;
+        }
+
+        return $this->parseDate($value);
     }
 
     protected function parseDate(?string $value): ?string
@@ -238,7 +395,7 @@ class AgendaCsvImporter
 
     protected function urlOrNull(?string $value): ?string
     {
-        $value = trim((string) $value);
+        $value = $this->normalizeText($value) ?? '';
         if ($value === '' || ! filter_var($value, FILTER_VALIDATE_URL)) {
             return null;
         }

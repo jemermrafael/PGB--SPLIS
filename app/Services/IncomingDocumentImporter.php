@@ -11,55 +11,66 @@ class IncomingDocumentImporter
     ) {}
 
     /**
-     * @return array{imported: int, skipped: int, total: int}
+     * @return array{total: int, created: int, updated: int, skipped: int}
      */
     public function importFromSptrack(?string $csvPath = null, string $source = 'database'): array
     {
-        $imported = 0;
-        $skipped = 0;
-        $total = 0;
+        return $this->syncFromSptrack($csvPath, $source, dryRun: false);
+    }
 
-        $this->reader->chunkFiles(500, function (array $chunk) use (&$imported, &$skipped, &$total) {
+    /**
+     * @return array{total: int, created: int, updated: int, skipped: int}
+     */
+    public function syncFromSptrack(?string $csvPath = null, string $source = 'database', bool $dryRun = false): array
+    {
+        $stats = ['total' => 0, 'created' => 0, 'updated' => 0, 'skipped' => 0];
+
+        $this->reader->chunkFiles(500, function (array $chunk) use (&$stats, $dryRun) {
             foreach ($chunk as $row) {
                 if ($row['legacy_file_id'] < 1) {
                     continue;
                 }
 
-                $total++;
+                $stats['total']++;
 
-                if (IncomingDocument::query()->where('legacy_file_id', $row['legacy_file_id'])->exists()) {
-                    IncomingDocument::query()
-                        ->where('legacy_file_id', $row['legacy_file_id'])
-                        ->update([
-                            'sp_rec_added' => $row['sp_rec_added'],
-                            'sp_rec_modified' => $row['sp_rec_modified'],
-                            'sp_rec_added_by' => $row['sp_rec_added_by'],
-                            'sp_rec_modified_by' => $row['sp_rec_modified_by'],
-                        ]);
-                    $skipped++;
+                $existing = IncomingDocument::query()
+                    ->where('legacy_file_id', $row['legacy_file_id'])
+                    ->first();
+
+                if ($existing) {
+                    if ($dryRun) {
+                        $stats['updated']++;
+
+                        continue;
+                    }
+
+                    $existing->update($this->syncAttributes($row));
+                    $stats['updated']++;
+
+                    continue;
+                }
+
+                if ($dryRun) {
+                    $stats['created']++;
 
                     continue;
                 }
 
                 IncomingDocument::create($this->mapRow($row));
-                $imported++;
+                $stats['created']++;
             }
         }, $csvPath, $source);
 
-        return compact('imported', 'skipped', 'total');
+        return $stats;
     }
 
     /**
      * @param  array<string, mixed>  $row
      * @return array<string, mixed>
      */
-    protected function mapRow(array $row): array
+    protected function syncAttributes(array $row): array
     {
         return [
-            'legacy_file_id' => $row['legacy_file_id'],
-            'source' => IncomingDocument::SOURCE_SPTRACK,
-            'link_status' => IncomingDocument::LINK_UNLINKED,
-            'resolution_id' => null,
             'mun_resolution_no' => $row['mun_resolution_no'],
             'date_received' => $row['date_received'],
             'mun_series' => $row['mun_series'],
@@ -82,7 +93,21 @@ class IncomingDocumentImporter
             'sp_rec_modified' => $row['sp_rec_modified'],
             'sp_rec_added_by' => $row['sp_rec_added_by'],
             'sp_rec_modified_by' => $row['sp_rec_modified_by'],
-            'created_by' => null,
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     * @return array<string, mixed>
+     */
+    protected function mapRow(array $row): array
+    {
+        return array_merge($this->syncAttributes($row), [
+            'legacy_file_id' => $row['legacy_file_id'],
+            'source' => IncomingDocument::SOURCE_SPTRACK,
+            'link_status' => IncomingDocument::LINK_UNLINKED,
+            'resolution_id' => null,
+            'created_by' => null,
+        ]);
     }
 }

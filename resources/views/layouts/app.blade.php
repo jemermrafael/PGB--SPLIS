@@ -67,6 +67,7 @@
                                 <p class="px-3 pb-2 text-xs text-slate-500">{{ auth()->user()->role->label() }}</p>
                                 @if (auth()->user()->canManageUsers())
                                     <a href="{{ route('users.index') }}" class="splis-user-menu-link">Manage users</a>
+                                    <a href="{{ route('admin.data-sync.index') }}" class="splis-user-menu-link">Data sync</a>
                                 @endif
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf

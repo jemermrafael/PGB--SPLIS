@@ -30,16 +30,16 @@ class ImportIncomingFromSptrack extends Command
         }
 
         $this->table(
-            ['Total rows', 'Imported', 'Skipped (existing)'],
-            [[$stats['total'], $stats['imported'], $stats['skipped']]]
+            ['Total rows', 'Created', 'Updated'],
+            [[$stats['total'], $stats['created'], $stats['updated']]]
         );
 
-        if ($stats['imported'] > 0 || $stats['skipped'] > 0) {
+        if ($stats['created'] > 0 || $stats['updated'] > 0) {
             ActivityLog::log('incoming.imported_from_sptrack', null, [
                 'source' => $source,
                 'total' => $stats['total'],
-                'imported' => $stats['imported'],
-                'skipped' => $stats['skipped'],
+                'created' => $stats['created'],
+                'updated' => $stats['updated'],
             ], null);
         }
 

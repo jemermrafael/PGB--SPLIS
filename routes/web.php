@@ -10,6 +10,7 @@ use App\Http\Controllers\AgendaDeadlinePreviewController;
 use App\Http\Controllers\AgendaItemController;
 use App\Http\Controllers\AgendaSearchController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Admin\DataSyncController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DashboardSearchController;
 use App\Http\Controllers\IncomingDocumentController;
@@ -130,8 +131,13 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{legislativeSession}', [LegislativeSessionController::class, 'destroy'])->name('sessions.destroy');
     });
 
-    Route::redirect('/admin/sptrack', '/incoming')->name('admin.sptrack.index');
-    Route::redirect('/admin/sptrack/queue', '/incoming');
+    Route::middleware('role:superadmin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/data-sync', [DataSyncController::class, 'index'])->name('data-sync.index');
+        Route::post('/data-sync/resolutions', [DataSyncController::class, 'syncResolutions'])->name('data-sync.resolutions');
+        Route::post('/data-sync/incoming', [DataSyncController::class, 'syncIncoming'])->name('data-sync.incoming');
+        Route::post('/data-sync/sptrack-resolutions', [DataSyncController::class, 'syncSptrackResolutions'])->name('data-sync.sptrack-resolutions');
+        Route::post('/data-sync/agenda', [DataSyncController::class, 'syncAgenda'])->name('data-sync.agenda');
+    });
 
     Route::middleware('role:superadmin')->prefix('admin')->name('users.')->group(function () {
         Route::get('/users', [UserController::class, 'index'])->name('index');

@@ -35,11 +35,12 @@
 
 <article class="ob-print-document ob-print-document--legal mx-auto px-6 py-8">
     @php
-        $headerMeta = array_filter([
-            $session->formattedSessionTime(),
+        $printTime = $session->formattedSessionTimeForPrint();
+        $sessionAndVenue = trim(implode(' ', array_filter([
             $session->session_number,
             $session->venue,
-        ]);
+        ])));
+        $headerMetaLine = collect([$printTime, $sessionAndVenue])->filter()->implode(', ');
     @endphp
     <header class="ob-print-header mb-8 text-center">
         <div class="ob-print-header-brand">
@@ -51,8 +52,8 @@
             <h1 class="ob-print-header-title">ORDER OF BUSINESS</h1>
         </div>
         <p class="ob-print-header-date">{{ $session->session_date->format('l, F j, Y') }}</p>
-        @if ($headerMeta !== [])
-            <p class="ob-print-header-meta">{{ implode(' · ', $headerMeta) }}</p>
+        @if ($headerMetaLine !== '')
+            <p class="ob-print-header-meta">{{ $headerMetaLine }}</p>
         @endif
     </header>
 
