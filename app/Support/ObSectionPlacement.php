@@ -191,17 +191,12 @@ class ObSectionPlacement
             return true;
         }
 
-        if ($block->type === ObBlockType::RomanSection) {
-            if (str_contains(mb_strtoupper((string) ($block->content['sub_label'] ?? '')), 'UNFINISHED BUSINESS')) {
-                return true;
-            }
-
-            if (self::isRomanNumeral($block, 'VI') && str_contains(mb_strtoupper((string) ($block->content['title'] ?? '')), 'CALENDAR')) {
-                return true;
-            }
+        if ($block->type === ObBlockType::RomanSection
+            && str_contains(mb_strtoupper((string) ($block->content['sub_label'] ?? '')), 'UNFINISHED BUSINESS')) {
+            return true;
         }
 
-        return self::isHeadingContaining($block, 'CALENDAR OF BUSINESS');
+        return false;
     }
 
     protected static function isBusinessForTheDayMarker(ObBlock $block): bool

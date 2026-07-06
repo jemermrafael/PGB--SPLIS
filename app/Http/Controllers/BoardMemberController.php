@@ -172,16 +172,25 @@ class BoardMemberController extends Controller
         $district = $data['district'] ?? null;
 
         if ($district !== null && $district !== '' && in_array($district, $singleSeatDistricts, true)) {
-            $conflict = BoardMemberTerm::query()
-                ->where('committee_term_id', $termId)
-                ->where('district', $district)
-                ->when($boardMember !== null, fn ($query) => $query->where('board_member_id', '!=', $boardMember->id))
-                ->exists();
+            $alreadyAssignedToMember = $boardMember !== null
+                && BoardMemberTerm::query()
+                    ->where('committee_term_id', $termId)
+                    ->where('board_member_id', $boardMember->id)
+                    ->where('district', $district)
+                    ->exists();
 
-            if ($conflict) {
-                throw ValidationException::withMessages([
-                    'district' => "Another board member is already assigned to {$district} for this term.",
-                ]);
+            if (! $alreadyAssignedToMember) {
+                $conflict = BoardMemberTerm::query()
+                    ->where('committee_term_id', $termId)
+                    ->where('district', $district)
+                    ->when($boardMember !== null, fn ($query) => $query->where('board_member_id', '!=', $boardMember->id))
+                    ->exists();
+
+                if ($conflict) {
+                    throw ValidationException::withMessages([
+                        'district' => "Another board member is already assigned to {$district} for this term.",
+                    ]);
+                }
             }
         }
 

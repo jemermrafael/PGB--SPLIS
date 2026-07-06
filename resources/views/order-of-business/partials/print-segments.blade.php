@@ -38,6 +38,14 @@
             </table>
             @break
 
+        @case('privilege_calendar_table')
+            @include('order-of-business.partials.print-privilege-calendar', ['segment' => $segment])
+            @break
+
+        @case('business_day_table')
+            @include('order-of-business.partials.print-business-day', ['segment' => $segment])
+            @break
+
         @case('subsection')
             <table class="ob-print-table ob-print-table--section">
                 <tbody>
@@ -63,13 +71,17 @@
                     </tr>
                     <tr class="ob-print-table-head">
                         <th class="ob-print-col-no">No.</th>
-                        <th>Agenda Item</th>
+                        <th class="ob-print-col-agenda">Agenda Item</th>
                         <th>Committee/s</th>
                     </tr>
                     @forelse ($segment['rows'] as $row)
                         <tr>
-                            <td class="ob-print-col-no">{{ $row['row_no'] ?? '' }}</td>
-                            <td class="ob-print-col-agenda">Agenda No. {{ \App\Support\ObAgendaSnapshot::displayAgendaNo($row) }}</td>
+                            <td class="ob-print-col-no">
+                                @if (filled($row['row_no'] ?? null))
+                                    {{ $row['row_no'] }}.
+                                @endif
+                            </td>
+                            <td class="ob-print-col-agenda">{{ \App\Support\ObAgendaSnapshot::displayAgendaNosLabel($row) }}</td>
                             <td>
                                 <p class="ob-print-committee-name">{{ $row['committee_name'] ?? '' }}</p>
                                 <p class="ob-print-chair">{{ \App\Support\ObCommitteeFormatter::chairedByLine($row['chair_name'] ?? '') }}</p>
@@ -89,8 +101,8 @@
                 <tbody>
                     <tr>
                         <td colspan="2" class="ob-print-committee-header">
-                            <p>{{ $segment['committee_name'] ?: '—' }}</p>
-                            <p>{{ \App\Support\ObCommitteeFormatter::chairLine($segment['chair_name'] ?? '') }}</p>
+                            <p class="ob-print-committee-name">{{ $segment['committee_name'] ?: '—' }}</p>
+                            <p class="ob-print-committee-chair">{{ \App\Support\ObCommitteeFormatter::chairLine($segment['chair_name'] ?? '') }}</p>
                         </td>
                     </tr>
                     @forelse ($segment['items'] as $item)
@@ -149,6 +161,11 @@
         @case('unassigned_regular_table')
             <table class="ob-print-table ob-print-table--unfinished">
                 <tbody>
+                    @if (filled($segment['subsection'] ?? null))
+                        <tr>
+                            <td colspan="2" class="ob-print-subsection">{{ $segment['subsection'] }}</td>
+                        </tr>
+                    @endif
                     @forelse ($segment['rows'] as $row)
                         <tr>
                             <td class="ob-print-unfinished-meta">

@@ -2,7 +2,9 @@
 
 namespace App\Support;
 
+use App\Enums\CommitteeMembershipRole;
 use App\Models\Committee;
+use App\Models\CommitteeTerm;
 
 class CommitteeLookup
 {
@@ -57,6 +59,53 @@ class CommitteeLookup
         }
 
         return $committee->chairDisplayName();
+    }
+
+    public static function obChairFor(?int $committeeId, ?string $committeeName = null): string
+    {
+        $committee = self::findById($committeeId) ?? self::findByName($committeeName);
+
+        if ($committee === null) {
+            return '';
+        }
+
+        $termId = CommitteeTerm::query()->current()->value('id');
+
+        if ($termId !== null) {
+            $membership = $committee->memberships()
+                ->where('committee_term_id', $termId)
+                ->where('role', CommitteeMembershipRole::Chair)
+                ->with('boardMember')
+                ->orderBy('sort_order')
+                ->first();
+
+            $name = $membership?->boardMember?->orderOfBusinessName() ?? '';
+            if ($name !== '') {
+                return $name;
+            }
+        }
+
+        return self::formatObChairName($committee->chair);
+    }
+
+    protected static function formatObChairName(?string $raw): string
+    {
+        $raw = trim((string) $raw);
+        if ($raw === '') {
+            return '';
+        }
+
+        if (preg_match('/^board\s+member\s+/i', $raw)) {
+            return preg_replace_callback(
+                '/^board\s+member\s+/i',
+                fn () => 'Board Member ',
+                $raw,
+            );
+        }
+
+        $name = preg_replace('/^(Hon\.|Hon)\s+/i', '', $raw) ?? $raw;
+
+        return 'Board Member '.trim($name);
     }
 
     public static function normalizeReferralName(string $name): string

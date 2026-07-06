@@ -203,7 +203,11 @@ export function initObMaker() {
     }
 
     function renderAgendaMetaFields(c, disabled, options = {}) {
-        const { includeKind = false, includeCommittee = false } = options;
+        const {
+            includeKind = false,
+            includeCommittee = false,
+            referralNotePlaceholder = '(Referred last November 24, 2025)',
+        } = options;
         const agendaNo = c.agenda_no ?? c.session_agenda_no ?? '';
 
         const kindField = includeKind
@@ -249,7 +253,7 @@ export function initObMaker() {
                 </div>
                 <div class="md:col-span-2">
                     <label class="splis-label">Referral note</label>
-                    <input type="text" class="splis-input splis-ob-block-field" data-field="referral_note" value="${escapeHtml(c.referral_note ?? '')}" ${disabled} placeholder="(Referred last November 24, 2025)">
+                    <textarea class="splis-textarea splis-ob-block-field" data-field="referral_note" rows="3" ${disabled} placeholder="${escapeHtml(referralNotePlaceholder)}">${escapeHtml(c.referral_note ?? '')}</textarea>
                 </div>
             </div>
         `;
@@ -369,7 +373,11 @@ export function initObMaker() {
                         </div>
                         <div>
                             <label class="splis-label">Agenda no.</label>
-                            <input type="text" class="splis-input splis-ob-block-field" data-field="agenda_no" value="${escapeHtml(c.agenda_no ?? c.session_agenda_no ?? '')}" ${disabled}>
+                            <input type="text" class="splis-input splis-ob-block-field" data-field="agenda_no" value="${escapeHtml(
+                                Array.isArray(c.agenda_nos) && c.agenda_nos.length > 0
+                                    ? c.agenda_nos.join(', ')
+                                    : (c.agenda_no ?? c.session_agenda_no ?? ''),
+                            )}" ${disabled} placeholder="e.g. 262, 272, 273">
                         </div>
                         ${renderCommitteeSelect(
                             c,
@@ -401,7 +409,13 @@ export function initObMaker() {
             case 'unfinished_agenda':
                 return renderAgendaMetaFields(c, disabled, { includeCommittee: c.needs_committee === true });
             case 'unassigned_agenda':
-                return renderAgendaMetaFields(c, disabled, { includeKind: true });
+                return renderAgendaMetaFields(c, disabled, {
+                    includeKind: true,
+                    referralNotePlaceholder:
+                        (c.kind ?? 'regular') === 'urgent'
+                            ? 'Sponsored by: SP Committee on …\nChaired by: Board Member …'
+                            : '(To be referred to SP Committee on …, Chaired by: … )',
+                });
             case 'reading_agenda':
                 return `
                     <div class="space-y-3">

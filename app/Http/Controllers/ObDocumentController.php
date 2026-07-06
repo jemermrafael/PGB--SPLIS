@@ -65,7 +65,7 @@ class ObDocumentController extends Controller
         $document = $this->documentFor($legislativeSession);
         $legislativeSession->load(['priorSession', 'obDocument.blocks']);
 
-        $blocks = $document->blocks()->orderBy('sort_order')->get();
+        $blocks = $document->blocks()->with('agendaItem')->orderBy('sort_order')->get();
 
         return view('order-of-business.document.print', [
             'session' => $legislativeSession,

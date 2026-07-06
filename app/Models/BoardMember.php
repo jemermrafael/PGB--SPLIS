@@ -100,6 +100,13 @@ class BoardMember extends Model
         return $this->formattedName($honorific);
     }
 
+    public function orderOfBusinessName(): string
+    {
+        $name = trim($this->name);
+
+        return $name !== '' ? 'Board Member '.$name : '';
+    }
+
     protected function formattedName(?string $honorific): string
     {
         $honorific = trim((string) ($honorific ?? ''));

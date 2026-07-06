@@ -24,7 +24,7 @@ class ObDocumentService
     public function blocksPayload(ObDocument $document): array
     {
         return $document->blocks()
-            ->with('agendaItem:id,tracking_no,title')
+            ->with('agendaItem:id,tracking_no,title,committee_referred')
             ->get()
             ->map(fn (ObBlock $block) => $this->blockPayload($block))
             ->all();
@@ -39,6 +39,10 @@ class ObDocumentService
 
         if ($block->type === ObBlockType::RomanSection) {
             $content = ObRomanNumeral::formatSectionContent($content);
+        }
+
+        if ($block->type === ObBlockType::UnassignedAgenda) {
+            $content = ObAgendaSnapshot::enrichUnassignedRow($content, $block->agendaItem);
         }
 
         return [
@@ -248,10 +252,7 @@ class ObDocumentService
             ->orderBy('id')
             ->get();
 
-        $alreadyLinked = ObBlock::query()
-            ->where('ob_document_id', $document->id)
-            ->whereNotNull('agenda_item_id')
-            ->pluck('agenda_item_id');
+        $alreadyLinked = $this->linkedAgendaItemIds($document);
 
         $items = $items->reject(fn (AgendaItem $item) => $alreadyLinked->contains($item->id))->values();
 
@@ -278,9 +279,17 @@ class ObDocumentService
             ->get()
             ->max(fn (ObBlock $block) => (int) ($block->content['row_no'] ?? 0));
 
+        $lastCommitteeReportBlock = null;
+        if ($section === 'committee_reports' && $afterId !== null) {
+            $previousBlock = ObBlock::query()->find($afterId);
+            if ($previousBlock?->type === ObBlockType::CommitteeReport) {
+                $lastCommitteeReportBlock = $previousBlock;
+            }
+        }
+
         foreach ($items->values() as $index => $item) {
             if ($section === 'unfinished') {
-                $committee = ObCommitteeFormatter::spCommitteeLabel($item->committee_referred);
+                $committee = ObCommitteeFormatter::resolvedLabel(null, $item->committee_referred);
                 if ($committee !== '' && $committee !== $lastCommittee) {
                     $header = $this->addBlock(
                         $document,
@@ -300,9 +309,23 @@ class ObDocumentService
             [$type, $content] = $this->agendaBlockForSection(
                 $section,
                 $item,
-                $section === 'committee_reports' ? ++$rowNo : 0,
+                0,
                 blank($item->committee_referred) ? $committeeId : null,
             );
+
+            if ($section === 'committee_reports'
+                && $lastCommitteeReportBlock !== null
+                && ObAgendaSnapshot::committeeReportKey($lastCommitteeReportBlock->content ?? []) === ObAgendaSnapshot::committeeReportKey($content)) {
+                $block = $this->mergeIntoCommitteeReportBlock($lastCommitteeReportBlock, $item);
+                $created[] = $block;
+
+                continue;
+            }
+
+            if ($section === 'committee_reports') {
+                $content['row_no'] = ++$rowNo;
+                $content['agenda_item_ids'] = [$item->id];
+            }
 
             $block = $this->addBlock(
                 $document,
@@ -313,6 +336,10 @@ class ObDocumentService
             );
             $created[] = $block;
             $afterId = $block->id;
+
+            if ($section === 'committee_reports') {
+                $lastCommitteeReportBlock = $block;
+            }
         }
 
         return $created;
@@ -429,7 +456,16 @@ class ObDocumentService
      */
     protected function unfinishedCommitteeKey(array $content): string
     {
-        return ObCommitteeFormatter::spCommitteeLabel((string) ($content['committee_name'] ?? ''));
+        $committeeId = $content['committee_id'] ?? null;
+
+        if (is_numeric($committeeId) && (int) $committeeId > 0) {
+            return 'id:'.(int) $committeeId;
+        }
+
+        return ObCommitteeFormatter::resolvedLabel(
+            null,
+            (string) ($content['committee_name'] ?? ''),
+        );
     }
 
     /**
@@ -442,7 +478,10 @@ class ObDocumentService
         $committeeId = $content['committee_id'] ?? null;
 
         return [
-            'committee_name' => ObCommitteeFormatter::spCommitteeLabel($rawName),
+            'committee_name' => ObCommitteeFormatter::resolvedLabel(
+                is_numeric($committeeId) ? (int) $committeeId : null,
+                $rawName,
+            ),
             'chair_name' => CommitteeLookup::chairFor(
                 is_numeric($committeeId) ? (int) $committeeId : null,
                 $rawName,
@@ -456,19 +495,58 @@ class ObDocumentService
      */
     protected function enrichCommitteeReportContent(array $content): array
     {
-        $committeeId = $content['committee_id'] ?? null;
-        $committeeName = (string) ($content['committee_name'] ?? '');
-
-        $committee = CommitteeLookup::findById(is_numeric($committeeId) ? (int) $committeeId : null)
-            ?? CommitteeLookup::findByName($committeeName);
-
-        if ($committee !== null) {
-            $content['committee_id'] = $committee->id;
-            $content['committee_name'] = ObCommitteeFormatter::spCommitteeReportLabel($committee->name);
-            $content['chair_name'] = CommitteeLookup::chairFor($committee->id, $committee->name);
-            $content['needs_committee'] = false;
+        $agendaNo = (string) ($content['agenda_no'] ?? '');
+        if ($agendaNo !== '' && str_contains($agendaNo, ',')) {
+            $content['agenda_nos'] = array_values(array_filter(array_map('trim', explode(',', $agendaNo))));
+            $content['agenda_no'] = $content['agenda_nos'][0] ?? $agendaNo;
+        } elseif (! empty($content['agenda_nos']) && is_array($content['agenda_nos'])) {
+            $content['agenda_nos'] = ObAgendaSnapshot::agendaNosFromContent($content);
+            $content['agenda_no'] = $content['agenda_nos'][0] ?? ($content['agenda_no'] ?? '');
         }
 
-        return $content;
+        return ObAgendaSnapshot::enrichCommitteeReportRow($content);
+    }
+
+    protected function mergeIntoCommitteeReportBlock(ObBlock $block, AgendaItem $item): ObBlock
+    {
+        $content = ObAgendaSnapshot::mergeCommitteeReportRows(
+            $block->content ?? [],
+            ObAgendaSnapshot::committeeReport($item, (int) ($block->content['row_no'] ?? 0)),
+        );
+
+        $ids = $content['agenda_item_ids'] ?? ($block->agenda_item_id ? [$block->agenda_item_id] : []);
+        $ids[] = $item->id;
+        $content['agenda_item_ids'] = array_values(array_unique($ids));
+
+        $block->update(['content' => $content]);
+
+        return $block->fresh(['agendaItem']);
+    }
+
+    /**
+     * @return Collection<int, int>
+     */
+    protected function linkedAgendaItemIds(ObDocument $document): Collection
+    {
+        return ObBlock::query()
+            ->where('ob_document_id', $document->id)
+            ->get()
+            ->flatMap(function (ObBlock $block): array {
+                $ids = [];
+
+                if ($block->agenda_item_id !== null) {
+                    $ids[] = (int) $block->agenda_item_id;
+                }
+
+                foreach ($block->content['agenda_item_ids'] ?? [] as $id) {
+                    if (is_numeric($id)) {
+                        $ids[] = (int) $id;
+                    }
+                }
+
+                return $ids;
+            })
+            ->unique()
+            ->values();
     }
 }

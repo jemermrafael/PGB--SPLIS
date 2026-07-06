@@ -101,6 +101,10 @@
         @apply inline-flex items-center gap-2 rounded-md border border-white/25 bg-brand-800/50 px-3 py-2 text-sm font-medium text-white transition hover:bg-brand-800;
     }
 
+    .splis-header-btn-icon {
+        @apply justify-center gap-0 p-2;
+    }
+
     .splis-a11y-wrap {
         @apply relative;
     }
@@ -1539,7 +1543,7 @@
     }
 
     .splis-ob-maker-sidebar {
-        @apply w-full shrink-0 xl:w-80;
+        @apply w-full shrink-0 self-start xl:sticky xl:top-20 xl:z-30 xl:max-h-[calc(100vh-5rem)] xl:w-80 xl:overflow-y-auto;
     }
 
     .splis-ob-maker-canvas {
@@ -1672,7 +1676,9 @@
     }
 
     .ob-print-table-head th {
-        @apply bg-slate-100 font-bold uppercase;
+        @apply bg-slate-100 text-center font-bold uppercase;
+        padding-top: 0.6em;
+        padding-bottom: 0.6em;
     }
 
     .ob-print-announce-col {
@@ -1713,27 +1719,60 @@
 
     .ob-print-table th,
     .ob-print-table td {
-        @apply border border-slate-400 px-2 py-1 text-left align-top;
+        @apply border border-slate-400 px-2 text-left align-top;
+        padding-top: 0.6em !important;
+        padding-bottom: 0.6em !important;
+    }
+
+    .ob-print-table th.ob-print-roman,
+    .ob-print-table td.ob-print-roman,
+    .ob-print-table th.ob-print-roman-label,
+    .ob-print-table td.ob-print-roman-label,
+    .ob-print-table td.ob-print-subsection,
+    .ob-print-table td.ob-print-committee-header,
+    .ob-print-table-head th {
+        @apply text-center;
     }
 
     .ob-print-col-no {
         @apply w-10 text-center;
     }
 
+    .ob-print-table--committee .ob-print-col-no {
+        text-align: center;
+    }
+
     .ob-print-col-agenda {
-        @apply w-36;
+        width: 30%;
+    }
+
+    .ob-print-table--committee .ob-print-col-agenda {
+        width: 30%;
     }
 
     .ob-print-subsection {
-        @apply bg-slate-100 font-bold uppercase;
+        @apply bg-slate-100 text-center font-bold uppercase;
+        padding-top: 0.6em;
+        padding-bottom: 0.6em;
     }
 
     .ob-print-committee-header {
-        @apply bg-slate-50 font-bold uppercase;
+        @apply bg-slate-50 text-center font-bold break-words whitespace-normal;
+        padding-top: 0.6em !important;
+        padding-bottom: 0.6em !important;
+    }
+
+    .ob-print-committee-header .ob-print-committee-name {
+        @apply uppercase;
+    }
+
+    .ob-print-committee-chair {
+        @apply mt-1 text-sm font-normal;
+        text-transform: none;
     }
 
     .ob-print-committee-name {
-        @apply font-medium;
+        @apply font-medium break-words whitespace-normal;
     }
 
     .ob-print-chair {
@@ -1741,7 +1780,12 @@
     }
 
     .ob-print-unfinished-meta {
-        @apply w-2/5 text-sm;
+        width: 20%;
+        @apply text-sm;
+    }
+
+    .ob-print-meta-break {
+        @apply m-0 p-0 leading-4;
     }
 
     .ob-print-unfinished-title {
@@ -1749,11 +1793,15 @@
     }
 
     .ob-print-roman {
-        @apply w-16 font-bold;
+        @apply w-16 text-center font-bold;
+        padding-top: 0.6em;
+        padding-bottom: 0.6em;
     }
 
     .ob-print-roman-label {
-        @apply font-bold uppercase;
+        @apply text-center font-bold uppercase;
+        padding-top: 0.6em;
+        padding-bottom: 0.6em;
     }
 
     .ob-print-announce-date {

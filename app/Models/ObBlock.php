@@ -46,7 +46,7 @@ class ObBlock extends Model
             ),
             ObBlockType::Paragraph => \Illuminate\Support\Str::limit(strip_tags((string) ($this->content['text'] ?? '')), 120),
             ObBlockType::CommitteeReport => trim(
-                ($this->content['row_no'] ?? '').'. Agenda No. '.ObAgendaSnapshot::displayAgendaNo($this->content ?? [])
+                ($this->content['row_no'] ?? '').'. '.ObAgendaSnapshot::displayAgendaNosLabel($this->content ?? [])
                 .' — '.($this->content['committee_name'] ?? '')
             ),
             ObBlockType::UnfinishedCommittee => (string) ($this->content['committee_name'] ?? 'Committee header'),

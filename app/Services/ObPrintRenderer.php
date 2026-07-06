@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Enums\ObBlockType;
 use App\Models\ObBlock;
+use App\Support\CommitteeLookup;
+use App\Support\ObAgendaSnapshot;
 use App\Support\ObCommitteeFormatter;
 use App\Support\ObRomanNumeral;
 use Illuminate\Support\Collection;
@@ -21,10 +23,17 @@ class ObPrintRenderer
         $announcementsOpen = false;
 
         $flush = function () use (&$segments, &$buffer): void {
-            if ($buffer !== null) {
-                $segments[] = $buffer;
-                $buffer = null;
+            if ($buffer === null) {
+                return;
             }
+
+            if (($buffer['type'] ?? '') === 'business_day_table') {
+                $segments[] = $this->finalizeBusinessDaySegment($buffer);
+            } else {
+                $segments[] = $buffer;
+            }
+
+            $buffer = null;
         };
 
         foreach ($blocks as $block) {
@@ -35,17 +44,27 @@ class ObPrintRenderer
                     $flush();
                     $buffer = ['type' => 'committee_reports_table', 'rows' => []];
                 }
-                $buffer['rows'][] = $block->content ?? [];
+                $row = ObAgendaSnapshot::enrichCommitteeReportRow($block->content ?? []);
+                $rows = &$buffer['rows'];
+                if ($rows !== []
+                    && ObAgendaSnapshot::committeeReportKey((array) end($rows)) === ObAgendaSnapshot::committeeReportKey($row)) {
+                    $rows[array_key_last($rows)] = ObAgendaSnapshot::mergeCommitteeReportRows((array) end($rows), $row);
+                } else {
+                    $rows[] = $row;
+                }
 
                 continue;
             }
 
             if ($type === ObBlockType::UnfinishedCommittee) {
                 $flush();
+                $content = $block->content ?? [];
+                $committeeId = is_numeric($content['committee_id'] ?? null) ? (int) $content['committee_id'] : null;
+                $committeeName = (string) ($content['committee_name'] ?? '');
                 $buffer = [
                     'type' => 'unfinished_group',
-                    'committee_name' => $block->content['committee_name'] ?? '',
-                    'chair_name' => $block->content['chair_name'] ?? '',
+                    'committee_name' => ObCommitteeFormatter::resolvedLabel($committeeId, $committeeName),
+                    'chair_name' => CommitteeLookup::chairFor($committeeId, $committeeName) ?: ($content['chair_name'] ?? ''),
                     'items' => [],
                 ];
 
@@ -53,42 +72,55 @@ class ObPrintRenderer
             }
 
             if ($type === ObBlockType::UnfinishedAgenda) {
-                $committee = ObCommitteeFormatter::spCommitteeLabel($block->content['committee_name'] ?? '');
+                $content = $block->content ?? [];
+                $committeeId = is_numeric($content['committee_id'] ?? null) ? (int) $content['committee_id'] : null;
+                $committee = ObCommitteeFormatter::resolvedLabel($committeeId, (string) ($content['committee_name'] ?? ''));
                 if (($buffer['type'] ?? null) !== 'unfinished_group'
                     || ($buffer['committee_name'] ?? '') !== $committee) {
                     $flush();
                     $buffer = [
                         'type' => 'unfinished_group',
                         'committee_name' => $committee,
-                        'chair_name' => '',
+                        'chair_name' => CommitteeLookup::chairFor($committeeId, (string) ($content['committee_name'] ?? '')),
                         'items' => [],
                     ];
                 }
-                $buffer['items'][] = $block->content ?? [];
+                $buffer['items'][] = $content;
 
                 continue;
             }
 
             if ($type === ObBlockType::ReadingAgenda) {
-                $reading = ($block->content['reading'] ?? '2nd') === '3rd' ? '3rd' : '2nd';
-                $key = $reading === '3rd' ? 'reading_3rd_table' : 'reading_2nd_table';
-                if (($buffer['type'] ?? null) !== $key) {
+                if (($buffer['type'] ?? null) !== 'business_day_table') {
                     $flush();
-                    $buffer = ['type' => $key, 'rows' => []];
+                    $this->ensureBusinessDayBuffer($buffer);
                 }
-                $buffer['rows'][] = $block->content ?? [];
+                $buffer['rows'][] = ['kind' => 'agenda', 'row' => $block->content ?? []];
 
                 continue;
             }
 
             if ($type === ObBlockType::UnassignedAgenda) {
                 $kind = ($block->content['kind'] ?? 'regular') === 'urgent' ? 'urgent' : 'regular';
-                $key = $kind === 'urgent' ? 'unassigned_urgent_table' : 'unassigned_regular_table';
-                if (($buffer['type'] ?? null) !== $key) {
-                    $flush();
-                    $buffer = ['type' => $key, 'rows' => []];
+                $row = ObAgendaSnapshot::enrichUnassignedRow($block->content ?? [], $block->agendaItem);
+
+                if ($kind === 'urgent') {
+                    if (($buffer['type'] ?? null) !== 'business_day_table') {
+                        $flush();
+                        $this->ensureBusinessDayBuffer($buffer);
+                    }
+                    $buffer['rows'][] = ['kind' => 'agenda', 'row' => $row];
+                } else {
+                    if (($buffer['type'] ?? null) !== 'unassigned_regular_table') {
+                        $flush();
+                        $buffer = [
+                            'type' => 'unassigned_regular_table',
+                            'subsection' => '2. REGULAR UNASSIGNED BUSINESS',
+                            'rows' => [],
+                        ];
+                    }
+                    $buffer['rows'][] = $row;
                 }
-                $buffer['rows'][] = $block->content ?? [];
 
                 continue;
             }
@@ -124,38 +156,60 @@ class ObPrintRenderer
                 continue;
             }
 
-            $flush();
-
             if ($type === ObBlockType::RomanSection) {
                 $numeral = trim((string) ($block->content['numeral'] ?? ''));
                 $title = trim((string) ($block->content['title'] ?? ''));
-                $subLabel = trim((string) ($block->content['sub_label'] ?? ''));
+                $normalized = ObRomanNumeral::normalize($numeral);
+                $isViCalendar = $normalized === 'VI' && str_contains(mb_strtoupper($title), 'CALENDAR');
 
-                if (ObRomanNumeral::normalize($numeral) === 'IV' || str_starts_with(mb_strtoupper($title), 'COMMITTEE REPORT')) {
-                    $segments[] = ['type' => 'committee_reports_table', 'rows' => []];
+                if (! ($isViCalendar && ($buffer['type'] ?? null) === 'privilege_calendar_table')) {
+                    $flush();
+                }
+
+                if ($normalized === 'IV' || str_starts_with(mb_strtoupper($title), 'COMMITTEE REPORT')) {
+                    $buffer = ['type' => 'committee_reports_table', 'rows' => []];
 
                     continue;
                 }
 
-                if (ObRomanNumeral::normalize($numeral) === 'VII' || str_contains(mb_strtoupper($title), 'ANNOUNCEMENTS')) {
-                    $flush();
+                if ($normalized === 'V' && str_contains(mb_strtoupper($title), 'PRIVILEGE')) {
+                    $buffer = [
+                        'type' => 'privilege_calendar_table',
+                        'rows' => [[
+                            'numeral' => ObRomanNumeral::display($numeral),
+                            'title' => $title,
+                        ]],
+                    ];
+
+                    continue;
+                }
+
+                if ($normalized === 'VI' && str_contains(mb_strtoupper($title), 'CALENDAR')) {
+                    if (($buffer['type'] ?? null) === 'privilege_calendar_table') {
+                        $buffer['rows'][] = [
+                            'numeral' => ObRomanNumeral::display($numeral),
+                            'title' => $title,
+                        ];
+                    } else {
+                        $buffer = [
+                            'type' => 'privilege_calendar_table',
+                            'rows' => [[
+                                'numeral' => ObRomanNumeral::display($numeral),
+                                'title' => $title,
+                            ]],
+                        ];
+                    }
+
+                    continue;
+                }
+
+                if ($normalized === 'VII' || str_contains(mb_strtoupper($title), 'ANNOUNCEMENTS')) {
                     $buffer = [
                         'type' => 'announcements_closing',
                         'rows' => [],
                         'include_adjournment' => false,
                     ];
                     $announcementsOpen = true;
-
-                    continue;
-                }
-
-                if ($subLabel !== '') {
-                    $segments[] = [
-                        'type' => 'calendar_section',
-                        'numeral' => ObRomanNumeral::display($numeral),
-                        'title' => $title,
-                        'sub_label' => $subLabel,
-                    ];
 
                     continue;
                 }
@@ -170,17 +224,24 @@ class ObPrintRenderer
                 continue;
             }
 
+            $flush();
+
             if ($type === ObBlockType::Heading) {
                 $mapped = $this->mapLegacyHeading($block->content['text'] ?? '');
                 if ($mapped !== null) {
-                    $segments[] = $mapped;
+                    if (($mapped['type'] ?? '') === 'committee_reports_table') {
+                        $buffer = ['type' => 'committee_reports_table', 'rows' => []];
+                    } else {
+                        $segments[] = $mapped;
+                    }
                 }
 
                 continue;
             }
 
             if ($type === ObBlockType::SubsectionLabel) {
-                $text = $block->content['text'] ?? '';
+                $text = (string) ($block->content['text'] ?? '');
+
                 if (str_contains(mb_strtoupper($text), 'ANNOUNCEMENTS')) {
                     $flush();
                     $buffer = [
@@ -189,11 +250,25 @@ class ObPrintRenderer
                         'include_adjournment' => false,
                     ];
                     $announcementsOpen = true;
-                } else {
-                    $segments[] = [
-                        'type' => 'subsection',
-                        'text' => $text,
+                } elseif (str_contains(mb_strtoupper($text), 'UNFINISHED BUSINESS')) {
+                    $flush();
+                    $segments[] = ['type' => 'subsection', 'text' => $text];
+                } elseif ($this->isBusinessDaySubsection($text)) {
+                    if (($buffer['type'] ?? null) !== 'business_day_table') {
+                        $flush();
+                        $this->ensureBusinessDayBuffer($buffer);
+                    }
+                    $buffer['rows'][] = ['kind' => 'subsection', 'text' => $text];
+                } elseif (str_contains(mb_strtoupper($text), 'REGULAR UNASSIGNED')) {
+                    $flush();
+                    $buffer = [
+                        'type' => 'unassigned_regular_table',
+                        'subsection' => $text,
+                        'rows' => [],
                     ];
+                } else {
+                    $flush();
+                    $segments[] = ['type' => 'subsection', 'text' => $text];
                 }
 
                 continue;
@@ -245,7 +320,125 @@ class ObPrintRenderer
 
         $flush();
 
-        return $this->injectEmptyAgendaRows($segments);
+        return $this->mergeAdjacentAnnouncementsSegments(
+            $this->mergeAdjacentCommitteeReportSegments($segments),
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $buffer
+     */
+    protected function ensureBusinessDayBuffer(?array &$buffer): void
+    {
+        if (($buffer['type'] ?? null) !== 'business_day_table') {
+            $buffer = [
+                'type' => 'business_day_table',
+                'rows' => [],
+            ];
+        }
+    }
+
+    protected function isBusinessDaySubsection(string $text): bool
+    {
+        $text = mb_strtoupper(trim($text));
+
+        return str_contains($text, 'BUSINESS FOR THE DAY')
+            || str_contains($text, 'MEASURES FOR 2ND READING')
+            || str_contains($text, 'MEASURES FOR 3RD READING')
+            || str_contains($text, 'UNASSIGNED MATTERS')
+            || str_contains($text, 'URGENT REQUEST');
+    }
+
+    /**
+     * @param  array<string, mixed>  $segment
+     * @return array<string, mixed>
+     */
+    protected function finalizeBusinessDaySegment(array $segment): array
+    {
+        $rows = [];
+        $count = count($segment['rows'] ?? []);
+
+        for ($i = 0; $i < $count; $i++) {
+            $row = $segment['rows'][$i];
+            $rows[] = $row;
+
+            if (($row['kind'] ?? '') !== 'subsection') {
+                continue;
+            }
+
+            $text = mb_strtoupper((string) ($row['text'] ?? ''));
+            $needsNone = str_contains($text, '2ND READING')
+                || str_contains($text, '3RD READING');
+
+            if (! $needsNone) {
+                continue;
+            }
+
+            $next = $segment['rows'][$i + 1] ?? null;
+            if (($next['kind'] ?? '') === 'agenda') {
+                continue;
+            }
+
+            $rows[] = ['kind' => 'none'];
+        }
+
+        $segment['rows'] = $rows;
+
+        return $segment;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $segments
+     * @return list<array<string, mixed>>
+     */
+    protected function mergeAdjacentCommitteeReportSegments(array $segments): array
+    {
+        $merged = [];
+
+        foreach ($segments as $segment) {
+            $previous = $merged[array_key_last($merged)] ?? null;
+
+            if (($segment['type'] ?? '') === 'committee_reports_table'
+                && is_array($previous)
+                && ($previous['type'] ?? '') === 'committee_reports_table') {
+                $previous['rows'] = array_merge($previous['rows'] ?? [], $segment['rows'] ?? []);
+                $merged[array_key_last($merged)] = $previous;
+
+                continue;
+            }
+
+            $merged[] = $segment;
+        }
+
+        return $merged;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $segments
+     * @return list<array<string, mixed>>
+     */
+    protected function mergeAdjacentAnnouncementsSegments(array $segments): array
+    {
+        $merged = [];
+
+        foreach ($segments as $segment) {
+            $previous = $merged[array_key_last($merged)] ?? null;
+
+            if (($segment['type'] ?? '') === 'announcements_closing'
+                && is_array($previous)
+                && ($previous['type'] ?? '') === 'announcements_closing') {
+                $previous['rows'] = array_merge($previous['rows'] ?? [], $segment['rows'] ?? []);
+                $previous['include_adjournment'] = ($segment['include_adjournment'] ?? false)
+                    || ($previous['include_adjournment'] ?? false);
+                $merged[array_key_last($merged)] = $previous;
+
+                continue;
+            }
+
+            $merged[] = $segment;
+        }
+
+        return $merged;
     }
 
     /**
@@ -279,62 +472,26 @@ class ObPrintRenderer
                 'rows' => [],
             ],
             str_contains($normalized, 'PRIVILEGE HOUR') => [
-                'type' => 'roman_section',
-                'numeral' => 'V',
-                'title' => 'PRIVILEGE HOUR',
-                'body' => '',
+                'type' => 'privilege_calendar_table',
+                'rows' => [[
+                    'numeral' => ObRomanNumeral::display('V'),
+                    'title' => 'PRIVILEGE HOUR',
+                ]],
             ],
             str_contains($normalized, 'CALENDAR OF BUSINESS') => [
-                'type' => 'calendar_section',
-                'numeral' => 'VI',
-                'title' => 'CALENDAR OF BUSINESS',
-                'sub_label' => 'A. UNFINISHED BUSINESS',
+                'type' => 'privilege_calendar_table',
+                'rows' => [
+                    [
+                        'numeral' => ObRomanNumeral::display('V'),
+                        'title' => 'PRIVILEGE HOUR',
+                    ],
+                    [
+                        'numeral' => ObRomanNumeral::display('VI'),
+                        'title' => 'CALENDAR OF BUSINESS',
+                    ],
+                ],
             ],
             default => null,
         };
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $segments
-     * @return list<array<string, mixed>>
-     */
-    protected function injectEmptyAgendaRows(array $segments): array
-    {
-        $result = [];
-        $count = count($segments);
-
-        for ($i = 0; $i < $count; $i++) {
-            $segment = $segments[$i];
-            $result[] = $segment;
-
-            if (($segment['type'] ?? '') !== 'subsection') {
-                continue;
-            }
-
-            $text = mb_strtoupper($segment['text'] ?? '');
-
-            if (str_contains($text, '2ND READING')) {
-                $next = $segments[$i + 1] ?? null;
-                if (($next['type'] ?? '') !== 'reading_2nd_table') {
-                    $result[] = ['type' => 'reading_2nd_table', 'rows' => [], 'none' => true];
-                }
-            }
-
-            if (str_contains($text, '3RD READING')) {
-                $next = $segments[$i + 1] ?? null;
-                if (($next['type'] ?? '') !== 'reading_3rd_table') {
-                    $result[] = ['type' => 'reading_3rd_table', 'rows' => [], 'none' => true];
-                }
-            }
-
-            if (str_contains($text, 'URGENT REQUEST')) {
-                $next = $segments[$i + 1] ?? null;
-                if (($next['type'] ?? '') !== 'unassigned_urgent_table') {
-                    $result[] = ['type' => 'unassigned_urgent_table', 'rows' => [], 'none' => true];
-                }
-            }
-        }
-
-        return $result;
     }
 }

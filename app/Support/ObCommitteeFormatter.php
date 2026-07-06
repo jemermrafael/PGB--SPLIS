@@ -4,6 +4,28 @@ namespace App\Support;
 
 class ObCommitteeFormatter
 {
+    public static function resolvedReportLabel(?int $committeeId, ?string $committeeName): string
+    {
+        $committee = CommitteeLookup::findById($committeeId) ?? CommitteeLookup::findByName($committeeName);
+
+        if ($committee !== null) {
+            return self::spCommitteeReportLabel($committee->name);
+        }
+
+        return self::spCommitteeReportLabel($committeeName);
+    }
+
+    public static function resolvedLabel(?int $committeeId, ?string $committeeName): string
+    {
+        $committee = CommitteeLookup::findById($committeeId) ?? CommitteeLookup::findByName($committeeName);
+
+        if ($committee !== null) {
+            return self::spCommitteeLabel($committee->name);
+        }
+
+        return self::spCommitteeLabel($committeeName);
+    }
+
     public static function spCommitteeLabel(?string $committee): string
     {
         $committee = trim((string) $committee);
