@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\BackupSettings;
 use App\Services\DatabaseBackupService;
 use App\Support\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
@@ -12,17 +13,34 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DatabaseBackupController extends Controller
 {
-    public function index(DatabaseBackupService $backups): View
+    public function index(DatabaseBackupService $backups, BackupSettings $settings): View
     {
         return view('admin.backups.index', [
             'backups' => $backups->list(),
-            'retentionDays' => config('backup.retention_days', 14),
-            'scheduleTime' => config('backup.schedule_time', '02:00'),
+            'retentionDays' => $settings->retentionDays(),
+            'scheduleTime' => $settings->scheduleTime(),
             'directory' => $backups->directory(),
         ]);
     }
 
-    public function store(Request $request, DatabaseBackupService $backups): RedirectResponse
+    public function updateSettings(Request $request, BackupSettings $settings): RedirectResponse
+    {
+        $validated = $request->validate([
+            'schedule_time' => ['required', 'date_format:H:i'],
+            'retention_days' => ['required', 'integer', 'min:1', 'max:90'],
+        ]);
+
+        $settings->update([
+            'schedule_time' => $validated['schedule_time'],
+            'retention_days' => (int) $validated['retention_days'],
+        ]);
+
+        ActivityLogger::log('backup.settings_updated', null, $validated);
+
+        return back()->with('status', 'Backup settings saved.');
+    }
+
+    public function store(DatabaseBackupService $backups): RedirectResponse
     {
         try {
             $file = $backups->create();
@@ -52,5 +70,47 @@ class DatabaseBackupController extends Controller
         ]);
 
         return $response;
+    }
+
+    public function restore(Request $request, DatabaseBackupService $backups): RedirectResponse
+    {
+        $request->validate([
+            'filename' => ['required', 'string'],
+            'confirm_restore' => ['required', 'in:RESTORE'],
+        ]);
+
+        try {
+            $backups->restore($request->string('filename')->toString());
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        ActivityLogger::log('backup.restored', null, [
+            'filename' => $request->string('filename')->toString(),
+            'source' => 'server',
+        ]);
+
+        return back()->with('status', 'Database restored from '.$request->string('filename'));
+    }
+
+    public function restoreUpload(Request $request, DatabaseBackupService $backups): RedirectResponse
+    {
+        $request->validate([
+            'backup_file' => ['required', 'file', 'max:512000'],
+            'confirm_restore' => ['required', 'in:RESTORE'],
+        ]);
+
+        try {
+            $backups->restoreUpload($request->file('backup_file'));
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        ActivityLogger::log('backup.restored', null, [
+            'filename' => $request->file('backup_file')?->getClientOriginalName(),
+            'source' => 'upload',
+        ]);
+
+        return back()->with('status', 'Database restored from uploaded backup.');
     }
 }

@@ -140,7 +140,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/data-sync/agenda', [DataSyncController::class, 'syncAgenda'])->name('data-sync.agenda');
 
         Route::get('/backups', [DatabaseBackupController::class, 'index'])->name('backups.index');
+        Route::post('/backups/settings', [DatabaseBackupController::class, 'updateSettings'])->name('backups.settings');
         Route::post('/backups', [DatabaseBackupController::class, 'store'])->name('backups.store');
+        Route::post('/backups/restore', [DatabaseBackupController::class, 'restore'])->name('backups.restore');
+        Route::post('/backups/restore-upload', [DatabaseBackupController::class, 'restoreUpload'])->name('backups.restore-upload');
         Route::get('/backups/{filename}', [DatabaseBackupController::class, 'download'])
             ->where('filename', 'splis-\d{4}-\d{2}-\d{2}-\d{6}\.sql\.gz')
             ->name('backups.download');
