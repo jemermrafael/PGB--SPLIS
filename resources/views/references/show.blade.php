@@ -147,6 +147,48 @@
             @endcan
         </div>
     </div>
+
+    <div class="mt-6 splis-card">
+        <div class="splis-card-header">
+            <h2 class="splis-card-title">Version history</h2>
+        </div>
+        <div class="splis-card-body">
+            <div class="splis-table-wrap">
+                <table class="splis-table">
+                    <thead>
+                        <tr>
+                            <th>Version</th>
+                            <th class="hidden md:table-cell">Filename</th>
+                            <th class="hidden lg:table-cell">Uploaded by</th>
+                            <th class="hidden sm:table-cell">Uploaded at</th>
+                            <th>Text index</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($reference->versions as $version)
+                            <tr>
+                                <td>v{{ $version->version_no }}</td>
+                                <td class="hidden md:table-cell">{{ $version->original_filename ?: basename($version->file_path) }}</td>
+                                <td class="hidden lg:table-cell">{{ $version->creator?->name ?: 'System' }}</td>
+                                <td class="hidden sm:table-cell whitespace-nowrap">{{ $version->created_at?->format('M d, Y g:i A') ?: '—' }}</td>
+                                <td>
+                                    @if (filled($version->extracted_text))
+                                        <span class="splis-badge-linked">Indexed</span>
+                                    @else
+                                        <span class="splis-badge-unlinked">Not indexed</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="py-6 text-center text-slate-500">No file versions yet.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\ReferenceMaterial;
+use App\Models\ReferenceMaterialVersion;
+use App\Services\PdfTextExtractor;
 use App\Support\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,11 +15,15 @@ use Illuminate\View\View;
 
 class ReferenceMaterialController extends Controller
 {
+    public function __construct(
+        protected PdfTextExtractor $pdfTextExtractor,
+    ) {}
+
     public function index(Request $request): View
     {
         $this->authorize('viewAny', ReferenceMaterial::class);
 
-        $query = ReferenceMaterial::query()->with(['supersedes']);
+        $query = ReferenceMaterial::query()->with(['supersedes', 'latestVersion']);
 
         if ($q = trim((string) $request->input('q', ''))) {
             $query->where(function ($builder) use ($q): void {
@@ -25,7 +31,8 @@ class ReferenceMaterialController extends Controller
                     ->orWhere('reference_no', 'like', '%'.$q.'%')
                     ->orWhere('issuing_office', 'like', '%'.$q.'%')
                     ->orWhere('summary', 'like', '%'.$q.'%')
-                    ->orWhere('keywords', 'like', '%'.$q.'%');
+                    ->orWhere('keywords', 'like', '%'.$q.'%')
+                    ->orWhereHas('versions', fn ($versionQuery) => $versionQuery->where('extracted_text', 'like', '%'.$q.'%'));
             });
         }
 
@@ -81,7 +88,7 @@ class ReferenceMaterialController extends Controller
     {
         $this->authorize('view', $reference);
 
-        $reference->load(['supersedes', 'supersededBy']);
+        $reference->load(['supersedes', 'supersededBy', 'versions.creator']);
 
         return view('references.show', [
             'reference' => $reference,
@@ -118,6 +125,9 @@ class ReferenceMaterialController extends Controller
         }
 
         $reference = ReferenceMaterial::query()->create($data);
+        if (! empty($data['file_path'])) {
+            $this->createVersion($reference, $data, $request->user()?->id);
+        }
 
         ActivityLogger::log('reference_material.created', $reference, [
             'title' => $reference->title,
@@ -165,6 +175,9 @@ class ReferenceMaterialController extends Controller
         }
 
         $reference->update($data);
+        if (! empty($data['file_path'])) {
+            $this->createVersion($reference, $data, $request->user()?->id);
+        }
 
         ActivityLogger::log('reference_material.updated', $reference, [
             'title' => $reference->title,
@@ -286,6 +299,50 @@ class ReferenceMaterialController extends Controller
             'mime_type' => (string) $file->getClientMimeType(),
             'file_size' => (int) $file->getSize(),
         ];
+    }
+
+    /**
+     * @param  array{file_path: string, original_filename: string, mime_type: string, file_size: int}  $stored
+     */
+    protected function createVersion(ReferenceMaterial $reference, array $stored, ?int $userId): void
+    {
+        $version = $reference->version_no ?: $this->nextVersionNo($reference);
+        $reference->updateQuietly(['version_no' => $version]);
+
+        $absolutePath = Storage::disk('local')->path($stored['file_path']);
+        $extractedText = str_ends_with(strtolower($stored['mime_type']), 'pdf')
+            || str_ends_with(strtolower($stored['original_filename']), '.pdf')
+            ? $this->pdfTextExtractor->extractFromPath($absolutePath)
+            : '';
+
+        ReferenceMaterialVersion::query()->updateOrCreate(
+            [
+                'reference_material_id' => $reference->id,
+                'version_no' => $version,
+            ],
+            [
+                'file_path' => $stored['file_path'],
+                'original_filename' => $stored['original_filename'],
+                'mime_type' => $stored['mime_type'],
+                'file_size' => $stored['file_size'],
+                'extracted_text' => $extractedText,
+                'created_by' => $userId,
+            ],
+        );
+    }
+
+    protected function nextVersionNo(ReferenceMaterial $reference): string
+    {
+        $latest = $reference->versions()->first();
+        $raw = (string) ($latest?->version_no ?? '');
+
+        if ($raw === '' || ! preg_match('/^\d+(?:\.\d+)?$/', $raw)) {
+            return '1.0';
+        }
+
+        $number = (float) $raw + 1.0;
+
+        return number_format($number, 1, '.', '');
     }
 }
 

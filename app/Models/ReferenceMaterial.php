@@ -6,6 +6,7 @@ use App\Models\Concerns\HasActivityLogs;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ReferenceMaterial extends Model
@@ -62,6 +63,16 @@ class ReferenceMaterial extends Model
     public function supersededBy(): HasMany
     {
         return $this->hasMany(self::class, 'supersedes_reference_material_id');
+    }
+
+    public function versions(): HasMany
+    {
+        return $this->hasMany(ReferenceMaterialVersion::class)->latest('created_at');
+    }
+
+    public function latestVersion(): HasOne
+    {
+        return $this->hasOne(ReferenceMaterialVersion::class)->latestOfMany('created_at');
     }
 
     public function documentTypeLabel(): string
