@@ -1670,7 +1670,14 @@
     }
 
     .ob-print-header-title {
-        @apply text-3xl font-bold uppercase leading-tight tracking-wide text-slate-900;
+        font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+        font-size: var(--text-5xl);
+        color: rgb(2, 0, 101);
+        text-transform: uppercase;
+        line-height: 1.1;
+        text-decoration-line: underline;
+        text-decoration-style: double;
+        text-underline-offset: 0.12em;
     }
 
     .ob-print-header-date {
@@ -1682,7 +1689,8 @@
     }
 
     .ob-print-logo {
-        @apply h-24 w-24 shrink-0 rounded-full object-cover ring-1 ring-slate-300;
+        @apply h-24 w-24 shrink-0 rounded-full object-cover;
+        border: 3px solid #020065;
     }
 
     .ob-print-table-head th {

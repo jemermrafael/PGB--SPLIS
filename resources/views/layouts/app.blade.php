@@ -22,11 +22,14 @@
             ['label' => 'Ordinances', 'url' => route('ordinances.index'), 'active' => request()->routeIs('ordinances.*')],
             ['label' => 'Agenda', 'url' => route('agenda.index'), 'active' => request()->routeIs('agenda.*')],
             ['label' => 'Order of Business', 'url' => route('ob.sessions.index'), 'active' => request()->routeIs('ob.*')],
-            ['label' => 'Reference', 'url' => '#', 'active' => false, 'placeholder' => true],
+            ['label' => 'Reference Materials', 'url' => route('references.index'), 'active' => request()->routeIs('references.*')],
         ];
 
         $resolutionsNavActive = request()->routeIs('resolutions.*') || request()->routeIs('incoming.*');
-        $committeesNavActive = request()->routeIs('committees.*') || request()->routeIs('board-members.*') || request()->routeIs('committee-terms.*');
+        $committeesNavActive = request()->routeIs('committees.*')
+            || request()->routeIs('board-members.*')
+            || request()->routeIs('committee-terms.*')
+            || request()->routeIs('committee-monitoring.*');
     @endphp
 
     <div class="flex min-h-screen flex-col">
@@ -163,6 +166,16 @@
                                 ])
                             >
                                 Board members
+                            </a>
+                            <a
+                                href="{{ route('committee-monitoring.index') }}"
+                                role="menuitem"
+                                @class([
+                                    'splis-nav-dropdown-link',
+                                    'splis-nav-dropdown-link-active' => request()->routeIs('committee-monitoring.*'),
+                                ])
+                            >
+                                Committee Monitoring
                             </a>
                         </div>
                     </div>

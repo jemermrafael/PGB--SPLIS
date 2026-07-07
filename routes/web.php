@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BoardMemberController;
 use App\Http\Controllers\CommitteeController;
+use App\Http\Controllers\CommitteeMonitoringController;
 use App\Http\Controllers\CommitteeTermController;
 use App\Http\Controllers\LegislativeSessionController;
 use App\Http\Controllers\ObAgendaPoolController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\OrdinanceSearchController;
 use App\Http\Controllers\ResolutionController;
 use App\Http\Controllers\ResolutionPdfController;
 use App\Http\Controllers\ResolutionSearchController;
+use App\Http\Controllers\ReferenceMaterialController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -53,6 +55,17 @@ Route::middleware('auth')->group(function () {
     Route::get('/resolutions/{resolution}/edit', [ResolutionController::class, 'edit'])->name('resolutions.edit');
     Route::put('/resolutions/{resolution}', [ResolutionController::class, 'update'])->name('resolutions.update');
     Route::delete('/resolutions/{resolution}', [ResolutionController::class, 'destroy'])->name('resolutions.destroy');
+
+    Route::get('/references', [ReferenceMaterialController::class, 'index'])->name('references.index');
+    Route::get('/references/create', [ReferenceMaterialController::class, 'create'])->name('references.create');
+    Route::post('/references', [ReferenceMaterialController::class, 'store'])->name('references.store');
+    Route::get('/references/{reference}', [ReferenceMaterialController::class, 'show'])->name('references.show');
+    Route::get('/references/{reference}/download', [ReferenceMaterialController::class, 'download'])->name('references.download');
+    Route::get('/references/{reference}/edit', [ReferenceMaterialController::class, 'edit'])->name('references.edit');
+    Route::put('/references/{reference}', [ReferenceMaterialController::class, 'update'])->name('references.update');
+    Route::post('/references/{reference}/archive', [ReferenceMaterialController::class, 'archive'])->name('references.archive');
+    Route::post('/references/{reference}/restore', [ReferenceMaterialController::class, 'restore'])->name('references.restore');
+    Route::delete('/references/{reference}', [ReferenceMaterialController::class, 'destroy'])->name('references.destroy');
 
     Route::get('/incoming', [IncomingDocumentController::class, 'index'])->name('incoming.index');
     Route::get('/incoming/search', IncomingSearchController::class)->name('incoming.search');
@@ -97,6 +110,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/committees/{committee}/edit', [CommitteeController::class, 'edit'])->name('committees.edit');
     Route::put('/committees/{committee}', [CommitteeController::class, 'update'])->name('committees.update');
     Route::delete('/committees/{committee}', [CommitteeController::class, 'destroy'])->name('committees.destroy');
+    Route::get('/committee-monitoring', [CommitteeMonitoringController::class, 'index'])->name('committee-monitoring.index');
 
     Route::get('/board-members', [BoardMemberController::class, 'index'])->name('board-members.index');
     Route::get('/board-members/create', [BoardMemberController::class, 'create'])->name('board-members.create');

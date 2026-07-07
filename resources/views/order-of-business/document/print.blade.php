@@ -40,7 +40,7 @@
             $session->session_number,
             $session->venue,
         ])));
-        $headerMetaLine = collect([$printTime, $sessionAndVenue])->filter()->implode(', ');
+        $headerMetaLine = collect([$printTime, $sessionAndVenue])->filter()->implode(' ');
     @endphp
     <header class="ob-print-header mb-8 text-center">
         <div class="ob-print-header-brand">
@@ -51,7 +51,7 @@
             >
             <h1 class="ob-print-header-title">ORDER OF BUSINESS</h1>
         </div>
-        <p class="ob-print-header-date">{{ $session->session_date->format('l, F j, Y') }}</p>
+        <p class="ob-print-header-date">{{ $session->session_date->format('F j, Y') }}</p>
         @if ($headerMetaLine !== '')
             <p class="ob-print-header-meta">{{ $headerMetaLine }}</p>
         @endif
