@@ -132,7 +132,6 @@
                         <th class="hidden sm:table-cell">Date</th>
                         <th>SP No.</th>
                         <th>Link</th>
-                        <th class="hidden xl:table-cell">Source</th>
                     </tr>
                 </thead>
                 <tbody id="incoming-list-body"></tbody>

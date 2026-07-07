@@ -53,7 +53,6 @@ function renderListItem(item) {
                     ${item.is_linked ? 'Linked' : 'Unlinked'}
                 </span>
             </td>
-            <td class="hidden xl:table-cell capitalize">${escapeHtml(item.source || '—')}</td>
         </tr>
     `;
 }

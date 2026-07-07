@@ -22,7 +22,7 @@ class ImportLookups extends Command
 {
     protected $signature = 'splis:import-lookups';
 
-    protected $description = 'Import lookup tables from spreso into splis';
+    protected $description = 'Import lookup tables from legacy SP MySQL (SPRESO_DB_*) into splis';
 
     public function handle(): int
     {

@@ -105,6 +105,16 @@
         @apply justify-center gap-0 p-2;
     }
 
+    #splis-a11y-trigger {
+        padding: 0 !important;
+        border-radius: 100%;
+    }
+
+    #splis-a11y-trigger svg {
+        width: 36px;
+        height: 36px;
+    }
+
     .splis-a11y-wrap {
         @apply relative;
     }

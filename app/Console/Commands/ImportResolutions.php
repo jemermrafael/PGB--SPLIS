@@ -23,7 +23,7 @@ class ImportResolutions extends Command
                             {--limit= : Max rows to import}
                             {--dry-run : Preview without writing}';
 
-    protected $description = 'Import resolutions from spreso.sp into splis.resolutions';
+    protected $description = 'Import resolutions from legacy SP MySQL (SPRESO_DB_*, table sp) into splis.resolutions';
 
     protected array $categoryCache = [];
 
@@ -58,7 +58,8 @@ class ImportResolutions extends Command
         }
 
         $total = $limit ? min($limit, (clone $query)->count()) : (clone $query)->count();
-        $this->info(($dryRun ? '[DRY RUN] ' : '')."Importing {$total} resolutions from spreso...");
+        $sourceDb = config('database.connections.spreso.database', 'spreso');
+        $this->info(($dryRun ? '[DRY RUN] ' : '')."Importing {$total} resolutions from {$sourceDb}.sp...");
 
         $imported = 0;
         $skipped = 0;
