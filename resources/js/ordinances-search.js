@@ -70,7 +70,7 @@ function renderListItem(doc) {
             <td class="hidden lg:table-cell whitespace-nowrap">${formatDate(doc.date)}</td>
             <td class="hidden lg:table-cell whitespace-nowrap">${formatDate(doc.date_approved)}</td>
             <td class="hidden xl:table-cell whitespace-nowrap">${formatDate(doc.effectivity_date)}</td>
-            <td class="hidden xl:table-cell">${escapeHtml(doc.authored_sponsored_by || '—')}</td>
+            <td class="hidden xl:table-cell">${escapeHtml(doc.board_members_attribution || '—')}</td>
             <td class="hidden sm:table-cell whitespace-nowrap">${renderPublicationStatusButton(doc, true)}</td>
         </tr>
     `;
@@ -93,7 +93,7 @@ function renderGridItem(doc) {
                 <div><dt>Enacted</dt><dd>${formatDate(doc.date)}</dd></div>
                 <div><dt>Approved</dt><dd>${formatDate(doc.date_approved)}</dd></div>
                 <div><dt>Effectivity</dt><dd>${formatDate(doc.effectivity_date)}</dd></div>
-                ${doc.authored_sponsored_by ? `<div class="col-span-2"><dt>Authored &amp; sponsored by</dt><dd>${escapeHtml(doc.authored_sponsored_by)}</dd></div>` : ''}
+                ${doc.board_members_attribution ? `<div class="col-span-2"><dt>Board members</dt><dd>${escapeHtml(doc.board_members_attribution)}</dd></div>` : ''}
             </dl>
             <div class="mt-auto flex items-center justify-between gap-2 border-t border-slate-100 pt-3 dark:border-slate-700">
                 <span class="text-xs text-slate-500">${escapeHtml(doc.series_label)}</span>

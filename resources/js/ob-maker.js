@@ -1,3 +1,5 @@
+import { bindTitleTooltips, renderTruncatedTitle, truncateWords } from './title-tooltip';
+
 function escapeHtml(value) {
     return String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -861,13 +863,14 @@ export function initObMaker() {
 
     function renderAgendaItemMarkup(item) {
         const checked = selectedAgendaIds.has(item.id) ? 'checked' : '';
+        const { display, full, truncated } = truncateWords(item.title ?? 'Untitled', 23);
 
         return `
             <label class="splis-ob-agenda-item">
                 <input type="checkbox" value="${item.id}" ${checked}>
-                <span>
+                <span class="min-w-0 flex-1">
                     <strong>${escapeHtml(item.label)}</strong>
-                    <span class="block text-xs text-slate-500">${escapeHtml(item.title ?? 'Untitled')}</span>
+                    <span class="block text-xs text-slate-500">${renderTruncatedTitle(display, full, truncated)}</span>
                     <span class="block text-xs text-slate-400">${escapeHtml(item.sender ?? '')}${item.date_received_display ? ' · ' + escapeHtml(item.date_received_display) : ''}${item.committee_referred ? ' · ' + escapeHtml(item.committee_referred) : ''}</span>
                 </span>
             </label>
@@ -898,6 +901,7 @@ export function initObMaker() {
         }
 
         agendaPoolEl.innerHTML = itemsHtml + footer;
+        bindTitleTooltips(agendaPoolEl);
 
         if (!poolLoading && !loadingMore) {
             schedulePoolFillCheck();

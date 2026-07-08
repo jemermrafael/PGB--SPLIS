@@ -92,7 +92,7 @@
                         <th class="hidden lg:table-cell">Enacted</th>
                         <th class="hidden lg:table-cell">Approved</th>
                         <th class="hidden xl:table-cell">Effectivity</th>
-                        <th class="hidden xl:table-cell">Authored &amp; sponsored by</th>
+                        <th class="hidden xl:table-cell">Board members</th>
                         <th class="hidden sm:table-cell">Publication</th>
                     </tr>
                 </thead>

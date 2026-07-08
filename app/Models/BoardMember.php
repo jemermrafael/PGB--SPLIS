@@ -38,8 +38,18 @@ class BoardMember extends Model
     public function ordinances(): BelongsToMany
     {
         return $this->belongsToMany(Ordinance::class, 'ordinance_board_member')
-            ->withPivot('sort_order')
+            ->withPivot(['role', 'sort_order'])
             ->orderByPivot('sort_order');
+    }
+
+    public function user(): HasOne
+    {
+        return $this->hasOne(User::class);
+    }
+
+    public function sessionAttendances(): HasMany
+    {
+        return $this->hasMany(SessionAttendance::class);
     }
 
     /**

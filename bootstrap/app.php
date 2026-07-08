@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureUserRole::class,
+            'incoming.enabled' => \App\Http\Middleware\EnsureIncomingEnabled::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

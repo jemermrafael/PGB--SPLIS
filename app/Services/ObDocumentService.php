@@ -18,6 +18,10 @@ use Illuminate\Validation\ValidationException;
 
 class ObDocumentService
 {
+    public function __construct(
+        private AgendaObPlacementService $placements,
+    ) {}
+
     /**
      * @return list<array<string, mixed>>
      */
@@ -245,6 +249,7 @@ class ObDocumentService
         ?int $afterBlockId = null,
         string $section = 'unassigned_regular',
         ?int $committeeId = null,
+        ?int $placedBy = null,
     ): array {
         $items = AgendaItem::query()
             ->whereIn('id', $agendaItemIds)
@@ -318,6 +323,7 @@ class ObDocumentService
                 && ObAgendaSnapshot::committeeReportKey($lastCommitteeReportBlock->content ?? []) === ObAgendaSnapshot::committeeReportKey($content)) {
                 $block = $this->mergeIntoCommitteeReportBlock($lastCommitteeReportBlock, $item);
                 $created[] = $block;
+                $this->placements->record($item, $block, $document, $section, $placedBy);
 
                 continue;
             }
@@ -336,6 +342,7 @@ class ObDocumentService
             );
             $created[] = $block;
             $afterId = $block->id;
+            $this->placements->record($item, $block, $document, $section, $placedBy);
 
             if ($section === 'committee_reports') {
                 $lastCommitteeReportBlock = $block;

@@ -14,18 +14,30 @@
                 @if ($agenda->resolution)
                     <a href="{{ route('resolutions.show', $agenda->resolution) }}" class="splis-badge-linked">Resolution linked</a>
                 @endif
+                @if ($agenda->ordinance)
+                    <a href="{{ route('ordinances.show', $agenda->ordinance) }}" class="splis-badge-linked">Published to Ordinance</a>
+                @endif
+                @if ($agenda->appropriationOrdinance)
+                    <a href="{{ route('appropriation-ordinances.show', $agenda->appropriationOrdinance) }}" class="splis-badge-linked">Published to Appropriation Ordinance</a>
+                @endif
+                @if ($agenda->publishedTargetLabel() && ! $agenda->resolution && ! $agenda->ordinance && ! $agenda->appropriationOrdinance)
+                    <span class="splis-badge-linked">Published to {{ $agenda->publishedTargetLabel() }}</span>
+                @endif
             </div>
             <h1 class="splis-page-title">Agenda {{ $agenda->displayLabel() }}</h1>
-            @if ($agenda->sender)
-                <p class="splis-page-subtitle">{{ $agenda->sender }}</p>
-            @endif
+            <p class="splis-page-subtitle">
+                @if ($agenda->sender){{ $agenda->sender }} · @endif
+                Version {{ $agenda->current_version_no }}
+            </p>
         </div>
         <div class="flex flex-wrap gap-2">
             @can('promote', $agenda)
+                @if (config('incoming.enabled', false))
                 <form method="POST" action="{{ route('agenda.promote-incoming', $agenda) }}">
                     @csrf
                     <button type="submit" class="splis-btn-primary">Create Incoming</button>
                 </form>
+                @endif
             @endcan
             @can('update', $agenda)
                 <a href="{{ route('agenda.edit', $agenda) }}" class="splis-btn-secondary">Edit</a>
@@ -38,8 +50,8 @@
         <div class="splis-alert-success mb-6">{{ session('status') }}</div>
     @endif
 
-    @if ($errors->has('promote') || $errors->has('unlink'))
-        <div class="splis-alert-error mb-6">{{ $errors->first('promote') ?: $errors->first('unlink') }}</div>
+    @if ($errors->has('promote') || $errors->has('unlink') || $errors->has('version'))
+        <div class="splis-alert-error mb-6">{{ $errors->first('promote') ?: $errors->first('unlink') ?: $errors->first('version') }}</div>
     @endif
 
     <div class="splis-card splis-card-body mb-6">
@@ -105,14 +117,26 @@
                     @foreach ([
                         'Date Passed' => $agenda->date_passed?->format('M d, Y'),
                         'Date Signed by Gov.' => $agenda->date_signed_by_gov?->format('M d, Y'),
-                        'Reso./Ord./AO No.' => $agenda->resoDisplayLabel(),
+                        'Reso./Ord./AO No.' => null,
                         'Measure Type' => $agenda->reso_ord_ao_type
                             ? $agenda->measureTypeLabel()
                             : (($agenda->reso_ord_ao_no || $agenda->reso_ord_ao_url) ? 'Not specified (legacy)' : null),
                         'Resolution Title' => $agenda->resolution_title,
                         'Remarks' => $agenda->remarks,
                     ] as $label => $value)
-                        @if ($value !== null && $value !== '')
+                        @if ($label === 'Reso./Ord./AO No.' && $agenda->resoDisplayLabel())
+                            <div class="splis-detail-row">
+                                <dt class="splis-detail-label">{{ $label }}</dt>
+                                <dd class="splis-detail-value">
+                                    @if ($agenda->publishedTargetRoute())
+                                        <a href="{{ $agenda->publishedTargetRoute() }}" class="splis-link font-medium">{{ $agenda->resoDisplayLabel() }}</a>
+                                        <span class="ml-2 text-xs text-slate-500">({{ $agenda->publishedTargetLabel() }})</span>
+                                    @else
+                                        {{ $agenda->resoDisplayLabel() }}
+                                    @endif
+                                </dd>
+                            </div>
+                        @elseif ($value !== null && $value !== '')
                             <div class="splis-detail-row">
                                 <dt class="splis-detail-label">{{ $label }}</dt>
                                 <dd class="splis-detail-value">{{ $value }}</dd>
@@ -124,7 +148,7 @@
         </div>
 
         <div class="splis-detail-sidebar-column">
-            @if ($agenda->hasIncoming() || $agenda->resolution || $agenda->obBlocks->isNotEmpty() || auth()->user()?->can('addToOrderOfBusiness', $agenda))
+            @if ($agenda->hasIncoming() || $agenda->resolution || $agenda->ordinance || $agenda->appropriationOrdinance || $agenda->obPlacements->isNotEmpty() || auth()->user()?->can('addToOrderOfBusiness', $agenda))
                 <aside class="splis-card">
                     <div class="splis-card-header">
                         <h2 class="splis-card-title">Connections</h2>
@@ -162,25 +186,27 @@
                                 @endcan
                             </div>
                         @endif
-                        @if ($agenda->obBlocks->isNotEmpty())
-                            <div>
-                                <p class="splis-detail-label">Order of Business</p>
-                                <ul class="mt-2 space-y-2">
-                                    @foreach ($agenda->obBlocks as $block)
-                                        @if ($block->obDocument?->legislativeSession)
-                                            <li>
-                                                <a href="{{ route('ob.document.maker', $block->obDocument->legislativeSession) }}" class="font-medium text-brand-700 hover:underline dark:text-brand-200">
-                                                    {{ $block->obDocument->legislativeSession->displayTitle() }}
-                                                </a>
-                                                @if (filled($block->content['agenda_no'] ?? $block->content['session_agenda_no'] ?? null))
-                                                    <span class="block text-xs text-slate-500">Agenda no. {{ $block->content['agenda_no'] ?? $block->content['session_agenda_no'] }}</span>
-                                                @endif
-                                            </li>
-                                        @endif
-                                    @endforeach
-                                </ul>
+                        @if ($agenda->ordinance)
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="splis-detail-label">Ordinance</p>
+                                    <a href="{{ route('ordinances.show', $agenda->ordinance) }}" class="font-medium text-brand-700 hover:underline dark:text-brand-200">
+                                        {{ $agenda->ordinance->displayNumber() }} ({{ $agenda->ordinance->series_year }})
+                                    </a>
+                                </div>
                             </div>
                         @endif
+                        @if ($agenda->appropriationOrdinance)
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="splis-detail-label">Appropriation Ordinance</p>
+                                    <a href="{{ route('appropriation-ordinances.show', $agenda->appropriationOrdinance) }}" class="font-medium text-brand-700 hover:underline dark:text-brand-200">
+                                        {{ $agenda->appropriationOrdinance->displayNumber() }} ({{ $agenda->appropriationOrdinance->series_year }})
+                                    </a>
+                                </div>
+                            </div>
+                        @endif
+                        @include('agenda.partials.ob-placements', ['agenda' => $agenda])
                         @can('addToOrderOfBusiness', $agenda)
                             <div class="border-t border-slate-200 pt-4 dark:border-slate-700">
                                 <p class="splis-detail-label">Add to Order of Business</p>
@@ -263,7 +289,7 @@
                 </div>
             </aside>
 
-            @if ($agenda->request_pdf_url || $agenda->committee_report_url || $agenda->reso_ord_ao_url || $agenda->journal_url || $agenda->minutes_url || $agenda->resolution)
+            @if ($agenda->request_pdf_url || $agenda->committee_report_url || $agenda->reso_ord_ao_url || $agenda->journal_url || $agenda->minutes_url || $agenda->isPublished())
                 <div class="splis-card">
                     <div class="splis-card-header">
                         <h2 class="splis-card-title">Documents</h2>
@@ -275,8 +301,8 @@
                         @if ($agenda->committee_report_url)
                             <a href="{{ $agenda->committee_report_url }}" target="_blank" rel="noopener" class="splis-btn-secondary text-sm">Committee Report</a>
                         @endif
-                        @if ($agenda->resolution)
-                            <a href="{{ route('resolutions.show', $agenda->resolution) }}" class="splis-btn-secondary text-sm">{{ $agenda->splisOutputButtonLabel() }}</a>
+                        @if ($agenda->isPublished() && $agenda->publishedTargetRoute())
+                            <a href="{{ $agenda->publishedTargetRoute() }}" class="splis-btn-secondary text-sm">{{ $agenda->splisOutputButtonLabel() }}</a>
                         @elseif ($agenda->reso_ord_ao_url)
                             <a href="{{ $agenda->reso_ord_ao_url }}" target="_blank" rel="noopener" class="splis-btn-secondary text-sm">{{ $agenda->legacyOutputPdfButtonLabel() }}</a>
                         @endif
@@ -291,5 +317,7 @@
             @endif
         </div>
     </div>
+
+    @include('agenda.partials.version-history', ['agenda' => $agenda])
 </div>
 @endsection

@@ -66,6 +66,25 @@
             </div>
         </div>
 
+        <div id="board-member-link-wrap" @class(['hidden' => old('role', $user->role?->value) !== 'board_member'])>
+            <label class="splis-label" for="board_member_id">Linked board member</label>
+            <select name="board_member_id" id="board_member_id" class="splis-select">
+                <option value="">Select board member</option>
+                @foreach ($boardMembers as $member)
+                    <option value="{{ $member->id }}" @selected((string) old('board_member_id', $user->board_member_id) === (string) $member->id)>{{ $member->displayName() }}{{ $member->district ? ' · '.$member->district : '' }}</option>
+                @endforeach
+            </select>
+            <p class="mt-1 text-xs text-slate-500">Required for Board Member accounts — links the login to the legislative roster.</p>
+        </div>
+
+        <script>
+            document.getElementById('role')?.addEventListener('change', (event) => {
+                const wrap = document.getElementById('board-member-link-wrap');
+                if (!wrap) return;
+                wrap.classList.toggle('hidden', event.target.value !== 'board_member');
+            });
+        </script>
+
         <div class="flex gap-2 pt-2">
             <button type="submit" class="splis-btn-primary">Save user</button>
             <a href="{{ route('users.index') }}" class="splis-btn-secondary">Cancel</a>

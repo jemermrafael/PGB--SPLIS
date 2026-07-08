@@ -16,6 +16,15 @@ return [
         'appropriation_ordinance' => 'Appropriation Ordinance',
     ],
 
+    'version_reasons' => [
+        'encoded' => 'Initial encoding',
+        'referral' => 'Committee referral',
+        'committee_meeting' => 'Committee meeting update',
+        'session' => 'Session / hearing update',
+        'output' => 'Provincial output update',
+        'general' => 'General update',
+    ],
+
     'outcomes' => [
         'Approved',
         'Pending',

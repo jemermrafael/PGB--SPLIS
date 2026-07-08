@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\OrdinanceBoardMemberRole;
 use App\Enums\OrdinancePublicationStatus;
 use App\Models\Ordinance;
 use App\Services\BoardMemberRosterService;
+use App\Services\OrdinanceBoardMemberService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -14,6 +16,7 @@ class OrdinanceController extends Controller
 {
     public function __construct(
         protected BoardMemberRosterService $boardMemberRosterService,
+        protected OrdinanceBoardMemberService $ordinanceBoardMemberService,
     ) {}
 
     public function index(): View
@@ -37,7 +40,7 @@ class OrdinanceController extends Controller
     {
         $this->authorize('view', $ordinance);
 
-        $ordinance->load('authoredSponsoredMembers');
+        $ordinance->load('boardMembers');
 
         return view('ordinances.show', [
             'ordinance' => $ordinance,
@@ -58,7 +61,7 @@ class OrdinanceController extends Controller
         $this->authorize('create', Ordinance::class);
 
         $ordinance = Ordinance::create($this->validatedOrdinance($request));
-        $this->syncAuthoredSponsoredMembers($ordinance, $this->validatedMemberIds($request));
+        $this->syncBoardMembers($ordinance, $request);
 
         return redirect()
             ->route('ordinances.index')
@@ -69,7 +72,7 @@ class OrdinanceController extends Controller
     {
         $this->authorize('update', $ordinance);
 
-        $ordinance->load('authoredSponsoredMembers');
+        $ordinance->load('boardMembers');
 
         return view('ordinances.form', $this->formData($ordinance));
     }
@@ -79,7 +82,7 @@ class OrdinanceController extends Controller
         $this->authorize('update', $ordinance);
 
         $ordinance->update($this->validatedOrdinance($request, $ordinance));
-        $this->syncAuthoredSponsoredMembers($ordinance, $this->validatedMemberIds($request));
+        $this->syncBoardMembers($ordinance, $request);
 
         return redirect()
             ->route('ordinances.show', $ordinance)
@@ -108,17 +111,33 @@ class OrdinanceController extends Controller
             ->activeMembersForTermQuery($rosterTerm)
             ->get();
 
-        $selectedMembers = $ordinance->relationLoaded('authoredSponsoredMembers')
-            ? $ordinance->authoredSponsoredMembers
-            : collect();
-
         return [
             'ordinance' => $ordinance,
             'boardMembers' => $boardMembers,
             'rosterTerm' => $rosterTerm,
-            'selectedMemberId1' => old('authored_sponsored_member_id_1', $selectedMembers->get(0)?->id),
-            'selectedMemberId2' => old('authored_sponsored_member_id_2', $selectedMembers->get(1)?->id),
+            'selectedAuthorIds' => $this->selectedMemberIds($ordinance, OrdinanceBoardMemberRole::Author),
+            'selectedSponsorIds' => $this->selectedMemberIds($ordinance, OrdinanceBoardMemberRole::Sponsor),
+            'selectedAuthoredSponsoredIds' => $this->selectedMemberIds($ordinance, OrdinanceBoardMemberRole::AuthoredSponsored),
         ];
+    }
+
+    /**
+     * @return list<int>
+     */
+    protected function selectedMemberIds(Ordinance $ordinance, OrdinanceBoardMemberRole $role): array
+    {
+        $field = $role->formFieldName();
+        $old = old($field);
+
+        if (is_array($old)) {
+            return array_values(array_map('intval', array_filter($old)));
+        }
+
+        if (! $ordinance->exists) {
+            return [];
+        }
+
+        return $ordinance->membersForRole($role)->pluck('id')->all();
     }
 
     /**
@@ -161,38 +180,24 @@ class OrdinanceController extends Controller
         ]);
     }
 
-    /**
-     * @return list<int>
-     */
-    protected function validatedMemberIds(Request $request): array
+    protected function syncBoardMembers(Ordinance $ordinance, Request $request): void
     {
-        $validated = $request->validate([
-            'authored_sponsored_member_id_1' => ['nullable', 'integer', 'exists:board_members,id'],
-            'authored_sponsored_member_id_2' => [
-                'nullable',
-                'integer',
-                'exists:board_members,id',
-                'different:authored_sponsored_member_id_1',
-            ],
-        ]);
+        $memberRules = [
+            'author_member_ids' => ['nullable', 'array'],
+            'author_member_ids.*' => ['integer', 'exists:board_members,id'],
+            'sponsor_member_ids' => ['nullable', 'array'],
+            'sponsor_member_ids.*' => ['integer', 'exists:board_members,id'],
+            'authored_sponsored_member_ids' => ['nullable', 'array'],
+            'authored_sponsored_member_ids.*' => ['integer', 'exists:board_members,id'],
+        ];
 
-        return array_values(array_filter([
-            $validated['authored_sponsored_member_id_1'] ?? null,
-            $validated['authored_sponsored_member_id_2'] ?? null,
-        ]));
-    }
+        $validated = $request->validate($memberRules);
 
-    /**
-     * @param  list<int>  $memberIds
-     */
-    protected function syncAuthoredSponsoredMembers(Ordinance $ordinance, array $memberIds): void
-    {
-        $sync = [];
-
-        foreach ($memberIds as $index => $memberId) {
-            $sync[$memberId] = ['sort_order' => $index];
-        }
-
-        $ordinance->authoredSponsoredMembers()->sync($sync);
+        $this->ordinanceBoardMemberService->sync(
+            $ordinance,
+            array_values(array_map('intval', $validated['author_member_ids'] ?? [])),
+            array_values(array_map('intval', $validated['sponsor_member_ids'] ?? [])),
+            array_values(array_map('intval', $validated['authored_sponsored_member_ids'] ?? [])),
+        );
     }
 }

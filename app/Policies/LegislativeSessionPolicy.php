@@ -14,6 +14,10 @@ class LegislativeSessionPolicy
 
     public function view(User $user, LegislativeSession $session): bool
     {
+        if ($user->isBoardMember()) {
+            return $session->obDocument?->isFinal() ?? false;
+        }
+
         return true;
     }
 

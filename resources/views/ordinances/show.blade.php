@@ -36,18 +36,7 @@
         </div>
 
         <dl class="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div class="md:col-span-2">
-                <dt class="splis-label">Authored &amp; sponsored by</dt>
-                <dd class="mt-1 text-slate-900 dark:text-slate-100">
-                    @if ($ordinance->authoredSponsoredMembers->isNotEmpty())
-                        @foreach ($ordinance->authoredSponsoredMembers as $member)
-                            <a href="{{ route('board-members.show', $member) }}" class="splis-doc-list-link font-medium">{{ $member->displayName() }}</a>@if (! $loop->last)<span class="text-slate-500"> &amp; </span>@endif
-                        @endforeach
-                    @else
-                        —
-                    @endif
-                </dd>
-            </div>
+            @include('ordinances.partials.board-member-attribution', ['ordinance' => $ordinance])
             <div>
                 <dt class="splis-label">Date enacted</dt>
                 <dd class="mt-1 text-slate-900 dark:text-slate-100">{{ $ordinance->date_enacted?->format('F j, Y') ?: '—' }}</dd>

@@ -3,15 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Models\AgendaItem;
+use App\Models\AgendaItemVersion;
 use App\Models\LegislativeSession;
 use App\Services\AgendaIncomingPromoter;
 use App\Services\AgendaLinkService;
 use App\Services\AgendaItemRepository;
+use App\Services\AgendaOutputPublisher;
+use App\Services\AgendaVersionService;
+use App\Services\CommitteeReferralNotifier;
 use App\Services\ObDocumentService;
 use App\Support\AgendaFieldOptions;
 use App\Support\AgendaMeasureType;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class AgendaItemController extends Controller
@@ -34,8 +39,12 @@ class AgendaItemController extends Controller
         return view('agenda.form', $this->formData(new AgendaItem));
     }
 
-    public function store(Request $request): RedirectResponse
-    {
+    public function store(
+        Request $request,
+        CommitteeReferralNotifier $notifier,
+        AgendaOutputPublisher $publisher,
+        AgendaVersionService $versions,
+    ): RedirectResponse {
         $this->authorize('create', AgendaItem::class);
 
         $agenda = AgendaItem::create(array_merge(
@@ -43,9 +52,13 @@ class AgendaItemController extends Controller
             ['created_by' => $request->user()->id],
         ));
 
+        $versions->recordInitialVersion($agenda, $request->user()->id);
+
+        $outputHandled = $this->afterAgendaSave($agenda, $request, $notifier, $publisher);
+
         return redirect()
             ->route('agenda.show', $agenda)
-            ->with('status', 'Agenda item created.');
+            ->with('status', $this->statusMessage('created', $agenda, false, $outputHandled));
     }
 
     public function show(AgendaItem $agenda): View
@@ -53,8 +66,13 @@ class AgendaItemController extends Controller
         $agenda->load([
             'incomingDocument',
             'resolution',
+            'ordinance',
+            'appropriationOrdinance',
             'creator',
-            'obBlocks.obDocument.legislativeSession',
+            'versions.creator',
+            'obPlacements.legislativeSession',
+            'obPlacements.agendaItemVersion',
+            'obPlacements.obBlock',
         ]);
 
         $obSessions = LegislativeSession::query()
@@ -75,18 +93,74 @@ class AgendaItemController extends Controller
     {
         $this->authorize('update', $agenda);
 
+        $agenda->load(['resolution', 'ordinance', 'appropriationOrdinance']);
+
         return view('agenda.form', $this->formData($agenda));
     }
 
-    public function update(Request $request, AgendaItem $agenda): RedirectResponse
-    {
+    public function update(
+        Request $request,
+        AgendaItem $agenda,
+        CommitteeReferralNotifier $notifier,
+        AgendaOutputPublisher $publisher,
+        AgendaVersionService $versions,
+    ): RedirectResponse {
         $this->authorize('update', $agenda);
 
+        $before = collect(AgendaVersionService::VERSIONED_FIELDS)
+            ->mapWithKeys(fn (string $field) => [$field => $agenda->getAttribute($field)])
+            ->all();
+
+        $wasPublished = $agenda->isPublished();
+
         $agenda->update($this->validated($request));
+        $agenda->refresh();
+
+        $versions->recordVersionIfChanged($agenda, $before, $request->user()->id);
+
+        $outputHandled = $this->afterAgendaSave($agenda, $request, $notifier, $publisher);
 
         return redirect()
             ->route('agenda.show', $agenda)
-            ->with('status', 'Agenda item updated.');
+            ->with('status', $this->statusMessage('updated', $agenda, $wasPublished, $outputHandled));
+    }
+
+    protected function statusMessage(
+        string $action,
+        AgendaItem $agenda,
+        bool $wasPublished = false,
+        bool $outputHandled = false,
+    ): string {
+        $message = $action === 'created' ? 'Agenda item created.' : 'Agenda item updated.';
+
+        if ($outputHandled && $agenda->isPublished()) {
+            $message .= $wasPublished
+                ? ' Output synced to '.$agenda->publishedTargetLabel().'.'
+                : ' Published to '.$agenda->publishedTargetLabel().'.';
+        }
+
+        return $message;
+    }
+
+    protected function afterAgendaSave(
+        AgendaItem $agenda,
+        Request $request,
+        CommitteeReferralNotifier $notifier,
+        AgendaOutputPublisher $publisher,
+    ): bool {
+        $agenda->refresh();
+
+        if (filled($agenda->committee_referred)) {
+            $notifier->notifyForAgenda($agenda);
+        }
+
+        if ($publisher->publishIfDone($agenda, $request->user()->id)) {
+            $agenda->refresh();
+
+            return true;
+        }
+
+        return false;
     }
 
     public function destroy(AgendaItem $agenda): RedirectResponse
@@ -165,11 +239,33 @@ class AgendaItemController extends Controller
             [$agenda->id],
             null,
             $validated['agenda_section'] ?? 'unassigned_regular',
+            null,
+            $request->user()->id,
         );
 
         return redirect()
             ->route('ob.document.maker', $session)
             ->with('status', 'Agenda '.$agenda->displayLabel().' added to '.$session->displayTitle().'.');
+    }
+
+    public function destroyVersion(
+        AgendaItem $agenda,
+        AgendaItemVersion $version,
+        AgendaVersionService $versions,
+    ): RedirectResponse {
+        abort_unless($version->agenda_item_id === $agenda->id, 404);
+
+        $this->authorize('delete', $version);
+
+        try {
+            $versions->deleteVersion($version);
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['version' => $e->getMessage()]);
+        }
+
+        return redirect()
+            ->route('agenda.show', $agenda)
+            ->with('status', 'Version v'.$version->version_no.' deleted.');
     }
 
     /**
@@ -213,7 +309,12 @@ class AgendaItemController extends Controller
             'date_signed_by_gov' => ['nullable', 'date'],
             'reso_ord_ao_no' => ['nullable', 'string', 'max:50'],
             'reso_ord_ao_series' => ['nullable', 'integer', 'min:1900', 'max:2100'],
-            'reso_ord_ao_type' => ['nullable', 'string', 'in:'.implode(',', AgendaMeasureType::options())],
+            'reso_ord_ao_type' => [
+                'nullable',
+                'string',
+                Rule::in(AgendaMeasureType::options()),
+                Rule::requiredIf(fn () => $request->input('status') === AgendaItem::STATUS_DONE),
+            ],
             'reso_ord_ao_url' => ['nullable', 'string', 'max:500'],
             'resolution_title' => ['nullable', 'string', 'max:5000'],
             'journal_url' => ['nullable', 'string', 'max:500'],

@@ -9,6 +9,7 @@ enum UserRole: string
     case EncoderDelete = 'encoder_delete';
     case Admin = 'admin';
     case Superadmin = 'superadmin';
+    case BoardMember = 'board_member';
 
     public static function fromLegacy(string $code): self
     {
@@ -18,6 +19,7 @@ enum UserRole: string
             'D' => self::EncoderDelete,
             'A' => self::Admin,
             'S' => self::Superadmin,
+            'B' => self::BoardMember,
             default => self::Guest,
         };
     }
@@ -30,6 +32,7 @@ enum UserRole: string
             self::EncoderDelete => 'Encoder with Delete',
             self::Admin => 'Admin',
             self::Superadmin => 'Superadmin',
+            self::BoardMember => 'Board Member',
         };
     }
 
@@ -53,6 +56,16 @@ enum UserRole: string
         return $this === self::Superadmin;
     }
 
+    public function isBoardMember(): bool
+    {
+        return $this === self::BoardMember;
+    }
+
+    public function canRecordAttendance(): bool
+    {
+        return in_array($this, [self::Admin, self::Superadmin], true);
+    }
+
     /**
      * @return list<self>
      */
@@ -64,6 +77,7 @@ enum UserRole: string
             self::EncoderDelete,
             self::Admin,
             self::Superadmin,
+            self::BoardMember,
         ];
     }
 }

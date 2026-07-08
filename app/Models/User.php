@@ -7,11 +7,12 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'username', 'email', 'password', 'role', 'legacy_user_id', 'is_active'])]
+#[Fillable(['name', 'username', 'email', 'password', 'role', 'legacy_user_id', 'is_active', 'board_member_id'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -38,6 +39,21 @@ class User extends Authenticatable
         return $this->hasMany(ActivityLog::class);
     }
 
+    public function boardMember(): BelongsTo
+    {
+        return $this->belongsTo(BoardMember::class);
+    }
+
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(UserNotification::class);
+    }
+
+    public function unreadNotifications(): HasMany
+    {
+        return $this->notifications()->whereNull('read_at');
+    }
+
     public function hasRole(UserRole ...$roles): bool
     {
         return in_array($this->role, $roles, true);
@@ -61,5 +77,15 @@ class User extends Authenticatable
     public function isSuperadmin(): bool
     {
         return $this->role === UserRole::Superadmin;
+    }
+
+    public function isBoardMember(): bool
+    {
+        return $this->role === UserRole::BoardMember;
+    }
+
+    public function canRecordAttendance(): bool
+    {
+        return $this->role->canRecordAttendance();
     }
 }

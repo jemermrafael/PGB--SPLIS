@@ -17,19 +17,34 @@
 </head>
 <body class="min-h-screen">
     @php
+        $user = auth()->user();
+        $isBoardMember = $user?->isBoardMember() ?? false;
+        $incomingEnabled = config('incoming.enabled', false);
+        $ordinancesNavActive = request()->routeIs('ordinances.*')
+            || request()->routeIs('appropriation-ordinances.*')
+            || request()->routeIs('board-member.ordinances.*');
+        $myOrdinancesNavActive = request()->routeIs('board-member.ordinances.*');
+        $myAgendaNavActive = request()->routeIs('board-member.agenda.*')
+            || ($isBoardMember && request()->routeIs('agenda.*'));
+
         $navItems = [
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'active' => request()->routeIs('dashboard')],
-            ['label' => 'Ordinances', 'url' => route('ordinances.index'), 'active' => request()->routeIs('ordinances.*')],
-            ['label' => 'Agenda', 'url' => route('agenda.index'), 'active' => request()->routeIs('agenda.*')],
-            ['label' => 'Order of Business', 'url' => route('ob.sessions.index'), 'active' => request()->routeIs('ob.*')],
-            ['label' => 'Reference Materials', 'url' => route('references.index'), 'active' => request()->routeIs('references.*')],
         ];
 
-        $resolutionsNavActive = request()->routeIs('resolutions.*') || request()->routeIs('incoming.*');
+        if (! $isBoardMember) {
+            $navItems[] = ['label' => 'Agenda', 'url' => route('agenda.index'), 'active' => request()->routeIs('agenda.*')];
+            $navItems[] = ['label' => 'Order of Business', 'url' => route('ob.sessions.index'), 'active' => request()->routeIs('ob.*')];
+            $navItems[] = ['label' => 'Reference Materials', 'url' => route('references.index'), 'active' => request()->routeIs('references.*')];
+        } else {
+            $navItems[] = ['label' => 'Order of Business', 'url' => route('ob.sessions.index'), 'active' => request()->routeIs('ob.*')];
+        }
+
+        $resolutionsNavActive = request()->routeIs('resolutions.*') || ($incomingEnabled && request()->routeIs('incoming.*'));
         $committeesNavActive = request()->routeIs('committees.*')
             || request()->routeIs('board-members.*')
             || request()->routeIs('committee-terms.*')
-            || request()->routeIs('committee-monitoring.*');
+            || request()->routeIs('committee-monitoring.*')
+            || request()->routeIs('admin.board-member-ordinances');
     @endphp
 
     <div class="flex min-h-screen flex-col">
@@ -94,6 +109,7 @@
                         Dashboard
                     </a>
 
+                    @if (! $isBoardMember)
                     <div class="splis-nav-dropdown" data-dropdown>
                         <button
                             type="button"
@@ -119,19 +135,89 @@
                             >
                                 All Resolutions
                             </a>
-                            <a
-                                href="{{ route('incoming.index') }}"
-                                role="menuitem"
-                                @class([
-                                    'splis-nav-dropdown-link',
-                                    'splis-nav-dropdown-link-active' => request()->routeIs('incoming.*'),
-                                ])
-                            >
-                                Incoming
-                            </a>
+                            @if ($incomingEnabled)
+                                <a
+                                    href="{{ route('incoming.index') }}"
+                                    role="menuitem"
+                                    @class([
+                                        'splis-nav-dropdown-link',
+                                        'splis-nav-dropdown-link-active' => request()->routeIs('incoming.*'),
+                                    ])
+                                >
+                                    Incoming
+                                </a>
+                            @endif
                         </div>
                     </div>
+                    @endif
 
+                    @if (! $isBoardMember)
+                    <div class="splis-nav-dropdown" data-dropdown>
+                        <button
+                            type="button"
+                            data-dropdown-trigger
+                            aria-expanded="false"
+                            aria-haspopup="true"
+                            @class([
+                                'splis-navbar-link splis-nav-dropdown-trigger',
+                                'splis-navbar-link-active' => $ordinancesNavActive,
+                            ])
+                        >
+                            Ordinances
+                            <svg class="h-3.5 w-3.5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+                        </button>
+                        <div class="splis-nav-dropdown-panel" data-dropdown-panel role="menu">
+                            <a href="{{ route('ordinances.index') }}" role="menuitem" @class(['splis-nav-dropdown-link', 'splis-nav-dropdown-link-active' => request()->routeIs('ordinances.*') && ! request()->routeIs('appropriation-ordinances.*')])>Provincial Ordinances</a>
+                            <a href="{{ route('appropriation-ordinances.index') }}" role="menuitem" @class(['splis-nav-dropdown-link', 'splis-nav-dropdown-link-active' => request()->routeIs('appropriation-ordinances.*')])>Appropriation Ordinances</a>
+                        </div>
+                    </div>
+                    @endif
+
+                    @if ($isBoardMember)
+                    <div class="splis-nav-dropdown" data-dropdown>
+                        <button
+                            type="button"
+                            data-dropdown-trigger
+                            aria-expanded="false"
+                            aria-haspopup="true"
+                            @class([
+                                'splis-navbar-link splis-nav-dropdown-trigger',
+                                'splis-navbar-link-active' => $myAgendaNavActive,
+                            ])
+                        >
+                            My Agenda
+                            <svg class="h-3.5 w-3.5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+                        </button>
+                        <div class="splis-nav-dropdown-panel" data-dropdown-panel role="menu">
+                            <a href="{{ route('board-member.agenda.index') }}" role="menuitem" @class(['splis-nav-dropdown-link', 'splis-nav-dropdown-link-active' => request()->routeIs('board-member.agenda.*')])>My Agenda</a>
+                            <a href="{{ route('agenda.index') }}" role="menuitem" @class(['splis-nav-dropdown-link', 'splis-nav-dropdown-link-active' => request()->routeIs('agenda.*') && ! request()->routeIs('board-member.agenda.*')])>All Agenda</a>
+                        </div>
+                    </div>
+                    @endif
+
+                    @if ($isBoardMember)
+                    <div class="splis-nav-dropdown" data-dropdown>
+                        <button
+                            type="button"
+                            data-dropdown-trigger
+                            aria-expanded="false"
+                            aria-haspopup="true"
+                            @class([
+                                'splis-navbar-link splis-nav-dropdown-trigger',
+                                'splis-navbar-link-active' => $myOrdinancesNavActive,
+                            ])
+                        >
+                            My Ordinances
+                            <svg class="h-3.5 w-3.5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+                        </button>
+                        <div class="splis-nav-dropdown-panel" data-dropdown-panel role="menu">
+                            <a href="{{ route('board-member.ordinances.index') }}" role="menuitem" @class(['splis-nav-dropdown-link', 'splis-nav-dropdown-link-active' => request()->routeIs('board-member.ordinances.index')])>My Ordinances</a>
+                            <a href="{{ route('board-member.ordinances.all') }}" role="menuitem" @class(['splis-nav-dropdown-link', 'splis-nav-dropdown-link-active' => request()->routeIs('board-member.ordinances.all')])>All Ordinances</a>
+                        </div>
+                    </div>
+                    @endif
+
+                    @if (! $isBoardMember)
                     <div class="splis-nav-dropdown" data-dropdown>
                         <button
                             type="button"
@@ -177,8 +263,13 @@
                             >
                                 Committee Monitoring
                             </a>
+                            @if ($user?->canRecordAttendance())
+                                <a href="{{ route('ob.sessions.attendance.monthly') }}" role="menuitem" @class(['splis-nav-dropdown-link', 'splis-nav-dropdown-link-active' => request()->routeIs('ob.sessions.attendance.monthly')])>Monthly attendance</a>
+                                <a href="{{ route('admin.board-member-ordinances') }}" role="menuitem" @class(['splis-nav-dropdown-link', 'splis-nav-dropdown-link-active' => request()->routeIs('admin.board-member-ordinances')])>BM authored ordinances</a>
+                            @endif
                         </div>
                     </div>
+                    @endif
 
                     @foreach ($navItems as $item)
                         @if ($item['label'] === 'Dashboard')
@@ -220,6 +311,11 @@
             </div>
         </main>
     </div>
+
+    @if ($isBoardMember)
+        <div id="splis-toast-stack" class="splis-toast-stack" aria-live="polite" aria-atomic="true"></div>
+    @endif
+
     @stack('scripts')
 </body>
 </html>

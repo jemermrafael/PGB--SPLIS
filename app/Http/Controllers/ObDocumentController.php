@@ -19,6 +19,8 @@ class ObDocumentController extends Controller
     public function maker(LegislativeSession $legislativeSession, ObDocumentService $service): View
     {
         $document = $this->documentFor($legislativeSession);
+        $this->authorize('update', $document);
+
         $legislativeSession->load('priorSession');
 
         $session = $legislativeSession;
@@ -63,6 +65,8 @@ class ObDocumentController extends Controller
     public function print(LegislativeSession $legislativeSession, ObPrintRenderer $renderer): View
     {
         $document = $this->documentFor($legislativeSession);
+        $this->authorize('view', $document);
+
         $legislativeSession->load(['priorSession', 'obDocument.blocks']);
 
         $blocks = $document->blocks()->with('agendaItem')->orderBy('sort_order')->get();
@@ -198,6 +202,7 @@ class ObDocumentController extends Controller
             $validated['after_block_id'] ?? null,
             $validated['section'] ?? 'unassigned_regular',
             $validated['committee_id'] ?? null,
+            $request->user()->id,
         );
 
         return response()->json([

@@ -137,9 +137,38 @@
             </div>
         </div>
 
-        <div class="splis-card splis-card-body space-y-4">
-            <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Provincial output</h2>
+        <div id="agenda-provincial-output" class="splis-card splis-card-body space-y-4 splis-agenda-output">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Provincial output</h2>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Required when status is Done. Choose the measure type first — fields below will adjust.</p>
+                </div>
+                @if ($isEdit && $agenda->isPublished() && $agenda->publishedTargetRoute())
+                    <a href="{{ $agenda->publishedTargetRoute() }}" class="splis-badge-linked shrink-0">
+                        Linked to {{ $agenda->publishedTargetLabel() }}
+                    </a>
+                @endif
+            </div>
+
+            <div>
+                <label class="splis-label" for="reso_ord_ao_type">Output measure type</label>
+                <select name="reso_ord_ao_type" id="reso_ord_ao_type" class="splis-select">
+                    <option value="">Select measure type…</option>
+                    @foreach ($measureTypes as $value => $label)
+                        <option value="{{ $value }}" @selected(old('reso_ord_ao_type', $agenda->reso_ord_ao_type) === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                    <label class="splis-label" for="reso_ord_ao_no">Reso./Ord./AO no.</label>
+                    <input type="text" name="reso_ord_ao_no" id="reso_ord_ao_no" value="{{ old('reso_ord_ao_no', $agenda->reso_ord_ao_no) }}" class="splis-input" placeholder="218">
+                </div>
+                <div>
+                    <label class="splis-label" for="reso_ord_ao_series">Series (year)</label>
+                    <input type="number" name="reso_ord_ao_series" id="reso_ord_ao_series" value="{{ old('reso_ord_ao_series', $agenda->reso_ord_ao_series) }}" min="1900" max="2100" class="splis-input" placeholder="{{ now()->year }}">
+                </div>
                 <div>
                     <label class="splis-label" for="date_passed">Date passed</label>
                     <input type="date" name="date_passed" id="date_passed" value="{{ old('date_passed', $agenda->date_passed?->format('Y-m-d')) }}" class="splis-input">
@@ -148,39 +177,32 @@
                     <label class="splis-label" for="date_signed_by_gov">Date signed by Gov.</label>
                     <input type="date" name="date_signed_by_gov" id="date_signed_by_gov" value="{{ old('date_signed_by_gov', $agenda->date_signed_by_gov?->format('Y-m-d')) }}" class="splis-input">
                 </div>
-                <div>
-                    <label class="splis-label" for="reso_ord_ao_no">Reso./Ord./AO no.</label>
-                    <input type="text" name="reso_ord_ao_no" id="reso_ord_ao_no" value="{{ old('reso_ord_ao_no', $agenda->reso_ord_ao_no) }}" class="splis-input" placeholder="014">
-                </div>
-                <div>
-                    <label class="splis-label" for="reso_ord_ao_series">Series (year)</label>
-                    <input type="number" name="reso_ord_ao_series" id="reso_ord_ao_series" value="{{ old('reso_ord_ao_series', $agenda->reso_ord_ao_series) }}" min="1900" max="2100" class="splis-input" placeholder="Current year of passage">
-                </div>
-                <div>
-                    <label class="splis-label" for="reso_ord_ao_type">Output measure type</label>
-                    <select name="reso_ord_ao_type" id="reso_ord_ao_type" class="splis-select">
-                        <option value="">Not specified (legacy)</option>
-                        @foreach ($measureTypes as $value => $label)
-                            <option value="{{ $value }}" @selected(old('reso_ord_ao_type', $agenda->reso_ord_ao_type) === $value)>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                    <p class="mt-1.5 text-xs text-slate-400">Optional. Legacy GDrive PDFs may be a Resolution, Ordinance, or AO — set only when known.</p>
-                </div>
-                <div>
-                    <label class="splis-label" for="reso_ord_ao_url">Output PDF URL (legacy GDrive)</label>
-                    <input type="url" name="reso_ord_ao_url" id="reso_ord_ao_url" value="{{ old('reso_ord_ao_url', $agenda->reso_ord_ao_url) }}" class="splis-input">
-                </div>
                 <div class="md:col-span-2">
-                    <label class="splis-label" for="resolution_title">Resolution title</label>
+                    <label class="splis-label" for="resolution_title">Output title</label>
                     <textarea name="resolution_title" id="resolution_title" rows="4" class="splis-textarea">{{ old('resolution_title', $agenda->resolution_title) }}</textarea>
                 </div>
-                <div>
-                    <label class="splis-label" for="journal_url">Journal of proceedings</label>
-                    <input type="url" name="journal_url" id="journal_url" value="{{ old('journal_url', $agenda->journal_url) }}" class="splis-input">
+                <div class="md:col-span-2" data-measure-panel="resolution">
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Resolution output can include journal and session minutes links.</p>
                 </div>
-                <div>
-                    <label class="splis-label" for="minutes_url">Minutes of session</label>
-                    <input type="url" name="minutes_url" id="minutes_url" value="{{ old('minutes_url', $agenda->minutes_url) }}" class="splis-input">
+                <div class="md:col-span-2" data-measure-panel="ordinance">
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Ordinance output will be published or linked in SPLIS ordinances when saved as Done.</p>
+                </div>
+                <div class="md:col-span-2" data-measure-panel="appropriation_ordinance">
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Appropriation ordinance output will be published or linked in SPLIS when saved as Done.</p>
+                </div>
+                <div data-resolution-only class="md:col-span-2 grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                        <label class="splis-label" for="journal_url">Journal of proceedings</label>
+                        <input type="url" name="journal_url" id="journal_url" value="{{ old('journal_url', $agenda->journal_url) }}" class="splis-input">
+                    </div>
+                    <div>
+                        <label class="splis-label" for="minutes_url">Minutes of session</label>
+                        <input type="url" name="minutes_url" id="minutes_url" value="{{ old('minutes_url', $agenda->minutes_url) }}" class="splis-input">
+                    </div>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="splis-label" for="reso_ord_ao_url">Output PDF URL (legacy GDrive)</label>
+                    <input type="url" name="reso_ord_ao_url" id="reso_ord_ao_url" value="{{ old('reso_ord_ao_url', $agenda->reso_ord_ao_url) }}" class="splis-input" placeholder="Optional when linked in SPLIS">
                 </div>
                 <div class="md:col-span-2">
                     <label class="splis-label" for="remarks">Status / remarks</label>

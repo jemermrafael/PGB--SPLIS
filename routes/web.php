@@ -1,6 +1,12 @@
 <?php
 
-use App\Http\Controllers\BoardMemberController;
+use App\Http\Controllers\BoardMemberAgendaController;
+use App\Http\Controllers\BoardMemberAgendaSearchController;
+use App\Http\Controllers\BoardMemberCommitteeAgendaController;
+use App\Http\Controllers\BoardMemberObSearchController;
+use App\Http\Controllers\MyOrdinanceController;
+use App\Http\Controllers\AppropriationOrdinanceController;
+use App\Http\Controllers\BoardMemberOrdinanceReportController;
 use App\Http\Controllers\CommitteeController;
 use App\Http\Controllers\CommitteeMonitoringController;
 use App\Http\Controllers\CommitteeTermController;
@@ -25,6 +31,9 @@ use App\Http\Controllers\ResolutionPdfController;
 use App\Http\Controllers\ResolutionSearchController;
 use App\Http\Controllers\ReferenceMaterialController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\BoardMemberController;
+use App\Http\Controllers\SessionAttendanceController;
+use App\Http\Controllers\UserNotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -42,6 +51,20 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/dashboard/documents/search', DashboardSearchController::class)->name('dashboard.documents.search');
+
+    Route::get('/notifications', [UserNotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{notification}/read', [UserNotificationController::class, 'markRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [UserNotificationController::class, 'markAllRead'])->name('notifications.read-all');
+
+    Route::get('/my-ordinances', [MyOrdinanceController::class, 'index'])->name('board-member.ordinances.index');
+    Route::get('/all-ordinances', [MyOrdinanceController::class, 'all'])->name('board-member.ordinances.all');
+
+    Route::get('/my-agenda', [BoardMemberAgendaController::class, 'index'])->name('board-member.agenda.index');
+    Route::get('/my-agenda/search', BoardMemberAgendaSearchController::class)->name('board-member.agenda.search');
+    Route::get('/my-agenda/committees/{committee}', [BoardMemberCommitteeAgendaController::class, 'show'])->name('board-member.agenda.committee');
+    Route::get('/dashboard/ob/search', BoardMemberObSearchController::class)->name('board-member.dashboard.ob.search');
+
+    Route::get('/admin/board-member-ordinances', [BoardMemberOrdinanceReportController::class, 'index'])->name('admin.board-member-ordinances');
 
     Route::get('/resolutions', [ResolutionController::class, 'index'])->name('resolutions.index');
     Route::get('/resolutions/search', ResolutionSearchController::class)->name('resolutions.search');
@@ -61,14 +84,28 @@ Route::middleware('auth')->group(function () {
     Route::post('/references', [ReferenceMaterialController::class, 'store'])->name('references.store');
     Route::get('/references/{reference}', [ReferenceMaterialController::class, 'show'])->name('references.show');
     Route::get('/references/{reference}/download', [ReferenceMaterialController::class, 'download'])->name('references.download');
+    Route::get('/references/{reference}/versions/{version}/download', [ReferenceMaterialController::class, 'downloadVersion'])->name('references.versions.download');
     Route::get('/references/{reference}/edit', [ReferenceMaterialController::class, 'edit'])->name('references.edit');
     Route::put('/references/{reference}', [ReferenceMaterialController::class, 'update'])->name('references.update');
     Route::post('/references/{reference}/archive', [ReferenceMaterialController::class, 'archive'])->name('references.archive');
     Route::post('/references/{reference}/restore', [ReferenceMaterialController::class, 'restore'])->name('references.restore');
     Route::delete('/references/{reference}', [ReferenceMaterialController::class, 'destroy'])->name('references.destroy');
 
-    Route::get('/incoming', [IncomingDocumentController::class, 'index'])->name('incoming.index');
-    Route::get('/incoming/search', IncomingSearchController::class)->name('incoming.search');
+    Route::middleware('incoming.enabled')->group(function () {
+        Route::get('/incoming', [IncomingDocumentController::class, 'index'])->name('incoming.index');
+        Route::get('/incoming/search', IncomingSearchController::class)->name('incoming.search');
+        Route::get('/incoming/keywords', IncomingKeywordController::class)->name('incoming.keywords');
+        Route::get('/incoming/create', [IncomingDocumentController::class, 'create'])->name('incoming.create');
+        Route::post('/incoming', [IncomingDocumentController::class, 'store'])->name('incoming.store');
+        Route::get('/incoming/resolutions/search', [IncomingDocumentController::class, 'searchResolutions'])->name('incoming.resolutions.search');
+        Route::get('/incoming/{incoming}/publish', [IncomingDocumentController::class, 'publish'])->name('incoming.publish');
+        Route::post('/incoming/{incoming}/publish', [IncomingDocumentController::class, 'publishStore'])->name('incoming.publish.store');
+        Route::get('/incoming/{incoming}', [IncomingDocumentController::class, 'show'])->name('incoming.show');
+        Route::get('/incoming/{incoming}/edit', [IncomingDocumentController::class, 'edit'])->name('incoming.edit');
+        Route::put('/incoming/{incoming}', [IncomingDocumentController::class, 'update'])->name('incoming.update');
+        Route::post('/incoming/{incoming}/link', [IncomingDocumentController::class, 'link'])->name('incoming.link');
+    });
+
     Route::get('/ordinances', [OrdinanceController::class, 'index'])->name('ordinances.index');
     Route::get('/ordinances/search', OrdinanceSearchController::class)->name('ordinances.search');
     Route::get('/ordinances/create', [OrdinanceController::class, 'create'])->name('ordinances.create');
@@ -78,16 +115,13 @@ Route::middleware('auth')->group(function () {
     Route::put('/ordinances/{ordinance}', [OrdinanceController::class, 'update'])->name('ordinances.update');
     Route::delete('/ordinances/{ordinance}', [OrdinanceController::class, 'destroy'])->name('ordinances.destroy');
 
-    Route::get('/incoming/keywords', IncomingKeywordController::class)->name('incoming.keywords');
-    Route::get('/incoming/create', [IncomingDocumentController::class, 'create'])->name('incoming.create');
-    Route::post('/incoming', [IncomingDocumentController::class, 'store'])->name('incoming.store');
-    Route::get('/incoming/resolutions/search', [IncomingDocumentController::class, 'searchResolutions'])->name('incoming.resolutions.search');
-    Route::get('/incoming/{incoming}/publish', [IncomingDocumentController::class, 'publish'])->name('incoming.publish');
-    Route::post('/incoming/{incoming}/publish', [IncomingDocumentController::class, 'publishStore'])->name('incoming.publish.store');
-    Route::get('/incoming/{incoming}', [IncomingDocumentController::class, 'show'])->name('incoming.show');
-    Route::get('/incoming/{incoming}/edit', [IncomingDocumentController::class, 'edit'])->name('incoming.edit');
-    Route::put('/incoming/{incoming}', [IncomingDocumentController::class, 'update'])->name('incoming.update');
-    Route::post('/incoming/{incoming}/link', [IncomingDocumentController::class, 'link'])->name('incoming.link');
+    Route::get('/appropriation-ordinances', [AppropriationOrdinanceController::class, 'index'])->name('appropriation-ordinances.index');
+    Route::get('/appropriation-ordinances/create', [AppropriationOrdinanceController::class, 'create'])->name('appropriation-ordinances.create');
+    Route::post('/appropriation-ordinances', [AppropriationOrdinanceController::class, 'store'])->name('appropriation-ordinances.store');
+    Route::get('/appropriation-ordinances/{appropriationOrdinance}', [AppropriationOrdinanceController::class, 'show'])->name('appropriation-ordinances.show');
+    Route::get('/appropriation-ordinances/{appropriationOrdinance}/edit', [AppropriationOrdinanceController::class, 'edit'])->name('appropriation-ordinances.edit');
+    Route::put('/appropriation-ordinances/{appropriationOrdinance}', [AppropriationOrdinanceController::class, 'update'])->name('appropriation-ordinances.update');
+    Route::delete('/appropriation-ordinances/{appropriationOrdinance}', [AppropriationOrdinanceController::class, 'destroy'])->name('appropriation-ordinances.destroy');
 
     Route::get('/agenda', [AgendaItemController::class, 'index'])->name('agenda.index');
     Route::get('/agenda/search', AgendaSearchController::class)->name('agenda.search');
@@ -102,6 +136,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/agenda/{agenda}/unlink-incoming', [AgendaItemController::class, 'unlinkIncoming'])->name('agenda.unlink-incoming');
     Route::post('/agenda/{agenda}/unlink-resolution', [AgendaItemController::class, 'unlinkResolution'])->name('agenda.unlink-resolution');
     Route::post('/agenda/{agenda}/add-to-order-of-business', [AgendaItemController::class, 'addToOrderOfBusiness'])->name('agenda.add-to-order-of-business');
+    Route::delete('/agenda/{agenda}/versions/{version}', [AgendaItemController::class, 'destroyVersion'])->name('agenda.versions.destroy');
 
     Route::get('/committees', [CommitteeController::class, 'index'])->name('committees.index');
     Route::get('/committees/create', [CommitteeController::class, 'create'])->name('committees.create');
@@ -140,6 +175,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/{legislativeSession}/document/blocks/from-agenda', [ObDocumentController::class, 'addFromAgenda'])->name('document.blocks.from-agenda');
         Route::put('/{legislativeSession}/document/blocks/{block}', [ObDocumentController::class, 'updateBlock'])->name('document.blocks.update');
         Route::delete('/{legislativeSession}/document/blocks/{block}', [ObDocumentController::class, 'destroyBlock'])->name('document.blocks.destroy');
+        Route::get('/{legislativeSession}/attendance', [SessionAttendanceController::class, 'show'])->name('sessions.attendance');
+        Route::put('/{legislativeSession}/attendance', [SessionAttendanceController::class, 'update'])->name('sessions.attendance.update');
+        Route::get('/attendance/monthly', [SessionAttendanceController::class, 'monthlyReport'])->name('sessions.attendance.monthly');
         Route::get('/{legislativeSession}', [LegislativeSessionController::class, 'show'])->name('sessions.show');
         Route::get('/{legislativeSession}/edit', [LegislativeSessionController::class, 'edit'])->name('sessions.edit');
         Route::put('/{legislativeSession}', [LegislativeSessionController::class, 'update'])->name('sessions.update');

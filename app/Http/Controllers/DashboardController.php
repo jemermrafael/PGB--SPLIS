@@ -9,13 +9,29 @@ use App\Models\Municipality;
 use App\Models\Ordinance;
 use App\Models\Resolution;
 use App\Models\SeriesYear;
+use App\Models\User;
+use App\Services\BoardMemberDashboardService;
 use App\Services\ResolutionRepository;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function __invoke(ResolutionRepository $repository): View
+    public function __invoke(ResolutionRepository $repository, BoardMemberDashboardService $boardDashboard): View
     {
+        $user = auth()->user();
+
+        if ($user instanceof User && $user->isBoardMember()) {
+            return view('board-member.dashboard', [
+                'user' => $user,
+                'committeeAssignments' => $user->board_member_id ? $boardDashboard->committeeAssignmentsFor($user) : collect(),
+                'agendaStats' => $user->board_member_id
+                    ? $boardDashboard->agendaStatsFor($user)
+                    : ['pending' => 0, 'due_soon' => 0, 'done' => 0, 'lapsed' => 0],
+                'sessions' => $boardDashboard->upcomingSessions(),
+                'unlinked' => $user->board_member_id === null,
+            ]);
+        }
+
         $currentYear = (int) date('Y');
         $legacyCount = $repository->legacyCount();
         $newCount = $repository->newCount();

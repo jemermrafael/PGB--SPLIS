@@ -51,33 +51,46 @@
             <textarea name="subject" id="subject" rows="4" class="splis-input">{{ old('subject', $ordinance->subject) }}</textarea>
         </div>
 
-        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-800/50">
-            <h2 class="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Authored &amp; sponsored by</h2>
-            <p class="mb-4 text-xs text-slate-500 dark:text-slate-400">Optional — select one or two board members from the {{ $rosterTerm->label }} roster.</p>
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div
+            class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-800/50"
+            data-ordinance-attribution
+            data-initial-mode="{{ ($selectedAuthorIds !== [] || $selectedSponsorIds !== []) ? 'separate' : 'combined' }}"
+        >
+            <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <label class="splis-label" for="authored_sponsored_member_id_1">Board member</label>
-                    <select name="authored_sponsored_member_id_1" id="authored_sponsored_member_id_1" class="splis-input">
-                        <option value="">— None —</option>
-                        @foreach ($boardMembers as $member)
-                            @php $assignment = $member->termAssignments->first(); @endphp
-                            <option value="{{ $member->id }}" @selected((string) $selectedMemberId1 === (string) $member->id)>
-                                {{ $member->displayName() }}@if ($assignment?->district) — {{ $assignment->district }}@endif
-                            </option>
-                        @endforeach
-                    </select>
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Board member attribution</h2>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Optional — {{ $rosterTerm->label }} roster.</p>
                 </div>
-                <div>
-                    <label class="splis-label" for="authored_sponsored_member_id_2">Second board member (optional)</label>
-                    <select name="authored_sponsored_member_id_2" id="authored_sponsored_member_id_2" class="splis-input">
-                        <option value="">— None —</option>
-                        @foreach ($boardMembers as $member)
-                            @php $assignment = $member->termAssignments->first(); @endphp
-                            <option value="{{ $member->id }}" @selected((string) $selectedMemberId2 === (string) $member->id)>
-                                {{ $member->displayName() }}@if ($assignment?->district) — {{ $assignment->district }}@endif
-                            </option>
-                        @endforeach
-                    </select>
+                <div class="splis-attribution-toggle" role="group" aria-label="Attribution type">
+                    <button type="button" class="splis-attribution-toggle-btn" data-attribution-mode="combined" aria-pressed="false">Authored &amp; sponsored</button>
+                    <button type="button" class="splis-attribution-toggle-btn" data-attribution-mode="separate" aria-pressed="false">Author / sponsor</button>
+                </div>
+            </div>
+
+            <div data-attribution-panel="combined">
+                @include('ordinances.partials.board-member-picker', [
+                    'name' => 'authored_sponsored_member_ids',
+                    'label' => 'Authored & sponsored by',
+                    'showLabel' => false,
+                    'selectedIds' => $selectedAuthoredSponsoredIds,
+                    'boardMembers' => $boardMembers,
+                ])
+            </div>
+
+            <div class="hidden" data-attribution-panel="separate">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    @include('ordinances.partials.board-member-picker', [
+                        'name' => 'author_member_ids',
+                        'label' => 'Authored by',
+                        'selectedIds' => $selectedAuthorIds,
+                        'boardMembers' => $boardMembers,
+                    ])
+                    @include('ordinances.partials.board-member-picker', [
+                        'name' => 'sponsor_member_ids',
+                        'label' => 'Sponsored by',
+                        'selectedIds' => $selectedSponsorIds,
+                        'boardMembers' => $boardMembers,
+                    ])
                 </div>
             </div>
         </div>

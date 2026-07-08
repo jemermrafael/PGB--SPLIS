@@ -13,11 +13,16 @@ class LegislativeSessionController extends Controller
 {
     public function index(): View
     {
-        $sessions = LegislativeSession::query()
+        $query = LegislativeSession::query()
             ->with(['obDocument' => fn ($query) => $query->withCount('blocks'), 'creator'])
             ->orderByDesc('session_date')
-            ->orderByDesc('id')
-            ->paginate(20);
+            ->orderByDesc('id');
+
+        if (auth()->user()?->isBoardMember()) {
+            $query->withFinalObDocument();
+        }
+
+        $sessions = $query->paginate(20);
 
         return view('order-of-business.sessions.index', [
             'sessions' => $sessions,
@@ -56,6 +61,8 @@ class LegislativeSessionController extends Controller
 
     public function show(LegislativeSession $legislativeSession): View
     {
+        $this->authorize('view', $legislativeSession);
+
         $legislativeSession->load([
             'obDocument.blocks.agendaItem',
             'priorSession',

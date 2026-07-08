@@ -162,6 +162,7 @@
                             <th class="hidden lg:table-cell">Uploaded by</th>
                             <th class="hidden sm:table-cell">Uploaded at</th>
                             <th>Text index</th>
+                            <th>File</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -178,10 +179,15 @@
                                         <span class="splis-badge-unlinked">Not indexed</span>
                                     @endif
                                 </td>
+                                <td>
+                                    <a class="splis-link" href="{{ route('references.versions.download', ['reference' => $reference, 'version' => $version]) }}">
+                                        Download
+                                    </a>
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="py-6 text-center text-slate-500">No file versions yet.</td>
+                                <td colspan="6" class="py-6 text-center text-slate-500">No file versions yet.</td>
                             </tr>
                         @endforelse
                     </tbody>

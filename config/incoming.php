@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'enabled' => env('INCOMING_ENABLED', false),
+
     'action_taken' => [
         'For File',
         'For Agenda',

@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\AppropriationOrdinance;
 use App\Models\AgendaItem;
+use App\Models\AgendaItemVersion;
 use App\Models\BoardMember;
 use App\Models\Committee;
 use App\Models\CommitteeTerm;
@@ -12,7 +14,9 @@ use App\Models\ObDocument;
 use App\Models\Ordinance;
 use App\Models\Resolution;
 use App\Models\User;
+use App\Policies\AppropriationOrdinancePolicy;
 use App\Policies\AgendaItemPolicy;
+use App\Policies\AgendaItemVersionPolicy;
 use App\Policies\BoardMemberPolicy;
 use App\Policies\CommitteePolicy;
 use App\Policies\CommitteeTermPolicy;
@@ -38,11 +42,13 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Resolution::class, ResolutionPolicy::class);
         Gate::policy(IncomingDocument::class, IncomingDocumentPolicy::class);
         Gate::policy(AgendaItem::class, AgendaItemPolicy::class);
+        Gate::policy(AgendaItemVersion::class, AgendaItemVersionPolicy::class);
         Gate::policy(Committee::class, CommitteePolicy::class);
         Gate::policy(BoardMember::class, BoardMemberPolicy::class);
         Gate::policy(CommitteeTerm::class, CommitteeTermPolicy::class);
         Gate::policy(LegislativeSession::class, LegislativeSessionPolicy::class);
         Gate::policy(Ordinance::class, OrdinancePolicy::class);
+        Gate::policy(AppropriationOrdinance::class, AppropriationOrdinancePolicy::class);
         Gate::policy(ObDocument::class, ObDocumentPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
 

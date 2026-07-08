@@ -34,7 +34,14 @@ class AgendaItemRepository
 
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
-        return $this->baseQuery($filters)
+        return $this->paginateFromBuilder(AgendaItem::query(), $filters, $perPage);
+    }
+
+    public function paginateFromBuilder(Builder $query, array $filters = [], int $perPage = 25): LengthAwarePaginator
+    {
+        return $this->applyFilters($query, $filters)
+            ->latest('date_received')
+            ->latest('id')
             ->paginate($perPage)
             ->through(fn (AgendaItem $item) => $this->toArray($item));
     }
@@ -60,14 +67,16 @@ class AgendaItemRepository
             'reso_label' => $item->resoDisplayLabel(),
             'has_incoming' => $item->hasIncoming(),
             'has_resolution' => $item->resolution_id !== null,
+            'published_to' => $item->publishedTargetLabel(),
             'has_pdf' => $item->hasAnyPdf(),
+            'date_of_referral' => $item->date_of_referral?->format('Y-m-d'),
             'url' => route('agenda.show', $item),
         ];
     }
 
-    protected function baseQuery(array $filters): Builder
+    protected function applyFilters(Builder $query, array $filters): Builder
     {
-        $query = AgendaItem::query()->with(['incomingDocument', 'resolution']);
+        $query = $query->with(['incomingDocument', 'resolution', 'ordinance', 'appropriationOrdinance']);
 
         if (! empty($filters['title'])) {
             $query->where('title', 'like', '%'.$filters['title'].'%');
@@ -121,6 +130,6 @@ class AgendaItemRepository
             $query->whereNotNull('incoming_document_id');
         }
 
-        return $query->latest('date_received')->latest('id');
+        return $query;
     }
 }

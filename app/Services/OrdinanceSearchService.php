@@ -41,7 +41,7 @@ class OrdinanceSearchService
      */
     public function query(array $filters): Builder
     {
-        return $this->filteredQuery($filters)->with('authoredSponsoredMembers');
+        return $this->filteredQuery($filters)->with('boardMembers');
     }
 
     /**
@@ -64,7 +64,7 @@ class OrdinanceSearchService
         }
 
         return Ordinance::query()
-            ->with('authoredSponsoredMembers')
+            ->with('boardMembers')
             ->whereIn('id', $ids)
             ->get()
             ->keyBy('id');
@@ -171,6 +171,9 @@ class OrdinanceSearchService
             'date_approved' => $ordinance->date_approved?->toDateString(),
             'effectivity_date' => $ordinance->effectivity_date?->toDateString(),
             'classification' => $ordinance->classification,
+            'board_members_attribution' => $ordinance->boardMembersAttributionDisplay(),
+            'authored_by' => $ordinance->authorsDisplay(),
+            'sponsored_by' => $ordinance->sponsorsDisplay(),
             'authored_sponsored_by' => $ordinance->authoredSponsoredDisplay(),
             'publication_status' => $ordinance->publication_status?->value,
             'publication_status_label' => $ordinance->publicationStatusLabel(),
@@ -195,7 +198,7 @@ class OrdinanceSearchService
             'series' => (string) $ordinance->series_year,
             'series_label' => $ordinance->displaySeries(),
             'title' => $ordinance->subject ?? '',
-            'author' => $ordinance->authoredSponsoredDisplay(),
+            'author' => $ordinance->boardMembersAttributionDisplay(),
             'committee' => $ordinance->implementing_bodies,
             'keyword' => null,
             'date' => $ordinance->date_enacted?->format('Y-m-d') ?? $ordinance->date_approved?->format('Y-m-d'),

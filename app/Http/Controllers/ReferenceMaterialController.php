@@ -253,6 +253,18 @@ class ReferenceMaterialController extends Controller
         );
     }
 
+    public function downloadVersion(ReferenceMaterial $reference, ReferenceMaterialVersion $version)
+    {
+        $this->authorize('view', $reference);
+        abort_unless($version->reference_material_id === $reference->id, 404);
+        abort_unless(Storage::disk('local')->exists($version->file_path), 404);
+
+        return Storage::disk('local')->download(
+            $version->file_path,
+            $version->original_filename ?: basename($version->file_path),
+        );
+    }
+
     /**
      * @return array<string, mixed>
      */

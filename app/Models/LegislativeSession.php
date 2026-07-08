@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -49,6 +50,11 @@ class LegislativeSession extends Model
     public function followUpSessions(): HasMany
     {
         return $this->hasMany(self::class, 'prior_session_id');
+    }
+
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(SessionAttendance::class, 'legislative_session_id');
     }
 
     protected static function booted(): void
@@ -102,5 +108,14 @@ class LegislativeSession extends Model
         $formatted = \Carbon\Carbon::parse($this->session_time)->format('g:i A');
 
         return str_replace(['AM', 'PM'], ['A.M.', 'P.M.'], $formatted);
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeWithFinalObDocument(Builder $query): Builder
+    {
+        return $query->whereHas('obDocument', fn (Builder $document) => $document->final());
     }
 }

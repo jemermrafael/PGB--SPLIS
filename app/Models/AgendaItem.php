@@ -22,6 +22,7 @@ class AgendaItem extends Model
     public const STATUS_LAPSED = 'lapsed';
 
     protected $fillable = [
+        'current_version_no',
         'tracking_no',
         'request_pdf_url',
         'date_received',
@@ -45,6 +46,9 @@ class AgendaItem extends Model
         'reso_ord_ao_type',
         'reso_ord_ao_url',
         'resolution_id',
+        'ordinance_id',
+        'appropriation_ordinance_id',
+        'published_at',
         'resolution_title',
         'journal_url',
         'minutes_url',
@@ -83,6 +87,8 @@ class AgendaItem extends Model
             'date_signed_by_gov' => 'date',
             'prescribed_days' => 'integer',
             'reso_ord_ao_series' => 'integer',
+            'current_version_no' => 'integer',
+            'published_at' => 'datetime',
         ];
     }
 
@@ -96,6 +102,16 @@ class AgendaItem extends Model
         return $this->belongsTo(Resolution::class);
     }
 
+    public function ordinance(): BelongsTo
+    {
+        return $this->belongsTo(Ordinance::class);
+    }
+
+    public function appropriationOrdinance(): BelongsTo
+    {
+        return $this->belongsTo(AppropriationOrdinance::class);
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -104,6 +120,25 @@ class AgendaItem extends Model
     public function obBlocks(): HasMany
     {
         return $this->hasMany(ObBlock::class);
+    }
+
+    public function versions(): HasMany
+    {
+        return $this->hasMany(AgendaItemVersion::class)->orderByDesc('version_no');
+    }
+
+    public function obPlacements(): HasMany
+    {
+        return $this->hasMany(AgendaObPlacement::class)->orderByDesc('created_at');
+    }
+
+    public function currentVersion(): ?AgendaItemVersion
+    {
+        if ($this->relationLoaded('versions')) {
+            return $this->versions->first();
+        }
+
+        return $this->versions()->orderByDesc('version_no')->first();
     }
 
     public function hasIncoming(): bool
@@ -228,7 +263,57 @@ class AgendaItem extends Model
             return route('resolutions.show', $this->resolution);
         }
 
+        if ($this->ordinance_id && $this->ordinance) {
+            return route('ordinances.show', $this->ordinance);
+        }
+
+        if ($this->appropriation_ordinance_id && $this->appropriationOrdinance) {
+            return route('appropriation-ordinances.show', $this->appropriationOrdinance);
+        }
+
         return $this->reso_ord_ao_url;
+    }
+
+    public function publishedTargetLabel(): ?string
+    {
+        if ($this->resolution_id) {
+            return 'Resolution';
+        }
+
+        if ($this->ordinance_id) {
+            return 'Ordinance';
+        }
+
+        if ($this->appropriation_ordinance_id) {
+            return 'Appropriation Ordinance';
+        }
+
+        return null;
+    }
+
+    public function publishedTargetRoute(): ?string
+    {
+        if ($this->resolution_id && $this->resolution) {
+            return route('resolutions.show', $this->resolution);
+        }
+
+        if ($this->ordinance_id && $this->ordinance) {
+            return route('ordinances.show', $this->ordinance);
+        }
+
+        if ($this->appropriation_ordinance_id && $this->appropriationOrdinance) {
+            return route('appropriation-ordinances.show', $this->appropriationOrdinance);
+        }
+
+        return null;
+    }
+
+    public function isPublished(): bool
+    {
+        return $this->published_at !== null
+            || $this->resolution_id !== null
+            || $this->ordinance_id !== null
+            || $this->appropriation_ordinance_id !== null;
     }
 
     public static function inferMeasureType(?string $resolutionTitle): ?string

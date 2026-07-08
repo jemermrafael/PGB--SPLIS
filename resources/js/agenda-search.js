@@ -54,6 +54,9 @@ function renderLinkIcons(item) {
     if (item.has_resolution) {
         icons.push('<span class="splis-agenda-link-icon splis-agenda-link-icon--reso" title="Resolution linked">R</span>');
     }
+    if (item.published_to) {
+        icons.push(`<span class="splis-agenda-link-icon splis-agenda-link-icon--published" title="Published to ${escapeHtml(item.published_to)}">P</span>`);
+    }
 
     if (icons.length === 0) {
         return '<span class="text-slate-300">—</span>';
@@ -74,7 +77,7 @@ function renderListItem(item) {
             <td class="hidden sm:table-cell whitespace-nowrap">${formatDate(item.date_received)}</td>
             <td class="whitespace-nowrap">${formatDate(item.due_date)}</td>
             ${renderDaysLeftCell(item.days_left_label, item.days_left_tone)}
-            <td>${renderStatusBadge(item.status, item.status_label)}</td>
+            <td>${renderStatusBadge(item.status, item.status_label)}${item.published_to ? ` <span class="splis-badge-linked ml-1">Published to ${escapeHtml(item.published_to)}</span>` : ''}</td>
             <td class="hidden xl:table-cell whitespace-nowrap">${escapeHtml(item.reso_label || '—')}</td>
             <td class="text-center text-xs">${renderLinkIcons(item)}</td>
         </tr>

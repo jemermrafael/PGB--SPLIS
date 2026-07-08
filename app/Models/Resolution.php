@@ -115,4 +115,11 @@ class Resolution extends Model
             ->orderByDesc('id')
             ->first();
     }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Resolution $resolution): void {
+            app(\App\Services\AgendaPublishedOutputService::class)->clearFromDeletedResolution($resolution);
+        });
+    }
 }

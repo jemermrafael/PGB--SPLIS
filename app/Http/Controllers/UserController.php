@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
+use App\Models\BoardMember;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,6 +34,7 @@ class UserController extends Controller
         return view('users.form', [
             'user' => new User(['is_active' => true, 'role' => UserRole::Encoder]),
             'roles' => UserRole::assignable(),
+            'boardMembers' => BoardMember::query()->active()->ordered()->get(),
         ]);
     }
 
@@ -56,6 +58,7 @@ class UserController extends Controller
         return view('users.form', [
             'user' => $user,
             'roles' => UserRole::assignable(),
+            'boardMembers' => BoardMember::query()->active()->ordered()->get(),
         ]);
     }
 
@@ -120,8 +123,18 @@ class UserController extends Controller
                 Password::defaults(),
             ],
             'role' => ['required', Rule::enum(UserRole::class)],
+            'board_member_id' => [
+                'nullable',
+                'integer',
+                'exists:board_members,id',
+                Rule::requiredIf(fn () => $request->input('role') === UserRole::BoardMember->value),
+            ],
             'is_active' => ['sometimes', 'boolean'],
         ]);
+
+        if (($data['role'] ?? null) !== UserRole::BoardMember->value) {
+            $data['board_member_id'] = null;
+        }
 
         if (empty($data['password'])) {
             unset($data['password']);

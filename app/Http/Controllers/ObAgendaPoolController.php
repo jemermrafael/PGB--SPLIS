@@ -16,6 +16,8 @@ class ObAgendaPoolController extends Controller
     ): JsonResponse {
         abort_unless($legislativeSession->obDocument, 404);
 
+        $this->authorize('update', $legislativeSession->obDocument);
+
         $validated = $request->validate([
             'q' => ['nullable', 'string', 'max:200'],
             'page' => ['nullable', 'integer', 'min:1'],

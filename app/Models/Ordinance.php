@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Enums\OrdinanceBoardMemberRole;
 use App\Enums\OrdinancePublicationStatus;
 use App\Support\OrdinanceNumberParser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Collection;
 
 class Ordinance extends Model
 {
@@ -50,24 +52,87 @@ class Ordinance extends Model
     /**
      * @return BelongsToMany<BoardMember, $this>
      */
-    public function authoredSponsoredMembers(): BelongsToMany
+    public function boardMembers(): BelongsToMany
     {
         return $this->belongsToMany(BoardMember::class, 'ordinance_board_member')
-            ->withPivot('sort_order')
+            ->withPivot(['role', 'sort_order'])
             ->orderByPivot('sort_order');
+    }
+
+    /**
+     * @return BelongsToMany<BoardMember, $this>
+     */
+    public function authoredSponsoredMembers(): BelongsToMany
+    {
+        return $this->boardMembers()
+            ->wherePivot('role', OrdinanceBoardMemberRole::AuthoredSponsored->value);
+    }
+
+    /**
+     * @return Collection<int, BoardMember>
+     */
+    public function membersForRole(OrdinanceBoardMemberRole $role): Collection
+    {
+        $members = $this->relationLoaded('boardMembers')
+            ? $this->boardMembers
+            : $this->boardMembers()->get();
+
+        return $members
+            ->filter(fn (BoardMember $member) => $member->pivot->role === $role->value)
+            ->values();
+    }
+
+    public function authorsDisplay(): ?string
+    {
+        return $this->roleMembersDisplay(OrdinanceBoardMemberRole::Author);
+    }
+
+    public function sponsorsDisplay(): ?string
+    {
+        return $this->roleMembersDisplay(OrdinanceBoardMemberRole::Sponsor);
     }
 
     public function authoredSponsoredDisplay(): ?string
     {
-        $members = $this->relationLoaded('authoredSponsoredMembers')
-            ? $this->authoredSponsoredMembers
-            : $this->authoredSponsoredMembers()->get();
+        return $this->roleMembersDisplay(OrdinanceBoardMemberRole::AuthoredSponsored);
+    }
 
-        if ($members->isEmpty()) {
+    public function boardMembersAttributionDisplay(): ?string
+    {
+        $parts = array_values(array_filter([
+            $this->labeledRoleDisplay(OrdinanceBoardMemberRole::Author),
+            $this->labeledRoleDisplay(OrdinanceBoardMemberRole::Sponsor),
+            $this->labeledRoleDisplay(OrdinanceBoardMemberRole::AuthoredSponsored),
+        ]));
+
+        return $parts === [] ? null : implode(' · ', $parts);
+    }
+
+    protected function roleMembersDisplay(OrdinanceBoardMemberRole $role): ?string
+    {
+        $names = $this->membersForRole($role)->map(fn (BoardMember $member) => $member->displayName());
+
+        if ($names->isEmpty()) {
             return null;
         }
 
-        return $members->map(fn (BoardMember $member) => $member->displayName())->implode(' & ');
+        return $names->implode(', ');
+    }
+
+    protected function labeledRoleDisplay(OrdinanceBoardMemberRole $role): ?string
+    {
+        $names = $this->roleMembersDisplay($role);
+
+        return $names ? $role->label().': '.$names : null;
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeForBoardMember(Builder $query, int $boardMemberId): Builder
+    {
+        return $query->whereHas('boardMembers', fn (Builder $memberQuery) => $memberQuery->where('board_members.id', $boardMemberId));
     }
 
     /**
@@ -170,5 +235,12 @@ class Ordinance extends Model
         return $this->publication_status
             ? asset($this->publication_status->iconPath())
             : null;
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Ordinance $ordinance): void {
+            app(\App\Services\AgendaPublishedOutputService::class)->clearFromDeletedOrdinance($ordinance);
+        });
     }
 }

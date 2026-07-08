@@ -19,9 +19,14 @@
             @endif
         </div>
         <div class="flex flex-wrap gap-2">
-            @if ($session->obDocument)
+            @can('update', $session->obDocument)
                 <a href="{{ route('ob.document.maker', $session) }}" class="splis-btn-primary">Open OB Maker</a>
                 <a href="{{ route('ob.document.print', $session) }}" target="_blank" class="splis-btn-secondary">Print preview</a>
+            @elsecan('view', $session->obDocument)
+                <a href="{{ route('ob.document.print', $session) }}" target="_blank" class="splis-btn-primary">View Order of Business</a>
+            @endcan
+            @if (auth()->user()?->canRecordAttendance())
+                <a href="{{ route('ob.sessions.attendance', $session) }}" class="splis-btn-secondary">Attendance</a>
             @endif
             @can('update', $session)
                 <a href="{{ route('ob.sessions.edit', $session) }}" class="splis-btn-secondary">Edit session</a>
@@ -82,7 +87,11 @@
                         {{ $session->obDocument->blocks->count() }} content blocks
                         · next agenda no. {{ $session->obDocument->next_session_agenda_no }}
                     </p>
-                    <a href="{{ route('ob.document.maker', $session) }}" class="splis-link text-sm">Edit document in OB Maker →</a>
+                    @can('update', $session->obDocument)
+                        <a href="{{ route('ob.document.maker', $session) }}" class="splis-link text-sm">Edit document in OB Maker →</a>
+                    @elsecan('view', $session->obDocument)
+                        <a href="{{ route('ob.document.print', $session) }}" target="_blank" class="splis-link text-sm">View Order of Business →</a>
+                    @endcan
                 @else
                     <p class="text-sm text-slate-600 dark:text-slate-400">No OB document linked.</p>
                 @endif
@@ -97,7 +106,11 @@
                     <h2 class="splis-card-title">Document outline</h2>
                     <p class="splis-card-subtitle">{{ $session->obDocument->blocks->count() }} blocks</p>
                 </div>
-                <a href="{{ route('ob.document.maker', $session) }}" class="splis-link text-sm">Open maker</a>
+                @can('update', $session->obDocument)
+                    <a href="{{ route('ob.document.maker', $session) }}" class="splis-link text-sm">Open maker</a>
+                @elsecan('view', $session->obDocument)
+                    <a href="{{ route('ob.document.print', $session) }}" target="_blank" class="splis-link text-sm">View OB</a>
+                @endcan
             </div>
             <ol class="divide-y divide-slate-200 dark:divide-slate-700">
                 @foreach ($session->obDocument->blocks as $block)
