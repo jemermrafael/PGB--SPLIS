@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AgendaItem;
+use App\Models\AppropriationOrdinance;
 use App\Models\Committee;
 use App\Models\CommitteeTerm;
 use App\Models\Ordinance;
@@ -116,10 +117,16 @@ class DashboardAnalyticsService
             ->groupBy('series_year')
             ->pluck('aggregate', 'series_year');
 
+        $appropriationCounts = AppropriationOrdinance::query()
+            ->selectRaw('series_year, count(*) as aggregate')
+            ->whereIn('series_year', $years)
+            ->groupBy('series_year')
+            ->pluck('aggregate', 'series_year');
+
         return collect($years)
-            ->map(function (int $year) use ($resolutionCounts, $ordinanceCounts): array {
+            ->map(function (int $year) use ($resolutionCounts, $ordinanceCounts, $appropriationCounts): array {
                 $resolutions = (int) ($resolutionCounts[$year] ?? 0);
-                $ordinances = (int) ($ordinanceCounts[$year] ?? 0);
+                $ordinances = (int) ($ordinanceCounts[$year] ?? 0) + (int) ($appropriationCounts[$year] ?? 0);
 
                 return [
                     'year' => $year,
@@ -154,10 +161,16 @@ class DashboardAnalyticsService
             ->groupBy('series_year')
             ->pluck('aggregate', 'series_year');
 
+        $appropriationCounts = AppropriationOrdinance::query()
+            ->selectRaw('series_year, count(*) as aggregate')
+            ->whereBetween('series_year', [$yearFrom, $yearTo])
+            ->groupBy('series_year')
+            ->pluck('aggregate', 'series_year');
+
         return collect($years)
-            ->map(function (int $year) use ($resolutionCounts, $ordinanceCounts): array {
+            ->map(function (int $year) use ($resolutionCounts, $ordinanceCounts, $appropriationCounts): array {
                 $resolutions = (int) ($resolutionCounts[$year] ?? 0);
-                $ordinances = (int) ($ordinanceCounts[$year] ?? 0);
+                $ordinances = (int) ($ordinanceCounts[$year] ?? 0) + (int) ($appropriationCounts[$year] ?? 0);
 
                 return [
                     'year' => $year,
@@ -175,27 +188,37 @@ class DashboardAnalyticsService
     public function outputByMonth(int $year): array
     {
         $monthSelect = DB::connection()->getDriverName() === 'sqlite'
-            ? "cast(strftime('%m', created_at) as integer)"
-            : 'extract(month from created_at)';
+            ? "cast(strftime('%m', date_approved) as integer)"
+            : 'extract(month from date_approved)';
 
         $resolutionCounts = Resolution::query()
             ->selectRaw($monthSelect.' as month_no, count(*) as aggregate')
             ->where('series', $year)
-            ->whereYear('created_at', $year)
+            ->whereNotNull('date_approved')
+            ->whereYear('date_approved', $year)
             ->groupBy('month_no')
             ->pluck('aggregate', 'month_no');
 
         $ordinanceCounts = Ordinance::query()
             ->selectRaw($monthSelect.' as month_no, count(*) as aggregate')
             ->where('series_year', $year)
-            ->whereYear('created_at', $year)
+            ->whereNotNull('date_approved')
+            ->whereYear('date_approved', $year)
+            ->groupBy('month_no')
+            ->pluck('aggregate', 'month_no');
+
+        $appropriationCounts = AppropriationOrdinance::query()
+            ->selectRaw($monthSelect.' as month_no, count(*) as aggregate')
+            ->where('series_year', $year)
+            ->whereNotNull('date_approved')
+            ->whereYear('date_approved', $year)
             ->groupBy('month_no')
             ->pluck('aggregate', 'month_no');
 
         return collect(range(1, 12))
-            ->map(function (int $month) use ($resolutionCounts, $ordinanceCounts): array {
+            ->map(function (int $month) use ($resolutionCounts, $ordinanceCounts, $appropriationCounts): array {
                 $resolutions = (int) ($resolutionCounts[$month] ?? 0);
-                $ordinances = (int) ($ordinanceCounts[$month] ?? 0);
+                $ordinances = (int) ($ordinanceCounts[$month] ?? 0) + (int) ($appropriationCounts[$month] ?? 0);
 
                 return [
                     'month' => now()->setMonth($month)->startOfMonth()->format('M'),

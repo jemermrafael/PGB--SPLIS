@@ -91,7 +91,7 @@ function createOutputByYearChart(canvas, data) {
                     borderRadius: 4,
                 },
                 {
-                    label: 'Ordinances',
+                    label: 'Ordinances (incl. Appropriation)',
                     data: data.ordinances,
                     backgroundColor: 'rgba(167, 139, 250, 0.75)',
                     borderColor: PURPLE,
@@ -121,7 +121,7 @@ function createOutputByMonthChart(canvas, data) {
                     pointBackgroundColor: CYAN,
                 },
                 {
-                    label: 'Ordinances',
+                    label: 'Ordinances (incl. Appropriation)',
                     data: data.ordinances,
                     borderColor: PURPLE,
                     backgroundColor: 'rgba(167, 139, 250, 0.12)',

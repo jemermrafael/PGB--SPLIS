@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Enums\UserRole;
 use App\Models\AgendaItem;
+use App\Models\AppropriationOrdinance;
 use App\Models\Ordinance;
 use App\Models\Resolution;
 use App\Models\User;
@@ -49,6 +50,12 @@ class DashboardAnalyticsServiceTest extends TestCase
             'subject' => 'Test ordinance',
         ]);
 
+        AppropriationOrdinance::create([
+            'ordinance_no' => 2,
+            'series_year' => 2026,
+            'subject' => 'Test appropriation ordinance',
+        ]);
+
         $service = app(DashboardAnalyticsService::class);
         $pipeline = $service->agendaPipelineStats();
         $output = collect($service->outputByYear(3))->firstWhere('year', 2026);
@@ -57,8 +64,8 @@ class DashboardAnalyticsServiceTest extends TestCase
         $this->assertSame(1, $pipeline['published']);
         $this->assertNotNull($output);
         $this->assertSame(1, $output['resolutions']);
-        $this->assertSame(1, $output['ordinances']);
-        $this->assertSame(2, $output['total']);
+        $this->assertSame(2, $output['ordinances']);
+        $this->assertSame(3, $output['total']);
     }
 
     public function test_normalize_bar_chart_rows_sets_percentages(): void

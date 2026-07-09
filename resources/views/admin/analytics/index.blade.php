@@ -102,7 +102,7 @@
                 <div class="splis-hud-panel-corners" aria-hidden="true"></div>
                 <div class="splis-hud-panel-head">
                     <h2 class="splis-hud-panel-title">Legislative output by year</h2>
-                    <p class="splis-hud-panel-subtitle">Resolutions vs ordinances</p>
+                    <p class="splis-hud-panel-subtitle">Resolutions vs ordinances (includes appropriation ordinances)</p>
                 </div>
                 <div class="splis-hud-chart-wrap splis-hud-chart-wrap--tall">
                     <canvas id="chart-output-year" aria-label="Legislative output by year"></canvas>
@@ -138,7 +138,7 @@
                 <div class="splis-hud-panel-corners" aria-hidden="true"></div>
                 <div class="splis-hud-panel-head">
                     <h2 class="splis-hud-panel-title">Monthly output — {{ $focusYear }}</h2>
-                    <p class="splis-hud-panel-subtitle">Resolutions, ordinances, and combined trend</p>
+                    <p class="splis-hud-panel-subtitle">Based on approved dates (resolutions + ordinances, including appropriation ordinances)</p>
                 </div>
                 <div class="splis-hud-chart-wrap splis-hud-chart-wrap--tall">
                     <canvas id="chart-output-month" aria-label="Monthly output"></canvas>
