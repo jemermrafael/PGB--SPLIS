@@ -227,14 +227,14 @@ class ObDocumentService
             ->decrement('sort_order');
 
         if ($agenda && $session && $source !== 'relocation') {
-            ActivityLogger::log('agenda.removed_from_ob', $agenda, [
+            ActivityLogger::log('agenda.removed_from_ob', $agenda, ActivityLogger::agendaObProperties($agenda, [
                 'source' => $source,
                 'section' => $section,
                 'section_label' => config('order_of_business.agenda_sections.'.$section, $section),
                 'session_id' => $session->id,
                 'session_title' => $session->displayTitle(),
                 'session_date' => $session->session_date?->format('Y-m-d'),
-            ], $userId ?? auth()->id());
+            ]), $userId ?? auth()->id());
         }
     }
 
@@ -399,14 +399,14 @@ class ObDocumentService
 
             if ($session) {
                 foreach ($items as $item) {
-                    ActivityLogger::log('agenda.added_to_ob', $item, [
+                    ActivityLogger::log('agenda.added_to_ob', $item, ActivityLogger::agendaObProperties($item, [
                         'source' => 'manual',
                         'section' => $section,
                         'section_label' => config('order_of_business.agenda_sections.'.$section, $section),
                         'session_id' => $session->id,
                         'session_title' => $session->displayTitle(),
                         'session_date' => $session->session_date?->format('Y-m-d'),
-                    ], $placedBy);
+                    ]), $placedBy);
                 }
             }
         }
@@ -680,7 +680,7 @@ class ObDocumentService
             $session = $document->legislativeSession;
 
             if ($session) {
-                ActivityLogger::log('agenda.ob_relocated', $agenda, [
+                ActivityLogger::log('agenda.ob_relocated', $agenda, ActivityLogger::agendaObProperties($agenda, [
                     'source' => 'manual',
                     'from_section' => $currentSection,
                     'from_section_label' => config('order_of_business.agenda_sections.'.$currentSection, $currentSection),
@@ -689,7 +689,7 @@ class ObDocumentService
                     'session_id' => $session->id,
                     'session_title' => $session->displayTitle(),
                     'session_date' => $session->session_date?->format('Y-m-d'),
-                ], $userId);
+                ]), $userId);
             }
         });
 
@@ -821,14 +821,14 @@ class ObDocumentService
             return;
         }
 
-        ActivityLogger::log('agenda.removed_from_ob', $agenda, [
+        ActivityLogger::log('agenda.removed_from_ob', $agenda, ActivityLogger::agendaObProperties($agenda, [
             'source' => $source,
             'section' => $section,
             'section_label' => config('order_of_business.agenda_sections.'.$section, $section),
             'session_id' => $session->id,
             'session_title' => $session->displayTitle(),
             'session_date' => $session->session_date?->format('Y-m-d'),
-        ], $userId);
+        ]), $userId);
     }
 
     /**

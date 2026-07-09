@@ -21,6 +21,9 @@ class ActivityLogPresenter
         'resolution.updated' => 'Resolution updated',
         'resolution.deleted' => 'Resolution deleted',
         'resolution.published_from_incoming' => 'Published from incoming',
+        'agenda.created' => 'Agenda created',
+        'agenda.published' => 'Agenda published',
+        'ordinance.created' => 'Ordinance created',
         'reference_material.created' => 'Reference material created',
         'reference_material.updated' => 'Reference material updated',
         'reference_material.archived' => 'Reference material archived',
@@ -51,6 +54,23 @@ class ActivityLogPresenter
 
         if (! empty($log->properties['resolution_no'])) {
             $details[] = 'Resolution '.$log->properties['resolution_no'];
+        }
+
+        if (! empty($log->properties['ordinance_no'])) {
+            $series = $log->properties['series_year'] ?? null;
+            $details[] = 'Ordinance '.($series ? $series.'-' : '').$log->properties['ordinance_no'];
+        }
+
+        if (! empty($log->properties['tracking_no'])) {
+            $details[] = 'Tracking '.$log->properties['tracking_no'];
+        }
+
+        if (! empty($log->properties['target'])) {
+            $details[] = $log->properties['target'];
+        }
+
+        if (! empty($log->properties['output_no'])) {
+            $details[] = $log->properties['output_no'];
         }
 
         if (! empty($log->properties['source'])) {

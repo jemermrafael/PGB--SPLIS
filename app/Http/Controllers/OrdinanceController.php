@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\OrdinanceBoardMemberRole;
 use App\Enums\OrdinancePublicationStatus;
+use App\Models\ActivityLog;
 use App\Models\Ordinance;
 use App\Services\BoardMemberRosterService;
 use App\Services\OrdinanceBoardMemberService;
@@ -62,6 +63,11 @@ class OrdinanceController extends Controller
 
         $ordinance = Ordinance::create($this->validatedOrdinance($request));
         $this->syncBoardMembers($ordinance, $request);
+
+        ActivityLog::record('ordinance.created', $ordinance, [
+            'ordinance_no' => $ordinance->ordinance_no,
+            'series_year' => $ordinance->series_year,
+        ]);
 
         return redirect()
             ->route('ordinances.index')

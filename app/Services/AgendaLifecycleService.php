@@ -278,14 +278,14 @@ class AgendaLifecycleService
         string $source,
         ?int $userId = null,
     ): void {
-        ActivityLogger::log('agenda.added_to_ob', $agenda, [
+        ActivityLogger::log('agenda.added_to_ob', $agenda, ActivityLogger::agendaObProperties($agenda, [
             'source' => $source,
             'section' => $section,
             'section_label' => config('order_of_business.agenda_sections.'.$section, $section),
             'session_id' => $session->id,
             'session_title' => $session->displayTitle(),
             'session_date' => $session->session_date?->format('Y-m-d'),
-        ], $userId);
+        ]), $userId);
     }
 
     public function logRelocatedInOb(
@@ -295,7 +295,7 @@ class AgendaLifecycleService
         string $toSection,
         ?int $userId = null,
     ): void {
-        ActivityLogger::log('agenda.ob_relocated', $agenda, [
+        ActivityLogger::log('agenda.ob_relocated', $agenda, ActivityLogger::agendaObProperties($agenda, [
             'source' => 'automatic',
             'from_section' => $fromSection,
             'from_section_label' => $fromSection
@@ -306,7 +306,7 @@ class AgendaLifecycleService
             'session_id' => $session->id,
             'session_title' => $session->displayTitle(),
             'session_date' => $session->session_date?->format('Y-m-d'),
-        ], $userId);
+        ]), $userId);
     }
 
     public function isSessionAfter(LegislativeSession $earlier, LegislativeSession $later): bool

@@ -215,6 +215,9 @@
                     'resolution.updated' => 'amber',
                     'resolution.deleted' => 'red',
                     'resolution.published_from_incoming' => 'gold',
+                    'agenda.created' => 'blue',
+                    'agenda.published' => 'green',
+                    'ordinance.created' => 'brand',
                 ];
             @endphp
             <ul class="space-y-3">

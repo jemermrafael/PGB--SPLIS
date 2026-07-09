@@ -14,6 +14,7 @@ use App\Services\AgendaOutputPublisher;
 use App\Services\AgendaVersionService;
 use App\Services\BoardMemberNotifier;
 use App\Services\ObDocumentService;
+use App\Support\ActivityLogger;
 use App\Support\AgendaFieldOptions;
 use App\Support\AgendaMeasureType;
 use Illuminate\Http\RedirectResponse;
@@ -58,6 +59,12 @@ class AgendaItemController extends Controller
         ));
 
         $versions->recordInitialVersion($agenda, $request->user()->id);
+
+        ActivityLogger::log('agenda.created', $agenda, [
+            'tracking_no' => $agenda->tracking_no,
+            'title' => $agenda->title,
+            'sender' => $agenda->sender,
+        ]);
 
         $outputHandled = $this->afterAgendaSave($agenda, $request, $notifier, $publisher, false);
 
@@ -187,6 +194,12 @@ class AgendaItemController extends Controller
 
             if (! $wasPublishedBefore && $agenda->isPublished()) {
                 $notifier->notifyAgendaPublished($agenda);
+
+                ActivityLogger::log('agenda.published', $agenda, [
+                    'target' => $agenda->publishedTargetLabel(),
+                    'output_no' => $agenda->reso_ord_ao_no,
+                    'tracking_no' => $agenda->tracking_no,
+                ]);
             }
 
             return true;

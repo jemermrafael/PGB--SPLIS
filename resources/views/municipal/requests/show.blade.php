@@ -174,5 +174,10 @@
             @endif
         </div>
     </div>
+
+    @include('agenda.partials.splis-activity-logs', [
+        'splisActivityLogs' => $splisActivityLogs ?? collect(),
+        'obPlacementCount' => $obPlacementCount ?? 0,
+    ])
 </div>
 @endsection

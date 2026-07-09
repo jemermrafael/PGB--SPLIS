@@ -1,9 +1,12 @@
 @php
     $actionLabels = [
+        'agenda.created' => 'Agenda created',
+        'agenda.published' => 'Agenda published',
         'agenda.added_to_ob' => 'Added to Order of Business',
         'agenda.removed_from_ob' => 'Removed from Order of Business',
         'agenda.ob_relocated' => 'Moved in Order of Business',
     ];
+    $obActions = array_keys($actionLabels);
 @endphp
 
 @if ($splisActivityLogs->isNotEmpty())
@@ -24,13 +27,28 @@
                     <li class="splis-activity-timeline-item">
                         <p class="splis-activity-timeline-action">
                             {{ $actionLabels[$log->action] ?? str_replace('.', ' ', ucfirst($log->action)) }}
+                            @if (in_array($log->action, $obActions, true) && ! empty($log->properties['agenda_version_no']))
+                                <span class="font-normal text-slate-500">· version {{ $log->properties['agenda_version_no'] }}</span>
+                            @endif
                         </p>
                         <p class="splis-activity-timeline-meta">
                             <time datetime="{{ $log->created_at->toIso8601String() }}">
                                 {{ $log->created_at->format('M d, Y g:i A') }}
                             </time>
                             · {{ $log->user?->name ?? 'System' }}
+                            @if ($log->user?->role)
+                                <span class="text-slate-400">({{ $log->user->role->label() }})</span>
+                            @endif
                         </p>
+
+                        @if (! empty($log->properties['target']))
+                            <p class="splis-activity-timeline-detail">
+                                Published to: {{ $log->properties['target'] }}
+                                @if (! empty($log->properties['output_no']))
+                                    · {{ $log->properties['output_no'] }}
+                                @endif
+                            </p>
+                        @endif
 
                         @if (! empty($log->properties['session_title']))
                             <p class="splis-activity-timeline-detail">

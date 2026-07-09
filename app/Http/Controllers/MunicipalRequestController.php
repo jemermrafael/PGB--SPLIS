@@ -46,6 +46,7 @@ class MunicipalRequestController extends Controller
             'appropriationOrdinance',
             'finalObPlacements.legislativeSession',
             'finalObPlacements.agendaItemVersion',
+            'activityLogs.user',
         ]);
 
         return view('municipal.requests.show', [
@@ -53,6 +54,8 @@ class MunicipalRequestController extends Controller
             'agenda' => $agenda,
             'municipality' => $service->municipalityFor($user),
             'finalObPlacements' => $agenda->finalObPlacements,
+            'splisActivityLogs' => $agenda->activityLogs,
+            'obPlacementCount' => $agenda->activityLogs->where('action', 'agenda.added_to_ob')->count(),
         ]);
     }
 }
