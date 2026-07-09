@@ -6,7 +6,9 @@
         'incoming.imported_from_sptrack' => 'sptrack import batch',
         'resolution.created' => 'Resolution created',
         'resolution.updated' => 'Resolution updated',
-        'resolution.deleted' => 'Resolution deleted',
+        'resolution.trashed' => 'Moved to trash',
+        'resolution.restored' => 'Resolution restored',
+        'resolution.deleted' => 'Permanently deleted',
         'resolution.published_from_incoming' => 'Published from incoming',
     ];
 @endphp

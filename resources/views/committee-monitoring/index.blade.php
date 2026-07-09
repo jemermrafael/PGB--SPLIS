@@ -3,6 +3,19 @@
 @section('title', 'Committee Monitoring — '.config('app.name'))
 
 @section('content')
+@php
+    $activeView = $filters['view'] ?? 'referred';
+    $statLink = function (string $view) use ($selectedTerm, $filters): string {
+        return route('committee-monitoring.index', array_filter([
+            'term' => $selectedTerm->id,
+            'view' => $view === 'referred' ? null : $view,
+            'committee_id' => $filters['committee_id'] ?? null,
+            'date_from' => $filters['date_from'] ?? null,
+            'date_to' => $filters['date_to'] ?? null,
+            'q' => $filters['q'] ?? null,
+        ]));
+    };
+@endphp
 <div class="max-w-7xl">
     <div class="splis-page-header">
         <div>
@@ -16,9 +29,8 @@
             <a
                 href="{{ route('committee-monitoring.index', array_filter([
                     'term' => $term->id,
+                    'view' => ($filters['view'] ?? 'referred') === 'referred' ? null : ($filters['view'] ?? null),
                     'committee_id' => $filters['committee_id'],
-                    'status' => $filters['status'],
-                    'has_report' => $filters['has_report'],
                     'date_from' => $filters['date_from'],
                     'date_to' => $filters['date_to'],
                     'q' => $filters['q'],
@@ -31,35 +43,51 @@
     </div>
 
     <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <div class="splis-stat splis-stat--brand">
+        <a
+            href="{{ $statLink('referred') }}#committee-queue"
+            class="splis-stat splis-stat--brand splis-stat--clickable {{ $activeView === 'referred' ? 'splis-stat--active' : '' }}"
+        >
             <p class="splis-stat-label">Referred</p>
             <p class="splis-stat-value">{{ number_format($stats['total']) }}</p>
             <p class="splis-stat-meta">Total tracked items</p>
-        </div>
-        <div class="splis-stat splis-stat--gold">
+        </a>
+        <a
+            href="{{ $statLink('pending') }}#committee-queue"
+            class="splis-stat splis-stat--gold splis-stat--clickable {{ $activeView === 'pending' ? 'splis-stat--active' : '' }}"
+        >
             <p class="splis-stat-label">Pending</p>
             <p class="splis-stat-value">{{ number_format($stats['pending']) }}</p>
             <p class="splis-stat-meta">No outcome yet</p>
-        </div>
-        <div class="splis-stat splis-stat--sky">
+        </a>
+        <a
+            href="{{ $statLink('scheduled') }}#committee-queue"
+            class="splis-stat splis-stat--sky splis-stat--clickable {{ $activeView === 'scheduled' ? 'splis-stat--active' : '' }}"
+        >
             <p class="splis-stat-label">Scheduled</p>
             <p class="splis-stat-value">{{ number_format($stats['with_schedule']) }}</p>
             <p class="splis-stat-meta">With committee meeting date</p>
-        </div>
-        <div class="splis-stat splis-stat--green">
+        </a>
+        <a
+            href="{{ $statLink('reports') }}#committee-queue"
+            class="splis-stat splis-stat--green splis-stat--clickable {{ $activeView === 'reports' ? 'splis-stat--active' : '' }}"
+        >
             <p class="splis-stat-label">Reports</p>
             <p class="splis-stat-value">{{ number_format($stats['with_report']) }}</p>
             <p class="splis-stat-meta">With report link</p>
-        </div>
-        <div class="splis-stat">
+        </a>
+        <a
+            href="{{ $statLink('completed') }}#committee-queue"
+            class="splis-stat splis-stat--clickable {{ $activeView === 'completed' ? 'splis-stat--active' : '' }}"
+        >
             <p class="splis-stat-label">Completed</p>
             <p class="splis-stat-value">{{ number_format($stats['completed']) }}</p>
             <p class="splis-stat-meta">With outcome</p>
-        </div>
+        </a>
     </div>
 
     <form method="GET" action="{{ route('committee-monitoring.index') }}" class="splis-filter-panel">
         <input type="hidden" name="term" value="{{ $selectedTerm->id }}">
+        <input type="hidden" name="view" value="{{ $activeView }}">
         <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">Filter committee queue</h2>
 
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -108,7 +136,7 @@
         </div>
     </form>
 
-    <div class="mt-6 splis-table-wrap">
+    <div id="committee-queue" class="mt-6 splis-table-wrap">
         <table class="splis-table">
             <thead>
                 <tr>
@@ -151,7 +179,24 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="py-10 text-center text-slate-500">No referred measures found for the selected filters.</td>
+                        <td colspan="8" class="py-10 text-center text-slate-500">
+                            @switch ($activeView)
+                                @case ('pending')
+                                    No pending referred measures found for the selected filters.
+                                    @break
+                                @case ('scheduled')
+                                    No scheduled committee meetings found for the selected filters.
+                                    @break
+                                @case ('reports')
+                                    No referred measures with committee reports found for the selected filters.
+                                    @break
+                                @case ('completed')
+                                    No completed referred measures found for the selected filters.
+                                    @break
+                                @default
+                                    No referred measures found for the selected filters.
+                            @endswitch
+                        </td>
                     </tr>
                 @endforelse
             </tbody>

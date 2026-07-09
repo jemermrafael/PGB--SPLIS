@@ -10,6 +10,13 @@
 @endphp
 
 <div class="max-w-5xl">
+    @if ($resolution->trashed())
+        <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
+            <p class="font-semibold">This resolution is in trash.</p>
+            <p class="mt-1">It was removed on {{ $resolution->deleted_at?->format('M d, Y g:i A') }}. Restore it or delete permanently.</p>
+        </div>
+    @endif
+
     <div class="splis-page-header !mb-6">
         <div>
             <div class="mb-2 flex items-center gap-2">
@@ -30,7 +37,9 @@
             @can('update', $resolution)
                 <a href="{{ route('resolutions.edit', $resolution) }}" class="splis-btn-secondary">Edit</a>
             @endcan
-            @if (auth()->user()?->isMunicipalViewer())
+            @if ($resolution->trashed())
+                <a href="{{ route('resolutions.trash') }}" class="splis-btn-secondary">Back to trash</a>
+            @elseif (auth()->user()?->isMunicipalViewer())
                 <a href="{{ route('municipal.requests.index') }}" class="splis-btn-secondary">Back to requests</a>
             @else
                 <a href="{{ route('resolutions.index') }}" class="splis-btn-secondary">Back to list</a>
@@ -101,24 +110,44 @@
         </div>
     @endif
 
-    @include('partials.detail-prev-next', [
-        'previous' => $previousResolution,
-        'next' => $nextResolution,
-        'previousUrl' => $previousResolution ? route('resolutions.show', $previousResolution) : null,
-        'nextUrl' => $nextResolution ? route('resolutions.show', $nextResolution) : null,
-        'previousLabel' => $previousResolution ? 'Resolution No.: '.$previousResolution->resolution_no : null,
-        'nextLabel' => $nextResolution ? 'Resolution No.: '.$nextResolution->resolution_no : null,
-        'label' => 'Resolution navigation',
-    ])
+    @if (! $resolution->trashed())
+        @include('partials.detail-prev-next', [
+            'previous' => $previousResolution,
+            'next' => $nextResolution,
+            'previousUrl' => $previousResolution ? route('resolutions.show', $previousResolution) : null,
+            'nextUrl' => $nextResolution ? route('resolutions.show', $nextResolution) : null,
+            'previousLabel' => $previousResolution ? 'Resolution No.: '.$previousResolution->resolution_no : null,
+            'nextLabel' => $nextResolution ? 'Resolution No.: '.$nextResolution->resolution_no : null,
+            'label' => 'Resolution navigation',
+        ])
+    @endif
 
-    @can('delete', $resolution)
-        <div class="mt-4 flex justify-end">
-            <form method="POST" action="{{ route('resolutions.destroy', $resolution) }}" onsubmit="return confirm('Delete this resolution? PDF file will not be deleted.')">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="splis-btn-danger">Delete resolution</button>
-            </form>
+    @if ($resolution->trashed())
+        <div class="mt-6 flex flex-wrap justify-end gap-2">
+            @can('restore', $resolution)
+                <form method="POST" action="{{ route('resolutions.restore', $resolution) }}" onsubmit="return confirm('Restore this resolution?')">
+                    @csrf
+                    <button type="submit" class="splis-btn-secondary">Restore resolution</button>
+                </form>
+            @endcan
+            @can('forceDelete', $resolution)
+                <form method="POST" action="{{ route('resolutions.force-destroy', $resolution) }}" onsubmit="return confirm('Permanently delete this resolution? This cannot be undone. The PDF file will not be deleted.')">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="splis-btn-danger">Delete permanently</button>
+                </form>
+            @endcan
         </div>
-    @endcan
+    @else
+        @can('delete', $resolution)
+            <div class="mt-4 flex justify-end">
+                <form method="POST" action="{{ route('resolutions.destroy', $resolution) }}" onsubmit="return confirm('Move this resolution to trash?')">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="splis-btn-danger">Move to trash</button>
+                </form>
+            </div>
+        @endcan
+    @endif
 </div>
 @endsection

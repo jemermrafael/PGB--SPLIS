@@ -15,6 +15,8 @@
         <ul class="splis-activity-timeline">
             @foreach ($splisActivityLogs as $log)
                 <li class="splis-activity-timeline-item">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0 flex-1">
                     <p class="splis-activity-timeline-action">
                         {{ $actionLabels[$log->action] ?? str_replace('.', ' ', ucfirst($log->action)) }}
                     </p>
@@ -62,6 +64,9 @@
                             @endforeach
                         </ul>
                     @endif
+                        </div>
+                        @include('partials.activity-log-delete', ['log' => $log])
+                    </div>
                 </li>
             @endforeach
         </ul>

@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\ActivityLog;
 use App\Models\AppropriationOrdinance;
 use App\Models\AgendaItem;
 use App\Models\AgendaItemVersion;
@@ -14,6 +15,7 @@ use App\Models\ObDocument;
 use App\Models\Ordinance;
 use App\Models\Resolution;
 use App\Models\User;
+use App\Policies\ActivityLogPolicy;
 use App\Policies\AppropriationOrdinancePolicy;
 use App\Policies\AgendaItemPolicy;
 use App\Policies\AgendaItemVersionPolicy;
@@ -39,6 +41,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Gate::policy(ActivityLog::class, ActivityLogPolicy::class);
         Gate::policy(Resolution::class, ResolutionPolicy::class);
         Gate::policy(IncomingDocument::class, IncomingDocumentPolicy::class);
         Gate::policy(AgendaItem::class, AgendaItemPolicy::class);

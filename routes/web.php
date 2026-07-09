@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\BoardMemberAgendaController;
 use App\Http\Controllers\BoardMemberAgendaSearchController;
 use App\Http\Controllers\BoardMemberCommitteeAgendaController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\ObDocumentController;
 use App\Http\Controllers\AgendaDeadlinePreviewController;
 use App\Http\Controllers\AgendaItemController;
 use App\Http\Controllers\AgendaSearchController;
+use App\Http\Controllers\AdminAnalyticsController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin\DatabaseBackupController;
 use App\Http\Controllers\Admin\DataSyncController;
@@ -52,12 +54,14 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/admin/analytics', AdminAnalyticsController::class)->name('admin.analytics.index');
     Route::get('/dashboard/documents/search', DashboardSearchController::class)->name('dashboard.documents.search');
 
     Route::get('/notifications/all', [UserNotificationController::class, 'feed'])->name('notifications.feed');
     Route::get('/notifications', [UserNotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{notification}/read', [UserNotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [UserNotificationController::class, 'markAllRead'])->name('notifications.read-all');
+    Route::delete('/activity-logs/{activityLog}', [ActivityLogController::class, 'destroy'])->name('activity-logs.destroy');
 
     Route::get('/my-ordinances', [MyOrdinanceController::class, 'index'])->name('board-member.ordinances.index');
     Route::get('/all-ordinances', [MyOrdinanceController::class, 'all'])->name('board-member.ordinances.all');
@@ -78,14 +82,17 @@ Route::middleware('auth')->group(function () {
     Route::get('/resolutions/search', ResolutionSearchController::class)->name('resolutions.search');
     Route::get('/resolutions/create', [ResolutionController::class, 'create'])->name('resolutions.create');
     Route::post('/resolutions', [ResolutionController::class, 'store'])->name('resolutions.store');
+    Route::get('/resolutions/trash', [ResolutionController::class, 'trash'])->name('resolutions.trash');
     Route::get('/resolutions/legacy/{id}', [ResolutionController::class, 'showLegacy'])->name('resolutions.show-legacy');
     Route::get('/resolutions/pdf/{series}/{resolutionNo}', ResolutionPdfController::class)
         ->where('resolutionNo', '.*')
         ->name('resolutions.pdf');
-    Route::get('/resolutions/{resolution}', [ResolutionController::class, 'show'])->name('resolutions.show');
+    Route::get('/resolutions/{resolution}', [ResolutionController::class, 'show'])->name('resolutions.show')->withTrashed();
     Route::get('/resolutions/{resolution}/edit', [ResolutionController::class, 'edit'])->name('resolutions.edit');
     Route::put('/resolutions/{resolution}', [ResolutionController::class, 'update'])->name('resolutions.update');
     Route::delete('/resolutions/{resolution}', [ResolutionController::class, 'destroy'])->name('resolutions.destroy');
+    Route::post('/resolutions/{resolution}/restore', [ResolutionController::class, 'restore'])->name('resolutions.restore')->withTrashed();
+    Route::delete('/resolutions/{resolution}/force', [ResolutionController::class, 'forceDestroy'])->name('resolutions.force-destroy')->withTrashed();
 
     Route::get('/references', [ReferenceMaterialController::class, 'index'])->name('references.index');
     Route::get('/references/create', [ReferenceMaterialController::class, 'create'])->name('references.create');

@@ -19,7 +19,9 @@ class ActivityLogPresenter
         'incoming.imported_from_sptrack' => 'SPTrack import',
         'resolution.created' => 'Resolution created',
         'resolution.updated' => 'Resolution updated',
-        'resolution.deleted' => 'Resolution deleted',
+        'resolution.trashed' => 'Resolution moved to trash',
+        'resolution.restored' => 'Resolution restored',
+        'resolution.deleted' => 'Resolution permanently deleted',
         'resolution.published_from_incoming' => 'Published from incoming',
         'agenda.created' => 'Agenda created',
         'agenda.published' => 'Agenda published',
@@ -42,9 +44,49 @@ class ActivityLogPresenter
         'agenda.ob_relocated' => 'Moved in Order of Business',
     ];
 
-    public static function label(string $action): string
+    public static function label(string|ActivityLog $actionOrLog): string
     {
+        $action = $actionOrLog instanceof ActivityLog ? $actionOrLog->action : $actionOrLog;
+        $properties = $actionOrLog instanceof ActivityLog ? ($actionOrLog->properties ?? []) : [];
+
+        if (! empty($properties['resolution_no']) && in_array($action, ['resolution.trashed', 'resolution.restored', 'resolution.deleted'], true)) {
+            $reference = self::resolutionReference($properties);
+
+            return match ($action) {
+                'resolution.trashed' => "Resolution {$reference} moved to trash",
+                'resolution.restored' => "Resolution {$reference} restored",
+                'resolution.deleted' => "Resolution {$reference} permanently deleted",
+                default => self::LABELS[$action] ?? str_replace('.', ' ', ucfirst($action)),
+            };
+        }
+
+        if ($action === 'resolution.deleted' && $actionOrLog instanceof ActivityLog && $actionOrLog->subject_id) {
+            $resolution = Resolution::withTrashed()->find($actionOrLog->subject_id);
+
+            if ($resolution) {
+                $reference = self::resolutionReference([
+                    'resolution_no' => $resolution->resolution_no,
+                    'series' => $resolution->series,
+                ]);
+
+                if ($resolution->trashed()) {
+                    return "Resolution {$reference} moved to trash";
+                }
+            }
+        }
+
         return self::LABELS[$action] ?? str_replace('.', ' ', ucfirst($action));
+    }
+
+    /**
+     * @param  array<string, mixed>  $properties
+     */
+    protected static function resolutionReference(array $properties): string
+    {
+        $no = (string) $properties['resolution_no'];
+        $series = $properties['series'] ?? null;
+
+        return $series ? "{$series}-{$no}" : $no;
     }
 
     public static function body(ActivityLog $log): string
@@ -53,7 +95,7 @@ class ActivityLogPresenter
         $details = [];
 
         if (! empty($log->properties['resolution_no'])) {
-            $details[] = 'Resolution '.$log->properties['resolution_no'];
+            $details[] = self::resolutionReference($log->properties);
         }
 
         if (! empty($log->properties['ordinance_no'])) {
@@ -110,6 +152,18 @@ class ActivityLogPresenter
 
     public static function linkLabel(ActivityLog $log): string
     {
+        if ($log->action === 'resolution.trashed') {
+            return 'View in trash';
+        }
+
+        if ($log->action === 'resolution.deleted' && $log->subject_type === Resolution::class && $log->subject_id) {
+            $resolution = Resolution::withTrashed()->find($log->subject_id);
+
+            if ($resolution?->trashed()) {
+                return 'View in trash';
+            }
+        }
+
         return match ($log->subject_type) {
             AgendaItem::class => 'View agenda',
             Resolution::class => 'View resolution',

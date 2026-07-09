@@ -15,7 +15,32 @@ class ResolutionPolicy
 
     public function view(User $user, Resolution $resolution): bool
     {
+        if ($resolution->trashed()) {
+            return $user->canDeleteResolutions() && $resolution->legacy_sp_id === null;
+        }
+
         return MunicipalRequestAccess::userCanViewResolution($user, $resolution);
+    }
+
+    public function restore(User $user, Resolution $resolution): bool
+    {
+        return $user->canDeleteResolutions()
+            && $resolution->legacy_sp_id === null
+            && $resolution->trashed();
+    }
+
+    public function forceDelete(User $user, Resolution $resolution): bool
+    {
+        return $user->canDeleteResolutions()
+            && $resolution->legacy_sp_id === null
+            && $resolution->trashed();
+    }
+
+    public function delete(User $user, Resolution $resolution): bool
+    {
+        return $user->canDeleteResolutions()
+            && $resolution->legacy_sp_id === null
+            && ! $resolution->trashed();
     }
 
     public function create(User $user): bool
@@ -25,11 +50,6 @@ class ResolutionPolicy
 
     public function update(User $user, Resolution $resolution): bool
     {
-        return $user->canEncode() && $resolution->legacy_sp_id === null;
-    }
-
-    public function delete(User $user, Resolution $resolution): bool
-    {
-        return $user->canDeleteResolutions() && $resolution->legacy_sp_id === null;
+        return $user->canEncode() && $resolution->legacy_sp_id === null && ! $resolution->trashed();
     }
 }

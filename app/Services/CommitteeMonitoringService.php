@@ -103,6 +103,12 @@ class CommitteeMonitoringService
             });
         }
 
+        if (($filters['has_schedule'] ?? '') === 'yes') {
+            $query->whereNotNull('date_of_committee_meeting');
+        } elseif (($filters['has_schedule'] ?? '') === 'no') {
+            $query->whereNull('date_of_committee_meeting');
+        }
+
         if (! empty($filters['date_from'])) {
             $query->whereDate('date_of_referral', '>=', (string) $filters['date_from']);
         }

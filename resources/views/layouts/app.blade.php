@@ -91,6 +91,9 @@
                             <div class="splis-user-menu-panel" data-dropdown-panel>
                                 <p class="px-3 py-2 text-sm font-medium text-slate-800 dark:text-slate-100">{{ auth()->user()->name }}</p>
                                 <p class="px-3 pb-2 text-xs text-slate-500">{{ auth()->user()->role->label() }}</p>
+                                @if (auth()->user()->canAdmin())
+                                    <a href="{{ route('admin.analytics.index') }}" class="splis-user-menu-link">Data analytics</a>
+                                @endif
                                 @if (auth()->user()->canManageUsers())
                                     <a href="{{ route('users.index') }}" class="splis-user-menu-link">Manage users</a>
                                     <a href="{{ route('admin.data-sync.index') }}" class="splis-user-menu-link">Data sync</a>
@@ -316,6 +319,10 @@
 
     @if ($showNotifications)
         <div id="splis-toast-stack" class="splis-toast-stack" aria-live="polite" aria-atomic="true"></div>
+    @endif
+
+    @if ($user?->isSuperadmin())
+        @include('partials.confirm-dialog')
     @endif
 
     @stack('scripts')

@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Support\ActivityLogPresenter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -154,6 +156,16 @@ class UserNotificationController extends Controller
 
     private function linkLabel(UserNotification $notification): string
     {
+        if ($notification->type === UserNotification::TYPE_ACTIVITY_LOG && $notification->activity_log_id) {
+            $log = $notification->relationLoaded('activityLog')
+                ? $notification->activityLog
+                : ActivityLog::query()->find($notification->activity_log_id);
+
+            if ($log instanceof ActivityLog) {
+                return ActivityLogPresenter::linkLabel($log);
+            }
+        }
+
         return match ($notification->type) {
             UserNotification::TYPE_COMMITTEE_REFERRAL,
             UserNotification::TYPE_AGENDA_PUBLISHED,

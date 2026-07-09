@@ -534,7 +534,7 @@
     }
 
     .splis-dashboard-hero {
-        @apply relative mb-8 overflow-hidden rounded-2xl border border-brand-700/30 px-6 py-7 shadow-lg sm:px-8;
+        @apply relative mb-8 w-full overflow-hidden rounded-2xl border border-brand-700/30 px-6 py-7 shadow-lg sm:px-8;
         background-image: linear-gradient(125deg, var(--color-brand-950) 0%, var(--color-brand-800) 45%, var(--color-brand-700) 100%);
     }
 
@@ -548,7 +548,15 @@
     }
 
     .splis-dashboard-hero-subtitle {
-        @apply mt-2 max-w-2xl text-base text-slate-300;
+        @apply mt-2 w-full max-w-none text-base text-slate-300;
+    }
+
+    .splis-analytics-bars {
+        @apply list-none p-0 m-0;
+    }
+
+    .splis-analytics-bar-fill {
+        @apply transition-[width] duration-500 ease-out;
     }
 
     .splis-accordion {
@@ -2266,5 +2274,152 @@
     .ob-print-page-break {
         page-break-before: always;
         break-before: page;
+    }
+
+    /* Admin analytics HUD dashboard */
+    .splis-hud-dashboard {
+        @apply relative min-h-[calc(100vh-8rem)] overflow-hidden rounded-2xl text-slate-100;
+        background: linear-gradient(145deg, #0b1024 0%, #151238 45%, #1a1045 100%);
+    }
+
+    .splis-hud-dashboard-bg {
+        @apply pointer-events-none absolute inset-0;
+        background:
+            radial-gradient(circle at 15% 10%, rgb(34 211 238 / 0.12), transparent 35%),
+            radial-gradient(circle at 85% 20%, rgb(167 139 250 / 0.14), transparent 30%),
+            radial-gradient(circle at 50% 100%, rgb(56 189 248 / 0.08), transparent 40%);
+    }
+
+    .splis-hud-header {
+        @apply flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between;
+    }
+
+    .splis-hud-eyebrow {
+        @apply text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-300/80;
+    }
+
+    .splis-hud-title {
+        @apply text-2xl font-bold tracking-tight text-white md:text-3xl;
+    }
+
+    .splis-hud-subtitle {
+        @apply mt-1 text-sm text-slate-300/80;
+    }
+
+    .splis-hud-header-meta {
+        @apply flex flex-wrap gap-2;
+    }
+
+    .splis-hud-meta-pill {
+        @apply rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-medium text-cyan-100;
+    }
+
+    .splis-hud-panel {
+        @apply relative overflow-hidden rounded-xl border border-cyan-400/25 bg-slate-950/45 p-4 shadow-[0_0_30px_rgb(34_211_238_/_0.06)] backdrop-blur-sm md:p-5;
+    }
+
+    .splis-hud-panel-corners::before,
+    .splis-hud-panel-corners::after {
+        content: '';
+        @apply pointer-events-none absolute h-4 w-4 border-cyan-300/70;
+    }
+
+    .splis-hud-panel-corners::before {
+        @apply left-2 top-2 border-l-2 border-t-2;
+    }
+
+    .splis-hud-panel-corners::after {
+        @apply bottom-2 right-2 border-b-2 border-r-2;
+    }
+
+    .splis-hud-panel-head {
+        @apply mb-3;
+    }
+
+    .splis-hud-panel-title {
+        @apply text-sm font-semibold uppercase tracking-[0.14em] text-cyan-100;
+    }
+
+    .splis-hud-panel-subtitle {
+        @apply mt-1 text-xs text-slate-400;
+    }
+
+    .splis-hud-label {
+        @apply mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400;
+    }
+
+    .splis-hud-input {
+        @apply w-full rounded-lg border border-slate-600/80 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 shadow-inner focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/20;
+    }
+
+    .splis-hud-btn-primary {
+        @apply inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-cyan-500 to-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition hover:brightness-110;
+    }
+
+    .splis-hud-btn-ghost {
+        @apply inline-flex items-center justify-center rounded-lg border border-slate-600/80 px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-cyan-400/50 hover:text-white;
+    }
+
+    .splis-hud-link {
+        @apply text-cyan-300 hover:text-cyan-100 hover:underline;
+    }
+
+    .splis-hud-kpi {
+        @apply relative flex flex-col items-center justify-center gap-2 rounded-xl border border-cyan-400/20 bg-slate-950/50 px-3 py-4 text-center transition hover:-translate-y-0.5 hover:border-cyan-300/50 hover:bg-slate-900/70 hover:shadow-[0_0_24px_rgb(34_211_238_/_0.12)];
+    }
+
+    .splis-hud-kpi--wide {
+        @apply col-span-2 sm:col-span-1;
+    }
+
+    .splis-hud-kpi-icon {
+        @apply flex h-11 w-11 items-center justify-center rounded-lg border border-white/10 bg-white/5;
+    }
+
+    .splis-hud-kpi-icon svg {
+        @apply h-6 w-6;
+    }
+
+    .splis-hud-kpi-icon--cyan { @apply text-cyan-300; }
+    .splis-hud-kpi-icon--amber { @apply text-amber-300; }
+    .splis-hud-kpi-icon--purple { @apply text-violet-300; }
+    .splis-hud-kpi-icon--blue { @apply text-sky-300; }
+    .splis-hud-kpi-icon--green { @apply text-emerald-300; }
+
+    .splis-hud-kpi-value {
+        @apply text-2xl font-bold tabular-nums text-white;
+    }
+
+    .splis-hud-kpi-label {
+        @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400;
+    }
+
+    .splis-hud-chart-wrap {
+        @apply relative w-full;
+        height: 220px;
+    }
+
+    .splis-hud-chart-wrap--tall {
+        height: 280px;
+    }
+
+    .splis-hud-chart-wrap--donut {
+        height: 200px;
+    }
+
+    .splis-hud-chart-wrap--spark {
+        height: 110px;
+    }
+
+    .splis-hud-mini-stat {
+        @apply rounded-lg border border-violet-400/20 bg-slate-950/40 px-4 py-3;
+    }
+
+    .splis-hud-mini-label {
+        @apply block text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400;
+    }
+
+    .splis-hud-mini-value {
+        @apply mt-1 block text-xl font-bold tabular-nums text-white;
     }
 }

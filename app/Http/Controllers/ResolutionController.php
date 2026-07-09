@@ -34,6 +34,24 @@ class ResolutionController extends Controller
             'departments' => Department::orderBy('description')->get(),
             'municipalities' => Municipality::orderBy('description')->get(),
             'seriesYears' => SeriesYear::orderByDesc('year')->pluck('year'),
+            'trashCount' => Resolution::query()->onlyTrashed()->whereNull('legacy_sp_id')->count(),
+        ]);
+    }
+
+    public function trash(): View
+    {
+        $this->authorize('viewAny', Resolution::class);
+        abort_unless(auth()->user()?->canDeleteResolutions(), 403);
+
+        $resolutions = Resolution::query()
+            ->onlyTrashed()
+            ->whereNull('legacy_sp_id')
+            ->with('creator')
+            ->orderByDesc('deleted_at')
+            ->paginate(25);
+
+        return view('resolutions.trash', [
+            'resolutions' => $resolutions,
         ]);
     }
 
@@ -63,8 +81,8 @@ class ResolutionController extends Controller
         return view('resolutions.show', [
             'resolution' => $resolution,
             'hasPdf' => $hasPdf,
-            'previousResolution' => $resolution->previousInList(),
-            'nextResolution' => $resolution->nextInList(),
+            'previousResolution' => $resolution->trashed() ? null : $resolution->previousInList(),
+            'nextResolution' => $resolution->trashed() ? null : $resolution->nextInList(),
         ]);
     }
 
@@ -93,7 +111,7 @@ class ResolutionController extends Controller
             ]);
         }
 
-        ActivityLog::record('resolution.created', $resolution, ['resolution_no' => $resolution->resolution_no]);
+        ActivityLog::record('resolution.created', $resolution, $this->resolutionLogProperties($resolution));
 
         return redirect()->route('resolutions.show', $resolution)->with('status', 'Resolution created.');
     }
@@ -129,10 +147,51 @@ class ResolutionController extends Controller
     {
         $this->authorize('delete', $resolution);
 
-        ActivityLog::record('resolution.deleted', $resolution);
+        ActivityLog::record('resolution.trashed', $resolution, $this->resolutionLogProperties($resolution));
         $resolution->delete();
 
-        return redirect()->route('resolutions.index')->with('status', 'Resolution deleted.');
+        return redirect()
+            ->route('resolutions.trash')
+            ->with('status', 'Resolution '.$resolution->series.'-'.$resolution->resolution_no.' moved to trash.');
+    }
+
+    public function restore(Resolution $resolution): RedirectResponse
+    {
+        $this->authorize('restore', $resolution);
+
+        $resolution->restore();
+
+        ActivityLog::record('resolution.restored', $resolution, $this->resolutionLogProperties($resolution));
+
+        return redirect()
+            ->route('resolutions.show', $resolution)
+            ->with('status', 'Resolution restored.');
+    }
+
+    public function forceDestroy(Resolution $resolution): RedirectResponse
+    {
+        $this->authorize('forceDelete', $resolution);
+
+        $properties = $this->resolutionLogProperties($resolution);
+        $label = $resolution->series.'-'.$resolution->resolution_no;
+
+        ActivityLog::record('resolution.deleted', $resolution, $properties);
+        $resolution->forceDelete();
+
+        return redirect()
+            ->route('resolutions.trash')
+            ->with('status', 'Resolution '.$label.' permanently deleted.');
+    }
+
+    /**
+     * @return array{resolution_no: string, series: int}
+     */
+    protected function resolutionLogProperties(Resolution $resolution): array
+    {
+        return [
+            'resolution_no' => $resolution->resolution_no,
+            'series' => (int) $resolution->series,
+        ];
     }
 
     protected function validated(Request $request): array

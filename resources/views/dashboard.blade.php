@@ -3,10 +3,10 @@
 @section('title', 'Dashboard — '.config('app.name'))
 
 @section('content')
-<div id="dashboard-search" class="splis-dashboard" data-search-url="{{ route('dashboard.documents.search') }}">
+<div id="dashboard-search" class="splis-dashboard w-full" data-search-url="{{ route('dashboard.documents.search') }}">
     <div class="splis-dashboard-hero">
         <div class="splis-dashboard-hero-glow" aria-hidden="true"></div>
-        <div class="relative">
+        <div class="relative w-full">
             <p class="splis-dashboard-hero-eyebrow">Legislative archive</p>
             <h1 class="splis-page-title text-white">Dashboard</h1>
             <p class="splis-dashboard-hero-subtitle">Search resolutions and ordinances — {{ number_format($totalDocuments) }} documents in the archive ({{ number_format($totalResolutions) }} resolutions · {{ number_format($totalOrdinances) }} ordinances).</p>
@@ -213,6 +213,8 @@
                     'incoming.imported_from_sptrack' => 'slate',
                     'resolution.created' => 'brand',
                     'resolution.updated' => 'amber',
+                    'resolution.trashed' => 'amber',
+                    'resolution.restored' => 'green',
                     'resolution.deleted' => 'red',
                     'resolution.published_from_incoming' => 'gold',
                     'agenda.created' => 'blue',
@@ -224,17 +226,20 @@
                 @forelse ($recentActivity as $log)
                     @php
                         $tone = $activityTones[$log->action] ?? 'slate';
-                        $label = \App\Support\ActivityLogPresenter::label($log->action);
+                        $label = \App\Support\ActivityLogPresenter::label($log);
                     @endphp
                     <li class="splis-activity-feed-item splis-activity-feed-item--{{ $tone }}">
                         <div class="flex items-start justify-between gap-4">
-                            <div class="min-w-0">
+                            <div class="min-w-0 flex-1">
                                 <span class="splis-activity-pill splis-activity-pill--{{ $tone }}">{{ $label }}</span>
                                 @if ($log->user)
                                     <p class="mt-1.5 text-sm text-slate-600 dark:text-slate-300">{{ $log->user->name }}</p>
                                 @endif
                             </div>
-                            <span class="shrink-0 text-xs text-slate-400">{{ $log->created_at?->diffForHumans() }}</span>
+                            <div class="flex shrink-0 items-start gap-2">
+                                <span class="text-xs text-slate-400">{{ $log->created_at?->diffForHumans() }}</span>
+                                @include('partials.activity-log-delete', ['log' => $log])
+                            </div>
                         </div>
                     </li>
                 @empty

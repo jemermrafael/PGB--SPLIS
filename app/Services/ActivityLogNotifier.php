@@ -23,7 +23,7 @@ class ActivityLogNotifier
             return;
         }
 
-        $title = ActivityLogPresenter::label($log->action);
+        $title = ActivityLogPresenter::label($log);
         $body = ActivityLogPresenter::body($log);
         $link = ActivityLogPresenter::link($log);
 

@@ -124,7 +124,7 @@ class Resolution extends Model
 
     protected static function booted(): void
     {
-        static::deleting(function (Resolution $resolution): void {
+        static::forceDeleting(function (Resolution $resolution): void {
             app(\App\Services\AgendaPublishedOutputService::class)->clearFromDeletedResolution($resolution);
         });
     }

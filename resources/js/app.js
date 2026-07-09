@@ -1,3 +1,4 @@
+import { initActivityLogDelete } from './activity-log-delete';
 import { initAgendaSearch } from './agenda-search';
 import { initAgendaForm } from './agenda-form';
 import { initAgendaDeadlinePreview } from './agenda-deadline-preview';
@@ -48,4 +49,5 @@ document.addEventListener('DOMContentLoaded', () => {
     initBoardMemberAgendaSearch();
     initMunicipalDashboardSearch();
     initMunicipalRequestSearch();
+    initActivityLogDelete();
 });
