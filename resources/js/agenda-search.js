@@ -42,30 +42,8 @@ function renderStatusBadge(status, statusLabel) {
     return `<span class="splis-agenda-status${statusClass}">${label}</span>`;
 }
 
-function renderLinkIcons(item) {
-    const icons = [];
-
-    if (item.has_pdf) {
-        icons.push('<span class="splis-agenda-link-icon" title="Has PDF">PDF</span>');
-    }
-    if (item.has_incoming) {
-        icons.push('<span class="splis-agenda-link-icon splis-agenda-link-icon--incoming" title="Incoming linked">IN</span>');
-    }
-    if (item.has_resolution) {
-        icons.push('<span class="splis-agenda-link-icon splis-agenda-link-icon--reso" title="Resolution linked">R</span>');
-    }
-    if (item.published_to) {
-        icons.push(`<span class="splis-agenda-link-icon splis-agenda-link-icon--published" title="Published to ${escapeHtml(item.published_to)}">P</span>`);
-    }
-
-    if (icons.length === 0) {
-        return '<span class="text-slate-300">—</span>';
-    }
-
-    return `<span class="inline-flex items-center justify-center gap-1">${icons.join('')}</span>`;
-}
-
 function renderListItem(item) {
+    const remarks = String(item.remarks || '').trim();
     return `
         <tr class="splis-agenda-row" data-href="${escapeHtml(item.url)}">
             <td class="whitespace-nowrap font-semibold">
@@ -77,9 +55,9 @@ function renderListItem(item) {
             <td class="hidden sm:table-cell whitespace-nowrap">${formatDate(item.date_received)}</td>
             <td class="whitespace-nowrap">${formatDate(item.due_date)}</td>
             ${renderDaysLeftCell(item.days_left_label, item.days_left_tone)}
-            <td>${renderStatusBadge(item.status, item.status_label)}${item.published_to ? ` <span class="splis-badge-linked ml-1">Published to ${escapeHtml(item.published_to)}</span>` : ''}</td>
+            <td>${renderStatusBadge(item.status, item.status_label)}${item.published_to ? ` <span class="splis-badge-linked ml-1 whitespace-nowrap">Published to ${escapeHtml(item.published_to)}</span>` : ''}</td>
             <td class="hidden xl:table-cell whitespace-nowrap">${escapeHtml(item.reso_label || '—')}</td>
-            <td class="text-center text-xs">${renderLinkIcons(item)}</td>
+            <td class="text-sm">${escapeHtml(remarks || '—')}</td>
         </tr>
     `;
 }

@@ -22,6 +22,12 @@ class LegislativeSession extends Model
         'prior_session_id',
         'status',
         'notes',
+        'pdf_summary_committee_reports',
+        'pdf_committee_reports',
+        'pdf_draft_journal',
+        'pdf_draft_minutes',
+        'pdf_final_journal',
+        'pdf_final_minutes',
         'created_by',
     ];
 
@@ -108,6 +114,32 @@ class LegislativeSession extends Model
         $formatted = \Carbon\Carbon::parse($this->session_time)->format('g:i A');
 
         return str_replace(['AM', 'PM'], ['A.M.', 'P.M.'], $formatted);
+    }
+
+    /**
+     * @return list<array{field: string, label: string, url: ?string}>
+     */
+    public function sessionPdfLinkRows(): array
+    {
+        return collect(config('order_of_business.session_pdf_links', []))
+            ->map(fn (string $label, string $field) => [
+                'field' => $field,
+                'label' => $label,
+                'url' => filled($this->{$field}) ? $this->{$field} : null,
+            ])
+            ->values()
+            ->all();
+    }
+
+    public function hasSessionPdfLinks(): bool
+    {
+        foreach (array_keys(config('order_of_business.session_pdf_links', [])) as $field) {
+            if (filled($this->{$field})) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

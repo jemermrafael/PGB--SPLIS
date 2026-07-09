@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\AgendaItem;
 use App\Models\AgendaItemVersion;
 use App\Models\LegislativeSession;
+use App\Services\AgendaExpirationNotifier;
 use App\Services\AgendaIncomingPromoter;
-use App\Services\AgendaLinkService;
 use App\Services\AgendaItemRepository;
+use App\Services\AgendaLifecycleService;
+use App\Services\AgendaLinkService;
 use App\Services\AgendaOutputPublisher;
 use App\Services\AgendaVersionService;
-use App\Services\CommitteeReferralNotifier;
+use App\Services\BoardMemberNotifier;
 use App\Services\ObDocumentService;
 use App\Support\AgendaFieldOptions;
 use App\Support\AgendaMeasureType;
@@ -23,6 +25,8 @@ class AgendaItemController extends Controller
 {
     public function index(AgendaItemRepository $repository): View
     {
+        $this->authorize('viewAny', AgendaItem::class);
+
         return view('agenda.index', [
             'statuses' => config('agenda.statuses', []),
             'senders' => AgendaFieldOptions::senders(),
@@ -41,9 +45,10 @@ class AgendaItemController extends Controller
 
     public function store(
         Request $request,
-        CommitteeReferralNotifier $notifier,
+        BoardMemberNotifier $notifier,
         AgendaOutputPublisher $publisher,
         AgendaVersionService $versions,
+        AgendaLifecycleService $lifecycle,
     ): RedirectResponse {
         $this->authorize('create', AgendaItem::class);
 
@@ -54,15 +59,27 @@ class AgendaItemController extends Controller
 
         $versions->recordInitialVersion($agenda, $request->user()->id);
 
-        $outputHandled = $this->afterAgendaSave($agenda, $request, $notifier, $publisher);
+        $outputHandled = $this->afterAgendaSave($agenda, $request, $notifier, $publisher, false);
+
+        $changedFields = array_values(array_filter([
+            filled($agenda->committee_referred) ? 'committee_referred' : null,
+            $agenda->is_urgent_request ? 'is_urgent_request' : null,
+        ]));
+        $lifecycle->handleAgendaSaved($agenda, $changedFields, $request->user()->id);
 
         return redirect()
             ->route('agenda.show', $agenda)
             ->with('status', $this->statusMessage('created', $agenda, false, $outputHandled));
     }
 
-    public function show(AgendaItem $agenda): View
+    public function show(Request $request, AgendaItem $agenda): View|RedirectResponse
     {
+        if ($request->user()?->isMunicipalViewer()) {
+            $this->authorize('view', $agenda);
+
+            return redirect()->route('municipal.requests.show', $agenda);
+        }
+
         $agenda->load([
             'incomingDocument',
             'resolution',
@@ -70,9 +87,10 @@ class AgendaItemController extends Controller
             'appropriationOrdinance',
             'creator',
             'versions.creator',
-            'obPlacements.legislativeSession',
-            'obPlacements.agendaItemVersion',
-            'obPlacements.obBlock',
+            'finalObPlacements.legislativeSession',
+            'finalObPlacements.agendaItemVersion',
+            'finalObPlacements.obBlock',
+            'activityLogs.user',
         ]);
 
         $obSessions = LegislativeSession::query()
@@ -85,7 +103,10 @@ class AgendaItemController extends Controller
 
         return view('agenda.show', [
             'agenda' => $agenda,
+            'finalObPlacements' => $agenda->finalObPlacements,
             'obSessions' => $obSessions,
+            'splisActivityLogs' => $agenda->activityLogs,
+            'obPlacementCount' => $agenda->activityLogs->where('action', 'agenda.added_to_ob')->count(),
         ]);
     }
 
@@ -101,9 +122,10 @@ class AgendaItemController extends Controller
     public function update(
         Request $request,
         AgendaItem $agenda,
-        CommitteeReferralNotifier $notifier,
+        BoardMemberNotifier $notifier,
         AgendaOutputPublisher $publisher,
         AgendaVersionService $versions,
+        AgendaLifecycleService $lifecycle,
     ): RedirectResponse {
         $this->authorize('update', $agenda);
 
@@ -114,11 +136,14 @@ class AgendaItemController extends Controller
         $wasPublished = $agenda->isPublished();
 
         $agenda->update($this->validated($request));
+        $changedFields = array_keys($agenda->getChanges());
         $agenda->refresh();
 
         $versions->recordVersionIfChanged($agenda, $before, $request->user()->id);
 
-        $outputHandled = $this->afterAgendaSave($agenda, $request, $notifier, $publisher);
+        $outputHandled = $this->afterAgendaSave($agenda, $request, $notifier, $publisher, $wasPublished);
+
+        $lifecycle->handleAgendaSaved($agenda, $changedFields, $request->user()->id);
 
         return redirect()
             ->route('agenda.show', $agenda)
@@ -145,17 +170,24 @@ class AgendaItemController extends Controller
     protected function afterAgendaSave(
         AgendaItem $agenda,
         Request $request,
-        CommitteeReferralNotifier $notifier,
+        BoardMemberNotifier $notifier,
         AgendaOutputPublisher $publisher,
+        bool $wasPublishedBefore = false,
     ): bool {
         $agenda->refresh();
 
         if (filled($agenda->committee_referred)) {
-            $notifier->notifyForAgenda($agenda);
+            $notifier->notifyCommitteeReferral($agenda);
         }
+
+        app(AgendaExpirationNotifier::class)->syncForAgenda($agenda);
 
         if ($publisher->publishIfDone($agenda, $request->user()->id)) {
             $agenda->refresh();
+
+            if (! $wasPublishedBefore && $agenda->isPublished()) {
+                $notifier->notifyAgendaPublished($agenda);
+            }
 
             return true;
         }
@@ -299,6 +331,7 @@ class AgendaItemController extends Controller
             'status' => ['nullable', 'string', 'in:no_due_date,pending,done,lapsed'],
             'sender' => ['nullable', 'string', 'max:150'],
             'title' => ['nullable', 'string', 'max:5000'],
+            'is_urgent_request' => ['nullable', 'boolean'],
             'committee_referred' => ['nullable', 'string', 'max:200'],
             'date_of_referral' => ['nullable', 'date'],
             'date_of_committee_meeting' => ['nullable', 'date'],
@@ -313,7 +346,6 @@ class AgendaItemController extends Controller
                 'nullable',
                 'string',
                 Rule::in(AgendaMeasureType::options()),
-                Rule::requiredIf(fn () => $request->input('status') === AgendaItem::STATUS_DONE),
             ],
             'reso_ord_ao_url' => ['nullable', 'string', 'max:500'],
             'resolution_title' => ['nullable', 'string', 'max:5000'],
@@ -325,6 +357,8 @@ class AgendaItemController extends Controller
         if (empty($data['status'])) {
             $data['status'] = AgendaItem::STATUS_PENDING;
         }
+
+        $data['is_urgent_request'] = $request->boolean('is_urgent_request');
 
         return $data;
     }

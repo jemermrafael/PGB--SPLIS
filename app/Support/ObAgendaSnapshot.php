@@ -64,6 +64,53 @@ class ObAgendaSnapshot
     /**
      * @param  array<string, mixed>  $content
      */
+    public static function displayAgendaNosLabelHtml(array $content): string
+    {
+        $nos = self::agendaNosFromContent($content);
+
+        if ($nos === []) {
+            return e('Agenda No. —');
+        }
+
+        $prefix = count($nos) === 1 ? 'Agenda No. ' : 'Agenda Nos. ';
+        $links = is_array($content['agenda_no_links'] ?? null) ? $content['agenda_no_links'] : [];
+
+        $parts = array_map(function (string $no) use ($links): string {
+            $url = $links[$no] ?? null;
+
+            if (filled($url)) {
+                return '<a href="'.e((string) $url).'" class="ob-print-link" target="_blank" rel="noopener">'.e($no).'</a>';
+            }
+
+            return e($no);
+        }, $nos);
+
+        return e($prefix).implode(', ', $parts);
+    }
+
+    /**
+     * @param  array<string, mixed>  $content
+     */
+    public static function displayAgendaNoHtml(array $content): string
+    {
+        $no = self::displayAgendaNo($content);
+
+        if ($no === '—') {
+            return e('—');
+        }
+
+        $url = $content['request_pdf_url'] ?? null;
+
+        if (filled($url)) {
+            return '<a href="'.e((string) $url).'" class="ob-print-link" target="_blank" rel="noopener">'.e($no).'</a>';
+        }
+
+        return e($no);
+    }
+
+    /**
+     * @param  array<string, mixed>  $content
+     */
     public static function committeeReportKey(array $content): string
     {
         $committeeId = $content['committee_id'] ?? null;

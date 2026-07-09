@@ -17,11 +17,21 @@ class AgendaOutputLinker
             return false;
         }
 
-        $measureType = $agenda->reso_ord_ao_type
-            ?? AgendaItem::inferMeasureType($agenda->resolution_title ?? $agenda->title);
-
-        if ($measureType === null || ! filled($agenda->reso_ord_ao_no) || ! $agenda->reso_ord_ao_series) {
+        if (! filled($agenda->reso_ord_ao_no) || ! $agenda->reso_ord_ao_series) {
             return false;
+        }
+
+        $measureType = $agenda->reso_ord_ao_type;
+
+        if ($measureType === null) {
+            if ($this->linkResolution($agenda)) {
+                return true;
+            }
+            if ($this->linkOrdinance($agenda)) {
+                return true;
+            }
+
+            return $this->linkAppropriationOrdinance($agenda);
         }
 
         return match ($measureType) {
@@ -35,27 +45,86 @@ class AgendaOutputLinker
     public function findResolution(AgendaItem $agenda): ?Resolution
     {
         $series = (int) $agenda->reso_ord_ao_series;
-        $number = trim((string) $agenda->reso_ord_ao_no);
+        $number = $this->extractResolutionNoForSeries($agenda->reso_ord_ao_no, $series);
+        $numberInt = $this->normalizeResolutionNoToInt($number, $series);
 
-        if ($number === '' || $series <= 0) {
+        if ($number === '' || $series <= 0 || $numberInt === null) {
             return null;
         }
 
-        $candidates = array_values(array_unique(array_filter([
-            $number,
-            ltrim($number, '0') !== '' ? ltrim($number, '0') : null,
-            ctype_digit($number) ? str_pad($number, 3, '0', STR_PAD_LEFT) : null,
-        ])));
-
-        return Resolution::query()
+        $exact = Resolution::query()
             ->where('series', $series)
-            ->where(function ($query) use ($candidates): void {
-                foreach ($candidates as $candidate) {
-                    $query->orWhere('resolution_no', $candidate);
-                }
-            })
+            ->where('resolution_no', $number)
             ->orderByDesc('id')
             ->first();
+
+        if ($exact && $this->normalizeResolutionNoToInt($exact->resolution_no, $series) === $numberInt) {
+            return $exact;
+        }
+
+        $fuzzyCandidates = Resolution::query()
+            ->where('series', $series)
+            ->where('resolution_no', 'like', '%'.$number.'%')
+            ->orderByDesc('id')
+            ->limit(200)
+            ->get();
+
+        return $fuzzyCandidates
+            ->first(fn (Resolution $resolution) => $this->normalizeResolutionNoToInt($resolution->resolution_no, $series) === $numberInt);
+    }
+
+    protected function extractResolutionNoForSeries(?string $value, int $series): string
+    {
+        $value = trim((string) $value);
+
+        if ($value === '' || $series <= 0) {
+            return '';
+        }
+
+        if (preg_match('/(?:^|[^0-9])(\d{4})\s*[-\/]\s*(\d+)(?:[^0-9]|$)/', $value, $matches)) {
+            if ((int) $matches[1] === $series) {
+                return ltrim($matches[2], '0') ?: '0';
+            }
+        }
+
+        if (preg_match('/(\d+)\s*[-\/]\s*(\d{4})/', $value, $matches)) {
+            if ((int) $matches[2] === $series) {
+                return ltrim($matches[1], '0') ?: '0';
+            }
+        }
+
+        if (preg_match('/(\d+)/', $value, $matches)) {
+            return ltrim($matches[1], '0') ?: '0';
+        }
+
+        return '';
+    }
+
+    protected function normalizeResolutionNoToInt(?string $value, int $series): ?int
+    {
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        if (preg_match('/(?:^|[^0-9])(\d{4})\s*[-\/]\s*(\d+)(?:[^0-9]|$)/', $value, $matches)) {
+            if ((int) $matches[1] === $series) {
+                return (int) $matches[2];
+            }
+        }
+
+        if (preg_match('/(\d+)\s*[-\/]\s*(\d{4})/', $value, $matches)) {
+            if ((int) $matches[2] === $series) {
+                return (int) $matches[1];
+            }
+        }
+
+        if (preg_match('/(\d+)/', $value, $matches)) {
+            return (int) $matches[1];
+        }
+
+        return null;
     }
 
     public function findOrdinance(AgendaItem $agenda): ?Ordinance

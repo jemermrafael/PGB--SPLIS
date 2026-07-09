@@ -3,21 +3,34 @@
 namespace App\Services;
 
 use App\Enums\ObBlockType;
+use App\Models\AgendaItem;
+use App\Models\LegislativeSession;
 use App\Models\ObBlock;
 use App\Support\CommitteeLookup;
 use App\Support\ObAgendaSnapshot;
 use App\Support\ObCommitteeFormatter;
 use App\Support\ObRomanNumeral;
+use App\Support\ObSectionThreeGenerator;
 use Illuminate\Support\Collection;
 
 class ObPrintRenderer
 {
+    /** @var Collection<int, AgendaItem> */
+    protected Collection $agendaItemsById;
+
+    public function __construct(
+        protected ObSectionThreeGenerator $sectionThreeGenerator,
+    ) {
+        $this->agendaItemsById = collect();
+    }
+
     /**
      * @param  Collection<int, ObBlock>  $blocks
      * @return list<array<string, mixed>>
      */
-    public function segments(Collection $blocks): array
+    public function segments(Collection $blocks, ?LegislativeSession $session = null): array
     {
+        $this->agendaItemsById = $this->loadAgendaItems($blocks);
         $segments = [];
         $buffer = null;
         $announcementsOpen = false;
@@ -45,6 +58,7 @@ class ObPrintRenderer
                     $buffer = ['type' => 'committee_reports_table', 'rows' => []];
                 }
                 $row = ObAgendaSnapshot::enrichCommitteeReportRow($block->content ?? []);
+                $row = $this->enrichCommitteeReportRowLinks($block, $row);
                 $rows = &$buffer['rows'];
                 if ($rows !== []
                     && ObAgendaSnapshot::committeeReportKey((array) end($rows)) === ObAgendaSnapshot::committeeReportKey($row)) {
@@ -85,7 +99,7 @@ class ObPrintRenderer
                         'items' => [],
                     ];
                 }
-                $buffer['items'][] = $content;
+                $buffer['items'][] = $this->enrichAgendaRowLinks($block, $content);
 
                 continue;
             }
@@ -95,7 +109,7 @@ class ObPrintRenderer
                     $flush();
                     $this->ensureBusinessDayBuffer($buffer);
                 }
-                $buffer['rows'][] = ['kind' => 'agenda', 'row' => $block->content ?? []];
+                $buffer['rows'][] = ['kind' => 'agenda', 'row' => $this->enrichAgendaRowLinks($block, $block->content ?? [])];
 
                 continue;
             }
@@ -103,6 +117,7 @@ class ObPrintRenderer
             if ($type === ObBlockType::UnassignedAgenda) {
                 $kind = ($block->content['kind'] ?? 'regular') === 'urgent' ? 'urgent' : 'regular';
                 $row = ObAgendaSnapshot::enrichUnassignedRow($block->content ?? [], $block->agendaItem);
+                $row = $this->enrichAgendaRowLinks($block, $row);
 
                 if ($kind === 'urgent') {
                     if (($buffer['type'] ?? null) !== 'business_day_table') {
@@ -219,6 +234,13 @@ class ObPrintRenderer
                     'numeral' => ObRomanNumeral::display($numeral),
                     'title' => $title,
                     'body' => $block->content['body'] ?? '',
+                    'body_html' => $normalized === 'III' && $session !== null
+                        ? $this->sectionThreeGenerator->linkedBodyHtml(
+                            $session,
+                            $block->content['body'] ?? '',
+                            $block->content ?? [],
+                        )
+                        : null,
                 ];
 
                 continue;
@@ -323,6 +345,130 @@ class ObPrintRenderer
         return $this->mergeAdjacentAnnouncementsSegments(
             $this->mergeAdjacentCommitteeReportSegments($segments),
         );
+    }
+
+    /**
+     * @param  Collection<int, ObBlock>  $blocks
+     * @return Collection<int, AgendaItem>
+     */
+    protected function loadAgendaItems(Collection $blocks): Collection
+    {
+        $ids = $blocks
+            ->flatMap(function (ObBlock $block): array {
+                $ids = [];
+
+                if ($block->agenda_item_id !== null) {
+                    $ids[] = (int) $block->agenda_item_id;
+                }
+
+                foreach ($block->content['agenda_item_ids'] ?? [] as $id) {
+                    if (is_numeric($id)) {
+                        $ids[] = (int) $id;
+                    }
+                }
+
+                return $ids;
+            })
+            ->unique()
+            ->filter(fn (int $id) => $id > 0)
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return collect();
+        }
+
+        return AgendaItem::query()->whereIn('id', $ids)->get()->keyBy('id');
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     * @return array<string, mixed>
+     */
+    protected function enrichAgendaRowLinks(ObBlock $block, array $row): array
+    {
+        $item = $this->agendaItemForBlock($block);
+
+        if ($item !== null && filled($item->request_pdf_url)) {
+            $row['request_pdf_url'] = $item->request_pdf_url;
+        }
+
+        return $row;
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     * @return array<string, mixed>
+     */
+    protected function enrichCommitteeReportRowLinks(ObBlock $block, array $row): array
+    {
+        $links = [];
+
+        foreach ($this->agendaItemsForBlock($block) as $item) {
+            $no = ObAgendaSnapshot::agendaNo($item);
+
+            if (filled($item->committee_report_url)) {
+                $links[$no] = $item->committee_report_url;
+            }
+        }
+
+        if ($links !== []) {
+            $row['agenda_no_links'] = $links;
+        }
+
+        return $row;
+    }
+
+    protected function agendaItemForBlock(ObBlock $block): ?AgendaItem
+    {
+        if ($block->relationLoaded('agendaItem') && $block->agendaItem) {
+            return $block->agendaItem;
+        }
+
+        if ($block->agenda_item_id === null) {
+            return null;
+        }
+
+        $item = $this->agendaItemsById->get((int) $block->agenda_item_id);
+
+        return $item instanceof AgendaItem ? $item : null;
+    }
+
+    /**
+     * @return list<AgendaItem>
+     */
+    protected function agendaItemsForBlock(ObBlock $block): array
+    {
+        $items = [];
+
+        foreach ($this->agendaIdsForBlock($block) as $id) {
+            $item = $this->agendaItemsById->get($id);
+
+            if ($item instanceof AgendaItem) {
+                $items[] = $item;
+            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * @return list<int>
+     */
+    protected function agendaIdsForBlock(ObBlock $block): array
+    {
+        $ids = [];
+
+        if ($block->agenda_item_id !== null) {
+            $ids[] = (int) $block->agenda_item_id;
+        }
+
+        foreach ($block->content['agenda_item_ids'] ?? [] as $id) {
+            if (is_numeric($id)) {
+                $ids[] = (int) $id;
+            }
+        }
+
+        return array_values(array_unique($ids));
     }
 
     /**

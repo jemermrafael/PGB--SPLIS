@@ -4,17 +4,18 @@ namespace App\Policies;
 
 use App\Models\AppropriationOrdinance;
 use App\Models\User;
+use App\Support\MunicipalRequestAccess;
 
 class AppropriationOrdinancePolicy
 {
     public function viewAny(User $user): bool
     {
-        return true;
+        return ! $user->isMunicipalViewer();
     }
 
     public function view(User $user, AppropriationOrdinance $appropriationOrdinance): bool
     {
-        return true;
+        return MunicipalRequestAccess::userCanViewAppropriationOrdinance($user, $appropriationOrdinance);
     }
 
     public function create(User $user): bool
@@ -29,6 +30,6 @@ class AppropriationOrdinancePolicy
 
     public function delete(User $user, AppropriationOrdinance $appropriationOrdinance): bool
     {
-        return $user->canEncode();
+        return $user->canAdmin();
     }
 }

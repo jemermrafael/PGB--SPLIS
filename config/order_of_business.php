@@ -26,4 +26,13 @@ return [
         'unassigned_urgent' => '1. Urgent request/s',
         'unassigned_regular' => '2. Regular unassigned business',
     ],
+
+    'session_pdf_links' => [
+        'pdf_summary_committee_reports' => 'Summary of Comm. Reports',
+        'pdf_committee_reports' => 'Committee Reports',
+        'pdf_draft_journal' => 'Draft Journal',
+        'pdf_draft_minutes' => 'Draft Minutes',
+        'pdf_final_journal' => 'Final Journal',
+        'pdf_final_minutes' => 'Final Minutes',
+    ],
 ];

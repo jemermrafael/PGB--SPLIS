@@ -43,7 +43,7 @@ export function initDropdowns(selector = '[data-dropdown]') {
             }
         });
 
-        if (canHover) {
+        if (canHover && ! wrap.hasAttribute('data-dropdown-click-only')) {
             wrap.addEventListener('mouseenter', open);
             wrap.addEventListener('mouseleave', scheduleClose);
         }

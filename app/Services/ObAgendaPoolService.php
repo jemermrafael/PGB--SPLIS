@@ -17,7 +17,10 @@ class ObAgendaPoolService
         int $perPage = 20,
         ?int $excludeDocumentId = null,
     ): LengthAwarePaginator {
-        $query = AgendaItem::query()->orderByDesc('date_received')->orderByDesc('id');
+        $query = AgendaItem::query()
+            ->where('status', '!=', AgendaItem::STATUS_DONE)
+            ->orderByDesc('date_received')
+            ->orderByDesc('id');
         if ($search !== null && $search !== '') {
             $query->where(function ($builder) use ($search) {
                 $builder->where('title', 'like', '%'.$search.'%')
@@ -52,6 +55,7 @@ class ObAgendaPoolService
                 'date_received_display' => $item->date_received?->format('M d, Y'),
                 'due_date_display' => $item->due_date?->format('M d, Y'),
                 'committee_referred' => $item->committee_referred,
+                'is_urgent_request' => $item->is_urgent_request,
                 'status' => $item->status,
             ])
             ->values()

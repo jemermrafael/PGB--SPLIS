@@ -20,11 +20,22 @@
         <div class="splis-alert-error mb-6">This account is not linked to a board member profile yet.</div>
     @endif
 
-    <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    @include('board-member.agenda.partials.expiring-soon', [
+        'expiringSoonAgendas' => $expiringSoonAgendas,
+        'expiringSoonDays' => $expiringSoonDays,
+        'stats' => $stats,
+    ])
+
+    <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <button type="button" class="splis-stat splis-stat--gold splis-stat--clickable text-left" data-bm-agenda-stat-filter data-filter-status="pending">
             <p class="splis-stat-label">Pending</p>
             <p class="splis-stat-value" id="bm-agenda-stat-pending">{{ number_format($stats['pending']) }}</p>
             <p class="splis-stat-meta">Awaiting action</p>
+        </button>
+        <button type="button" class="splis-stat splis-stat--amber splis-stat--clickable text-left" data-bm-agenda-stat-filter data-filter-expiring-soon="1">
+            <p class="splis-stat-label">Expiring soon</p>
+            <p class="splis-stat-value" id="bm-agenda-stat-expiring-soon">{{ number_format($stats['expiring_soon']) }}</p>
+            <p class="splis-stat-meta">Within {{ $expiringSoonDays }} days</p>
         </button>
         <button type="button" class="splis-stat splis-stat--brand splis-stat--clickable text-left" data-bm-agenda-stat-filter data-filter-due-soon="1">
             <p class="splis-stat-label">Due soon</p>
@@ -46,6 +57,7 @@
     <form id="bm-agenda-search-form" class="splis-filter-panel splis-filter-panel--accent mb-6">
         <div class="splis-filter-panel-accent-bar" aria-hidden="true"></div>
         <input type="hidden" name="due_soon" id="bm-agenda-filter-due-soon" value="">
+        <input type="hidden" name="expiring_soon" id="bm-agenda-filter-expiring-soon" value="">
         <h2 class="mb-4 flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-100">
             <span class="splis-filter-panel-icon">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>

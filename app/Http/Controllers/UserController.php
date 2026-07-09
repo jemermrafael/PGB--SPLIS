@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
 use App\Models\BoardMember;
+use App\Models\Municipality;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -35,6 +36,7 @@ class UserController extends Controller
             'user' => new User(['is_active' => true, 'role' => UserRole::Encoder]),
             'roles' => UserRole::assignable(),
             'boardMembers' => BoardMember::query()->active()->ordered()->get(),
+            'municipalities' => Municipality::query()->orderBy('description')->get(),
         ]);
     }
 
@@ -59,6 +61,7 @@ class UserController extends Controller
             'user' => $user,
             'roles' => UserRole::assignable(),
             'boardMembers' => BoardMember::query()->active()->ordered()->get(),
+            'municipalities' => Municipality::query()->orderBy('description')->get(),
         ]);
     }
 
@@ -129,11 +132,22 @@ class UserController extends Controller
                 'exists:board_members,id',
                 Rule::requiredIf(fn () => $request->input('role') === UserRole::BoardMember->value),
             ],
+            'municipality_id' => [
+                'nullable',
+                'integer',
+                'exists:municipalities,id',
+                Rule::requiredIf(fn () => $request->input('role') === UserRole::MunicipalViewer->value),
+                Rule::unique('users', 'municipality_id')->ignore($user?->id),
+            ],
             'is_active' => ['sometimes', 'boolean'],
         ]);
 
         if (($data['role'] ?? null) !== UserRole::BoardMember->value) {
             $data['board_member_id'] = null;
+        }
+
+        if (($data['role'] ?? null) !== UserRole::MunicipalViewer->value) {
+            $data['municipality_id'] = null;
         }
 
         if (empty($data['password'])) {

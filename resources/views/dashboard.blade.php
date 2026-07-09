@@ -26,22 +26,23 @@
             <div class="splis-stat-icon splis-stat-icon--gold">
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
             </div>
-            <p class="splis-stat-label">Current Year ({{ date('Y') }})</p>
-            <p class="splis-stat-value">{{ number_format($currentYearCount) }}</p>
+            <p class="splis-stat-label">Total Resolutions</p>
+            <p class="splis-stat-value">{{ number_format($totalResolutions) }}</p>
         </div>
         <div class="splis-stat splis-stat--green">
             <div class="splis-stat-icon splis-stat-icon--green">
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5a1.125 1.125 0 00-1.125-1.125H3.375a1.125 1.125 0 00-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>
             </div>
-            <p class="splis-stat-label">Imported Archive</p>
-            <p class="splis-stat-value">{{ number_format($legacyCount) }}</p>
+            <p class="splis-stat-label">Total Ordinances</p>
+            <p class="splis-stat-value">{{ number_format($totalOrdinances) }}</p>
         </div>
         <div class="splis-stat splis-stat--sky">
             <div class="splis-stat-icon splis-stat-icon--sky">
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
             </div>
-            <p class="splis-stat-label">New in SPLIS</p>
-            <p class="splis-stat-value">{{ number_format($newCount) }}</p>
+            <p class="splis-stat-label">Current Year ({{ date('Y') }})</p>
+            <p class="splis-stat-value">{{ number_format($currentYearCount) }}</p>
+            <p class="splis-stat-meta">Resolutions + ordinances</p>
         </div>
     </div>
 
@@ -141,6 +142,7 @@
                         <label class="splis-label">Municipality</label>
                         <select name="municipality_id" class="splis-select">
                             <option value="">All municipalities</option>
+                            <option value="bataan">Bataan</option>
                             @foreach ($municipalities as $mun)
                                 <option value="{{ $mun->id }}">{{ $mun->description }}</option>
                             @endforeach
@@ -192,6 +194,7 @@
         <div id="dashboard-search-pagination" class="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"></div>
     </div>
 
+    @if (auth()->user()->canAdmin())
     <div class="splis-card splis-card--accent mt-8">
         <div class="splis-card-header splis-card-header--accent">
             <h2 class="splis-card-title flex items-center gap-2">
@@ -203,16 +206,6 @@
         </div>
         <div class="splis-card-body !pt-4">
             @php
-                $activityLabels = [
-                    'incoming.created' => 'Incoming created',
-                    'incoming.updated' => 'Incoming updated',
-                    'incoming.linked' => 'Incoming linked',
-                    'incoming.imported_from_sptrack' => 'sptrack import',
-                    'resolution.created' => 'Resolution created',
-                    'resolution.updated' => 'Resolution updated',
-                    'resolution.deleted' => 'Resolution deleted',
-                    'resolution.published_from_incoming' => 'Published from incoming',
-                ];
                 $activityTones = [
                     'incoming.created' => 'blue',
                     'incoming.updated' => 'amber',
@@ -228,7 +221,7 @@
                 @forelse ($recentActivity as $log)
                     @php
                         $tone = $activityTones[$log->action] ?? 'slate';
-                        $label = $activityLabels[$log->action] ?? str_replace('.', ' ', ucfirst($log->action));
+                        $label = \App\Support\ActivityLogPresenter::label($log->action);
                     @endphp
                     <li class="splis-activity-feed-item splis-activity-feed-item--{{ $tone }}">
                         <div class="flex items-start justify-between gap-4">
@@ -247,5 +240,6 @@
             </ul>
         </div>
     </div>
+    @endif
 </div>
 @endsection

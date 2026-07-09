@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\HasActivityLogs;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Resolution extends Model
@@ -98,6 +99,11 @@ class Resolution extends Model
     public function incomingDocument(): BelongsTo
     {
         return $this->belongsTo(IncomingDocument::class);
+    }
+
+    public function publishedFromAgenda(): HasOne
+    {
+        return $this->hasOne(AgendaItem::class, 'resolution_id')->withTrashed();
     }
 
     public function previousInList(): ?self

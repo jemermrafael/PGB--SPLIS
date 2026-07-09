@@ -103,6 +103,7 @@ function updateStats(stats) {
 
     const map = {
         'bm-agenda-stat-pending': stats.pending,
+        'bm-agenda-stat-expiring-soon': stats.expiring_soon,
         'bm-agenda-stat-due-soon': stats.due_soon,
         'bm-agenda-stat-done': stats.done,
         'bm-agenda-stat-lapsed': stats.lapsed,
@@ -429,12 +430,26 @@ export function initBoardMemberAgendaSearch() {
     const committeeId = root.dataset.committeeId || '';
     const statusSelect = document.getElementById('bm-agenda-filter-status');
     const dueSoonInput = document.getElementById('bm-agenda-filter-due-soon');
+    const expiringSoonInput = document.getElementById('bm-agenda-filter-expiring-soon');
 
     let currentPage = 1;
     let debounceTimer;
     let activeFilterButton = null;
 
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('expiring_soon') === '1' && expiringSoonInput) {
+        expiringSoonInput.value = '1';
+    }
+
     fetchResults();
+
+    if (urlParams.get('expiring_soon') === '1') {
+        const expiringButton = root.querySelector('[data-filter-expiring-soon="1"]');
+        if (expiringButton) {
+            activeFilterButton = expiringButton;
+            setActiveChip(root, expiringButton);
+        }
+    }
 
     form.addEventListener('submit', (event) => {
         event.preventDefault();
@@ -467,6 +482,9 @@ export function initBoardMemberAgendaSearch() {
             if (dueSoonInput) {
                 dueSoonInput.value = '';
             }
+            if (expiringSoonInput) {
+                expiringSoonInput.value = '';
+            }
             fetchResults();
         }, 0);
     });
@@ -475,6 +493,9 @@ export function initBoardMemberAgendaSearch() {
         button.addEventListener('click', () => {
             if (dueSoonInput) {
                 dueSoonInput.value = '';
+            }
+            if (expiringSoonInput) {
+                expiringSoonInput.value = '';
             }
             if (statusSelect) {
                 statusSelect.value = '';
@@ -485,6 +506,9 @@ export function initBoardMemberAgendaSearch() {
             }
             if (button.dataset.filterDueSoon && dueSoonInput) {
                 dueSoonInput.value = '1';
+            }
+            if (button.dataset.filterExpiringSoon && expiringSoonInput) {
+                expiringSoonInput.value = '1';
             }
 
             activeFilterButton = button;

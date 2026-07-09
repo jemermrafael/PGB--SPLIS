@@ -10,6 +10,7 @@ use App\Models\CommitteeMembership;
 use App\Models\CommitteeTerm;
 use App\Models\LegislativeSession;
 use App\Models\User;
+use App\Support\AgendaDeadline;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -69,16 +70,11 @@ class BoardMemberDashboardService
     public function agendaStatsForCommittee(User $user, Committee $committee): array
     {
         $base = $this->agendaQueryForCommittee($user, $committee);
-        $today = now()->startOfDay();
-        $dueSoonEnd = now()->addDays(7)->endOfDay();
 
         return [
             'pending' => (clone $base)->where('status', AgendaItem::STATUS_PENDING)->count(),
-            'due_soon' => (clone $base)
-                ->where('status', AgendaItem::STATUS_PENDING)
-                ->whereNotNull('due_date')
-                ->whereBetween('due_date', [$today, $dueSoonEnd])
-                ->count(),
+            'expiring_soon' => (clone $base)->expiringSoon()->count(),
+            'due_soon' => (clone $base)->dueSoon()->count(),
             'done' => (clone $base)->where('status', AgendaItem::STATUS_DONE)->count(),
             'lapsed' => (clone $base)->where('status', AgendaItem::STATUS_LAPSED)->count(),
         ];
@@ -156,19 +152,38 @@ class BoardMemberDashboardService
     public function agendaStatsFor(User $user): array
     {
         $base = $this->committeeAgendaQueryFor($user);
-        $today = now()->startOfDay();
-        $dueSoonEnd = now()->addDays(7)->endOfDay();
 
         return [
             'pending' => (clone $base)->where('status', AgendaItem::STATUS_PENDING)->count(),
-            'due_soon' => (clone $base)
-                ->where('status', AgendaItem::STATUS_PENDING)
-                ->whereNotNull('due_date')
-                ->whereBetween('due_date', [$today, $dueSoonEnd])
-                ->count(),
+            'expiring_soon' => (clone $base)->expiringSoon()->count(),
+            'due_soon' => (clone $base)->dueSoon()->count(),
             'done' => (clone $base)->where('status', AgendaItem::STATUS_DONE)->count(),
             'lapsed' => (clone $base)->where('status', AgendaItem::STATUS_LAPSED)->count(),
         ];
+    }
+
+    /**
+     * @return Builder<AgendaItem>
+     */
+    public function expiringSoonAgendaQueryFor(User $user): Builder
+    {
+        return $this->committeeAgendaQueryFor($user)
+            ->expiringSoon()
+            ->orderBy('due_date')
+            ->orderBy('id');
+    }
+
+    /**
+     * @return Collection<int, AgendaItem>
+     */
+    public function expiringSoonAgendasFor(User $user, int $limit = 8): Collection
+    {
+        return $this->expiringSoonAgendaQueryFor($user)->limit($limit)->get();
+    }
+
+    public function expiringSoonDays(): int
+    {
+        return AgendaDeadline::expiringSoonDays();
     }
 
     /**
@@ -177,7 +192,7 @@ class BoardMemberDashboardService
     public function upcomingSessions(int $limit = 12): Collection
     {
         return LegislativeSession::query()
-            ->with('obDocument')
+            ->with(['obDocument.blocks.agendaItem'])
             ->withFinalObDocument()
             ->where('session_date', '>=', now()->startOfMonth()->subMonths(1))
             ->orderBy('session_date')

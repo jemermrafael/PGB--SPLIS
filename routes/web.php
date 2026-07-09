@@ -4,6 +4,8 @@ use App\Http\Controllers\BoardMemberAgendaController;
 use App\Http\Controllers\BoardMemberAgendaSearchController;
 use App\Http\Controllers\BoardMemberCommitteeAgendaController;
 use App\Http\Controllers\BoardMemberObSearchController;
+use App\Http\Controllers\MunicipalRequestController;
+use App\Http\Controllers\MunicipalRequestSearchController;
 use App\Http\Controllers\MyOrdinanceController;
 use App\Http\Controllers\AppropriationOrdinanceController;
 use App\Http\Controllers\BoardMemberOrdinanceReportController;
@@ -52,17 +54,23 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/dashboard/documents/search', DashboardSearchController::class)->name('dashboard.documents.search');
 
+    Route::get('/notifications/all', [UserNotificationController::class, 'feed'])->name('notifications.feed');
     Route::get('/notifications', [UserNotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{notification}/read', [UserNotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [UserNotificationController::class, 'markAllRead'])->name('notifications.read-all');
 
     Route::get('/my-ordinances', [MyOrdinanceController::class, 'index'])->name('board-member.ordinances.index');
     Route::get('/all-ordinances', [MyOrdinanceController::class, 'all'])->name('board-member.ordinances.all');
+    Route::get('/all-ordinances/search', [MyOrdinanceController::class, 'allSearch'])->name('board-member.ordinances.all.search');
 
     Route::get('/my-agenda', [BoardMemberAgendaController::class, 'index'])->name('board-member.agenda.index');
     Route::get('/my-agenda/search', BoardMemberAgendaSearchController::class)->name('board-member.agenda.search');
     Route::get('/my-agenda/committees/{committee}', [BoardMemberCommitteeAgendaController::class, 'show'])->name('board-member.agenda.committee');
     Route::get('/dashboard/ob/search', BoardMemberObSearchController::class)->name('board-member.dashboard.ob.search');
+
+    Route::get('/my-requests', [MunicipalRequestController::class, 'index'])->name('municipal.requests.index');
+    Route::get('/my-requests/search', MunicipalRequestSearchController::class)->name('municipal.requests.search');
+    Route::get('/my-requests/{agenda}', [MunicipalRequestController::class, 'show'])->name('municipal.requests.show');
 
     Route::get('/admin/board-member-ordinances', [BoardMemberOrdinanceReportController::class, 'index'])->name('admin.board-member-ordinances');
 
@@ -174,6 +182,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/{legislativeSession}/document/blocks/reorder', [ObDocumentController::class, 'reorderBlocks'])->name('document.blocks.reorder');
         Route::post('/{legislativeSession}/document/blocks/from-agenda', [ObDocumentController::class, 'addFromAgenda'])->name('document.blocks.from-agenda');
         Route::put('/{legislativeSession}/document/blocks/{block}', [ObDocumentController::class, 'updateBlock'])->name('document.blocks.update');
+        Route::post('/{legislativeSession}/document/blocks/{block}/move-section', [ObDocumentController::class, 'moveBlockToSection'])->name('document.blocks.move-section');
         Route::delete('/{legislativeSession}/document/blocks/{block}', [ObDocumentController::class, 'destroyBlock'])->name('document.blocks.destroy');
         Route::get('/{legislativeSession}/attendance', [SessionAttendanceController::class, 'show'])->name('sessions.attendance');
         Route::put('/{legislativeSession}/attendance', [SessionAttendanceController::class, 'update'])->name('sessions.attendance.update');

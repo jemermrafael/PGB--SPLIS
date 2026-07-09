@@ -8,17 +8,37 @@
         <div>
             <div class="mb-2 flex flex-wrap items-center gap-2">
                 <span class="splis-agenda-status splis-agenda-status--{{ $agenda->status }}">{{ config('agenda.statuses.'.$agenda->status, $agenda->status) }}</span>
+                @if ($agenda->is_urgent_request)
+                    <span class="splis-badge-linked whitespace-nowrap">Urgent request</span>
+                @endif
+                @if ($finalObPlacements->isNotEmpty())
+                    @php
+                        $latestObPlacement = $finalObPlacements
+                            ->filter(fn ($placement) => $placement->legislativeSession?->session_date)
+                            ->sortByDesc(fn ($placement) => $placement->legislativeSession->session_date)
+                            ->first();
+                    @endphp
+                    @if ($latestObPlacement?->legislativeSession)
+                        <span class="splis-badge-linked whitespace-nowrap">
+                            Scheduled on {{ $latestObPlacement->legislativeSession->session_number ?: 'Order of Business' }} Order of Business {{ $latestObPlacement->legislativeSession->session_date?->format('M d, Y') }}
+                        </span>
+                    @endif
+                @endif
                 @if ($agenda->hasIncoming())
                     <a href="{{ route('incoming.show', $agenda->incomingDocument) }}" class="splis-badge-linked">Incoming linked</a>
                 @endif
                 @if ($agenda->resolution)
-                    <a href="{{ route('resolutions.show', $agenda->resolution) }}" class="splis-badge-linked">Resolution linked</a>
+                    <a href="{{ route('resolutions.show', $agenda->resolution) }}" class="splis-badge-linked whitespace-nowrap">
+                        Published to Resolution No.: {{ $agenda->resolution->resolution_no }} · Series {{ $agenda->resolution->series }}
+                    </a>
                 @endif
                 @if ($agenda->ordinance)
-                    <a href="{{ route('ordinances.show', $agenda->ordinance) }}" class="splis-badge-linked">Published to Ordinance</a>
+                    <a href="{{ route('ordinances.show', $agenda->ordinance) }}" class="splis-badge-linked whitespace-nowrap">
+                        Published to {{ $agenda->ordinance->displayNumber() }} · Series {{ $agenda->ordinance->series_year }}
+                    </a>
                 @endif
                 @if ($agenda->appropriationOrdinance)
-                    <a href="{{ route('appropriation-ordinances.show', $agenda->appropriationOrdinance) }}" class="splis-badge-linked">Published to Appropriation Ordinance</a>
+                    <a href="{{ route('appropriation-ordinances.show', $agenda->appropriationOrdinance) }}" class="splis-badge-linked whitespace-nowrap">Published to Appropriation Ordinance</a>
                 @endif
                 @if ($agenda->publishedTargetLabel() && ! $agenda->resolution && ! $agenda->ordinance && ! $agenda->appropriationOrdinance)
                     <span class="splis-badge-linked">Published to {{ $agenda->publishedTargetLabel() }}</span>
@@ -39,6 +59,9 @@
                 </form>
                 @endif
             @endcan
+            @if ($agenda->request_pdf_url)
+                <a href="{{ $agenda->request_pdf_url }}" target="_blank" rel="noopener" class="splis-btn-secondary">Request PDF</a>
+            @endif
             @can('update', $agenda)
                 <a href="{{ route('agenda.edit', $agenda) }}" class="splis-btn-secondary">Edit</a>
             @endcan
@@ -73,7 +96,9 @@
                     @endif
                     @foreach ([
                         'Date Received' => $agenda->date_received?->format('M d, Y'),
-                        'Time Received' => $agenda->time_received ? \Illuminate\Support\Str::of($agenda->time_received)->substr(0, 5) : null,
+                        'Time Received' => $agenda->time_received
+                            ? \Illuminate\Support\Carbon::parse($agenda->time_received)->format('g:i A')
+                            : null,
                         'Prescribed Days' => $agenda->prescribed_days,
                         'Sender' => $agenda->sender,
                     ] as $label => $value)
@@ -148,7 +173,7 @@
         </div>
 
         <div class="splis-detail-sidebar-column">
-            @if ($agenda->hasIncoming() || $agenda->resolution || $agenda->ordinance || $agenda->appropriationOrdinance || $agenda->obPlacements->isNotEmpty() || auth()->user()?->can('addToOrderOfBusiness', $agenda))
+            @if ($agenda->hasIncoming() || $agenda->resolution || $agenda->ordinance || $agenda->appropriationOrdinance || $finalObPlacements->isNotEmpty() || auth()->user()?->can('addToOrderOfBusiness', $agenda))
                 <aside class="splis-card">
                     <div class="splis-card-header">
                         <h2 class="splis-card-title">Connections</h2>
@@ -206,7 +231,7 @@
                                 </div>
                             </div>
                         @endif
-                        @include('agenda.partials.ob-placements', ['agenda' => $agenda])
+                        @include('agenda.partials.ob-placements', ['placements' => $finalObPlacements])
                         @can('addToOrderOfBusiness', $agenda)
                             <div class="border-t border-slate-200 pt-4 dark:border-slate-700">
                                 <p class="splis-detail-label">Add to Order of Business</p>
@@ -289,15 +314,12 @@
                 </div>
             </aside>
 
-            @if ($agenda->request_pdf_url || $agenda->committee_report_url || $agenda->reso_ord_ao_url || $agenda->journal_url || $agenda->minutes_url || $agenda->isPublished())
+            @if ($agenda->committee_report_url || $agenda->reso_ord_ao_url || $agenda->journal_url || $agenda->minutes_url || $agenda->isPublished())
                 <div class="splis-card">
                     <div class="splis-card-header">
                         <h2 class="splis-card-title">Documents</h2>
                     </div>
                     <div class="splis-card-body flex flex-col gap-2">
-                        @if ($agenda->request_pdf_url)
-                            <a href="{{ $agenda->request_pdf_url }}" target="_blank" rel="noopener" class="splis-btn-secondary text-sm">Request PDF</a>
-                        @endif
                         @if ($agenda->committee_report_url)
                             <a href="{{ $agenda->committee_report_url }}" target="_blank" rel="noopener" class="splis-btn-secondary text-sm">Committee Report</a>
                         @endif
@@ -319,5 +341,10 @@
     </div>
 
     @include('agenda.partials.version-history', ['agenda' => $agenda])
+
+    @include('agenda.partials.splis-activity-logs', [
+        'splisActivityLogs' => $splisActivityLogs ?? collect(),
+        'obPlacementCount' => $obPlacementCount ?? 0,
+    ])
 </div>
 @endsection

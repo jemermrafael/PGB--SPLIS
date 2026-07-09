@@ -11,14 +11,35 @@ use App\Models\Resolution;
 use App\Models\SeriesYear;
 use App\Models\User;
 use App\Services\BoardMemberDashboardService;
+use App\Services\MunicipalRequestService;
 use App\Services\ResolutionRepository;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function __invoke(ResolutionRepository $repository, BoardMemberDashboardService $boardDashboard): View
-    {
+    public function __invoke(
+        ResolutionRepository $repository,
+        BoardMemberDashboardService $boardDashboard,
+        MunicipalRequestService $municipalRequests,
+    ): View {
         $user = auth()->user();
+
+        if ($user instanceof User && $user->isMunicipalViewer()) {
+            $municipality = $municipalRequests->municipalityFor($user);
+
+            return view('municipal.dashboard', [
+                'user' => $user,
+                'municipality' => $municipality,
+                'unlinked' => $municipality === null,
+                'stats' => $municipality
+                    ? $municipalRequests->statsFor($user)
+                    : ['pending' => 0, 'expiring_soon' => 0, 'due_soon' => 0, 'done' => 0, 'lapsed' => 0],
+                'expiringSoonAgendas' => $municipality
+                    ? $municipalRequests->expiringSoonRequestsFor($user)
+                    : collect(),
+                'expiringSoonDays' => $municipalRequests->expiringSoonDays(),
+            ]);
+        }
 
         if ($user instanceof User && $user->isBoardMember()) {
             return view('board-member.dashboard', [
@@ -26,7 +47,11 @@ class DashboardController extends Controller
                 'committeeAssignments' => $user->board_member_id ? $boardDashboard->committeeAssignmentsFor($user) : collect(),
                 'agendaStats' => $user->board_member_id
                     ? $boardDashboard->agendaStatsFor($user)
-                    : ['pending' => 0, 'due_soon' => 0, 'done' => 0, 'lapsed' => 0],
+                    : ['pending' => 0, 'expiring_soon' => 0, 'due_soon' => 0, 'done' => 0, 'lapsed' => 0],
+                'expiringSoonAgendas' => $user->board_member_id
+                    ? $boardDashboard->expiringSoonAgendasFor($user)
+                    : collect(),
+                'expiringSoonDays' => $boardDashboard->expiringSoonDays(),
                 'sessions' => $boardDashboard->upcomingSessions(),
                 'unlinked' => $user->board_member_id === null,
             ]);
@@ -46,7 +71,9 @@ class DashboardController extends Controller
             'newCount' => $newCount,
             'currentYearCount' => Resolution::query()->where('series', $currentYear)->count()
                 + Ordinance::query()->where('series_year', $currentYear)->count(),
-            'recentActivity' => ActivityLog::query()->with('user')->latest('created_at')->limit(10)->get(),
+            'recentActivity' => $user->canAdmin()
+                ? ActivityLog::query()->with('user')->latest('created_at')->limit(10)->get()
+                : collect(),
             'categories' => Category::forSelect(),
             'departments' => Department::orderBy('description')->get(),
             'municipalities' => Municipality::orderBy('description')->get(),

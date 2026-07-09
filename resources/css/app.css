@@ -303,6 +303,10 @@
         @apply border-l-4 border-l-sky-600 bg-gradient-to-br from-sky-50 to-white;
     }
 
+    .splis-stat--amber {
+        @apply border-l-4 border-l-amber-500 bg-gradient-to-br from-orange-50 to-white;
+    }
+
     .splis-stat--brand .splis-stat-value {
         @apply text-brand-800;
     }
@@ -317,6 +321,10 @@
 
     .splis-stat--sky .splis-stat-value {
         @apply text-sky-800;
+    }
+
+    .splis-stat--amber .splis-stat-value {
+        @apply text-amber-800;
     }
 
     .splis-stat-label {
@@ -843,6 +851,10 @@
         @apply mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800;
     }
 
+    .splis-alert-warning {
+        @apply mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900;
+    }
+
     .splis-toast-stack {
         @apply pointer-events-none fixed bottom-4 right-4 z-50 flex w-full max-w-sm flex-col gap-3;
     }
@@ -867,8 +879,182 @@
         @apply mt-2 inline-block text-sm font-medium text-brand-700 hover:underline dark:text-slate-300;
     }
 
+    .splis-toast-footer {
+        @apply mt-3 border-t border-slate-100 pt-2 dark:border-slate-800;
+    }
+
+    .splis-toast-see-all {
+        @apply text-sm font-medium text-brand-700 hover:underline dark:text-slate-300;
+    }
+
     .splis-toast-close {
         @apply absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full text-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800;
+    }
+
+    .splis-notify-wrap {
+        @apply relative;
+    }
+
+    .splis-notify-trigger {
+        @apply relative;
+    }
+
+    #splis-notify-trigger svg {
+        width: 22px;
+        height: 22px;
+    }
+
+    .splis-notify-badge {
+        @apply absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white;
+    }
+
+    .splis-notify-panel {
+        @apply absolute right-0 top-[calc(100%+0.5rem)] z-50 hidden w-80 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl sm:w-96;
+    }
+
+    .splis-notify-panel.open {
+        @apply block;
+    }
+
+    .splis-notify-panel-header {
+        @apply flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3;
+    }
+
+    .splis-notify-panel-header h3 {
+        @apply text-sm font-semibold text-slate-900;
+    }
+
+    .splis-notify-mark-all {
+        @apply text-xs font-medium text-brand-700 transition hover:underline;
+    }
+
+    .splis-notify-list {
+        @apply max-h-96 overflow-y-auto;
+    }
+
+    .splis-notify-panel-footer {
+        @apply border-t border-slate-100 bg-slate-50 px-4 py-3 text-center dark:border-slate-800 dark:bg-slate-900/50;
+    }
+
+    .splis-notify-see-all {
+        @apply text-sm font-medium text-brand-700 hover:underline dark:text-slate-300;
+    }
+
+    .splis-notify-feed-list {
+        @apply divide-y divide-slate-100 dark:divide-slate-800;
+    }
+
+    .splis-notify-feed-list .splis-notify-item {
+        @apply border-b-0;
+    }
+
+    .splis-notify-feed-footer {
+        @apply border-t border-slate-100 p-4 dark:border-slate-800;
+    }
+
+    .splis-notify-empty {
+        @apply px-4 py-8 text-center text-sm text-slate-500;
+    }
+
+    .splis-notify-item {
+        @apply relative flex gap-2 border-b border-slate-100 px-4 py-3 last:border-b-0;
+    }
+
+    .splis-notify-item.is-unread {
+        @apply bg-brand-50/70;
+    }
+
+    .splis-notify-item-main {
+        @apply min-w-0 flex-1;
+    }
+
+    .splis-notify-item-title {
+        @apply pr-6 text-sm font-semibold text-slate-900;
+    }
+
+    .splis-notify-item-body {
+        @apply mt-1 text-sm text-slate-600;
+    }
+
+    .splis-notify-item-time {
+        @apply mt-1 text-xs text-slate-400;
+    }
+
+    .splis-notify-item-link {
+        @apply mt-2 inline-block text-sm font-medium text-brand-700 hover:underline;
+    }
+
+    .splis-notify-item-dismiss {
+        @apply absolute right-2 top-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600;
+    }
+
+    .splis-notify-read-label {
+        @apply absolute right-2 top-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400;
+    }
+
+    body.splis-modal-open {
+        @apply overflow-hidden;
+    }
+
+    .splis-modal {
+        @apply fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center;
+    }
+
+    .splis-modal-backdrop {
+        @apply absolute inset-0 bg-slate-900/50;
+    }
+
+    .splis-modal-panel {
+        @apply relative z-10 flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl;
+    }
+
+    .splis-modal-header {
+        @apply flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4;
+    }
+
+    .splis-modal-title {
+        @apply text-base font-semibold text-slate-900;
+    }
+
+    .splis-modal-close {
+        @apply flex h-8 w-8 items-center justify-center rounded-full text-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-600;
+    }
+
+    .splis-modal-body {
+        @apply overflow-y-auto px-5 py-4;
+    }
+
+    .splis-version-compare-selectors {
+        @apply mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2;
+    }
+
+    .splis-version-compare-select {
+        @apply block space-y-1.5;
+    }
+
+    .splis-version-compare-meta {
+        @apply mb-4 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2;
+    }
+
+    .splis-version-compare-meta-label {
+        @apply text-xs font-semibold uppercase tracking-wide text-slate-400;
+    }
+
+    .splis-version-compare-meta-value {
+        @apply mt-1 text-sm text-slate-700;
+    }
+
+    .splis-version-compare-row--changed {
+        @apply bg-amber-50/70 dark:bg-amber-950/20;
+    }
+
+    .splis-version-compare-empty {
+        @apply text-slate-400;
+    }
+
+    .splis-version-compare-identical,
+    .splis-version-compare-empty-state {
+        @apply rounded-xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500;
     }
 
     .splis-detail-row {
@@ -1472,8 +1658,71 @@
     }
 
     html.dark .splis-user-menu-panel,
-    html.dark .splis-a11y-panel {
+    html.dark .splis-a11y-panel,
+    html.dark .splis-notify-panel {
         @apply border-slate-700 bg-slate-900;
+    }
+
+    html.dark .splis-notify-panel-header {
+        @apply border-slate-700;
+    }
+
+    html.dark .splis-notify-panel-header h3 {
+        @apply text-slate-100;
+    }
+
+    html.dark .splis-notify-mark-all {
+        @apply text-slate-300;
+    }
+
+    html.dark .splis-notify-item {
+        @apply border-slate-700;
+    }
+
+    html.dark .splis-notify-item.is-unread {
+        @apply bg-brand-950/40;
+    }
+
+    html.dark .splis-notify-item-title {
+        @apply text-slate-100;
+    }
+
+    html.dark .splis-notify-item-body {
+        @apply text-slate-400;
+    }
+
+    html.dark .splis-notify-item-link {
+        @apply text-slate-300;
+    }
+
+    html.dark .splis-notify-item-dismiss {
+        @apply hover:bg-slate-800 hover:text-slate-200;
+    }
+
+    html.dark .splis-modal-panel {
+        @apply border-slate-700 bg-slate-900;
+    }
+
+    html.dark .splis-modal-header {
+        @apply border-slate-700;
+    }
+
+    html.dark .splis-modal-title {
+        @apply text-slate-100;
+    }
+
+    html.dark .splis-modal-close {
+        @apply hover:bg-slate-800 hover:text-slate-200;
+    }
+
+    html.dark .splis-version-compare-meta,
+    html.dark .splis-version-compare-identical,
+    html.dark .splis-version-compare-empty-state {
+        @apply border-slate-700 bg-slate-800/60;
+    }
+
+    html.dark .splis-version-compare-meta-value {
+        @apply text-slate-200;
     }
 
     .splis-doc-grid {
@@ -1547,6 +1796,10 @@
         @apply bg-gradient-to-br from-sky-950/40 to-slate-900;
     }
 
+    html.dark .splis-stat--amber {
+        @apply bg-gradient-to-br from-orange-950/40 to-slate-900;
+    }
+
     html.dark .splis-stat--brand .splis-stat-value {
         @apply text-brand-gold;
     }
@@ -1561,6 +1814,14 @@
 
     html.dark .splis-stat--sky .splis-stat-value {
         @apply text-sky-300;
+    }
+
+    html.dark .splis-stat--amber .splis-stat-value {
+        @apply text-amber-300;
+    }
+
+    html.dark .splis-alert-warning {
+        @apply border-amber-900/60 bg-amber-950/40 text-amber-100;
     }
 
     html.dark .splis-filter-panel--accent {
@@ -1612,7 +1873,8 @@
     html.dark .splis-table-wrap,
     html.dark .splis-stat,
     html.dark .splis-doc-card,
-    html.dark .splis-a11y-panel {
+    html.dark .splis-a11y-panel,
+    html.dark .splis-notify-panel {
         @apply border-slate-700 bg-slate-900 shadow-none;
     }
 
@@ -1775,6 +2037,10 @@
         @apply text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30;
     }
 
+    .splis-ob-section-move .splis-select {
+        @apply w-full;
+    }
+
     .splis-ob-block-body {
         @apply p-3;
     }
@@ -1892,6 +2158,10 @@
 
     .ob-print-agenda-title {
         @apply mt-1 text-sm font-medium;
+    }
+
+    .ob-print-link {
+        @apply text-blue-700 underline;
     }
 
     .ob-print-table {

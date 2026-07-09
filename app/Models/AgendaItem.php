@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasActivityLogs;
 use App\Support\AgendaDeadline;
 use App\Support\AgendaMeasureType;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -11,7 +13,16 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AgendaItem extends Model
 {
+    use HasActivityLogs;
     use SoftDeletes;
+
+    public const OB_STAGE_UNASSIGNED = 'unassigned';
+
+    public const OB_STAGE_UNFINISHED = 'unfinished';
+
+    public const OB_STAGE_COMMITTEE_REPORT = 'committee_report';
+
+    public const OB_STAGE_RESOLVED = 'resolved';
 
     public const STATUS_NO_DUE_DATE = 'no_due_date';
 
@@ -33,6 +44,7 @@ class AgendaItem extends Model
         'days_left_label',
         'sender',
         'title',
+        'is_urgent_request',
         'committee_referred',
         'date_of_referral',
         'date_of_committee_meeting',
@@ -55,6 +67,9 @@ class AgendaItem extends Model
         'remarks',
         'incoming_document_id',
         'created_by',
+        'ob_lifecycle_stage',
+        'ob_manual_override_at',
+        'last_ob_synced_session_id',
     ];
 
     protected static function booted(): void
@@ -88,7 +103,9 @@ class AgendaItem extends Model
             'prescribed_days' => 'integer',
             'reso_ord_ao_series' => 'integer',
             'current_version_no' => 'integer',
+            'is_urgent_request' => 'boolean',
             'published_at' => 'datetime',
+            'ob_manual_override_at' => 'datetime',
         ];
     }
 
@@ -130,6 +147,28 @@ class AgendaItem extends Model
     public function obPlacements(): HasMany
     {
         return $this->hasMany(AgendaObPlacement::class)->orderByDesc('created_at');
+    }
+
+    public function finalObPlacements(): HasMany
+    {
+        return $this->obPlacements()
+            ->whereHas('obDocument', fn ($query) => $query->where('status', ObDocument::STATUS_FINAL));
+    }
+
+    public function lastObSyncedSession(): BelongsTo
+    {
+        return $this->belongsTo(LegislativeSession::class, 'last_ob_synced_session_id');
+    }
+
+    public function hasObManualOverride(): bool
+    {
+        return $this->ob_manual_override_at !== null;
+    }
+
+    public function isObLifecycleResolved(): bool
+    {
+        return $this->ob_lifecycle_stage === self::OB_STAGE_RESOLVED
+            || $this->status === self::STATUS_DONE;
     }
 
     public function currentVersion(): ?AgendaItemVersion
@@ -186,6 +225,30 @@ class AgendaItem extends Model
     public function daysLeftTone(): string
     {
         return AgendaDeadline::toneForItem($this);
+    }
+
+    /** @param Builder<AgendaItem> $query */
+    public function scopeExpiringSoon(Builder $query): Builder
+    {
+        $today = now()->startOfDay();
+        $end = now()->addDays(AgendaDeadline::expiringSoonDays())->endOfDay();
+
+        return $query
+            ->where('status', self::STATUS_PENDING)
+            ->whereNotNull('due_date')
+            ->whereBetween('due_date', [$today, $end]);
+    }
+
+    /** @param Builder<AgendaItem> $query */
+    public function scopeDueSoon(Builder $query): Builder
+    {
+        $today = now()->startOfDay();
+        $end = now()->addDays(AgendaDeadline::dueSoonDays())->endOfDay();
+
+        return $query
+            ->where('status', self::STATUS_PENDING)
+            ->whereNotNull('due_date')
+            ->whereBetween('due_date', [$today, $end]);
     }
 
     public function deadlineProgressPercent(): ?int

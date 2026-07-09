@@ -28,7 +28,11 @@
         <p class="text-sm text-slate-600">{{ $session->displayTitle() }}</p>
     </div>
     <div class="flex gap-2">
-        <a href="{{ route('ob.document.maker', $session) }}" class="splis-btn-secondary">Back to maker</a>
+        @can('update', $document)
+            <a href="{{ route('ob.document.maker', $session) }}" class="splis-btn-secondary">Back to maker</a>
+        @else
+            <a href="{{ route('ob.sessions.show', $session) }}" class="splis-btn-secondary">Back</a>
+        @endcan
         <button type="button" class="splis-btn-primary" onclick="window.print()">Print / Save as PDF</button>
     </div>
 </div>

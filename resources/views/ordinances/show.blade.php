@@ -6,6 +6,13 @@
 <div class="max-w-4xl">
     <div class="splis-page-header">
         <div>
+            @if ($ordinance->publishedFromAgenda)
+                <div class="mb-2">
+                    <a href="{{ route('agenda.show', $ordinance->publishedFromAgenda) }}" class="splis-badge-linked">
+                        Published from Agenda {{ $ordinance->publishedFromAgenda->id }} · Series {{ $ordinance->publishedFromAgenda->reso_ord_ao_series ?: $ordinance->series_year }}
+                    </a>
+                </div>
+            @endif
             <h1 class="splis-page-title">{{ $ordinance->displayNumber() }}</h1>
             <p class="splis-page-subtitle">{{ $ordinance->displaySeries() }}</p>
         </div>

@@ -42,19 +42,28 @@ class MyOrdinanceService
     {
         $search = trim((string) $request->input('q', ''));
         $series = $request->filled('series') ? (int) $request->input('series') : null;
+        $type = (string) $request->input('type', '');
+        $hasAuthors = (bool) $request->boolean('has_authors');
 
-        $ordinances = Ordinance::query()
-            ->with('boardMembers')
-            ->when($series, fn ($query) => $query->where('series_year', $series))
-            ->when($search !== '', fn ($query) => $query->search($search))
-            ->get()
-            ->map(fn (Ordinance $ordinance) => $this->fromOrdinance($ordinance));
+        $ordinances = collect();
+        if ($type === '' || $type === 'ordinance') {
+            $ordinances = Ordinance::query()
+                ->with('boardMembers')
+                ->when($series, fn ($query) => $query->where('series_year', $series))
+                ->when($search !== '', fn ($query) => $query->search($search))
+                ->when($hasAuthors, fn ($query) => $query->whereHas('boardMembers'))
+                ->get()
+                ->map(fn (Ordinance $ordinance) => $this->fromOrdinance($ordinance));
+        }
 
-        $appropriations = AppropriationOrdinance::query()
-            ->when($series, fn ($query) => $query->where('series_year', $series))
-            ->when($search !== '', fn ($query) => $query->search($search))
-            ->get()
-            ->map(fn (AppropriationOrdinance $ordinance) => $this->fromAppropriationOrdinance($ordinance));
+        $appropriations = collect();
+        if ($type === '' || $type === 'appropriation_ordinance') {
+            $appropriations = AppropriationOrdinance::query()
+                ->when($series, fn ($query) => $query->where('series_year', $series))
+                ->when($search !== '', fn ($query) => $query->search($search))
+                ->get()
+                ->map(fn (AppropriationOrdinance $ordinance) => $this->fromAppropriationOrdinance($ordinance));
+        }
 
         $merged = $ordinances
             ->concat($appropriations)

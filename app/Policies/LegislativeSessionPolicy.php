@@ -9,11 +9,15 @@ class LegislativeSessionPolicy
 {
     public function viewAny(User $user): bool
     {
-        return true;
+        return ! $user->isMunicipalViewer();
     }
 
     public function view(User $user, LegislativeSession $session): bool
     {
+        if ($user->isMunicipalViewer()) {
+            return false;
+        }
+
         if ($user->isBoardMember()) {
             return $session->obDocument?->isFinal() ?? false;
         }

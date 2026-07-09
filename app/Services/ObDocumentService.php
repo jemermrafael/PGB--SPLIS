@@ -4,8 +4,11 @@ namespace App\Services;
 
 use App\Enums\ObBlockType;
 use App\Models\AgendaItem;
+use App\Models\AgendaObPlacement;
+use App\Models\LegislativeSession;
 use App\Models\ObBlock;
 use App\Models\ObDocument;
+use App\Support\ActivityLogger;
 use App\Support\CommitteeLookup;
 use App\Support\ObAgendaSnapshot;
 use App\Support\ObBlockDefaults;
@@ -20,6 +23,7 @@ class ObDocumentService
 {
     public function __construct(
         private AgendaObPlacementService $placements,
+        private BoardMemberNotifier $boardMemberNotifier,
     ) {}
 
     /**
@@ -49,6 +53,8 @@ class ObDocumentService
             $content = ObAgendaSnapshot::enrichUnassignedRow($content, $block->agendaItem);
         }
 
+        $section = $this->inferSectionFromBlock($block);
+
         return [
             'id' => $block->id,
             'type' => $block->type->value,
@@ -57,6 +63,9 @@ class ObDocumentService
             'content' => $content,
             'agenda_item_id' => $block->agenda_item_id,
             'preview' => $block->previewText(),
+            'section' => $section,
+            'section_label' => config('order_of_business.agenda_sections.'.$section, $section),
+            'can_move_section' => $this->canMoveBlockToSection($block),
         ];
     }
 
@@ -201,10 +210,14 @@ class ObDocumentService
         $this->reorderBlocks($document, array_merge($prefixIds, $middleIds, $suffixIds));
     }
 
-    public function deleteBlock(ObBlock $block): void
+    public function deleteBlock(ObBlock $block, ?int $userId = null, string $source = 'manual'): void
     {
+        $block->loadMissing(['obDocument.legislativeSession', 'agendaItem']);
         $document = $block->obDocument;
         $deletedOrder = $block->sort_order;
+        $agenda = $block->agendaItem;
+        $session = $document?->legislativeSession;
+        $section = $this->inferSectionFromBlock($block);
 
         $block->delete();
 
@@ -212,6 +225,17 @@ class ObDocumentService
             ->where('ob_document_id', $document->id)
             ->where('sort_order', '>', $deletedOrder)
             ->decrement('sort_order');
+
+        if ($agenda && $session && $source !== 'relocation') {
+            ActivityLogger::log('agenda.removed_from_ob', $agenda, [
+                'source' => $source,
+                'section' => $section,
+                'section_label' => config('order_of_business.agenda_sections.'.$section, $section),
+                'session_id' => $session->id,
+                'session_title' => $session->displayTitle(),
+                'session_date' => $session->session_date?->format('Y-m-d'),
+            ], $userId ?? auth()->id());
+        }
     }
 
     /**
@@ -250,12 +274,21 @@ class ObDocumentService
         string $section = 'unassigned_regular',
         ?int $committeeId = null,
         ?int $placedBy = null,
+        string $source = 'manual',
     ): array {
         $items = AgendaItem::query()
             ->whereIn('id', $agendaItemIds)
             ->orderBy('date_received')
             ->orderBy('id')
             ->get();
+
+        $items = $items->reject(fn (AgendaItem $item) => $item->status === AgendaItem::STATUS_DONE)->values();
+
+        if ($items->isEmpty()) {
+            throw ValidationException::withMessages([
+                'agenda_item_ids' => ['Done agenda items cannot be added to the Order of Business.'],
+            ]);
+        }
 
         $alreadyLinked = $this->linkedAgendaItemIds($document);
 
@@ -349,6 +382,35 @@ class ObDocumentService
             }
         }
 
+        $document->loadMissing('legislativeSession');
+
+        if ($document->legislativeSession && $document->isFinal()) {
+            foreach ($items as $item) {
+                $this->boardMemberNotifier->notifyAgendaAddedToOb($item, $document->legislativeSession);
+            }
+        }
+
+        if (in_array($source, ['manual', 'manual_move'], true)) {
+            AgendaItem::query()
+                ->whereIn('id', $items->pluck('id'))
+                ->update(['ob_manual_override_at' => now()]);
+
+            $session = $document->legislativeSession;
+
+            if ($session) {
+                foreach ($items as $item) {
+                    ActivityLogger::log('agenda.added_to_ob', $item, [
+                        'source' => 'manual',
+                        'section' => $section,
+                        'section_label' => config('order_of_business.agenda_sections.'.$section, $section),
+                        'session_id' => $session->id,
+                        'session_title' => $session->displayTitle(),
+                        'session_date' => $session->session_date?->format('Y-m-d'),
+                    ], $placedBy);
+                }
+            }
+        }
+
         return $created;
     }
 
@@ -407,9 +469,46 @@ class ObDocumentService
      */
     public function updateDocument(ObDocument $document, array $data): ObDocument
     {
+        $wasFinal = $document->isFinal();
+
         $document->update(collect($data)->only(['title', 'status'])->filter(fn ($v) => $v !== null)->all());
 
-        return $document->fresh();
+        $document = $document->fresh();
+
+        if (! $wasFinal && $document->isFinal()) {
+            $this->notifyLinkedAgendasForFinalDocument($document);
+        }
+
+        return $document;
+    }
+
+    protected function notifyLinkedAgendasForFinalDocument(ObDocument $document): void
+    {
+        $document->loadMissing('legislativeSession');
+        $session = $document->legislativeSession;
+
+        if ($session === null) {
+            return;
+        }
+
+        $agendaIds = $this->linkedAgendaItemIds($document);
+
+        if ($agendaIds->isEmpty()) {
+            $agendaIds = AgendaObPlacement::query()
+                ->where('ob_document_id', $document->id)
+                ->pluck('agenda_item_id')
+                ->unique()
+                ->values();
+        }
+
+        if ($agendaIds->isEmpty()) {
+            return;
+        }
+
+        AgendaItem::query()
+            ->whereIn('id', $agendaIds)
+            ->get()
+            ->each(fn (AgendaItem $item) => $this->boardMemberNotifier->notifyAgendaAddedToOb($item, $session, reNotify: true));
     }
 
     protected function nextSortOrder(ObDocument $document, ?int $afterBlockId): int
@@ -530,6 +629,208 @@ class ObDocumentService
         return $block->fresh(['agendaItem']);
     }
 
+    public function documentContainsAgenda(ObDocument $document, int $agendaItemId): bool
+    {
+        return $this->linkedAgendaItemIds($document)->contains($agendaItemId);
+    }
+
+    public function sectionForAgendaInDocument(ObDocument $document, int $agendaItemId): ?string
+    {
+        $block = $this->findPrimaryBlockForAgenda($document, $agendaItemId);
+
+        return $block ? $this->inferSectionFromBlock($block) : null;
+    }
+
+    public function moveAgendaBlockToSection(ObBlock $block, string $targetSection, ?int $userId = null): ObDocument
+    {
+        if (! $this->canMoveBlockToSection($block)) {
+            throw ValidationException::withMessages([
+                'section' => ['This block cannot be moved between sections.'],
+            ]);
+        }
+
+        $agendaIds = $this->agendaIdsFromBlock($block);
+        $agenda = AgendaItem::query()->findOrFail($agendaIds[0]);
+        $document = $block->obDocument;
+        $currentSection = $this->inferSectionFromBlock($block);
+
+        if ($currentSection === $targetSection) {
+            throw ValidationException::withMessages([
+                'section' => ['This agenda is already in that section.'],
+            ]);
+        }
+
+        $committeeId = isset($block->content['committee_id']) && is_numeric($block->content['committee_id'])
+            ? (int) $block->content['committee_id']
+            : null;
+
+        DB::transaction(function () use ($document, $agenda, $currentSection, $targetSection, $committeeId, $userId): void {
+            $this->removeAgendaFromDocument($document, $agenda, $userId, 'relocation');
+            $this->addAgendaItems(
+                $document,
+                [$agenda->id],
+                null,
+                $targetSection,
+                $committeeId,
+                $userId,
+                'manual_move',
+            );
+
+            $document->loadMissing('legislativeSession');
+            $session = $document->legislativeSession;
+
+            if ($session) {
+                ActivityLogger::log('agenda.ob_relocated', $agenda, [
+                    'source' => 'manual',
+                    'from_section' => $currentSection,
+                    'from_section_label' => config('order_of_business.agenda_sections.'.$currentSection, $currentSection),
+                    'to_section' => $targetSection,
+                    'to_section_label' => config('order_of_business.agenda_sections.'.$targetSection, $targetSection),
+                    'session_id' => $session->id,
+                    'session_title' => $session->displayTitle(),
+                    'session_date' => $session->session_date?->format('Y-m-d'),
+                ], $userId);
+            }
+        });
+
+        return $document->fresh();
+    }
+
+    public function canMoveBlockToSection(ObBlock $block): bool
+    {
+        if (count($this->agendaIdsFromBlock($block)) !== 1) {
+            return false;
+        }
+
+        $type = $block->type instanceof ObBlockType ? $block->type : ObBlockType::from((string) $block->type);
+
+        return in_array($type, [
+            ObBlockType::UnfinishedAgenda,
+            ObBlockType::UnassignedAgenda,
+            ObBlockType::ReadingAgenda,
+            ObBlockType::CommitteeReport,
+        ], true);
+    }
+
+    /**
+     * @return list<int>
+     */
+    protected function agendaIdsFromBlock(ObBlock $block): array
+    {
+        $ids = [];
+
+        if ($block->agenda_item_id !== null) {
+            $ids[] = (int) $block->agenda_item_id;
+        }
+
+        foreach ($block->content['agenda_item_ids'] ?? [] as $id) {
+            if (is_numeric($id)) {
+                $ids[] = (int) $id;
+            }
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    public function removeAgendaFromDocument(
+        ObDocument $document,
+        AgendaItem $agenda,
+        ?int $userId = null,
+        string $source = 'automatic',
+    ): void {
+        $blocks = $this->findBlocksForAgenda($document, $agenda->id);
+
+        foreach ($blocks as $block) {
+            if ($block->type === ObBlockType::CommitteeReport) {
+                $ids = collect($block->content['agenda_item_ids'] ?? [])
+                    ->map(fn ($id) => (int) $id)
+                    ->filter(fn (int $id) => $id > 0)
+                    ->unique()
+                    ->values();
+
+                if ($block->agenda_item_id !== null) {
+                    $ids = $ids->push((int) $block->agenda_item_id)->unique()->values();
+                }
+
+                $remaining = $ids->reject(fn (int $id) => $id === $agenda->id)->values();
+
+                if ($remaining->isEmpty()) {
+                    $this->deleteBlock($block, $userId, $source);
+                } else {
+                    $content = $block->content ?? [];
+                    $content['agenda_item_ids'] = $remaining->all();
+                    $block->update(['content' => $content]);
+                    $this->logAgendaRemovedFromOb($agenda, $document, $this->inferSectionFromBlock($block), $source, $userId);
+                }
+
+                continue;
+            }
+
+            $this->deleteBlock($block, $userId, $source);
+        }
+    }
+
+    protected function findPrimaryBlockForAgenda(ObDocument $document, int $agendaItemId): ?ObBlock
+    {
+        return $this->findBlocksForAgenda($document, $agendaItemId)->first();
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, ObBlock>
+     */
+    protected function findBlocksForAgenda(ObDocument $document, int $agendaItemId): \Illuminate\Support\Collection
+    {
+        return ObBlock::query()
+            ->where('ob_document_id', $document->id)
+            ->orderBy('sort_order')
+            ->get()
+            ->filter(fn (ObBlock $block) => $this->blockContainsAgenda($block, $agendaItemId))
+            ->values();
+    }
+
+    protected function blockContainsAgenda(ObBlock $block, int $agendaItemId): bool
+    {
+        if ((int) $block->agenda_item_id === $agendaItemId) {
+            return true;
+        }
+
+        foreach ($block->content['agenda_item_ids'] ?? [] as $id) {
+            if ((int) $id === $agendaItemId) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected function logAgendaRemovedFromOb(
+        AgendaItem $agenda,
+        ObDocument $document,
+        string $section,
+        string $source,
+        ?int $userId,
+    ): void {
+        if ($source === 'relocation') {
+            return;
+        }
+
+        $document->loadMissing('legislativeSession');
+        $session = $document->legislativeSession;
+
+        if (! $session) {
+            return;
+        }
+
+        ActivityLogger::log('agenda.removed_from_ob', $agenda, [
+            'source' => $source,
+            'section' => $section,
+            'section_label' => config('order_of_business.agenda_sections.'.$section, $section),
+            'session_id' => $session->id,
+            'session_title' => $session->displayTitle(),
+            'session_date' => $session->session_date?->format('Y-m-d'),
+        ], $userId);
+    }
+
     /**
      * @return Collection<int, int>
      */
@@ -555,5 +856,22 @@ class ObDocumentService
             })
             ->unique()
             ->values();
+    }
+
+    protected function inferSectionFromBlock(ObBlock $block): string
+    {
+        $type = $block->type instanceof ObBlockType ? $block->type->value : (string) $block->type;
+
+        return match ($type) {
+            ObBlockType::CommitteeReport->value => 'committee_reports',
+            ObBlockType::UnfinishedAgenda->value, ObBlockType::UnfinishedCommittee->value => 'unfinished',
+            ObBlockType::ReadingAgenda->value => ($block->content['reading'] ?? '2nd') === '3rd'
+                ? 'business_3rd'
+                : 'business_2nd',
+            ObBlockType::UnassignedAgenda->value => ($block->content['kind'] ?? 'regular') === 'urgent'
+                ? 'unassigned_urgent'
+                : 'unassigned_regular',
+            default => 'unassigned_regular',
+        };
     }
 }

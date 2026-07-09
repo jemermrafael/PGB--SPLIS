@@ -4,17 +4,18 @@ namespace App\Policies;
 
 use App\Models\Ordinance;
 use App\Models\User;
+use App\Support\MunicipalRequestAccess;
 
 class OrdinancePolicy
 {
     public function viewAny(User $user): bool
     {
-        return true;
+        return ! $user->isMunicipalViewer();
     }
 
     public function view(User $user, Ordinance $ordinance): bool
     {
-        return true;
+        return MunicipalRequestAccess::userCanViewOrdinance($user, $ordinance);
     }
 
     public function create(User $user): bool
@@ -29,6 +30,6 @@ class OrdinancePolicy
 
     public function delete(User $user, Ordinance $ordinance): bool
     {
-        return $user->canEncode();
+        return $user->isSuperadmin() || $user->canEncode();
     }
 }

@@ -139,6 +139,12 @@
                         <label class="splis-label">Date to</label>
                         <input type="date" name="date_to" class="splis-input">
                     </div>
+                    <div class="flex items-end">
+                        <label class="splis-filter-check">
+                            <input type="checkbox" name="has_remarks" value="1" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+                            Has remarks
+                        </label>
+                    </div>
                 </div>
             </div>
         </details>
@@ -164,7 +170,7 @@
                         <th>Days left</th>
                         <th>Status</th>
                         <th class="hidden xl:table-cell">Reso no.</th>
-                        <th class="w-16 text-center">Links</th>
+                        <th class="w-32">Remarks</th>
                     </tr>
                 </thead>
                 <tbody id="agenda-list-body"></tbody>

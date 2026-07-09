@@ -304,9 +304,63 @@ export function initObMaker() {
         return numeral === 'VII' || title.includes('ANNOUNCEMENTS');
     }
 
+    function renderSectionMoveDropdown(block) {
+        if (!canEdit || !block.can_move_section) {
+            return '';
+        }
+
+        const sections = config.agendaSections ?? [];
+        const options = sections
+            .filter((item) => item.value !== block.section)
+            .map(
+                (item) =>
+                    `<option value="${escapeHtml(item.value)}">${escapeHtml(item.label)}</option>`,
+            )
+            .join('');
+
+        return `
+            <div class="splis-ob-section-move mb-3 border-b border-slate-200 pb-3 dark:border-slate-700">
+                <label class="splis-label">Move to section</label>
+                <p class="mb-1 text-xs text-slate-500">Currently in: ${escapeHtml(block.section_label ?? block.section ?? '')}</p>
+                <select class="splis-select splis-ob-move-section" data-block-id="${block.id}">
+                    <option value="">Select section…</option>
+                    ${options}
+                </select>
+            </div>
+        `;
+    }
+
+    function renderSectionThreeHint(c) {
+        const sectionThree = config.sectionThree ?? {};
+
+        if (sectionThree.prior_session_title) {
+            return `<p class="mt-1 text-xs text-slate-500">Based on ${escapeHtml(sectionThree.prior_session_title)}. Journal and Minutes URLs auto-fill from that session unless you override them below. JOURNAL and MINUTES are linked in print preview.</p>`;
+        }
+
+        return '<p class="mt-1 text-xs text-slate-500">No prior session set. Enter Journal and Minutes PDF URLs below to link JOURNAL and MINUTES in print preview.</p>';
+    }
+
+    function renderSectionThreeLinkFields(c, disabled) {
+        if (normalizeRomanNumeral(c.numeral) !== 'III') {
+            return '';
+        }
+
+        return `
+            <div>
+                <label class="splis-label">Journal PDF URL</label>
+                <input type="url" class="splis-input splis-ob-block-field" data-field="journal_url" value="${escapeHtml(c.journal_url ?? '')}" ${disabled} placeholder="https://">
+            </div>
+            <div>
+                <label class="splis-label">Minutes PDF URL</label>
+                <input type="url" class="splis-input splis-ob-block-field" data-field="minutes_url" value="${escapeHtml(c.minutes_url ?? '')}" ${disabled} placeholder="https://">
+            </div>
+        `;
+    }
+
     function renderBlockEditor(block) {
         const c = block.content ?? {};
         const disabled = canEdit ? '' : 'disabled';
+        const sectionMove = renderSectionMoveDropdown(block);
 
         switch (block.type) {
             case 'heading':
@@ -328,9 +382,11 @@ export function initObMaker() {
                         <div class="md:col-span-2">
                             <label class="splis-label">Section content</label>
                             <textarea class="splis-textarea splis-ob-block-field" data-field="body" rows="3" ${disabled} placeholder="Section body text">${escapeHtml(c.body ?? '')}</textarea>
+                            ${normalizeRomanNumeral(c.numeral) === 'III' ? renderSectionThreeHint(c) : ''}
                         </div>
                     `
                     : '';
+                const sectionThreeLinkFields = renderSectionThreeLinkFields(c, disabled);
                 const subLabelField = flags.showSubLabel
                     ? `
                         <div class="md:col-span-2">
@@ -359,6 +415,7 @@ export function initObMaker() {
                         </div>
                         ${titleField}
                         ${bodyField}
+                        ${sectionThreeLinkFields}
                         ${subLabelField}
                         ${announcementActions}
                     </div>
@@ -368,6 +425,7 @@ export function initObMaker() {
                 return `<textarea class="splis-textarea splis-ob-block-field" data-field="text" rows="4" ${disabled}>${escapeHtml(c.text ?? '')}</textarea>`;
             case 'committee_report':
                 return `
+                    ${sectionMove}
                     <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                         <div>
                             <label class="splis-label">Row no. (IV section only)</label>
@@ -409,9 +467,9 @@ export function initObMaker() {
                     </div>
                 `;
             case 'unfinished_agenda':
-                return renderAgendaMetaFields(c, disabled, { includeCommittee: c.needs_committee === true });
+                return sectionMove + renderAgendaMetaFields(c, disabled, { includeCommittee: c.needs_committee === true });
             case 'unassigned_agenda':
-                return renderAgendaMetaFields(c, disabled, {
+                return sectionMove + renderAgendaMetaFields(c, disabled, {
                     includeKind: true,
                     referralNotePlaceholder:
                         (c.kind ?? 'regular') === 'urgent'
@@ -420,6 +478,7 @@ export function initObMaker() {
                 });
             case 'reading_agenda':
                 return `
+                    ${sectionMove}
                     <div class="space-y-3">
                         <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                             <div>
@@ -736,6 +795,50 @@ export function initObMaker() {
                 loadAgendaPool(1, false);
             }
             setStatus('Block deleted');
+        } catch (error) {
+            setStatus(error.message, true);
+        }
+    }
+
+    async function moveBlockToSection(blockId, section) {
+        const currentBlock = blocks.find((item) => item.id === blockId);
+        if (!currentBlock) {
+            return;
+        }
+
+        const agendaItemId = currentBlock.agenda_item_id
+            ?? (Array.isArray(currentBlock.content?.agenda_item_ids) && currentBlock.content.agenda_item_ids.length === 1
+                ? Number(currentBlock.content.agenda_item_ids[0])
+                : null);
+
+        if (selectedBlockId !== null) {
+            syncBlockFromDom(selectedBlockId);
+        }
+
+        try {
+            setStatus('Moving to section…');
+            const data = await api(blockUrl(urls.moveSection, blockId), {
+                method: 'POST',
+                body: JSON.stringify({ section }),
+            });
+            blocks = normalizeBlocks(data.blocks ?? []).sort((a, b) => a.sort_order - b.sort_order);
+            documentState = data.document ?? documentState;
+
+            if (agendaItemId) {
+                const movedBlock = blocks.find(
+                    (item) => item.agenda_item_id === agendaItemId
+                        || (Array.isArray(item.content?.agenda_item_ids)
+                            && item.content.agenda_item_ids.length === 1
+                            && Number(item.content.agenda_item_ids[0]) === agendaItemId),
+                );
+                selectedBlockId = movedBlock?.id ?? blocks[0]?.id ?? null;
+                loadAgendaPool(1, false);
+            } else {
+                selectedBlockId = blocks[0]?.id ?? null;
+            }
+
+            renderBlocks();
+            setStatus('Moved to section');
         } catch (error) {
             setStatus(error.message, true);
         }
@@ -1106,6 +1209,17 @@ export function initObMaker() {
         const target = event.target;
         if (target.matches('#ob-doc-title, #ob-doc-status')) {
             saveDocumentMeta();
+            return;
+        }
+
+        if (target.matches('.splis-ob-move-section')) {
+            const section = target.value;
+            const blockId = Number(target.dataset.blockId);
+            if (!section || !blockId) {
+                return;
+            }
+            moveBlockToSection(blockId, section);
+            target.value = '';
             return;
         }
 

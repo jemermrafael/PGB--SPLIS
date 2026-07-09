@@ -19,6 +19,9 @@
     @php
         $user = auth()->user();
         $isBoardMember = $user?->isBoardMember() ?? false;
+        $isMunicipalViewer = $user?->isMunicipalViewer() ?? false;
+        $canAdmin = $user?->canAdmin() ?? false;
+        $showNotifications = $isBoardMember || $canAdmin;
         $incomingEnabled = config('incoming.enabled', false);
         $ordinancesNavActive = request()->routeIs('ordinances.*')
             || request()->routeIs('appropriation-ordinances.*')
@@ -27,15 +30,17 @@
         $myAgendaNavActive = request()->routeIs('board-member.agenda.*')
             || ($isBoardMember && request()->routeIs('agenda.*'));
 
+        $myRequestsNavActive = request()->routeIs('municipal.requests.*');
+
         $navItems = [
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'active' => request()->routeIs('dashboard')],
         ];
 
-        if (! $isBoardMember) {
+        if (! $isBoardMember && ! $isMunicipalViewer) {
             $navItems[] = ['label' => 'Agenda', 'url' => route('agenda.index'), 'active' => request()->routeIs('agenda.*')];
             $navItems[] = ['label' => 'Order of Business', 'url' => route('ob.sessions.index'), 'active' => request()->routeIs('ob.*')];
             $navItems[] = ['label' => 'Reference Materials', 'url' => route('references.index'), 'active' => request()->routeIs('references.*')];
-        } else {
+        } elseif ($isBoardMember) {
             $navItems[] = ['label' => 'Order of Business', 'url' => route('ob.sessions.index'), 'active' => request()->routeIs('ob.*')];
         }
 
@@ -73,6 +78,10 @@
                             @include('partials.accessibility-panel')
                         </div>
 
+                        @if ($showNotifications)
+                            @include('partials.header-notifications')
+                        @endif
+
                         <div class="splis-user-menu" data-dropdown>
                             <button type="button" class="splis-header-btn splis-user-menu-trigger" data-dropdown-trigger aria-expanded="false" aria-haspopup="true">
                                 <span class="hidden sm:inline">{{ auth()->user()->role->label() }}</span>
@@ -109,49 +118,42 @@
                         Dashboard
                     </a>
 
-                    @if (! $isBoardMember)
-                    <div class="splis-nav-dropdown" data-dropdown>
-                        <button
-                            type="button"
-                            data-dropdown-trigger
-                            aria-expanded="false"
-                            aria-haspopup="true"
-                            @class([
-                                'splis-navbar-link splis-nav-dropdown-trigger',
-                                'splis-navbar-link-active' => $resolutionsNavActive,
-                            ])
-                        >
-                            Resolutions
-                            <svg class="h-3.5 w-3.5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
-                        </button>
-                        <div class="splis-nav-dropdown-panel" data-dropdown-panel role="menu">
-                            <a
-                                href="{{ route('resolutions.index') }}"
-                                role="menuitem"
-                                @class([
-                                    'splis-nav-dropdown-link',
-                                    'splis-nav-dropdown-link-active' => request()->routeIs('resolutions.*'),
-                                ])
-                            >
-                                All Resolutions
-                            </a>
-                            @if ($incomingEnabled)
-                                <a
-                                    href="{{ route('incoming.index') }}"
-                                    role="menuitem"
-                                    @class([
-                                        'splis-nav-dropdown-link',
-                                        'splis-nav-dropdown-link-active' => request()->routeIs('incoming.*'),
-                                    ])
-                                >
-                                    Incoming
-                                </a>
-                            @endif
-                        </div>
-                    </div>
+                    @if ($isMunicipalViewer)
+                    <a
+                        href="{{ route('municipal.requests.index') }}"
+                        @class([
+                            'splis-navbar-link',
+                            'splis-navbar-link-active' => $myRequestsNavActive,
+                        ])
+                    >
+                        My Requests
+                    </a>
                     @endif
 
-                    @if (! $isBoardMember)
+                    @if (! $isBoardMember && ! $isMunicipalViewer)
+                    <a
+                        href="{{ route('resolutions.index') }}"
+                        @class([
+                            'splis-navbar-link',
+                            'splis-navbar-link-active' => request()->routeIs('resolutions.*'),
+                        ])
+                    >
+                        Resolutions
+                    </a>
+                    @if ($incomingEnabled)
+                        <a
+                            href="{{ route('incoming.index') }}"
+                            @class([
+                                'splis-navbar-link',
+                                'splis-navbar-link-active' => request()->routeIs('incoming.*'),
+                            ])
+                        >
+                            Incoming
+                        </a>
+                    @endif
+                    @endif
+
+                    @if (! $isBoardMember && ! $isMunicipalViewer)
                     <div class="splis-nav-dropdown" data-dropdown>
                         <button
                             type="button"
@@ -217,7 +219,7 @@
                     </div>
                     @endif
 
-                    @if (! $isBoardMember)
+                    @if (! $isBoardMember && ! $isMunicipalViewer)
                     <div class="splis-nav-dropdown" data-dropdown>
                         <button
                             type="button"
@@ -312,7 +314,7 @@
         </main>
     </div>
 
-    @if ($isBoardMember)
+    @if ($showNotifications)
         <div id="splis-toast-stack" class="splis-toast-stack" aria-live="polite" aria-atomic="true"></div>
     @endif
 

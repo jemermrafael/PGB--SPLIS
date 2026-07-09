@@ -8,6 +8,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class UserNotification extends Model
 {
     public const TYPE_COMMITTEE_REFERRAL = 'committee_referral';
+    public const TYPE_ACTIVITY_LOG = 'activity_log';
+    public const TYPE_AGENDA_PUBLISHED = 'agenda_published';
+    public const TYPE_AGENDA_ADDED_TO_OB = 'agenda_added_to_ob';
+    public const TYPE_SESSION_CREATED = 'session_created';
+    public const TYPE_OB_DOCUMENT_CREATED = 'ob_document_created';
+    public const TYPE_AGENDA_EXPIRING_SOON = 'agenda_expiring_soon';
 
     protected $fillable = [
         'user_id',
@@ -16,6 +22,8 @@ class UserNotification extends Model
         'body',
         'link',
         'agenda_item_id',
+        'activity_log_id',
+        'legislative_session_id',
         'read_at',
     ];
 
@@ -34,6 +42,29 @@ class UserNotification extends Model
     public function agendaItem(): BelongsTo
     {
         return $this->belongsTo(AgendaItem::class);
+    }
+
+    public function activityLog(): BelongsTo
+    {
+        return $this->belongsTo(ActivityLog::class);
+    }
+
+    public function legislativeSession(): BelongsTo
+    {
+        return $this->belongsTo(LegislativeSession::class);
+    }
+
+    /** @return list<string> */
+    public static function boardMemberTypes(): array
+    {
+        return [
+            self::TYPE_COMMITTEE_REFERRAL,
+            self::TYPE_AGENDA_PUBLISHED,
+            self::TYPE_AGENDA_ADDED_TO_OB,
+            self::TYPE_SESSION_CREATED,
+            self::TYPE_OB_DOCUMENT_CREATED,
+            self::TYPE_AGENDA_EXPIRING_SOON,
+        ];
     }
 
     public function isUnread(): bool

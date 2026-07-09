@@ -9,6 +9,7 @@ use App\Models\Legacy\LegacyCategory3;
 use App\Models\Legacy\LegacyCategory4;
 use App\Models\Legacy\LegacyDepartment;
 use App\Models\Legacy\LegacyMunicipality;
+use App\Models\Municipality;
 use App\Models\Legacy\SpResolution;
 use App\Models\Resolution;
 use App\Support\DocumentType;
@@ -158,7 +159,21 @@ class ResolutionRepository
         }
 
         if (! empty($filters['municipality_id'])) {
-            $query->where('municipality_id', $filters['municipality_id']);
+            if ((string) $filters['municipality_id'] === 'bataan') {
+                $bataanId = Municipality::query()
+                    ->whereRaw('LOWER(description) = ?', ['bataan'])
+                    ->value('id');
+
+                $query->where(function (Builder $municipalityQuery) use ($bataanId): void {
+                    $municipalityQuery->whereNull('municipality_id');
+
+                    if ($bataanId) {
+                        $municipalityQuery->orWhere('municipality_id', $bataanId);
+                    }
+                });
+            } else {
+                $query->where('municipality_id', $filters['municipality_id']);
+            }
         }
 
         if (! empty($filters['status'])) {

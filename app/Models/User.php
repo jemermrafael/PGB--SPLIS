@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'username', 'email', 'password', 'role', 'legacy_user_id', 'is_active', 'board_member_id'])]
+#[Fillable(['name', 'username', 'email', 'password', 'role', 'legacy_user_id', 'is_active', 'board_member_id', 'municipality_id'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -42,6 +42,11 @@ class User extends Authenticatable
     public function boardMember(): BelongsTo
     {
         return $this->belongsTo(BoardMember::class);
+    }
+
+    public function municipality(): BelongsTo
+    {
+        return $this->belongsTo(Municipality::class);
     }
 
     public function notifications(): HasMany
@@ -82,6 +87,16 @@ class User extends Authenticatable
     public function isBoardMember(): bool
     {
         return $this->role === UserRole::BoardMember;
+    }
+
+    public function isMunicipalViewer(): bool
+    {
+        return $this->role === UserRole::MunicipalViewer;
+    }
+
+    public function canAdmin(): bool
+    {
+        return $this->role->canAdmin();
     }
 
     public function canRecordAttendance(): bool

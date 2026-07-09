@@ -27,6 +27,8 @@ class ResolutionController extends Controller
 
     public function index(): View
     {
+        $this->authorize('viewAny', Resolution::class);
+
         return view('resolutions.index', [
             'categories' => Category::forSelect(),
             'departments' => Department::orderBy('description')->get(),
@@ -53,7 +55,9 @@ class ResolutionController extends Controller
 
     public function show(Resolution $resolution): View
     {
-        $resolution->load(['department', 'category', 'category2', 'category3', 'category4', 'municipality', 'creator', 'incomingDocument']);
+        $this->authorize('view', $resolution);
+
+        $resolution->load(['department', 'category', 'category2', 'category3', 'category4', 'municipality', 'creator', 'publishedFromAgenda']);
         $hasPdf = $this->pdfService->existsFor($resolution);
 
         return view('resolutions.show', [

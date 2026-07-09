@@ -10,7 +10,7 @@
 <div class="max-w-3xl">
     <div class="splis-page-header !mb-6">
         <div>
-            <h1 class="splis-page-title">{{ $isEdit ? 'Edit appropriation ordinance' : 'New appropriation ordinance' }}</h1>
+            <h1 class="splis-page-title">{{ $isEdit ? 'Edit appropriation ordinance' : 'New Appropriation Ordinance' }}</h1>
         </div>
     </div>
 

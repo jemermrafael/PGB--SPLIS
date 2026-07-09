@@ -16,8 +16,10 @@
                 @if ($resolution->legacy_sp_id)
                     <span class="splis-badge-legacy">Imported</span>
                 @endif
-                @if ($resolution->incomingDocument)
-                    <a href="{{ route('incoming.show', $resolution->incomingDocument) }}" class="splis-badge-linked">Incoming linked</a>
+                @if ($resolution->publishedFromAgenda)
+                    <a href="{{ auth()->user()?->isMunicipalViewer() ? route('municipal.requests.show', $resolution->publishedFromAgenda) : route('agenda.show', $resolution->publishedFromAgenda) }}" class="splis-badge-linked">
+                        Published from Agenda {{ $resolution->publishedFromAgenda->displayLabel() }} · Series {{ $resolution->publishedFromAgenda->reso_ord_ao_series ?: $resolution->series }}
+                    </a>
                 @endif
                 <span class="splis-badge-approved capitalize">{{ $resolution->status }}</span>
                 <span class="text-sm text-slate-500">Series {{ $resolution->series }}</span>
@@ -28,7 +30,11 @@
             @can('update', $resolution)
                 <a href="{{ route('resolutions.edit', $resolution) }}" class="splis-btn-secondary">Edit</a>
             @endcan
-            <a href="{{ route('resolutions.index') }}" class="splis-btn-secondary">Back to list</a>
+            @if (auth()->user()?->isMunicipalViewer())
+                <a href="{{ route('municipal.requests.index') }}" class="splis-btn-secondary">Back to requests</a>
+            @else
+                <a href="{{ route('resolutions.index') }}" class="splis-btn-secondary">Back to list</a>
+            @endif
         </div>
     </div>
 

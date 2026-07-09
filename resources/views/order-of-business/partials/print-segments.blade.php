@@ -8,6 +8,8 @@
                         <td class="ob-print-roman-label">
                             @if (filled($segment['title'] ?? null))
                                 {{ $segment['title'] }}
+                            @elseif (filled($segment['body_html'] ?? null))
+                                {!! nl2br($segment['body_html']) !!}
                             @else
                                 {!! nl2br(e($segment['body'] ?? '')) !!}
                             @endif
@@ -81,7 +83,7 @@
                                     {{ $row['row_no'] }}.
                                 @endif
                             </td>
-                            <td class="ob-print-col-agenda">{{ \App\Support\ObAgendaSnapshot::displayAgendaNosLabel($row) }}</td>
+                            <td class="ob-print-col-agenda">{!! \App\Support\ObAgendaSnapshot::displayAgendaNosLabelHtml($row) !!}</td>
                             <td>
                                 <p class="ob-print-committee-name">{{ $row['committee_name'] ?? '' }}</p>
                                 <p class="ob-print-chair">{{ \App\Support\ObCommitteeFormatter::chairedByLine($row['chair_name'] ?? '') }}</p>

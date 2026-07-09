@@ -95,6 +95,7 @@
         </div>
 
         <div class="splis-detail-sidebar-column">
+            @if (auth()->user()->canAdmin())
             <aside class="splis-card">
                 <div class="splis-card-header">
                     <h2 class="splis-card-title">Activity Logs</h2>
@@ -122,6 +123,7 @@
                     @include('incoming.partials.splis-activity-logs', ['splisActivityLogs' => $splisActivityLogs])
                 </div>
             </aside>
+            @endif
 
             @if ($incoming->mun_pdf_url || $incoming->sp_pdf_url)
                 <div class="splis-card">

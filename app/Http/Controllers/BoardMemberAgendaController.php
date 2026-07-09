@@ -27,7 +27,11 @@ class BoardMemberAgendaController extends Controller
             'outcomes' => AgendaFieldOptions::outcomes(),
             'stats' => $user->board_member_id
                 ? $dashboard->agendaStatsFor($user)
-                : ['pending' => 0, 'due_soon' => 0, 'done' => 0, 'lapsed' => 0],
+                : ['pending' => 0, 'expiring_soon' => 0, 'due_soon' => 0, 'done' => 0, 'lapsed' => 0],
+            'expiringSoonAgendas' => $user->board_member_id
+                ? $dashboard->expiringSoonAgendasFor($user)
+                : collect(),
+            'expiringSoonDays' => $dashboard->expiringSoonDays(),
         ]);
     }
 }

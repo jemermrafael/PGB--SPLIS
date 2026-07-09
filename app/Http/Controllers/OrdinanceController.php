@@ -40,7 +40,7 @@ class OrdinanceController extends Controller
     {
         $this->authorize('view', $ordinance);
 
-        $ordinance->load('boardMembers');
+        $ordinance->load(['boardMembers', 'publishedFromAgenda']);
 
         return view('ordinances.show', [
             'ordinance' => $ordinance,

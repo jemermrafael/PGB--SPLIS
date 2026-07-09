@@ -2,6 +2,8 @@
 
 return [
     'prescribed_days' => [0, 30, 60, 90],
+    'expiring_soon_days' => 14,
+    'due_soon_days' => 7,
 
     'statuses' => [
         'no_due_date' => 'No Due Date',

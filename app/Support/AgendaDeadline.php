@@ -113,6 +113,31 @@ class AgendaDeadline
         return self::TONE_OK;
     }
 
+    public static function expiringSoonDays(): int
+    {
+        return max(1, (int) config('agenda.expiring_soon_days', 14));
+    }
+
+    public static function dueSoonDays(): int
+    {
+        return max(1, (int) config('agenda.due_soon_days', 7));
+    }
+
+    public static function isWithinExpiringSoonWindow(?CarbonInterface $dueDate, ?string $status): bool
+    {
+        if ($status !== AgendaItem::STATUS_PENDING || ! $dueDate) {
+            return false;
+        }
+
+        $due = $dueDate instanceof CarbonInterface
+            ? $dueDate->copy()->startOfDay()
+            : Carbon::parse($dueDate)->startOfDay();
+
+        $days = now()->startOfDay()->diffInDays($due, false);
+
+        return $days >= 0 && $days <= self::expiringSoonDays();
+    }
+
     public static function progressPercent(AgendaItem $item): ?int
     {
         if (! $item->prescribed_days || $item->prescribed_days < 1 || ! $item->due_date) {

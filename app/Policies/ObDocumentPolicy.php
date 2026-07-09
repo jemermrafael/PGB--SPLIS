@@ -9,6 +9,10 @@ class ObDocumentPolicy
 {
     public function view(User $user, ObDocument $document): bool
     {
+        if ($user->isMunicipalViewer()) {
+            return false;
+        }
+
         if ($user->isBoardMember()) {
             return $document->isFinal();
         }

@@ -44,6 +44,7 @@ class BoardMemberAgendaSearchController extends Controller
             'date_to',
             'series',
             'due_soon',
+            'expiring_soon',
             'has_incoming',
         ]);
 

@@ -9,6 +9,7 @@ use App\Models\ObDocument;
 use App\Services\ObAgendaPoolService;
 use App\Services\ObDocumentService;
 use App\Services\ObPrintRenderer;
+use App\Services\ObSectionThreeSyncService;
 use App\Support\CommitteeOptions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,12 +17,14 @@ use Illuminate\View\View;
 
 class ObDocumentController extends Controller
 {
-    public function maker(LegislativeSession $legislativeSession, ObDocumentService $service): View
+    public function maker(LegislativeSession $legislativeSession, ObDocumentService $service, ObSectionThreeSyncService $sectionThreeSync): View
     {
         $document = $this->documentFor($legislativeSession);
         $this->authorize('update', $document);
 
         $legislativeSession->load('priorSession');
+        $sectionThreeSync->syncForSession($legislativeSession);
+        $document->refresh();
 
         $session = $legislativeSession;
 
@@ -38,6 +41,7 @@ class ObDocumentController extends Controller
                     'agendaPool' => route('ob.document.agenda-pool', $session),
                     'updateBlock' => route('ob.document.blocks.update', [$session, '__BLOCK__']),
                     'deleteBlock' => route('ob.document.blocks.destroy', [$session, '__BLOCK__']),
+                    'moveSection' => route('ob.document.blocks.move-section', [$session, '__BLOCK__']),
                     'print' => route('ob.document.print', $session),
                     'session' => route('ob.sessions.show', $session),
                 ],
@@ -58,6 +62,7 @@ class ObDocumentController extends Controller
                     ->values()
                     ->all(),
                 'committees' => CommitteeOptions::forSelect(),
+                'sectionThree' => $this->sectionThreeConfig($session),
             ],
         ]);
     }
@@ -74,7 +79,7 @@ class ObDocumentController extends Controller
         return view('order-of-business.document.print', [
             'session' => $legislativeSession,
             'document' => $document,
-            'segments' => $renderer->segments($blocks),
+            'segments' => $renderer->segments($blocks, $legislativeSession),
         ]);
     }
 
@@ -152,7 +157,29 @@ class ObDocumentController extends Controller
         $this->authorize('update', $document);
         $this->ensureBlockBelongsToDocument($block, $document);
 
-        $service->deleteBlock($block);
+        $service->deleteBlock($block, auth()->id());
+
+        return response()->json([
+            'blocks' => $service->blocksPayload($document->fresh()),
+            'document' => $service->documentPayload($document->fresh()),
+        ]);
+    }
+
+    public function moveBlockToSection(
+        Request $request,
+        LegislativeSession $legislativeSession,
+        ObBlock $block,
+        ObDocumentService $service,
+    ): JsonResponse {
+        $document = $this->documentFor($legislativeSession);
+        $this->authorize('update', $document);
+        $this->ensureBlockBelongsToDocument($block, $document);
+
+        $validated = $request->validate([
+            'section' => ['required', 'string', 'in:'.implode(',', array_keys(config('order_of_business.agenda_sections', [])))],
+        ]);
+
+        $service->moveAgendaBlockToSection($block, $validated['section'], $request->user()->id);
 
         return response()->json([
             'blocks' => $service->blocksPayload($document->fresh()),
@@ -224,5 +251,23 @@ class ObDocumentController extends Controller
     protected function ensureBlockBelongsToDocument(ObBlock $block, ObDocument $document): void
     {
         abort_unless($block->ob_document_id === $document->id, 404);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function sectionThreeConfig(LegislativeSession $session): array
+    {
+        $prior = $session->priorSession;
+
+        return [
+            'prior_session_title' => $prior?->displayTitle(),
+            'journal_url' => filled($prior?->pdf_final_journal)
+                ? $prior->pdf_final_journal
+                : $prior?->pdf_draft_journal,
+            'minutes_url' => filled($prior?->pdf_final_minutes)
+                ? $prior->pdf_final_minutes
+                : $prior?->pdf_draft_minutes,
+        ];
     }
 }

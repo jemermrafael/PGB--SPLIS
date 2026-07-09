@@ -49,4 +49,33 @@ class AgendaItemVersion extends Model
 
         return is_string($title) && $title !== '' ? $title : null;
     }
+
+    public function snapshotOutputLabel(): ?string
+    {
+        $number = $this->snapshotValue('reso_ord_ao_no');
+        $series = $this->snapshotValue('reso_ord_ao_series');
+
+        if (! is_string($number) || trim($number) === '') {
+            return null;
+        }
+
+        $number = trim($number);
+
+        if ($series !== null && $series !== '') {
+            return $number.' / '.$series;
+        }
+
+        return $number;
+    }
+
+    public function snapshotOutputTypeLabel(): ?string
+    {
+        $type = $this->snapshotValue('reso_ord_ao_type');
+
+        if (! is_string($type) || $type === '') {
+            return null;
+        }
+
+        return config('agenda.measure_types.'.$type, $type);
+    }
 }

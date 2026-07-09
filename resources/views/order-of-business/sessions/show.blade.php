@@ -23,7 +23,7 @@
                 <a href="{{ route('ob.document.maker', $session) }}" class="splis-btn-primary">Open OB Maker</a>
                 <a href="{{ route('ob.document.print', $session) }}" target="_blank" class="splis-btn-secondary">Print preview</a>
             @elsecan('view', $session->obDocument)
-                <a href="{{ route('ob.document.print', $session) }}" target="_blank" class="splis-btn-primary">View Order of Business</a>
+                <a href="{{ route('ob.document.print', $session) }}" class="splis-btn-primary">View Order of Business</a>
             @endcan
             @if (auth()->user()?->canRecordAttendance())
                 <a href="{{ route('ob.sessions.attendance', $session) }}" class="splis-btn-secondary">Attendance</a>
@@ -90,13 +90,39 @@
                     @can('update', $session->obDocument)
                         <a href="{{ route('ob.document.maker', $session) }}" class="splis-link text-sm">Edit document in OB Maker →</a>
                     @elsecan('view', $session->obDocument)
-                        <a href="{{ route('ob.document.print', $session) }}" target="_blank" class="splis-link text-sm">View Order of Business →</a>
+                        <a href="{{ route('ob.document.print', $session) }}" class="splis-link text-sm">View Order of Business →</a>
                     @endcan
                 @else
                     <p class="text-sm text-slate-600 dark:text-slate-400">No OB document linked.</p>
                 @endif
             </div>
         </div>
+    </div>
+
+    <div class="splis-card mb-6">
+        <div class="splis-card-header flex items-center justify-between">
+            <div>
+                <h2 class="splis-card-title">Session documents</h2>
+                <p class="splis-card-subtitle">PDF links for committee reports, journal, and minutes</p>
+            </div>
+            @can('update', $session)
+                <a href="{{ route('ob.sessions.edit', $session) }}" class="splis-link text-sm">Edit links</a>
+            @endcan
+        </div>
+        <dl class="splis-card-body divide-y divide-slate-200 dark:divide-slate-700">
+            @foreach ($session->sessionPdfLinkRows() as $link)
+                <div class="flex flex-col gap-1 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
+                    <dt class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ $link['label'] }}</dt>
+                    <dd class="text-sm">
+                        @if ($link['url'])
+                            <a href="{{ $link['url'] }}" target="_blank" rel="noopener" class="splis-link">Open PDF</a>
+                        @else
+                            <span class="text-slate-400">No link yet</span>
+                        @endif
+                    </dd>
+                </div>
+            @endforeach
+        </dl>
     </div>
 
     @if ($session->obDocument && $session->obDocument->blocks->isNotEmpty())
@@ -109,7 +135,7 @@
                 @can('update', $session->obDocument)
                     <a href="{{ route('ob.document.maker', $session) }}" class="splis-link text-sm">Open maker</a>
                 @elsecan('view', $session->obDocument)
-                    <a href="{{ route('ob.document.print', $session) }}" target="_blank" class="splis-link text-sm">View OB</a>
+                    <a href="{{ route('ob.document.print', $session) }}" class="splis-link text-sm">View OB</a>
                 @endcan
             </div>
             <ol class="divide-y divide-slate-200 dark:divide-slate-700">

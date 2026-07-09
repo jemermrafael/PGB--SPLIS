@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Resolution;
 use App\Services\PdfAttachmentService;
+use App\Support\MunicipalRequestAccess;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ResolutionPdfController extends Controller
@@ -11,11 +12,14 @@ class ResolutionPdfController extends Controller
     public function __invoke(int $series, string $resolutionNo, PdfAttachmentService $pdf): StreamedResponse
     {
         $decoded = urldecode($resolutionNo);
-        $pdfPath = Resolution::query()
+        $resolution = Resolution::query()
             ->where('series', $series)
             ->where('resolution_no', $decoded)
-            ->value('pdf_path');
+            ->firstOrFail();
 
-        return $pdf->stream($series, $decoded, $pdfPath);
+        $user = auth()->user();
+        abort_unless($user && MunicipalRequestAccess::userCanViewResolution($user, $resolution), 403);
+
+        return $pdf->stream($series, $decoded, $resolution->pdf_path);
     }
 }

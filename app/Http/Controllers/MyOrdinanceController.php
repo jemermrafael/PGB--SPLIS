@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\MyOrdinanceService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -44,6 +45,25 @@ class MyOrdinanceController extends Controller
         return view('board-member.ordinances.all', [
             'records' => $service->paginateAll($request),
             'seriesYears' => $service->seriesYears(),
+        ]);
+    }
+
+    public function allSearch(Request $request, MyOrdinanceService $service): JsonResponse|RedirectResponse
+    {
+        if ($this->boardMemberUser($request) === null) {
+            return redirect()->route('ordinances.index');
+        }
+
+        $paginator = $service->paginateAll($request);
+
+        return response()->json([
+            'data' => collect($paginator->items())->values(),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+            ],
         ]);
     }
 

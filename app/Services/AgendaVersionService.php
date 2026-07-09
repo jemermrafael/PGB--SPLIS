@@ -20,6 +20,7 @@ class AgendaVersionService
         'status',
         'sender',
         'title',
+        'is_urgent_request',
         'committee_referred',
         'date_of_referral',
         'date_of_committee_meeting',
@@ -37,6 +38,106 @@ class AgendaVersionService
         'minutes_url',
         'remarks',
     ];
+
+    /**
+     * @return array<string, string>
+     */
+    public static function fieldLabels(): array
+    {
+        return [
+            'tracking_no' => 'Tracking No.',
+            'request_pdf_url' => 'Request PDF',
+            'date_received' => 'Date Received',
+            'time_received' => 'Time Received',
+            'prescribed_days' => 'Prescribed Days',
+            'status' => 'Status',
+            'sender' => 'Sender',
+            'title' => 'Title',
+            'is_urgent_request' => 'Urgent Request',
+            'committee_referred' => 'Committee Referred',
+            'date_of_referral' => 'Date of Referral',
+            'date_of_committee_meeting' => 'Date of Committee Meeting',
+            'committee_meeting_minutes' => 'Committee Meeting Minutes',
+            'outcome' => 'Outcome',
+            'committee_report_url' => 'Committee Report',
+            'date_passed' => 'Date Passed',
+            'date_signed_by_gov' => 'Date Signed by Gov',
+            'reso_ord_ao_no' => 'Provincial Output No.',
+            'reso_ord_ao_series' => 'Provincial Output Series',
+            'reso_ord_ao_type' => 'Provincial Output Type',
+            'reso_ord_ao_url' => 'Provincial Output PDF',
+            'resolution_title' => 'Resolution Title',
+            'journal_url' => 'Journal URL',
+            'minutes_url' => 'Minutes URL',
+            'remarks' => 'Remarks',
+        ];
+    }
+
+    public function formatSnapshotDisplayValue(string $field, mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if ($field === 'status') {
+            return config('agenda.statuses.'.$value, (string) $value);
+        }
+
+        if ($field === 'reso_ord_ao_type') {
+            return config('agenda.measure_types.'.$value, (string) $value);
+        }
+
+        if ($field === 'is_urgent_request') {
+            return filter_var($value, FILTER_VALIDATE_BOOLEAN) ? 'Yes' : 'No';
+        }
+
+        if ($field === 'time_received') {
+            return \Illuminate\Support\Carbon::parse($value)->format('g:i A');
+        }
+
+        if (in_array($field, [
+            'date_received',
+            'date_of_referral',
+            'date_of_committee_meeting',
+            'date_passed',
+            'date_signed_by_gov',
+        ], true)) {
+            return \Illuminate\Support\Carbon::parse($value)->format('M j, Y');
+        }
+
+        if (str_ends_with($field, '_url')) {
+            return (string) $value;
+        }
+
+        return (string) $value;
+    }
+
+    /**
+     * @param  array<string, mixed>  $left
+     * @param  array<string, mixed>  $right
+     * @return list<array{field: string, label: string, left: ?string, right: ?string, changed: bool}>
+     */
+    public function compareSnapshots(array $left, array $right): array
+    {
+        $rows = [];
+
+        foreach (self::fieldLabels() as $field => $label) {
+            $leftValue = $this->formatSnapshotDisplayValue($field, $left[$field] ?? null);
+            $rightValue = $this->formatSnapshotDisplayValue($field, $right[$field] ?? null);
+            $changed = $this->normalizeSnapshotValue($field, $left[$field] ?? null)
+                !== $this->normalizeSnapshotValue($field, $right[$field] ?? null);
+
+            $rows[] = [
+                'field' => $field,
+                'label' => $label,
+                'left' => $leftValue,
+                'right' => $rightValue,
+                'changed' => $changed,
+            ];
+        }
+
+        return $rows;
+    }
 
     public function recordInitialVersion(AgendaItem $agenda, ?int $userId = null): AgendaItemVersion
     {
@@ -206,6 +307,9 @@ class AgendaVersionService
             'resolution_title',
             'date_passed',
             'date_signed_by_gov',
+            'journal_url',
+            'minutes_url',
+            'remarks',
         ];
         if ($this->anyFieldChanged($before, $after, $outputFields)) {
             return 'output';

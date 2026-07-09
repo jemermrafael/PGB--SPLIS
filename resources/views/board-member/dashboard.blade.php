@@ -8,7 +8,7 @@
         <div class="splis-dashboard-hero-glow" aria-hidden="true"></div>
         <div class="relative">
             <p class="splis-dashboard-hero-eyebrow">Board member portal</p>
-            <h1 class="splis-page-title text-white">Welcome, {{ $user->name }}</h1>
+            <h1 class="splis-page-title text-white">Welcome, Hon. {{ $user->name }}</h1>
             <p class="splis-dashboard-hero-subtitle">Your committee agenda, session calendar, and Order of Business.</p>
         </div>
     </div>
@@ -16,6 +16,12 @@
     @if ($unlinked)
         <div class="splis-alert-error mb-6">This account is not linked to a board member profile yet. Please contact the SP office administrator.</div>
     @endif
+
+    @include('board-member.agenda.partials.expiring-soon', [
+        'expiringSoonAgendas' => $expiringSoonAgendas,
+        'expiringSoonDays' => $expiringSoonDays,
+        'stats' => $agendaStats,
+    ])
 
     <div class="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div class="splis-card overflow-hidden">
@@ -81,6 +87,87 @@
                     <li class="px-4 py-6 text-center text-sm text-slate-500">No upcoming sessions scheduled.</li>
                 @endforelse
             </ul>
+            @if ($sessions->isNotEmpty())
+                @php
+                    $committeeNames = $committeeAssignments
+                        ->pluck('committee.name')
+                        ->filter()
+                        ->map(fn ($name) => mb_strtolower((string) $name))
+                        ->values();
+
+                    $scheduledAgendaCount = $sessions->sum(function ($session) use ($committeeNames) {
+                        return $session->obDocument?->blocks
+                            ?->filter(fn ($block) => $block->agendaItem !== null)
+                            ->map(fn ($block) => $block->agendaItem)
+                            ->filter(function ($agendaItem) use ($committeeNames) {
+                                if ($committeeNames->isEmpty()) {
+                                    return false;
+                                }
+
+                                $committee = mb_strtolower((string) ($agendaItem->committee_referred ?? ''));
+
+                                return $committeeNames->contains(fn ($name) => $name !== '' && str_contains($committee, $name));
+                            })
+                            ->pluck('id')
+                            ->filter()
+                            ->unique()
+                            ->count() ?? 0;
+                    });
+                @endphp
+                <details class="splis-accordion border-t border-slate-200 dark:border-slate-700">
+                    <summary class="splis-accordion-summary !px-4 !py-3">
+                        <div class="splis-accordion-summary-top">
+                            <span class="splis-card-title text-sm">My Schedules Agendas</span>
+                            <span class="flex items-center gap-2">
+                                <span class="splis-accordion-count">{{ $scheduledAgendaCount }}</span>
+                                <svg class="splis-accordion-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+                                </svg>
+                            </span>
+                        </div>
+                    </summary>
+                    <div class="splis-accordion-body !px-4 !pb-4 !pt-0">
+                        @foreach ($sessions as $session)
+                            @php
+                                $sessionAgendas = $session->obDocument?->blocks
+                                    ?->filter(fn ($block) => $block->agendaItem !== null)
+                                    ->map(fn ($block) => $block->agendaItem)
+                                    ->filter(function ($agendaItem) use ($committeeNames) {
+                                        if ($committeeNames->isEmpty()) {
+                                            return false;
+                                        }
+
+                                        $committee = mb_strtolower((string) ($agendaItem->committee_referred ?? ''));
+
+                                        return $committeeNames->contains(fn ($name) => $name !== '' && str_contains($committee, $name));
+                                    })
+                                    ->filter()
+                                    ->unique('id')
+                                    ->values() ?? collect();
+                            @endphp
+                            @if ($sessionAgendas->isNotEmpty())
+                                <details class="splis-filter-advanced mb-2">
+                                    <summary class="splis-filter-advanced-toggle">
+                                        <span>{{ $session->displayTitle() }}</span>
+                                        <span class="text-xs text-slate-500">{{ $sessionAgendas->count() }} agenda item(s)</span>
+                                    </summary>
+                                    <div class="splis-filter-advanced-panel">
+                                        <ul class="space-y-2 text-sm">
+                                            @foreach ($sessionAgendas as $agendaItem)
+                                                <li class="flex items-start justify-between gap-3">
+                                                    <a href="{{ route('agenda.show', $agendaItem) }}" class="splis-link">
+                                                        {{ $agendaItem->displayLabel() }} — {{ \Illuminate\Support\Str::limit($agendaItem->title ?: 'Untitled', 90) }}
+                                                    </a>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                </details>
+                            @endif
+                        @endforeach
+                    </div>
+                </details>
+            @endif
         </div>
     </div>
 
@@ -99,11 +186,16 @@
         </div>
 
         <div class="splis-card-body border-b border-slate-200 dark:border-slate-700">
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
                 <div class="splis-stat splis-stat--gold text-left">
                     <p class="splis-stat-label">Pending</p>
                     <p class="splis-stat-value" id="bm-agenda-stat-pending">{{ number_format($agendaStats['pending']) }}</p>
                     <p class="splis-stat-meta">Awaiting action</p>
+                </div>
+                <div class="splis-stat splis-stat--amber text-left">
+                    <p class="splis-stat-label">Expiring soon</p>
+                    <p class="splis-stat-value" id="bm-agenda-stat-expiring-soon">{{ number_format($agendaStats['expiring_soon']) }}</p>
+                    <p class="splis-stat-meta">Within {{ $expiringSoonDays }} days</p>
                 </div>
                 <div class="splis-stat splis-stat--brand text-left">
                     <p class="splis-stat-label">Due soon</p>

@@ -4,17 +4,18 @@ namespace App\Policies;
 
 use App\Models\AgendaItem;
 use App\Models\User;
+use App\Support\MunicipalRequestAccess;
 
 class AgendaItemPolicy
 {
     public function viewAny(User $user): bool
     {
-        return true;
+        return ! $user->isMunicipalViewer();
     }
 
     public function view(User $user, AgendaItem $agendaItem): bool
     {
-        return true;
+        return MunicipalRequestAccess::userCanViewAgenda($user, $agendaItem);
     }
 
     public function create(User $user): bool
@@ -29,6 +30,10 @@ class AgendaItemPolicy
 
     public function delete(User $user, AgendaItem $agendaItem): bool
     {
+        if ($user->isSuperadmin()) {
+            return true;
+        }
+
         return $user->canEncode() && ! $agendaItem->hasIncoming();
     }
 

@@ -14,17 +14,11 @@ class AgendaItemRepository
      */
     public function stats(): array
     {
-        $today = now()->startOfDay();
-        $dueSoonEnd = now()->addDays(7)->endOfDay();
-
         return [
             'total' => AgendaItem::query()->count(),
             'pending' => AgendaItem::query()->where('status', AgendaItem::STATUS_PENDING)->count(),
-            'due_soon' => AgendaItem::query()
-                ->where('status', AgendaItem::STATUS_PENDING)
-                ->whereNotNull('due_date')
-                ->whereBetween('due_date', [$today, $dueSoonEnd])
-                ->count(),
+            'expiring_soon' => AgendaItem::query()->expiringSoon()->count(),
+            'due_soon' => AgendaItem::query()->dueSoon()->count(),
             'done' => AgendaItem::query()->where('status', AgendaItem::STATUS_DONE)->count(),
             'lapsed' => AgendaItem::query()->where('status', AgendaItem::STATUS_LAPSED)->count(),
             'no_due_date' => AgendaItem::query()->where('status', AgendaItem::STATUS_NO_DUE_DATE)->count(),
@@ -69,6 +63,7 @@ class AgendaItemRepository
             'has_resolution' => $item->resolution_id !== null,
             'published_to' => $item->publishedTargetLabel(),
             'has_pdf' => $item->hasAnyPdf(),
+            'remarks' => $item->remarks,
             'date_of_referral' => $item->date_of_referral?->format('Y-m-d'),
             'url' => route('agenda.show', $item),
         ];
@@ -119,15 +114,19 @@ class AgendaItemRepository
         }
 
         if (! empty($filters['due_soon'])) {
-            $today = now()->startOfDay();
-            $dueSoonEnd = now()->addDays(7)->endOfDay();
-            $query->where('status', AgendaItem::STATUS_PENDING)
-                ->whereNotNull('due_date')
-                ->whereBetween('due_date', [$today, $dueSoonEnd]);
+            $query->dueSoon();
+        }
+
+        if (! empty($filters['expiring_soon'])) {
+            $query->expiringSoon();
         }
 
         if (! empty($filters['has_incoming'])) {
             $query->whereNotNull('incoming_document_id');
+        }
+
+        if (! empty($filters['has_remarks'])) {
+            $query->whereNotNull('remarks')->where('remarks', '!=', '');
         }
 
         return $query;

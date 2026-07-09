@@ -8,6 +8,7 @@ use App\Support\OrdinanceNumberParser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
 
 class Ordinance extends Model
@@ -57,6 +58,11 @@ class Ordinance extends Model
         return $this->belongsToMany(BoardMember::class, 'ordinance_board_member')
             ->withPivot(['role', 'sort_order'])
             ->orderByPivot('sort_order');
+    }
+
+    public function publishedFromAgenda(): HasOne
+    {
+        return $this->hasOne(AgendaItem::class, 'ordinance_id')->withTrashed();
     }
 
     /**

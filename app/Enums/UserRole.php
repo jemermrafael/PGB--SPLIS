@@ -10,6 +10,7 @@ enum UserRole: string
     case Admin = 'admin';
     case Superadmin = 'superadmin';
     case BoardMember = 'board_member';
+    case MunicipalViewer = 'municipal_viewer';
 
     public static function fromLegacy(string $code): self
     {
@@ -33,6 +34,7 @@ enum UserRole: string
             self::Admin => 'Admin',
             self::Superadmin => 'Superadmin',
             self::BoardMember => 'Board Member',
+            self::MunicipalViewer => 'Municipal SB Viewer',
         };
     }
 
@@ -61,6 +63,11 @@ enum UserRole: string
         return $this === self::BoardMember;
     }
 
+    public function isMunicipalViewer(): bool
+    {
+        return $this === self::MunicipalViewer;
+    }
+
     public function canRecordAttendance(): bool
     {
         return in_array($this, [self::Admin, self::Superadmin], true);
@@ -78,6 +85,7 @@ enum UserRole: string
             self::Admin,
             self::Superadmin,
             self::BoardMember,
+            self::MunicipalViewer,
         ];
     }
 }

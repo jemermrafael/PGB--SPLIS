@@ -24,7 +24,9 @@ class AgendaOutputPublisher
         }
 
         if ($agenda->isPublished()) {
-            return $this->syncPublishedOutput($agenda, $userId);
+            if ($this->syncPublishedOutput($agenda, $userId)) {
+                return true;
+            }
         }
 
         if ($this->linker->linkExistingIfPossible($agenda)) {

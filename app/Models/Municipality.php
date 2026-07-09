@@ -13,4 +13,14 @@ class Municipality extends Model
     {
         return $this->hasMany(Resolution::class);
     }
+
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class);
+    }
+
+    public function senderLabel(): string
+    {
+        return mb_convert_case(trim($this->description), MB_CASE_TITLE, 'UTF-8');
+    }
 }

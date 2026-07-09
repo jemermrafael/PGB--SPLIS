@@ -57,7 +57,7 @@
             @endforelse
         </tbody>
     </table>
-    @if ($isPaginator && $records->hasPages())
+    @if (($showPagination ?? true) && $isPaginator && $records->hasPages())
         <div class="border-t border-slate-200 px-4 py-3 dark:border-slate-700">{{ $records->links() }}</div>
     @endif
 </div>

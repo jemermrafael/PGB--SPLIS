@@ -83,6 +83,30 @@
             </div>
         </div>
 
+        @if ($isEdit)
+            <div class="splis-card splis-card-body space-y-4">
+                <div>
+                    <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">Session documents (PDF links)</h2>
+                    <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Google Drive or other PDF links shown on the session page.</p>
+                </div>
+                <div class="grid grid-cols-1 gap-4">
+                    @foreach ($sessionPdfLinks as $field => $label)
+                        <div>
+                            <label class="splis-label" for="{{ $field }}">{{ $label }}</label>
+                            <input
+                                type="url"
+                                name="{{ $field }}"
+                                id="{{ $field }}"
+                                value="{{ old($field, $session->{$field}) }}"
+                                class="splis-input"
+                                placeholder="https://"
+                            >
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
         @unless ($isEdit)
             <div class="splis-card splis-card-body">
                 <p class="text-sm text-slate-600 dark:text-slate-400">

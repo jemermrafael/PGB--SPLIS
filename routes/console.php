@@ -14,3 +14,8 @@ Schedule::command('splis:backup-database')
     ->withoutOverlapping()
     ->onOneServer()
     ->appendOutputTo(storage_path('logs/backup-schedule.log'));
+
+Schedule::command('splis:notify-expiring-agendas')
+    ->dailyAt('08:00')
+    ->withoutOverlapping()
+    ->onOneServer();

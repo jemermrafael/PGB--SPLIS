@@ -77,11 +77,27 @@
             <p class="mt-1 text-xs text-slate-500">Required for Board Member accounts — links the login to the legislative roster.</p>
         </div>
 
+        <div id="municipality-link-wrap" @class(['hidden' => old('role', $user->role?->value) !== 'municipal_viewer'])>
+            <label class="splis-label" for="municipality_id">Linked municipality</label>
+            <select name="municipality_id" id="municipality_id" class="splis-select">
+                <option value="">Select municipality</option>
+                @foreach ($municipalities as $municipality)
+                    <option value="{{ $municipality->id }}" @selected((string) old('municipality_id', $user->municipality_id) === (string) $municipality->id)>{{ $municipality->senderLabel() }}</option>
+                @endforeach
+            </select>
+            <p class="mt-1 text-xs text-slate-500">Required for Municipal SB Viewer accounts — one login per municipality. Matches agenda sender values like Mariveles.</p>
+        </div>
+
         <script>
             document.getElementById('role')?.addEventListener('change', (event) => {
-                const wrap = document.getElementById('board-member-link-wrap');
-                if (!wrap) return;
-                wrap.classList.toggle('hidden', event.target.value !== 'board_member');
+                const boardWrap = document.getElementById('board-member-link-wrap');
+                const municipalityWrap = document.getElementById('municipality-link-wrap');
+                if (boardWrap) {
+                    boardWrap.classList.toggle('hidden', event.target.value !== 'board_member');
+                }
+                if (municipalityWrap) {
+                    municipalityWrap.classList.toggle('hidden', event.target.value !== 'municipal_viewer');
+                }
             });
         </script>
 

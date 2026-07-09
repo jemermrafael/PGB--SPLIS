@@ -11,19 +11,26 @@ import { initMemberMultiSelect, initOrdinanceAttributionMode } from './member-mu
 import { initOrdinancesSearch } from './ordinances-search';
 import { initResolutionsSearch } from './resolutions-search';
 
-import { initBoardMemberNotifications } from './board-member-notifications';
+import { initAgendaVersionCompare } from './agenda-version-compare';
+import { initHeaderNotifications } from './header-notifications';
+import { initNotificationsFeed } from './notifications-feed';
 import { initBoardMemberOrdinancesTable } from './board-member-ordinances';
 import {
     initBoardMemberAgendaSearch,
     initBoardMemberDashboardAgenda,
     initBoardMemberDashboardOb,
 } from './board-member-dashboard';
+import {
+    initMunicipalDashboardSearch,
+    initMunicipalRequestSearch,
+} from './municipal-requests';
 
 document.addEventListener('DOMContentLoaded', () => {
     initDropdowns();
     initAccessibility();
     initComboboxes();
     initAgendaForm();
+    initAgendaVersionCompare();
     initMemberMultiSelect();
     initOrdinanceAttributionMode();
     initKeywordTags();
@@ -33,9 +40,12 @@ document.addEventListener('DOMContentLoaded', () => {
     initOrdinancesSearch();
     initResolutionsSearch();
     initIncomingSearch();
-    initBoardMemberNotifications();
+    initHeaderNotifications();
+    initNotificationsFeed();
     initBoardMemberOrdinancesTable();
     initBoardMemberDashboardAgenda();
     initBoardMemberDashboardOb();
     initBoardMemberAgendaSearch();
+    initMunicipalDashboardSearch();
+    initMunicipalRequestSearch();
 });

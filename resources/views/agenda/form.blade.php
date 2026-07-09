@@ -69,6 +69,18 @@
                         @endforeach
                     </select>
                 </div>
+                <div class="flex items-end pb-2">
+                    <label class="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                        <input
+                            type="checkbox"
+                            name="is_urgent_request"
+                            value="1"
+                            class="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                            @checked(old('is_urgent_request', $agenda->is_urgent_request))
+                        >
+                        <span>Urgent request</span>
+                    </label>
+                </div>
             </div>
 
             <div id="agenda-deadline-preview" class="splis-agenda-deadline-preview" data-preview-url="{{ $deadlinePreviewUrl }}" data-preview-tone="{{ $agenda->daysLeftTone() }}">

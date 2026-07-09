@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\ActivityLog;
+use App\Services\ActivityLogNotifier;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 
@@ -23,7 +24,7 @@ class ActivityLogger
         ?int $userId = null,
         ?DateTimeInterface $occurredAt = null,
     ): ActivityLog {
-        return ActivityLog::query()->create([
+        $log = ActivityLog::query()->create([
             'user_id' => $userId ?? auth()->id(),
             'action' => $action,
             'subject_type' => $subject ? $subject::class : null,
@@ -31,5 +32,9 @@ class ActivityLogger
             'properties' => $properties !== [] ? $properties : null,
             'created_at' => $occurredAt ?? now(),
         ]);
+
+        app(ActivityLogNotifier::class)->notify($log);
+
+        return $log;
     }
 }

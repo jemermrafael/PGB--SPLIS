@@ -22,6 +22,7 @@ class AgendaSearchController extends Controller
             'series',
             'due_soon',
             'has_incoming',
+            'has_remarks',
         ]);
 
         $filters['page'] = $request->integer('page', 1);

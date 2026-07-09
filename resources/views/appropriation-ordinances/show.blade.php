@@ -51,5 +51,16 @@
             @endif
         </dl>
     </div>
+
+    <div class="mt-6 flex flex-wrap gap-2">
+        <a href="{{ route('appropriation-ordinances.index') }}" class="splis-btn-secondary">Back to list</a>
+        @can('delete', $appropriationOrdinance)
+            <form method="POST" action="{{ route('appropriation-ordinances.destroy', $appropriationOrdinance) }}" onsubmit="return confirm('Delete this appropriation ordinance?');">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="splis-btn-ghost text-red-600">Delete</button>
+            </form>
+        @endcan
+    </div>
 </div>
 @endsection

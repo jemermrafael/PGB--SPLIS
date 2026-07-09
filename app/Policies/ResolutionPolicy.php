@@ -4,17 +4,18 @@ namespace App\Policies;
 
 use App\Models\Resolution;
 use App\Models\User;
+use App\Support\MunicipalRequestAccess;
 
 class ResolutionPolicy
 {
     public function viewAny(User $user): bool
     {
-        return true;
+        return ! $user->isMunicipalViewer();
     }
 
-    public function view(User $user): bool
+    public function view(User $user, Resolution $resolution): bool
     {
-        return true;
+        return MunicipalRequestAccess::userCanViewResolution($user, $resolution);
     }
 
     public function create(User $user): bool
