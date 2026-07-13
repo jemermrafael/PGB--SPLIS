@@ -63,7 +63,21 @@ class PdfAttachmentService
 
     public function hasLinkedPdf(Resolution $resolution): bool
     {
-        return filled($resolution->pdf_path);
+        return filled($resolution->pdf_path) || filled($resolution->sp_pdf_url);
+    }
+
+    public function publicUrl(Resolution $resolution): ?string
+    {
+        if (filled($resolution->pdf_path)) {
+            return route('resolutions.pdf', [
+                'series' => $resolution->series,
+                'resolutionNo' => $resolution->resolution_no,
+            ]);
+        }
+
+        $spUrl = trim((string) ($resolution->sp_pdf_url ?? ''));
+
+        return $spUrl !== '' ? $spUrl : null;
     }
 
     public function findLegacyFile(int $series, string $resolutionNo): ?string

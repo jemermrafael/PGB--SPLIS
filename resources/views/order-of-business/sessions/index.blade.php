@@ -68,21 +68,7 @@
                                     @endif
                                 </td>
                                 <td class="text-right">
-                                    @can('view', $session)
-                                        <a href="{{ route('ob.sessions.show', $session) }}" class="splis-link">View</a>
-                                    @endcan
-                                    @if ($session->obDocument)
-                                        @can('update', $session->obDocument)
-                                            <span class="text-slate-300 dark:text-slate-600"> · </span>
-                                            <a href="{{ route('ob.document.maker', $session) }}" class="splis-link">Maker</a>
-                                        @endcan
-                                        @can('view', $session->obDocument)
-                                            @cannot('update', $session->obDocument)
-                                                <span class="text-slate-300 dark:text-slate-600"> · </span>
-                                            @endcannot
-                                            <a href="{{ route('ob.document.print', $session) }}" target="_blank" class="splis-link">Print</a>
-                                        @endcan
-                                    @endif
+                                    @include('order-of-business.partials.session-action-links', ['session' => $session])
                                 </td>
                             </tr>
                         @endforeach

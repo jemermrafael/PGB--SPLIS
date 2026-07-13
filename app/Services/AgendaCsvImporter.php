@@ -19,7 +19,8 @@ class AgendaCsvImporter
      *     imported: int,
      *     updated: int,
      *     skipped: int,
-     *     total: int
+     *     total: int,
+     *     urgent: int
      * }
      */
     public function sync(?string $csvPath = null, ?string $linksPath = null, bool $dryRun = false): array
@@ -35,34 +36,59 @@ class AgendaCsvImporter
         $imported = 0;
         $updated = 0;
         $skipped = 0;
+        $urgent = 0;
         $total = 0;
 
         foreach ($this->csv->indexedRows($csvPath) as $indexed) {
             $row = $indexed['assoc'];
             $columns = $indexed['columns'];
             $trackingNo = $this->trackingNoFromRow($row, $columns);
-            if ($trackingNo === null) {
+            $isUnnumbered = $trackingNo === null;
+
+            if ($isUnnumbered && ! $this->rowHasAgendaContent($row, $columns)) {
                 continue;
             }
 
             $total++;
-            $linkRow = array_merge(
-                $links[$trackingNo] ?? [],
-                array_filter($this->embeddedLinksFromColumns($columns)),
-            );
+            $linkRow = $isUnnumbered
+                ? array_filter($this->embeddedLinksFromColumns($columns))
+                : array_merge(
+                    $links[$trackingNo] ?? [],
+                    array_filter($this->embeddedLinksFromColumns($columns)),
+                );
 
-            $payload = $this->mapRow($row, $linkRow, $columns);
+            $payload = $this->mapRow($row, $linkRow, $columns, $isUnnumbered);
+
+            if ($isUnnumbered) {
+                $urgent++;
+            }
 
             try {
-                $existing = AgendaItem::query()->where('tracking_no', $trackingNo)->first();
+                $existing = $this->findExistingAgendaItem($trackingNo, $payload);
+
                 if ($existing) {
                     if (! $dryRun) {
-                        $existing->update($payload);
+                        $updatePayload = $payload;
+
+                        if ($trackingNo !== null) {
+                            $updatePayload['tracking_no'] = $trackingNo;
+                        }
+
+                        // Older exports often blank PDF columns; keep existing Drive links.
+                        $updatePayload = $this->preserveExistingUrls($existing, $updatePayload);
+
+                        $existing->update($updatePayload);
                     }
                     $updated++;
                 } else {
                     if (! $dryRun) {
-                        AgendaItem::create(array_merge($payload, ['tracking_no' => $trackingNo]));
+                        $createPayload = $payload;
+
+                        if ($trackingNo !== null) {
+                            $createPayload['tracking_no'] = $trackingNo;
+                        }
+
+                        AgendaItem::create($createPayload);
                     }
                     $imported++;
                 }
@@ -78,11 +104,12 @@ class AgendaCsvImporter
             'updated' => $updated,
             'skipped' => $skipped,
             'total' => $total,
+            'urgent' => $urgent,
         ];
     }
 
     /**
-     * @return array{imported: int, updated: int, skipped: int, total: int}
+     * @return array{imported: int, updated: int, skipped: int, total: int, urgent: int}
      */
     public function import(?string $csvPath = null, ?string $linksPath = null): array
     {
@@ -93,7 +120,93 @@ class AgendaCsvImporter
             'updated' => $stats['updated'],
             'skipped' => $stats['skipped'],
             'total' => $stats['total'],
+            'urgent' => $stats['urgent'],
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    protected function findExistingAgendaItem(?string $trackingNo, array $payload): ?AgendaItem
+    {
+        if ($trackingNo !== null) {
+            $existing = AgendaItem::query()->where('tracking_no', $trackingNo)->first();
+
+            if ($existing !== null) {
+                return $existing;
+            }
+
+            return $this->findUrgentMatch($payload);
+        }
+
+        return $this->findUrgentMatch($payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    protected function findUrgentMatch(array $payload): ?AgendaItem
+    {
+        $pdfUrl = trim((string) ($payload['request_pdf_url'] ?? ''));
+
+        if ($pdfUrl !== '') {
+            $byPdf = AgendaItem::query()
+                ->whereNull('tracking_no')
+                ->where('request_pdf_url', $pdfUrl)
+                ->first();
+
+            if ($byPdf !== null) {
+                return $byPdf;
+            }
+        }
+
+        $sender = trim((string) ($payload['sender'] ?? ''));
+        $title = trim((string) ($payload['title'] ?? ''));
+        $dateReceived = $this->normalizePayloadDate($payload['date_received'] ?? null);
+
+        if ($sender === '' || $title === '' || $dateReceived === null) {
+            return null;
+        }
+
+        return AgendaItem::query()
+            ->whereNull('tracking_no')
+            ->where('is_urgent_request', true)
+            ->whereDate('date_received', $dateReceived)
+            ->where('sender', $sender)
+            ->where('title', $title)
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    protected function normalizePayloadDate(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)->toDateString();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * @param  array<string, string|null>  $row
+     * @param  list<string|null>  $columns
+     */
+    protected function rowHasAgendaContent(array $row, array $columns): bool
+    {
+        if ($this->urlOrNull($columns[1] ?? null) !== null) {
+            return true;
+        }
+
+        if ($this->cell($row, ['Title', 'title']) !== null) {
+            return true;
+        }
+
+        return $this->cell($row, ['Sender', 'sender']) !== null
+            && $this->parseDate($this->cell($row, ['Date Received', 'date_received'])) !== null;
     }
 
     protected function resolveLinksPath(string $csvPath, ?string $linksPath): ?string
@@ -150,7 +263,7 @@ class AgendaCsvImporter
      * @param  list<string|null>  $columns
      * @return array<string, mixed>
      */
-    protected function mapRow(array $row, array $links, array $columns = []): array
+    protected function mapRow(array $row, array $links, array $columns = [], bool $isUrgentRequest = false): array
     {
         $dateReceived = $this->parseDate($this->cell($row, ['Date Received', 'date_received']));
         $datePassed = $this->parseDate($this->cell($row, ['Date passed', 'date_passed']));
@@ -167,6 +280,7 @@ class AgendaCsvImporter
             'status' => $status,
             'sender' => $this->cell($row, ['Sender', 'sender']),
             'title' => $this->cell($row, ['Title', 'title']),
+            'is_urgent_request' => $isUrgentRequest,
             'committee_referred' => $this->cell($row, ['Committee Referred', 'committee_referred']),
             'date_of_referral' => $this->parseDate($this->cell($row, ['Date of Referral', 'date_of_referral']))
                 ?? $this->dateOrNull($columns[11] ?? null),
@@ -183,7 +297,6 @@ class AgendaCsvImporter
                 $dateSigned ? Carbon::parse($dateSigned) : null,
                 $dateReceived ? Carbon::parse($dateReceived) : null,
             ),
-            'reso_ord_ao_type' => null,
             'reso_ord_ao_url' => $links['reso_ord_ao_url'] ?? $this->urlOrNull($this->cell($row, ['reso_ord_ao_url'])),
             'resolution_title' => $resolutionTitle,
             'journal_url' => $links['journal_url'] ?? $this->urlOrNull($this->cell($row, ['Journal of Proceedings', 'journal_url'])),
@@ -210,6 +323,28 @@ class AgendaCsvImporter
         foreach ($payload as $key => $value) {
             if (is_string($value)) {
                 $payload[$key] = $this->normalizeText($value) ?? '';
+            }
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    protected function preserveExistingUrls(AgendaItem $existing, array $payload): array
+    {
+        foreach ([
+            'request_pdf_url',
+            'committee_report_url',
+            'reso_ord_ao_url',
+            'journal_url',
+            'minutes_url',
+        ] as $field) {
+            $incoming = trim((string) ($payload[$field] ?? ''));
+            if ($incoming === '' && filled($existing->{$field})) {
+                unset($payload[$field]);
             }
         }
 
@@ -258,12 +393,15 @@ class AgendaCsvImporter
      */
     protected function trackingNoFromRow(array $row, array $columns): ?string
     {
-        $trackingNo = $this->normalizeText(
-            $this->cell($row, [' ', '', 'tracking_no', 'no', '#'])
-                ?? ($columns[0] ?? null),
-        );
+        // Always prefer column A (index 0). Legacy exports often have duplicate blank
+        // headers after trimming (e.g. " ," + empty PDF column), which makes assoc-key
+        // lookups return the PDF URL instead of the tracking number.
+        $trackingNo = $this->normalizeText($columns[0] ?? null)
+            ?? $this->normalizeText(
+                $this->cell($row, [' ', '', 'tracking_no', 'no', '#']),
+            );
 
-        if ($trackingNo === null || trim($trackingNo) === '') {
+        if ($trackingNo === null || trim($trackingNo) === '' || $trackingNo === '-') {
             return null;
         }
 

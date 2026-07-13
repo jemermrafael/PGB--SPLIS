@@ -14,7 +14,7 @@ class ObDocumentPolicy
         }
 
         if ($user->isBoardMember()) {
-            return $document->isFinal();
+            return $document->legislativeSession?->isVisibleToBoardMembers() ?? false;
         }
 
         return true;

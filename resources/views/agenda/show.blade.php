@@ -143,7 +143,7 @@
                         'Date Passed' => $agenda->date_passed?->format('M d, Y'),
                         'Date Signed by Gov.' => $agenda->date_signed_by_gov?->format('M d, Y'),
                         'Reso./Ord./AO No.' => null,
-                        'Measure Type' => $agenda->reso_ord_ao_type
+                        'Measure Type' => $agenda->effectiveMeasureType()
                             ? $agenda->measureTypeLabel()
                             : (($agenda->reso_ord_ao_no || $agenda->reso_ord_ao_url) ? 'Not specified (legacy)' : null),
                         'Resolution Title' => $agenda->resolution_title,

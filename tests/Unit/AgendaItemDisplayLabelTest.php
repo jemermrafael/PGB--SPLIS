@@ -1,0 +1,88 @@
+<?php
+
+namespace Tests\Unit;
+
+use App\Models\AgendaItem;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class AgendaItemDisplayLabelTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_numbered_agenda_uses_tracking_number(): void
+    {
+        $agenda = AgendaItem::query()->create([
+            'tracking_no' => '304',
+            'is_urgent_request' => false,
+            'status' => AgendaItem::STATUS_PENDING,
+        ]);
+
+        $this->assertSame('#304', $agenda->displayLabel());
+        $this->assertSame('304', $agenda->listNumberLabel());
+    }
+
+    public function test_urgent_unnumbered_agenda_uses_pending_assignment_placeholder(): void
+    {
+        $agenda = AgendaItem::query()->create([
+            'tracking_no' => null,
+            'is_urgent_request' => true,
+            'status' => AgendaItem::STATUS_PENDING,
+        ]);
+
+        $this->assertSame('Pending assignment', $agenda->displayLabel());
+        $this->assertSame('Pending assignment', $agenda->listNumberLabel());
+    }
+
+    public function test_unnumbered_non_urgent_agenda_uses_unnumbered_placeholder(): void
+    {
+        $agenda = AgendaItem::query()->create([
+            'tracking_no' => null,
+            'is_urgent_request' => false,
+            'status' => AgendaItem::STATUS_PENDING,
+        ]);
+
+        $this->assertSame('Unnumbered', $agenda->displayLabel());
+        $this->assertSame('Unnumbered', $agenda->listNumberLabel());
+    }
+
+    public function test_effective_measure_type_uses_linked_resolution(): void
+    {
+        $agenda = new AgendaItem([
+            'resolution_id' => 1,
+            'reso_ord_ao_type' => null,
+        ]);
+
+        $this->assertSame('resolution', $agenda->effectiveMeasureType());
+    }
+
+    public function test_effective_measure_type_uses_linked_ordinance(): void
+    {
+        $agenda = new AgendaItem([
+            'ordinance_id' => 1,
+            'reso_ord_ao_type' => null,
+        ]);
+
+        $this->assertSame('ordinance', $agenda->effectiveMeasureType());
+    }
+
+    public function test_effective_measure_type_uses_linked_appropriation_ordinance(): void
+    {
+        $agenda = new AgendaItem([
+            'appropriation_ordinance_id' => 1,
+            'reso_ord_ao_type' => null,
+        ]);
+
+        $this->assertSame('appropriation_ordinance', $agenda->effectiveMeasureType());
+    }
+
+    public function test_stored_measure_type_wins_over_link(): void
+    {
+        $agenda = new AgendaItem([
+            'resolution_id' => 1,
+            'reso_ord_ao_type' => 'ordinance',
+        ]);
+
+        $this->assertSame('ordinance', $agenda->effectiveMeasureType());
+    }
+}

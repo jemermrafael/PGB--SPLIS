@@ -3,16 +3,13 @@
 @section('title', $appropriationOrdinance->displayNumber().' — Appropriation Ordinances — '.config('app.name'))
 
 @section('content')
-<div class="max-w-4xl">
+<div class="max-w-5xl">
     <div class="splis-page-header">
         <div>
             <h1 class="splis-page-title">{{ $appropriationOrdinance->displayNumber() }}</h1>
             <p class="splis-page-subtitle">{{ $appropriationOrdinance->displaySeries() }}</p>
         </div>
         <div class="flex flex-wrap gap-2">
-            @if ($appropriationOrdinance->pdf_url)
-                <a href="{{ $appropriationOrdinance->pdf_url }}" target="_blank" rel="noopener" class="splis-btn-secondary">PDF</a>
-            @endif
             @can('update', $appropriationOrdinance)
                 <a href="{{ route('appropriation-ordinances.edit', $appropriationOrdinance) }}" class="splis-btn-primary">Edit</a>
             @endcan
@@ -51,6 +48,11 @@
             @endif
         </dl>
     </div>
+
+    @include('partials.pdf-document-embed', [
+        'pdfUrl' => $appropriationOrdinance->pdf_url,
+        'embedTitle' => $appropriationOrdinance->displayNumber().' PDF',
+    ])
 
     <div class="mt-6 flex flex-wrap gap-2">
         <a href="{{ route('appropriation-ordinances.index') }}" class="splis-btn-secondary">Back to list</a>

@@ -4,9 +4,7 @@
 
 @section('content')
 @php
-    $pdfUrl = $hasPdf
-        ? route('resolutions.pdf', ['series' => $resolution->series, 'resolutionNo' => $resolution->resolution_no])
-        : null;
+    $pdfUrl = $pdfUrl ?? null;
 @endphp
 
 <div class="max-w-5xl">
@@ -99,14 +97,20 @@
                     Open PDF in new tab
                 </a>
             </div>
-            <div class="p-4 sm:p-6">
-                <iframe
-                    src="{{ $pdfUrl }}"
-                    width="100%"
-                    class="splis-pdf-embed w-full rounded-xl border border-slate-200 bg-slate-50"
-                    title="Resolution {{ $resolution->resolution_no }} PDF"
-                ></iframe>
-            </div>
+            @if ($hasLocalPdf ?? false)
+                <div class="p-4 sm:p-6">
+                    <iframe
+                        src="{{ $pdfUrl }}"
+                        width="100%"
+                        class="splis-pdf-embed w-full rounded-xl border border-slate-200 bg-slate-50"
+                        title="Resolution {{ $resolution->resolution_no }} PDF"
+                    ></iframe>
+                </div>
+            @else
+                <div class="p-4 text-sm text-slate-600 dark:text-slate-400 sm:p-6">
+                    PDF is available via external link. Use <strong>Open PDF in new tab</strong> to view it.
+                </div>
+            @endif
         </div>
     @endif
 

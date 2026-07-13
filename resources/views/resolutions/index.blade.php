@@ -132,7 +132,6 @@
                         <th class="hidden md:table-cell">Author</th>
                         <th class="hidden lg:table-cell">Committee</th>
                         <th class="hidden sm:table-cell">Date</th>
-                        <th class="hidden xl:table-cell">Subject</th>
                         <th>Status</th>
                         <th class="hidden lg:table-cell">Series</th>
                     </tr>

@@ -20,6 +20,7 @@ use App\Http\Controllers\AgendaDeadlinePreviewController;
 use App\Http\Controllers\AgendaItemController;
 use App\Http\Controllers\AgendaSearchController;
 use App\Http\Controllers\AdminAnalyticsController;
+use App\Http\Controllers\AdminAnalyticsMapController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin\DatabaseBackupController;
 use App\Http\Controllers\Admin\DataSyncController;
@@ -55,6 +56,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/admin/analytics', AdminAnalyticsController::class)->name('admin.analytics.index');
+    Route::get('/admin/analytics/municipality-map', AdminAnalyticsMapController::class)->name('admin.analytics.municipality-map');
     Route::get('/dashboard/documents/search', DashboardSearchController::class)->name('dashboard.documents.search');
 
     Route::get('/notifications/all', [UserNotificationController::class, 'feed'])->name('notifications.feed');

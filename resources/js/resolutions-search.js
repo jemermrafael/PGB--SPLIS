@@ -50,7 +50,6 @@ function renderListItem(doc) {
             <td class="hidden md:table-cell">${escapeHtml(doc.author || '—')}</td>
             <td class="hidden lg:table-cell">${escapeHtml(doc.committee || '—')}</td>
             <td class="hidden sm:table-cell whitespace-nowrap">${formatDate(doc.date)}</td>
-            <td class="hidden xl:table-cell">${escapeHtml(doc.category || '—')}</td>
             <td><span class="splis-badge-approved capitalize">${escapeHtml(doc.status || '—')}</span></td>
             <td class="hidden lg:table-cell text-slate-500">${escapeHtml(doc.series || '—')}</td>
         </tr>
@@ -71,7 +70,6 @@ function renderGridItem(doc) {
                 <div><dt>Author</dt><dd>${escapeHtml(doc.author || '—')}</dd></div>
                 <div><dt>Date</dt><dd>${formatDate(doc.date)}</dd></div>
                 <div class="col-span-2"><dt>Committee</dt><dd>${escapeHtml(doc.committee || '—')}</dd></div>
-                <div class="col-span-2"><dt>Subject</dt><dd>${escapeHtml(doc.category || '—')}</dd></div>
             </dl>
             <div class="mt-auto flex items-center justify-between gap-2 border-t border-slate-100 pt-3 dark:border-slate-700">
                 <span class="splis-badge-approved capitalize">${escapeHtml(doc.status || '—')}</span>

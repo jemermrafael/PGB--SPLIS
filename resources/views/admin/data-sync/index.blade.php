@@ -140,7 +140,7 @@
     <div class="splis-card p-6">
         <h2 class="mb-2 text-lg font-semibold text-slate-900 dark:text-slate-100">4. Agenda tracker</h2>
         <p class="mb-4 text-sm text-slate-600 dark:text-slate-400">
-            Imports or updates agenda rows matched by <code class="text-xs">tracking_no</code>. Server default: <code class="text-xs">oldsp/Agenda4.csv</code> (data + Google Drive PDF URLs). Optional separate links file: <code class="text-xs">Agenda3.csv</code>.
+            Imports or updates agenda rows matched by <code class="text-xs">tracking_no</code>. Rows without a tracking number but with sender, title, or request PDF are imported as <strong>urgent requests</strong> (matched by PDF URL or sender + title + date received). Server default: <code class="text-xs">oldsp/Agenda4.csv</code> (data + Google Drive PDF URLs). Optional separate links file: <code class="text-xs">Agenda3.csv</code>.
         </p>
         <form method="POST" action="{{ route('admin.data-sync.agenda') }}" enctype="multipart/form-data" class="space-y-4">
             @csrf

@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\AgendaItemRepository;
 use App\Services\BoardMemberDashboardService;
 use App\Services\CommitteeMonitoringService;
+use App\Support\SqlDateExpression;
 use Illuminate\Support\Facades\DB;
 
 class DashboardAnalyticsService
@@ -187,9 +188,7 @@ class DashboardAnalyticsService
      */
     public function outputByMonth(int $year): array
     {
-        $monthSelect = DB::connection()->getDriverName() === 'sqlite'
-            ? "cast(strftime('%m', date_approved) as integer)"
-            : 'extract(month from date_approved)';
+        $monthSelect = SqlDateExpression::month('date_approved');
 
         $resolutionCounts = Resolution::query()
             ->selectRaw($monthSelect.' as month_no, count(*) as aggregate')

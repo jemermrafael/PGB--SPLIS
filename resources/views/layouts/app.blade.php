@@ -92,7 +92,7 @@
                                 <p class="px-3 py-2 text-sm font-medium text-slate-800 dark:text-slate-100">{{ auth()->user()->name }}</p>
                                 <p class="px-3 pb-2 text-xs text-slate-500">{{ auth()->user()->role->label() }}</p>
                                 @if (auth()->user()->canAdmin())
-                                    <a href="{{ route('admin.analytics.index') }}" class="splis-user-menu-link">Data analytics</a>
+                                    <a href="{{ route('admin.analytics.index') }}" class="splis-user-menu-link">Executive dashboard</a>
                                 @endif
                                 @if (auth()->user()->canManageUsers())
                                     <a href="{{ route('users.index') }}" class="splis-user-menu-link">Manage users</a>
@@ -297,7 +297,10 @@
         </header>
 
         <main class="splis-main flex-1">
-            <div class="splis-page">
+            <div @class([
+                'splis-page',
+                'splis-page--full' => trim($__env->yieldContent('full_width')),
+            ])>
                 @if (session('status'))
                     <div class="splis-alert-success">{{ session('status') }}</div>
                 @endif

@@ -48,6 +48,9 @@ class AgendaItemRepository
         return [
             'id' => $item->id,
             'tracking_no' => $item->tracking_no,
+            'display_label' => $item->displayLabel(),
+            'list_number' => $item->listNumberLabel(),
+            'is_urgent_request' => $item->is_urgent_request,
             'date_received' => $item->date_received?->format('Y-m-d'),
             'sender' => $item->sender,
             'title' => $item->title,

@@ -196,7 +196,7 @@ class DataSyncController extends Controller
             : '';
 
         return back()->with('status', sprintf(
-            '%sAgenda synced from %s (%s)%s — %d rows (%d created, %d updated).',
+            '%sAgenda synced from %s (%s)%s — %d rows (%d created, %d updated%s).',
             $prefix,
             basename((string) $stats['agenda_file']),
             $source,
@@ -204,6 +204,9 @@ class DataSyncController extends Controller
             $stats['total'],
             $stats['imported'],
             $stats['updated'],
+            ($stats['urgent'] ?? 0) > 0
+                ? sprintf(', %d urgent without tracking no.', $stats['urgent'])
+                : '',
         ));
     }
 

@@ -39,10 +39,6 @@
                 @endif
             </div>
             <h1 class="splis-page-title">Request {{ $agenda->displayLabel() }}</h1>
-            <p class="splis-page-subtitle">
-                @if ($agenda->sender){{ $agenda->sender }} · @endif
-                {{ $agenda->title ?: 'Untitled request' }}
-            </p>
         </div>
         <div class="flex flex-wrap gap-2">
             @if ($agenda->request_pdf_url)

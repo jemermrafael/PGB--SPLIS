@@ -19,7 +19,7 @@ class LegislativeSessionPolicy
         }
 
         if ($user->isBoardMember()) {
-            return $session->obDocument?->isFinal() ?? false;
+            return $session->isVisibleToBoardMembers();
         }
 
         return true;

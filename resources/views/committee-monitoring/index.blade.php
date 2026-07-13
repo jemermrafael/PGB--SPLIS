@@ -5,9 +5,8 @@
 @section('content')
 @php
     $activeView = $filters['view'] ?? 'referred';
-    $statLink = function (string $view) use ($selectedTerm, $filters): string {
+    $statLink = function (string $view) use ($filters): string {
         return route('committee-monitoring.index', array_filter([
-            'term' => $selectedTerm->id,
             'view' => $view === 'referred' ? null : $view,
             'committee_id' => $filters['committee_id'] ?? null,
             'date_from' => $filters['date_from'] ?? null,
@@ -22,24 +21,6 @@
             <h1 class="splis-page-title">Committee Monitoring</h1>
             <p class="splis-page-subtitle">Referral tracking, committee schedules, and report/status monitoring for referred measures.</p>
         </div>
-    </div>
-
-    <div class="mb-4 flex flex-wrap gap-2">
-        @foreach ($terms as $term)
-            <a
-                href="{{ route('committee-monitoring.index', array_filter([
-                    'term' => $term->id,
-                    'view' => ($filters['view'] ?? 'referred') === 'referred' ? null : ($filters['view'] ?? null),
-                    'committee_id' => $filters['committee_id'],
-                    'date_from' => $filters['date_from'],
-                    'date_to' => $filters['date_to'],
-                    'q' => $filters['q'],
-                ])) }}"
-                class="{{ $term->id === $selectedTerm->id ? 'splis-btn-primary' : 'splis-btn-secondary' }} text-sm"
-            >
-                {{ $term->label }}@if ($term->is_current) (current)@endif
-            </a>
-        @endforeach
     </div>
 
     <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -86,7 +67,6 @@
     </div>
 
     <form method="GET" action="{{ route('committee-monitoring.index') }}" class="splis-filter-panel">
-        <input type="hidden" name="term" value="{{ $selectedTerm->id }}">
         <input type="hidden" name="view" value="{{ $activeView }}">
         <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">Filter committee queue</h2>
 
@@ -132,7 +112,7 @@
 
         <div class="mt-4 flex gap-2">
             <button type="submit" class="splis-btn-primary">Apply filters</button>
-            <a href="{{ route('committee-monitoring.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-ghost">Clear</a>
+            <a href="{{ route('committee-monitoring.index') }}" class="splis-btn-ghost">Clear</a>
         </div>
     </form>
 

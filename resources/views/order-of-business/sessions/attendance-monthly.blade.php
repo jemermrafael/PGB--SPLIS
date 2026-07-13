@@ -3,7 +3,7 @@
 @section('title', 'Monthly attendance — '.config('app.name'))
 
 @section('content')
-<div class="max-w-5xl">
+<div class="max-w-full">
     <div class="splis-page-header !mb-6">
         <div>
             <h1 class="splis-page-title">Monthly attendance report</h1>
@@ -28,34 +28,66 @@
         <button type="submit" class="splis-btn-primary">View report</button>
     </form>
 
-    <div class="splis-table-wrap splis-card overflow-hidden">
-        <table class="splis-table">
-            <thead>
-                <tr>
-                    <th>Board member</th>
-                    <th>District</th>
-                    <th>Present</th>
-                    <th>Sessions</th>
-                    <th>Rate</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($summary as $row)
-                    @php
-                        $member = $row['member'];
-                        $district = $member->districtForTerm(null) ?? $member->district ?? '—';
-                        $rate = $row['total'] > 0 ? round(($row['present'] / $row['total']) * 100) : 0;
-                    @endphp
+    @if ($sessions->isEmpty())
+        <div class="splis-card splis-card-body">
+            <p class="text-sm text-slate-600 dark:text-slate-400">No sessions recorded for this month.</p>
+        </div>
+    @else
+        <div class="splis-table-wrap splis-card overflow-x-auto">
+            <table class="splis-table splis-attendance-monthly-table min-w-max">
+                <thead>
                     <tr>
-                        <td>{{ $member->displayName() }}</td>
-                        <td>{{ $district }}</td>
-                        <td>{{ $row['present'] }}</td>
-                        <td>{{ $row['total'] }}</td>
-                        <td>{{ $rate }}%</td>
+                        <th class="splis-attendance-monthly-sticky splis-attendance-monthly-sticky--member">Board member</th>
+                        <th class="splis-attendance-monthly-sticky splis-attendance-monthly-sticky--district">District</th>
+                        @foreach ($sessions as $session)
+                            <th class="splis-attendance-monthly-session whitespace-nowrap text-center">
+                                <span class="block text-xs font-semibold">{{ $session->session_date?->format('M j') }}</span>
+                                @if ($session->session_number)
+                                    <span class="mt-0.5 block text-[10px] font-normal text-slate-500 dark:text-slate-400">{{ $session->session_number }}</span>
+                                @endif
+                            </th>
+                        @endforeach
+                        <th class="whitespace-nowrap text-center">Present</th>
+                        <th class="whitespace-nowrap text-center">Sessions</th>
+                        <th class="whitespace-nowrap text-center">Rate</th>
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody>
+                    @foreach ($summary as $row)
+                        @php
+                            $member = $row['member'];
+                            $district = $member->districtForTerm(null) ?? $member->district ?? '—';
+                            $rate = $row['total'] > 0 ? round(($row['present'] / $row['total']) * 100) : 0;
+                        @endphp
+                        <tr>
+                            <td class="splis-attendance-monthly-sticky splis-attendance-monthly-sticky--member whitespace-nowrap font-medium">{{ $member->displayName() }}</td>
+                            <td class="splis-attendance-monthly-sticky splis-attendance-monthly-sticky--district whitespace-nowrap">{{ $district }}</td>
+                            @foreach ($sessions as $session)
+                                @php
+                                    $presence = $row['sessions'][$session->id] ?? null;
+                                @endphp
+                                <td class="text-center">
+                                    @if ($presence === true)
+                                        <span class="splis-attendance-mark splis-attendance-mark--present" title="Present">✓</span>
+                                    @elseif ($presence === false)
+                                        <span class="splis-attendance-mark splis-attendance-mark--absent" title="Absent">—</span>
+                                    @else
+                                        <span class="splis-attendance-mark splis-attendance-mark--unset" title="Not recorded">·</span>
+                                    @endif
+                                </td>
+                            @endforeach
+                            <td class="text-center font-semibold tabular-nums">{{ $row['present'] }}</td>
+                            <td class="text-center tabular-nums">{{ $row['total'] }}</td>
+                            <td class="text-center tabular-nums">{{ $rate }}%</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+
+        <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">
+            ✓ Present · — Absent · · Not recorded
+        </p>
+    @endif
 </div>
 @endsection

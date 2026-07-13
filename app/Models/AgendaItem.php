@@ -191,7 +191,21 @@ class AgendaItem extends Model
             return '#'.$this->tracking_no;
         }
 
-        return 'Agenda #'.$this->id;
+        return $this->placeholderLabel();
+    }
+
+    public function listNumberLabel(): string
+    {
+        if ($this->tracking_no) {
+            return $this->tracking_no;
+        }
+
+        return $this->placeholderLabel();
+    }
+
+    public function placeholderLabel(): string
+    {
+        return $this->is_urgent_request ? 'Pending assignment' : 'Unnumbered';
     }
 
     public function resoDisplayLabel(): ?string
@@ -209,7 +223,7 @@ class AgendaItem extends Model
 
     public function measureTypeLabel(): string
     {
-        return AgendaMeasureType::label($this->reso_ord_ao_type);
+        return AgendaMeasureType::label($this->effectiveMeasureType());
     }
 
     public function legacyOutputPdfButtonLabel(): string
@@ -219,7 +233,7 @@ class AgendaItem extends Model
 
     public function splisOutputButtonLabel(): string
     {
-        return AgendaMeasureType::splisOutputButtonLabel($this->reso_ord_ao_type);
+        return AgendaMeasureType::splisOutputButtonLabel($this->effectiveMeasureType());
     }
 
     public function daysLeftTone(): string
@@ -352,6 +366,30 @@ class AgendaItem extends Model
         }
 
         return null;
+    }
+
+    /**
+     * Stored measure type, or inferred from a linked SPLIS output / title.
+     */
+    public function effectiveMeasureType(): ?string
+    {
+        if (filled($this->reso_ord_ao_type)) {
+            return $this->reso_ord_ao_type;
+        }
+
+        if ($this->resolution_id) {
+            return AgendaMeasureType::RESOLUTION;
+        }
+
+        if ($this->ordinance_id) {
+            return AgendaMeasureType::ORDINANCE;
+        }
+
+        if ($this->appropriation_ordinance_id) {
+            return AgendaMeasureType::APPROPRIATION_ORDINANCE;
+        }
+
+        return self::inferMeasureType($this->resolution_title);
     }
 
     public function publishedTargetRoute(): ?string

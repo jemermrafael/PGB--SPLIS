@@ -242,7 +242,7 @@ function initMunicipalSearch(root, { compact = false } = {}) {
                 return `
                     <tr class="splis-agenda-row" data-href="${escapeHtml(item.url)}">
                         <td class="whitespace-nowrap font-semibold">
-                            <a href="${escapeHtml(item.url)}" class="splis-doc-list-link">${escapeHtml(item.tracking_no || item.id)}</a>
+                            <a href="${escapeHtml(item.url)}" class="splis-doc-list-link">${escapeHtml(item.list_number ?? item.display_label ?? item.tracking_no ?? 'Unnumbered')}</a>
                         </td>
                         ${renderTitleCell(item.title)}
                         <td class="hidden sm:table-cell whitespace-nowrap">${formatDate(item.date_received)}</td>
@@ -256,7 +256,7 @@ function initMunicipalSearch(root, { compact = false } = {}) {
             return `
                 <tr class="splis-agenda-row" data-href="${escapeHtml(item.url)}">
                     <td class="whitespace-nowrap font-semibold">
-                        <a href="${escapeHtml(item.url)}" class="splis-doc-list-link">${escapeHtml(item.tracking_no || item.id)}</a>
+                        <a href="${escapeHtml(item.url)}" class="splis-doc-list-link">${escapeHtml(item.list_number ?? item.display_label ?? item.tracking_no ?? 'Unnumbered')}</a>
                     </td>
                     ${renderTitleCell(item.title)}
                     <td class="hidden sm:table-cell whitespace-nowrap">${formatDate(item.date_received)}</td>

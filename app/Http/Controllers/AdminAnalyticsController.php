@@ -3,22 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\Committee;
-use App\Services\DashboardAnalyticsService;
+use App\Services\ExecutiveAnalyticsService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class AdminAnalyticsController extends Controller
 {
-    public function __invoke(Request $request, DashboardAnalyticsService $analytics): View
+    public function __invoke(Request $request, ExecutiveAnalyticsService $executive): View
     {
         abort_unless($request->user()?->canAdmin(), 403);
 
         $currentYear = (int) now()->format('Y');
+        $minYear = $executive->earliestDataYear();
         $yearFrom = (int) $request->integer('year_from', $currentYear - 4);
         $yearTo = (int) $request->integer('year_to', $currentYear);
         $focusYear = (int) $request->integer('focus_year', $yearTo);
-        $committeeId = $request->integer('committee_id') ?: null;
-        $chartLimit = min(20, max(5, (int) $request->integer('chart_limit', 10)));
 
         if ($yearFrom > $yearTo) {
             [$yearFrom, $yearTo] = [$yearTo, $yearFrom];
@@ -26,46 +25,50 @@ class AdminAnalyticsController extends Controller
 
         $focusYear = max($yearFrom, min($yearTo, $focusYear));
 
-        $agendaPipeline = $analytics->agendaPipelineStatsForYears($yearFrom, $yearTo);
-        $outputByYear = $analytics->outputByYearRange($yearFrom, $yearTo);
-        $outputByMonth = $analytics->outputByMonth($focusYear);
-        $committeeOverview = $analytics->committeeOverviewStats($committeeId, $yearFrom, $yearTo);
-        $statusDistribution = $analytics->agendaStatusDistribution($yearFrom, $yearTo);
-        $committeeRanking = $analytics->committeeRanking($chartLimit);
+        $committees = $executive->mapCommitteeOptions();
+        $defaultCommittee = $committees->first(
+            fn (Committee $committee): bool => stripos($committee->name, 'Housing') !== false
+        ) ?? $committees->first();
 
-        $chartPayload = $analytics->chartPayload(
-            $outputByYear,
-            $outputByMonth,
-            $statusDistribution,
-            $committeeRanking,
-            $committeeOverview,
-            $agendaPipeline,
-        );
+        $mapCommitteeId = $request->filled('map_committee_id')
+            ? (int) $request->integer('map_committee_id')
+            : ($defaultCommittee?->id);
+        $mapYear = (int) $request->integer('map_year', $focusYear);
+        $mapMonth = $request->filled('map_month') ? max(1, min(12, (int) $request->integer('map_month'))) : null;
+        $mapMeasure = $request->string('map_measure', 'both')->toString();
+        if (! in_array($mapMeasure, ['both', 'agendas', 'resolutions'], true)) {
+            $mapMeasure = 'both';
+        }
 
-        $monitoringBaseUrl = route('committee-monitoring.index', array_filter([
-            'committee_id' => $committeeId,
-            'date_from' => $yearFrom.'-01-01',
-            'date_to' => $yearTo.'-12-31',
-        ]));
+        $mapCommittee = $committees->firstWhere('id', $mapCommitteeId) ?? $defaultCommittee;
+        $committeeMap = $mapCommittee
+            ? $executive->committeeMunicipalityMap($mapCommittee, $mapYear, $mapMonth, $mapMeasure)
+            : [
+                'municipalities' => [],
+                'year' => $mapYear,
+                'month' => $mapMonth,
+                'committee' => '',
+                'committee_id' => null,
+                'measure' => $mapMeasure,
+                'period_label' => '',
+                'total' => 0,
+            ];
+
+        $payload = $executive->payload($yearFrom, $yearTo, $focusYear);
 
         return view('admin.analytics.index', [
             'yearFrom' => $yearFrom,
             'yearTo' => $yearTo,
             'focusYear' => $focusYear,
-            'committeeId' => $committeeId,
-            'chartLimit' => $chartLimit,
-            'committees' => Committee::query()->active()->ordered()->get(['id', 'name']),
-            'agendaPipeline' => $agendaPipeline,
-            'committeeOverview' => $committeeOverview,
-            'expiringSoonDays' => $analytics->expiringSoonDays(),
-            'chartPayload' => $chartPayload,
-            'monitoringUrls' => [
-                'referred' => $monitoringBaseUrl,
-                'pending' => $monitoringBaseUrl.(str_contains($monitoringBaseUrl, '?') ? '&' : '?').'view=pending',
-                'scheduled' => $monitoringBaseUrl.(str_contains($monitoringBaseUrl, '?') ? '&' : '?').'view=scheduled',
-                'reports' => $monitoringBaseUrl.(str_contains($monitoringBaseUrl, '?') ? '&' : '?').'view=reports',
-                'completed' => $monitoringBaseUrl.(str_contains($monitoringBaseUrl, '?') ? '&' : '?').'view=completed',
-            ],
+            'minYear' => $minYear,
+            'kpis' => $payload['kpis'],
+            'chartPayload' => $payload,
+            'committees' => $committees,
+            'mapYear' => $mapYear,
+            'mapMonth' => $mapMonth,
+            'mapMeasure' => $mapMeasure,
+            'mapCommitteeId' => $mapCommittee?->id,
+            'committeeMap' => $committeeMap,
         ]);
     }
 }

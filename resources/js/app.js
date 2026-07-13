@@ -25,6 +25,8 @@ import {
     initMunicipalDashboardSearch,
     initMunicipalRequestSearch,
 } from './municipal-requests';
+import { initAdminAnalytics } from './admin-analytics';
+import { initCommitteeMunicipalityMap } from './geographic-analytics';
 
 document.addEventListener('DOMContentLoaded', () => {
     initDropdowns();
@@ -50,4 +52,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initMunicipalDashboardSearch();
     initMunicipalRequestSearch();
     initActivityLogDelete();
+    initAdminAnalytics();
+    initCommitteeMunicipalityMap();
 });

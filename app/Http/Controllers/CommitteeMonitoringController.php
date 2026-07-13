@@ -18,9 +18,7 @@ class CommitteeMonitoringController extends Controller
     {
         $this->authorize('viewAny', Committee::class);
 
-        ['terms' => $terms, 'selectedTerm' => $selectedTerm] = CommitteeTermSelection::resolve(
-            $request->integer('term') ?: null,
-        );
+        $selectedTerm = CommitteeTermSelection::current();
 
         $baseFilters = [
             'term' => $selectedTerm->id,
@@ -34,7 +32,6 @@ class CommitteeMonitoringController extends Controller
         $listFilters = $this->listFilters($baseFilters, $request, $view);
 
         return view('committee-monitoring.index', [
-            'terms' => $terms,
             'selectedTerm' => $selectedTerm,
             'committees' => $this->monitoringService->committeeOptions($selectedTerm->id),
             'filters' => array_merge($baseFilters, [

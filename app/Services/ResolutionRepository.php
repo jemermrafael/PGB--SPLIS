@@ -57,9 +57,7 @@ class ResolutionRepository
             'document_type_badge_class' => $item->documentTypeBadgeClass ?? DocumentType::badgeClass($item->documentType),
             'has_pdf' => $item->hasPdf,
             'url' => route('resolutions.show', $item->id),
-            'pdf_url' => $item->hasPdf
-                ? route('resolutions.pdf', ['series' => $item->series, 'resolutionNo' => $item->resolutionNo])
-                : null,
+            'pdf_url' => $item->pdfUrl,
         ];
     }
 
@@ -185,7 +183,13 @@ class ResolutionRepository
         }
 
         if (! empty($filters['has_pdf'])) {
-            $query->whereNotNull('pdf_path')->where('pdf_path', '!=', '');
+            $query->where(function (Builder $builder): void {
+                $builder->where(function (Builder $pathQuery): void {
+                    $pathQuery->whereNotNull('pdf_path')->where('pdf_path', '!=', '');
+                })->orWhere(function (Builder $urlQuery): void {
+                    $urlQuery->whereNotNull('sp_pdf_url')->where('sp_pdf_url', '!=', '');
+                });
+            });
         }
 
         return $query;
@@ -266,6 +270,7 @@ class ResolutionRepository
             documentTypeLabel: DocumentType::label($documentType),
             documentTypeBadgeClass: DocumentType::badgeClass($documentType),
             hasPdf: $this->pdfService->hasLinkedPdf($r),
+            pdfUrl: $this->pdfService->publicUrl($r),
             status: $r->status,
         );
     }

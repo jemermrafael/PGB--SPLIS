@@ -30,7 +30,10 @@
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                     <label class="splis-label" for="tracking_no">Tracking no.</label>
-                    <input type="text" name="tracking_no" id="tracking_no" value="{{ old('tracking_no', $agenda->tracking_no) }}" class="splis-input" placeholder="001">
+                    <input type="text" name="tracking_no" id="tracking_no" value="{{ old('tracking_no', $agenda->tracking_no) }}" class="splis-input" placeholder="{{ old('is_urgent_request', $agenda->is_urgent_request) ? 'Pending assignment by SP Secretary' : '001' }}">
+                    @if (old('is_urgent_request', $agenda->is_urgent_request) && ! old('tracking_no', $agenda->tracking_no))
+                        <p class="mt-1 text-xs text-slate-500">Leave blank until the SP Secretary assigns an official agenda number.</p>
+                    @endif
                 </div>
                 <div>
                     <label class="splis-label" for="request_pdf_url">Request PDF URL</label>
@@ -167,7 +170,7 @@
                 <select name="reso_ord_ao_type" id="reso_ord_ao_type" class="splis-select">
                     <option value="">Select measure type…</option>
                     @foreach ($measureTypes as $value => $label)
-                        <option value="{{ $value }}" @selected(old('reso_ord_ao_type', $agenda->reso_ord_ao_type) === $value)>{{ $label }}</option>
+                        <option value="{{ $value }}" @selected(old('reso_ord_ao_type', $agenda->effectiveMeasureType()) === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
             </div>

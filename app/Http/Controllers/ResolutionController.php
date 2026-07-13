@@ -76,11 +76,15 @@ class ResolutionController extends Controller
         $this->authorize('view', $resolution);
 
         $resolution->load(['department', 'category', 'category2', 'category3', 'category4', 'municipality', 'creator', 'publishedFromAgenda']);
-        $hasPdf = $this->pdfService->existsFor($resolution);
+        $pdfUrl = $this->pdfService->publicUrl($resolution);
+        $hasPdf = $pdfUrl !== null;
+        $hasLocalPdf = filled($resolution->pdf_path) && $this->pdfService->existsFor($resolution);
 
         return view('resolutions.show', [
             'resolution' => $resolution,
             'hasPdf' => $hasPdf,
+            'hasLocalPdf' => $hasLocalPdf,
+            'pdfUrl' => $pdfUrl,
             'previousResolution' => $resolution->trashed() ? null : $resolution->previousInList(),
             'nextResolution' => $resolution->trashed() ? null : $resolution->nextInList(),
         ]);

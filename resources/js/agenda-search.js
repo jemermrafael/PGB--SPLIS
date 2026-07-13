@@ -47,7 +47,7 @@ function renderListItem(item) {
     return `
         <tr class="splis-agenda-row" data-href="${escapeHtml(item.url)}">
             <td class="whitespace-nowrap font-semibold">
-                <a href="${escapeHtml(item.url)}" class="splis-doc-list-link">${escapeHtml(item.tracking_no || item.id)}</a>
+                <a href="${escapeHtml(item.url)}" class="splis-doc-list-link">${escapeHtml(item.list_number ?? item.display_label ?? item.tracking_no ?? 'Unnumbered')}</a>
             </td>
             ${renderTitleCell(item.title)}
             <td class="hidden md:table-cell">${escapeHtml(item.sender || '—')}</td>

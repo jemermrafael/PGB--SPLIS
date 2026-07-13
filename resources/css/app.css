@@ -255,6 +255,10 @@
         @apply mx-auto max-w-7xl px-6 py-8 md:px-8;
     }
 
+    .splis-page--full {
+        @apply max-w-none px-4 py-6 sm:px-6 lg:px-8;
+    }
+
     .splis-page-header {
         @apply mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between;
     }
@@ -773,6 +777,38 @@
 
     .splis-table tbody tr {
         @apply transition-colors duration-75 hover:bg-slate-50/40;
+    }
+
+    .splis-attendance-monthly-table .splis-attendance-monthly-session {
+        @apply min-w-[4.5rem] px-2 py-3;
+    }
+
+    .splis-attendance-monthly-sticky {
+        @apply sticky z-10 bg-white dark:bg-slate-900;
+    }
+
+    .splis-attendance-monthly-sticky--member {
+        @apply left-0 min-w-[12rem];
+    }
+
+    .splis-attendance-monthly-sticky--district {
+        @apply left-[12rem] min-w-[7rem] border-r border-slate-200 dark:border-slate-700;
+    }
+
+    .splis-attendance-mark {
+        @apply inline-flex h-6 w-6 items-center justify-center rounded-full text-sm font-semibold;
+    }
+
+    .splis-attendance-mark--present {
+        @apply bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300;
+    }
+
+    .splis-attendance-mark--absent {
+        @apply bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400;
+    }
+
+    .splis-attendance-mark--unset {
+        @apply text-slate-300 dark:text-slate-600;
     }
 
     .splis-badge-legacy {
@@ -2421,5 +2457,283 @@
 
     .splis-hud-mini-value {
         @apply mt-1 block text-xl font-bold tabular-nums text-white;
+    }
+
+    .splis-hud-section-title {
+        @apply text-xs font-semibold uppercase tracking-[0.2em] text-violet-200/90;
+    }
+
+    .splis-hud-gauge-wrap {
+        @apply flex flex-col items-center justify-center py-4;
+    }
+
+    .splis-hud-gauge {
+        @apply relative flex h-32 w-32 flex-col items-center justify-center rounded-full border-4 border-slate-700/80;
+        background: conic-gradient(
+            rgb(34 211 238) calc(var(--gauge-percent, 0) * 1%),
+            rgb(30 41 59 / 0.9) 0
+        );
+    }
+
+    .splis-hud-gauge::before {
+        content: '';
+        @apply absolute inset-3 rounded-full bg-slate-950/95;
+    }
+
+    .splis-hud-gauge-value,
+    .splis-hud-gauge-label {
+        @apply relative z-10 text-center;
+    }
+
+    .splis-hud-gauge-value {
+        @apply text-2xl font-bold text-white;
+    }
+
+    .splis-hud-gauge-label {
+        @apply mt-0.5 text-[10px] uppercase tracking-wider text-slate-400;
+    }
+
+    .splis-hud-heatmap {
+        @apply grid grid-cols-2 gap-2 sm:grid-cols-3;
+    }
+
+    .splis-hud-heatmap-cell {
+        @apply rounded-lg border border-cyan-400/20 px-3 py-2;
+        background: rgb(34 211 238 / calc(var(--heat, 0.2) * 0.45));
+    }
+
+    .splis-hud-heatmap-label {
+        @apply block text-[10px] font-medium uppercase tracking-wide text-slate-300;
+    }
+
+    .splis-hud-heatmap-value {
+        @apply mt-1 block text-sm font-bold tabular-nums text-white;
+    }
+
+    .splis-hud-list-item {
+        @apply rounded-lg border border-slate-700/60 bg-slate-900/40 px-3 py-2;
+    }
+
+    /* Executive dashboard (light) */
+    .splis-exec-dashboard {
+        @apply w-full space-y-6;
+    }
+
+    .splis-exec-header {
+        @apply flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between;
+    }
+
+    .splis-exec-title {
+        @apply text-2xl font-bold tracking-tight text-slate-900 md:text-3xl;
+    }
+
+    .splis-exec-subtitle {
+        @apply mt-1 text-sm text-slate-500;
+    }
+
+    .splis-exec-filters {
+        @apply rounded-xl border border-slate-200 bg-white p-4 shadow-sm;
+    }
+
+    .splis-exec-kpi-grid {
+        @apply grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8;
+    }
+
+    .splis-exec-kpi {
+        @apply rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-brand-200 hover:shadow-md;
+    }
+
+    .splis-exec-kpi-value {
+        @apply text-2xl font-bold tabular-nums text-slate-900;
+    }
+
+    .splis-exec-kpi-label {
+        @apply mt-1 text-xs font-medium text-slate-500;
+    }
+
+    .splis-bataan-map-wrap {
+        @apply rounded-xl border border-slate-200 bg-gradient-to-b from-sky-50 to-emerald-50/40 p-4 dark:border-slate-700 dark:from-slate-900 dark:to-slate-900;
+    }
+
+    .splis-bataan-svg {
+        @apply mx-auto block h-auto w-full max-w-4xl;
+    }
+
+    .splis-bataan-region {
+        @apply cursor-pointer stroke-white stroke-[1.5] transition hover:stroke-brand-600;
+        fill: rgb(16 185 129 / calc(var(--geo-intensity, 0.15) * 0.75));
+    }
+
+    .splis-bataan-label-name {
+        @apply fill-slate-800 text-[11px] font-semibold dark:fill-slate-100;
+        font-size: 11px;
+    }
+
+    .splis-bataan-label-value {
+        @apply fill-slate-900 text-xs font-bold tabular-nums dark:fill-slate-100;
+        font-size: 12px;
+    }
+
+    .splis-exec-chart-grid {
+        @apply grid grid-cols-1 gap-4 xl:grid-cols-2 2xl:grid-cols-4;
+    }
+
+    .splis-exec-heatmaps-map-grid {
+        @apply mt-4 grid grid-cols-1 gap-4 xl:grid-cols-3;
+    }
+
+    .splis-exec-heatmaps-column {
+        @apply xl:col-span-1;
+    }
+
+    #committee-municipality-map {
+        @apply xl:col-span-2;
+    }
+
+    #committee-municipality-map.is-loading {
+        @apply opacity-70;
+    }
+
+    .splis-exec-chart-grid--triple {
+        @apply grid grid-cols-1 gap-4 xl:grid-cols-3;
+    }
+
+    .splis-exec-panel {
+        @apply rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-5;
+    }
+
+    .splis-exec-panel-title {
+        @apply text-sm font-semibold text-slate-900;
+    }
+
+    .splis-exec-panel-subtitle {
+        @apply mt-0.5 text-xs text-slate-500;
+    }
+
+    .splis-exec-chart-wrap {
+        @apply relative mt-4 w-full;
+        height: 260px;
+    }
+
+    .splis-exec-chart-wrap--donut {
+        height: 240px;
+    }
+
+    .splis-exec-sla-ring {
+        @apply relative mx-auto flex h-40 w-40 items-center justify-center rounded-full;
+        background: conic-gradient(#10b981 calc(var(--sla-percent, 0) * 1%), #e2e8f0 0);
+    }
+
+    .splis-exec-sla-ring::before {
+        content: '';
+        @apply absolute inset-4 rounded-full bg-white;
+    }
+
+    .splis-exec-sla-value {
+        @apply relative z-10 text-3xl font-bold text-slate-900;
+    }
+
+    .splis-exec-table {
+        @apply mt-4 w-full text-left text-sm;
+    }
+
+    .splis-exec-table th {
+        @apply border-b border-slate-200 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500;
+    }
+
+    .splis-exec-table td {
+        @apply border-b border-slate-100 py-2.5 text-slate-700;
+    }
+
+    html.dark .splis-exec-title,
+    html.dark .splis-exec-kpi-value,
+    html.dark .splis-exec-panel-title,
+    html.dark .splis-exec-sla-value {
+        @apply text-slate-100;
+    }
+
+    html.dark .splis-exec-panel,
+    html.dark .splis-exec-kpi,
+    html.dark .splis-exec-filters {
+        @apply border-slate-700 bg-slate-900;
+    }
+
+    html.dark .splis-exec-subtitle,
+    html.dark .splis-exec-kpi-label,
+    html.dark .splis-exec-panel-subtitle {
+        @apply text-slate-400;
+    }
+
+    .splis-exec-heatmap {
+        @apply grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4;
+    }
+
+    .splis-exec-heatmap-cell {
+        @apply rounded-lg border border-emerald-200/80 px-3 py-2 dark:border-emerald-900/50;
+        background: rgb(16 185 129 / calc(var(--heat, 0.2) * 0.35));
+    }
+
+    .splis-exec-heatmap-label {
+        @apply block text-[10px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300;
+    }
+
+    .splis-exec-heatmap-value {
+        @apply mt-1 block text-sm font-bold tabular-nums text-slate-900 dark:text-slate-100;
+    }
+
+    .splis-geo-metric-toggle {
+        @apply flex flex-wrap gap-2;
+    }
+
+    .splis-geo-metric-btn {
+        @apply rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-brand-200 hover:text-brand-700;
+    }
+
+    .splis-geo-metric-btn.is-active {
+        @apply border-brand-500 bg-brand-50 text-brand-700;
+    }
+
+    .splis-geo-map-wrap {
+        @apply rounded-xl border border-slate-200 bg-gradient-to-b from-sky-50 to-emerald-50/40 p-4 dark:border-slate-700 dark:from-slate-900 dark:to-slate-900;
+    }
+
+    .splis-geo-map {
+        @apply mx-auto grid max-w-4xl gap-2;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-rows: repeat(3, minmax(88px, 1fr));
+    }
+
+    .splis-geo-region {
+        @apply flex min-h-[88px] flex-col items-center justify-center rounded-xl border border-white/70 px-2 py-3 text-center shadow-sm transition hover:scale-[1.02] hover:shadow-md;
+        background: rgb(16 185 129 / calc(var(--geo-intensity, 0.15) * 0.55));
+    }
+
+    .splis-geo-region-name {
+        @apply text-xs font-semibold leading-tight text-slate-800 dark:text-slate-100;
+    }
+
+    .splis-geo-region-value {
+        @apply mt-1 text-sm font-bold tabular-nums text-slate-900 dark:text-slate-100;
+    }
+
+    .splis-geo-legend {
+        @apply mt-4 flex items-center justify-center gap-3;
+    }
+
+    .splis-geo-legend-label {
+        @apply text-xs text-slate-500;
+    }
+
+    .splis-geo-legend-bar {
+        @apply h-2 w-40 rounded-full;
+        background: linear-gradient(to right, #d1fae5, #059669);
+    }
+
+    html.dark .splis-geo-metric-btn {
+        @apply border-slate-700 bg-slate-900 text-slate-300;
+    }
+
+    html.dark .splis-geo-metric-btn.is-active {
+        @apply border-brand-200 bg-brand-900 text-brand-100;
     }
 }

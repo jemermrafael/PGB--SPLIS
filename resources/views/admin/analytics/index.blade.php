@@ -1,187 +1,236 @@
 @extends('layouts.app')
 
-@section('title', 'Data Analytics — '.config('app.name'))
+@section('full_width', '1')
+@section('title', 'Executive Dashboard — '.config('app.name'))
 
 @section('content')
-<div
-    id="admin-analytics-dashboard"
-    class="splis-hud-dashboard -mx-6 -mt-8 px-6 py-8 md:-mx-8 md:px-8"
-    data-charts='@json($chartPayload)'
->
-    <div class="splis-hud-dashboard-bg" aria-hidden="true"></div>
+@php
+    $agenda = $chartPayload['agenda'] ?? [];
+    $resolutions = $chartPayload['resolutions'] ?? [];
+    $heatmaps = $chartPayload['heatmaps'] ?? [];
+    $statusTotal = collect($agenda['status_distribution'] ?? [])->sum('value');
+    $categoryTotal = collect($resolutions['categories'] ?? [])->sum('value');
+    $committeeMunicipalities = $committeeMap['municipalities'] ?? [];
+    $committeeMapTotal = (int) ($committeeMap['total'] ?? collect($committeeMunicipalities)->sum('total'));
+    $legislativeOutput = $chartPayload['legislative_output'] ?? [];
+    $legislativeByYear = $legislativeOutput['by_year'] ?? [];
+    $monthOptions = collect(range(1, 12))->mapWithKeys(fn (int $m) => [$m => \Carbon\Carbon::create(null, $m, 1)->format('F')]);
+    $kpiCards = [
+        ['label' => 'Total Agenda Items', 'value' => number_format($kpis['total_agenda_items'])],
+        ['label' => 'Pending', 'value' => number_format($kpis['pending_agenda'])],
+        ['label' => 'Due Today', 'value' => number_format($kpis['due_today'])],
+        ['label' => 'Lapsed Requests', 'value' => number_format($kpis['lapsed_requests'])],
+        ['label' => 'Approved Resolutions', 'value' => number_format($kpis['approved_resolutions'])],
+        ['label' => 'Ordinances Enacted', 'value' => number_format($kpis['ordinances_enacted'])],
+        ['label' => 'Appropriation Ordinances', 'value' => number_format($kpis['appropriation_ordinances'])],
+    ];
+@endphp
 
-    <div class="relative z-10">
-        <header class="splis-hud-header mb-6">
+<div id="admin-analytics-dashboard" class="splis-exec-dashboard">
+    <script type="application/json" id="admin-analytics-data">@json($chartPayload)</script>
+
+    <header class="splis-exec-header">
+        <div>
+            <h1 class="splis-exec-title">Executive Dashboard</h1>
+            <p class="splis-exec-subtitle">Overview of legislative operations and performance</p>
+        </div>
+        <p class="text-sm text-slate-500">{{ now()->format('M j, Y | l') }}</p>
+    </header>
+
+    <form method="GET" class="splis-exec-filters">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
             <div>
-                <p class="splis-hud-eyebrow">Legislative intelligence</p>
-                <h1 class="splis-hud-title">Data analytics command center</h1>
-                <p class="splis-hud-subtitle">Workflow, output, and committee performance — {{ $yearFrom }} to {{ $yearTo }}</p>
+                <label class="splis-label" for="analytics-year-from">Year from</label>
+                <input id="analytics-year-from" type="number" min="{{ $minYear }}" max="2100" name="year_from" value="{{ $yearFrom }}" class="splis-input">
             </div>
-            <div class="splis-hud-header-meta">
-                <span class="splis-hud-meta-pill">Focus year {{ $focusYear }}</span>
-                <span class="splis-hud-meta-pill">{{ now()->format('M j, Y') }}</span>
+            <div>
+                <label class="splis-label" for="analytics-year-to">Year to</label>
+                <input id="analytics-year-to" type="number" min="{{ $minYear }}" max="2100" name="year_to" value="{{ $yearTo }}" class="splis-input">
             </div>
-        </header>
+            <div>
+                <label class="splis-label" for="analytics-focus-year">Focus year</label>
+                <input id="analytics-focus-year" type="number" min="{{ $minYear }}" max="2100" name="focus_year" value="{{ $focusYear }}" class="splis-input">
+            </div>
+            <div class="flex items-end gap-2">
+                <button type="submit" class="splis-btn-primary">Apply filters</button>
+                <a href="{{ route('admin.analytics.index') }}" class="splis-btn-ghost">Reset filters</a>
+            </div>
+        </div>
+    </form>
 
-        <form method="GET" class="splis-hud-panel splis-hud-filters mb-6">
-            <div class="splis-hud-panel-corners" aria-hidden="true"></div>
-            <h2 class="splis-hud-panel-title">Filters</h2>
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-                <div>
-                    <label class="splis-hud-label" for="analytics-year-from">Year from</label>
-                    <input id="analytics-year-from" type="number" min="1990" max="2100" name="year_from" value="{{ $yearFrom }}" class="splis-hud-input">
-                </div>
-                <div>
-                    <label class="splis-hud-label" for="analytics-year-to">Year to</label>
-                    <input id="analytics-year-to" type="number" min="1990" max="2100" name="year_to" value="{{ $yearTo }}" class="splis-hud-input">
-                </div>
-                <div>
-                    <label class="splis-hud-label" for="analytics-focus-year">Focus year</label>
-                    <input id="analytics-focus-year" type="number" min="1990" max="2100" name="focus_year" value="{{ $focusYear }}" class="splis-hud-input">
-                </div>
-                <div>
-                    <label class="splis-hud-label" for="analytics-committee">Committee</label>
-                    <select id="analytics-committee" name="committee_id" class="splis-hud-input">
-                        <option value="">All committees</option>
+    <div class="splis-exec-kpi-grid">
+        @foreach ($kpiCards as $kpi)
+            <div class="splis-exec-kpi">
+                <p class="splis-exec-kpi-value">{{ $kpi['value'] }}</p>
+                <p class="splis-exec-kpi-label">{{ $kpi['label'] }}</p>
+            </div>
+        @endforeach
+    </div>
+
+    <div class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <div class="splis-exec-panel">
+            <h2 class="splis-exec-panel-title">Legislative Output by Year</h2>
+            <p class="splis-exec-panel-subtitle">Resolutions vs ordinances (includes appropriation ordinances) · by date approved</p>
+            <div class="splis-exec-chart-wrap">
+                <canvas id="chart-legislative-output-year" aria-label="Legislative output by year"></canvas>
+            </div>
+        </div>
+
+        <div class="splis-exec-panel">
+            <h2 class="splis-exec-panel-title">Monthly Output — {{ $focusYear }}</h2>
+            <p class="splis-exec-panel-subtitle">Based on approved dates (resolutions + ordinances, including appropriation ordinances)</p>
+            <div class="splis-exec-chart-wrap">
+                <canvas id="chart-legislative-output-month" aria-label="Monthly legislative output"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="splis-exec-chart-grid">
+        <div class="splis-exec-panel">
+            <h2 class="splis-exec-panel-title">Agenda Status Distribution</h2>
+            <p class="splis-exec-panel-subtitle">{{ number_format($statusTotal) }} total items · green done, yellow pending, gray no due date</p>
+            <div class="splis-exec-chart-wrap splis-exec-chart-wrap--donut">
+                <canvas id="chart-agenda-status" aria-label="Agenda status distribution"></canvas>
+            </div>
+        </div>
+
+        <div class="splis-exec-panel">
+            <h2 class="splis-exec-panel-title">Monthly Agenda Intake</h2>
+            <p class="splis-exec-panel-subtitle">{{ ($agenda['monthly_intake_comparison']['previous_year'] ?? $focusYear - 1) }} vs {{ $focusYear }}</p>
+            <div class="splis-exec-chart-wrap">
+                <canvas id="chart-agenda-intake" aria-label="Monthly agenda intake"></canvas>
+            </div>
+        </div>
+
+        <div class="splis-exec-panel">
+            <h2 class="splis-exec-panel-title">Due Date Health</h2>
+            <p class="splis-exec-panel-subtitle">Safe · Near due · Critical · Overdue</p>
+            <div class="splis-exec-chart-wrap">
+                <canvas id="chart-due-date-health" aria-label="Due date health"></canvas>
+            </div>
+        </div>
+
+        <div class="splis-exec-panel">
+            <h2 class="splis-exec-panel-title">Agenda Aging — Pending Only</h2>
+            <p class="splis-exec-panel-subtitle">Days since received</p>
+            <div class="splis-exec-chart-wrap">
+                <canvas id="chart-agenda-aging" aria-label="Agenda aging"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="splis-exec-chart-grid">
+        <div class="splis-exec-panel">
+            <h2 class="splis-exec-panel-title">Requests by Sender</h2>
+            <p class="splis-exec-panel-subtitle">Grouped source analytics</p>
+            <div class="splis-exec-chart-wrap">
+                <canvas id="chart-source-senders" aria-label="Requests by sender"></canvas>
+            </div>
+        </div>
+
+        <div class="splis-exec-panel">
+            <h2 class="splis-exec-panel-title">Resolutions Trend</h2>
+            <p class="splis-exec-panel-subtitle">Monthly approved — {{ $focusYear }}</p>
+            <div class="splis-exec-chart-wrap">
+                <canvas id="chart-resolution-trend" aria-label="Resolutions trend"></canvas>
+            </div>
+        </div>
+
+        <div class="splis-exec-panel">
+            <h2 class="splis-exec-panel-title">Resolutions by Category</h2>
+            <p class="splis-exec-panel-subtitle">{{ number_format($categoryTotal) }} total resolutions</p>
+            <div class="splis-exec-chart-wrap splis-exec-chart-wrap--donut">
+                <canvas id="chart-resolution-categories" aria-label="Resolutions by category"></canvas>
+            </div>
+        </div>
+
+        <div class="splis-exec-panel">
+            <h2 class="splis-exec-panel-title">Committee Workload</h2>
+            <p class="splis-exec-panel-subtitle">Resolutions handled by committee</p>
+            <div class="splis-exec-chart-wrap">
+                <canvas id="chart-committee-workload" aria-label="Committee workload"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="splis-exec-heatmaps-map-grid">
+        <div class="splis-exec-heatmaps-column">
+            <div class="mb-2">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Executive Heatmaps</h2>
+                <p class="text-sm text-slate-500">Peak months and committee resolution load</p>
+            </div>
+
+            <div class="flex flex-col gap-4">
+                @include('admin.analytics.partials.heatmap', [
+                    'title' => 'Month × Agenda Volume',
+                    'subtitle' => 'Focus year '.$focusYear,
+                    'cells' => collect($heatmaps['month_agenda'] ?? [])->map(fn ($r) => ['label' => $r['month'], 'value' => $r['value']])->all(),
+                ])
+                @include('admin.analytics.partials.heatmap', [
+                    'title' => 'Committee × Resolution Count',
+                    'subtitle' => $yearFrom.' – '.$yearTo,
+                    'cells' => $heatmaps['committee_resolutions'] ?? [],
+                ])
+            </div>
+        </div>
+
+        <div
+            id="committee-municipality-map"
+            class="splis-exec-panel"
+            data-map-url="{{ route('admin.analytics.municipality-map') }}"
+            data-min-year="{{ $minYear }}"
+        >
+            <div class="mb-4">
+                <h2 class="splis-exec-panel-title">Bataan — Agendas &amp; Resolutions by Municipality</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Agendas counted by date passed · Resolutions by date approved</p>
+                <p class="splis-exec-panel-subtitle" data-map-subtitle>
+                    @if ($committeeMap['committee'] ?? false)
+                        {{ $committeeMap['committee'] }} · {{ $committeeMap['period_label'] ?? '' }} · {{ number_format($committeeMapTotal) }} shown
+                    @else
+                        Select a committee to view the map
+                    @endif
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div class="sm:col-span-2">
+                    <label class="splis-label" for="map-committee-id">Committee</label>
+                    <select id="map-committee-id" class="splis-input" data-map-filter="committee_id">
+                        <option value="" disabled @selected(! $mapCommitteeId)>Select committee</option>
                         @foreach ($committees as $committee)
-                            <option value="{{ $committee->id }}" @selected((int) $committeeId === (int) $committee->id)>{{ $committee->name }}</option>
+                            <option value="{{ $committee->id }}" @selected($mapCommitteeId === $committee->id)>{{ $committee->name }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div>
-                    <label class="splis-hud-label" for="analytics-chart-limit">Top committees</label>
-                    <input id="analytics-chart-limit" type="number" min="5" max="20" name="chart_limit" value="{{ $chartLimit }}" class="splis-hud-input">
+                    <label class="splis-label" for="map-measure">Show</label>
+                    <select id="map-measure" class="splis-input" data-map-filter="measure">
+                        <option value="both" @selected($mapMeasure === 'both')>Agendas and resolutions</option>
+                        <option value="agendas" @selected($mapMeasure === 'agendas')>Agendas only</option>
+                        <option value="resolutions" @selected($mapMeasure === 'resolutions')>Resolutions only</option>
+                    </select>
                 </div>
-            </div>
-            <div class="mt-4 flex gap-2">
-                <button type="submit" class="splis-hud-btn-primary">Apply filters</button>
-                <a href="{{ route('admin.analytics.index') }}" class="splis-hud-btn-ghost">Reset</a>
-            </div>
-        </form>
-
-        <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
-            <a href="{{ $monitoringUrls['referred'] }}" class="splis-hud-kpi">
-                <span class="splis-hud-kpi-icon splis-hud-kpi-icon--cyan">
-                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/></svg>
-                </span>
-                <span class="splis-hud-kpi-value">{{ number_format($committeeOverview['referred']) }}</span>
-                <span class="splis-hud-kpi-label">Referred</span>
-            </a>
-            <a href="{{ $monitoringUrls['pending'] }}" class="splis-hud-kpi">
-                <span class="splis-hud-kpi-icon splis-hud-kpi-icon--amber">
-                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
-                </span>
-                <span class="splis-hud-kpi-value">{{ number_format($committeeOverview['pending']) }}</span>
-                <span class="splis-hud-kpi-label">Pending</span>
-            </a>
-            <a href="{{ $monitoringUrls['scheduled'] }}" class="splis-hud-kpi">
-                <span class="splis-hud-kpi-icon splis-hud-kpi-icon--purple">
-                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/></svg>
-                </span>
-                <span class="splis-hud-kpi-value">{{ number_format($committeeOverview['scheduled']) }}</span>
-                <span class="splis-hud-kpi-label">Scheduled</span>
-            </a>
-            <a href="{{ $monitoringUrls['reports'] }}" class="splis-hud-kpi">
-                <span class="splis-hud-kpi-icon splis-hud-kpi-icon--blue">
-                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/></svg>
-                </span>
-                <span class="splis-hud-kpi-value">{{ number_format($committeeOverview['reports']) }}</span>
-                <span class="splis-hud-kpi-label">Reports</span>
-            </a>
-            <a href="{{ $monitoringUrls['completed'] }}" class="splis-hud-kpi splis-hud-kpi--wide">
-                <span class="splis-hud-kpi-icon splis-hud-kpi-icon--green">
-                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
-                </span>
-                <span class="splis-hud-kpi-value">{{ number_format($committeeOverview['completed']) }}</span>
-                <span class="splis-hud-kpi-label">Completed</span>
-            </a>
-        </div>
-
-        <div class="grid grid-cols-1 gap-4 xl:grid-cols-12">
-            <div class="splis-hud-panel xl:col-span-5">
-                <div class="splis-hud-panel-corners" aria-hidden="true"></div>
-                <div class="splis-hud-panel-head">
-                    <h2 class="splis-hud-panel-title">Legislative output by year</h2>
-                    <p class="splis-hud-panel-subtitle">Resolutions vs ordinances (includes appropriation ordinances)</p>
+                <div>
+                    <label class="splis-label" for="map-year">Year</label>
+                    <input id="map-year" type="number" min="{{ $minYear }}" max="2100" value="{{ $mapYear }}" class="splis-input" data-map-filter="year">
                 </div>
-                <div class="splis-hud-chart-wrap splis-hud-chart-wrap--tall">
-                    <canvas id="chart-output-year" aria-label="Legislative output by year"></canvas>
+                <div>
+                    <label class="splis-label" for="map-month">Month</label>
+                    <select id="map-month" class="splis-input" data-map-filter="month">
+                        <option value="" @selected($mapMonth === null)>All months</option>
+                        @foreach ($monthOptions as $value => $label)
+                            <option value="{{ $value }}" @selected($mapMonth === $value)>{{ $label }}</option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
 
-            <div class="splis-hud-panel xl:col-span-4">
-                <div class="splis-hud-panel-corners" aria-hidden="true"></div>
-                <div class="splis-hud-panel-head">
-                    <h2 class="splis-hud-panel-title">Year trend</h2>
-                    <p class="splis-hud-panel-subtitle">Total output with trend line</p>
-                </div>
-                <div class="splis-hud-chart-wrap splis-hud-chart-wrap--tall">
-                    <canvas id="chart-output-combo" aria-label="Year output trend"></canvas>
-                </div>
-            </div>
-
-            <div class="splis-hud-panel xl:col-span-3">
-                <div class="splis-hud-panel-corners" aria-hidden="true"></div>
-                <div class="splis-hud-panel-head">
-                    <h2 class="splis-hud-panel-title">Agenda status</h2>
-                    <p class="splis-hud-panel-subtitle">Distribution by status</p>
-                </div>
-                <div class="splis-hud-chart-wrap splis-hud-chart-wrap--donut">
-                    <canvas id="chart-status-donut" aria-label="Agenda status distribution"></canvas>
-                </div>
-                <div class="splis-hud-chart-wrap splis-hud-chart-wrap--spark mt-3">
-                    <canvas id="chart-pipeline-spark" aria-label="Agenda pipeline"></canvas>
-                </div>
-            </div>
-
-            <div class="splis-hud-panel xl:col-span-7">
-                <div class="splis-hud-panel-corners" aria-hidden="true"></div>
-                <div class="splis-hud-panel-head">
-                    <h2 class="splis-hud-panel-title">Monthly output — {{ $focusYear }}</h2>
-                    <p class="splis-hud-panel-subtitle">Based on approved dates (resolutions + ordinances, including appropriation ordinances)</p>
-                </div>
-                <div class="splis-hud-chart-wrap splis-hud-chart-wrap--tall">
-                    <canvas id="chart-output-month" aria-label="Monthly output"></canvas>
-                </div>
-            </div>
-
-            <div class="splis-hud-panel xl:col-span-5">
-                <div class="splis-hud-panel-corners" aria-hidden="true"></div>
-                <div class="splis-hud-panel-head flex items-start justify-between gap-2">
-                    <div>
-                        <h2 class="splis-hud-panel-title">Committee ranking</h2>
-                        <p class="splis-hud-panel-subtitle">Pending vs completed by committee</p>
-                    </div>
-                    <a href="{{ route('committee-monitoring.index', ['view' => 'pending']) }}" class="splis-hud-link text-xs">Open monitoring</a>
-                </div>
-                <div class="splis-hud-chart-wrap splis-hud-chart-wrap--tall">
-                    <canvas id="chart-committee-bars" aria-label="Committee workload ranking"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div class="splis-hud-mini-stat">
-                <span class="splis-hud-mini-label">Pending agenda</span>
-                <span class="splis-hud-mini-value">{{ number_format($agendaPipeline['pending']) }}</span>
-            </div>
-            <div class="splis-hud-mini-stat">
-                <span class="splis-hud-mini-label">Expiring soon</span>
-                <span class="splis-hud-mini-value">{{ number_format($agendaPipeline['expiring_soon']) }}</span>
-            </div>
-            <div class="splis-hud-mini-stat">
-                <span class="splis-hud-mini-label">Published</span>
-                <span class="splis-hud-mini-value">{{ number_format($agendaPipeline['published']) }}</span>
-            </div>
-            <div class="splis-hud-mini-stat">
-                <span class="splis-hud-mini-label">On final OB</span>
-                <span class="splis-hud-mini-value">{{ number_format($agendaPipeline['on_final_ob']) }}</span>
+            <div class="mt-6" data-map-canvas>
+                @include('admin.analytics.partials.bataan-political-map', [
+                    'municipalities' => $committeeMunicipalities,
+                ])
             </div>
         </div>
     </div>
 </div>
 @endsection
-
-@push('scripts')
-    @vite('resources/js/admin-analytics.js')
-@endpush

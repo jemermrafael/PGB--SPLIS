@@ -150,4 +150,20 @@ class LegislativeSession extends Model
     {
         return $query->whereHas('obDocument', fn (Builder $document) => $document->final());
     }
+
+    /**
+     * Sessions board members may browse (session must be scheduled).
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeVisibleToBoardMembers(Builder $query): Builder
+    {
+        return $query->where('status', 'scheduled');
+    }
+
+    public function isVisibleToBoardMembers(): bool
+    {
+        return $this->status === 'scheduled';
+    }
 }

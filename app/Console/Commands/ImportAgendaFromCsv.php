@@ -30,12 +30,12 @@ class ImportAgendaFromCsv extends Command
         }
 
         $this->table(
-            ['Total rows', 'Imported', 'Updated'],
-            [[$stats['total'], $stats['imported'], $stats['updated']]]
+            ['Total rows', 'Imported', 'Updated', 'Urgent (no tracking no.)'],
+            [[$stats['total'], $stats['imported'], $stats['updated'], $stats['urgent'] ?? 0]]
         );
 
         if (! is_file(config('agenda.csv_links_path'))) {
-            $this->comment('Tip: Agenda4.csv includes embedded PDF links; a separate links file is optional.');
+            $this->comment('Tip: agenda7.csv embeds PDF links in column B; a separate links file is optional.');
         }
 
         return self::SUCCESS;

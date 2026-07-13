@@ -24,7 +24,7 @@ class LegislativeSessionController extends Controller
             ->orderByDesc('id');
 
         if (auth()->user()?->isBoardMember()) {
-            $query->withFinalObDocument();
+            $query->visibleToBoardMembers();
         }
 
         $sessions = $query->paginate(20);

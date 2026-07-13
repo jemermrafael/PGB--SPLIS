@@ -87,7 +87,7 @@ class BoardMemberDashboardService
     {
         return LegislativeSession::query()
             ->with('obDocument')
-            ->withFinalObDocument()
+            ->visibleToBoardMembers()
             ->orderByDesc('session_date')
             ->orderByDesc('id');
     }
@@ -193,7 +193,7 @@ class BoardMemberDashboardService
     {
         return LegislativeSession::query()
             ->with(['obDocument.blocks.agendaItem'])
-            ->withFinalObDocument()
+            ->visibleToBoardMembers()
             ->where('session_date', '>=', now()->startOfMonth()->subMonths(1))
             ->orderBy('session_date')
             ->orderBy('session_time')

@@ -3,7 +3,7 @@
 @section('title', $ordinance->displayNumber().' — '.$ordinance->displaySeries().' — Ordinances — '.config('app.name'))
 
 @section('content')
-<div class="max-w-4xl">
+<div class="max-w-5xl">
     <div class="splis-page-header">
         <div>
             @if ($ordinance->publishedFromAgenda)
@@ -17,9 +17,6 @@
             <p class="splis-page-subtitle">{{ $ordinance->displaySeries() }}</p>
         </div>
         <div class="flex flex-wrap gap-2">
-            @if ($ordinance->pdf_url)
-                <a href="{{ $ordinance->pdf_url }}" target="_blank" rel="noopener" class="splis-btn-secondary">Ordinance PDF</a>
-            @endif
             @can('update', $ordinance)
                 <a href="{{ route('ordinances.edit', $ordinance) }}" class="splis-btn-primary">Edit</a>
             @endcan
@@ -130,6 +127,11 @@
             <dd class="mt-1 whitespace-pre-wrap text-slate-900 dark:text-slate-100">{{ $ordinance->remarks ?: '—' }}</dd>
         </div>
     </div>
+
+    @include('partials.pdf-document-embed', [
+        'pdfUrl' => $ordinance->pdf_url,
+        'embedTitle' => $ordinance->displayNumber().' PDF',
+    ])
 
     <div class="mt-6 flex flex-wrap gap-2">
         <a href="{{ route('ordinances.index') }}" class="splis-btn-secondary">Back to ordinances</a>

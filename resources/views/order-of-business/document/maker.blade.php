@@ -15,7 +15,12 @@
             <h1 class="splis-page-title truncate">Order of Business Maker</h1>
         </div>
         <div class="splis-ob-maker-actions flex flex-wrap gap-2">
-            <a href="{{ route('ob.document.print', $session) }}" target="_blank" class="splis-btn-secondary">Print preview</a>
+            <a href="{{ route('ob.document.print', $session) }}" target="_blank" class="splis-btn-secondary inline-flex items-center gap-2">
+                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18M6.34 18H4.5a2.25 2.25 0 01-2.25-2.25v-3.006A2.25 2.25 0 014.5 9.75h15a2.25 2.25 0 012.25 2.25v3.006A2.25 2.25 0 0119.5 18h-1.84M9.75 9.75h4.5V6.75a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75v3zM9.75 18v1.125c0 .621.504 1.125 1.125 1.125h2.25c.621 0 1.125-.504 1.125-1.125V18"/>
+                </svg>
+                Print preview
+            </a>
             <a href="{{ route('ob.sessions.show', $session) }}" class="splis-btn-secondary">Session</a>
             @can('delete', $session)
                 <form method="POST" action="{{ route('ob.sessions.destroy', $session) }}" onsubmit="return confirm('Delete this Order of Business session and its document? This cannot be undone.')">

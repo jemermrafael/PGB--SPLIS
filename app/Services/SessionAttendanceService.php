@@ -65,19 +65,24 @@ class SessionAttendanceService
 
         foreach ($roster as $member) {
             $present = 0;
-            $total = $sessions->count();
+            $sessionAttendance = [];
 
             foreach ($sessions as $session) {
                 $attendance = $session->attendances->firstWhere('board_member_id', $member->id);
-                if ($attendance?->is_present) {
+                $isPresent = $attendance?->is_present;
+
+                if ($isPresent === true) {
                     $present++;
                 }
+
+                $sessionAttendance[$session->id] = $isPresent;
             }
 
             $summary[] = [
                 'member' => $member,
                 'present' => $present,
-                'total' => $total,
+                'total' => $sessions->count(),
+                'sessions' => $sessionAttendance,
             ];
         }
 

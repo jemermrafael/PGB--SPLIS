@@ -34,4 +34,9 @@ class CommitteeTermSelection
             'selectedTerm' => $selectedTerm,
         ];
     }
+
+    public static function current(): CommitteeTerm
+    {
+        return self::resolve(null)['selectedTerm'];
+    }
 }
