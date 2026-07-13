@@ -28,7 +28,7 @@
     </div>
 
     <form id="resolutions-search-form" class="splis-filter-panel">
-        <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">Search resolutions</h2>
+        <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">Search Resolutions</h2>
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div>
                 <label class="splis-label">Number</label>

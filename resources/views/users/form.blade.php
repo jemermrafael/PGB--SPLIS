@@ -10,7 +10,7 @@
 <div class="max-w-2xl">
     <div class="splis-page-header !mb-6">
         <div>
-            <h1 class="splis-page-title">{{ $isEdit ? 'Edit user' : 'New user' }}</h1>
+            <h1 class="splis-page-title">{{ $isEdit ? 'Edit user' : 'New User' }}</h1>
             <p class="splis-page-subtitle">{{ $isEdit ? 'Update account details and permissions.' : 'Create a new SPLIS account.' }}</p>
         </div>
     </div>

@@ -56,6 +56,54 @@ class CommitteeMonitoringService
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    public function toArray(AgendaItem $item): array
+    {
+        $completed = filled($item->outcome);
+
+        return [
+            'id' => $item->id,
+            'display_label' => $item->displayLabel(),
+            'title' => $item->title,
+            'sender' => $item->sender,
+            'committee' => $item->committee_referred,
+            'date_of_referral' => $item->date_of_referral?->format('Y-m-d'),
+            'date_of_committee_meeting' => $item->date_of_committee_meeting?->format('Y-m-d'),
+            'committee_report_url' => $item->committee_report_url,
+            'has_report' => filled($item->committee_report_url),
+            'status' => $completed ? 'completed' : 'pending',
+            'status_label' => $completed ? 'Completed' : 'Pending',
+            'outcome' => $item->outcome,
+            'url' => route('agenda.show', $item),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $listFilters
+     * @param  array<string, mixed>  $baseFilters
+     * @return array{data: list<array<string, mixed>>, meta: array<string, int>, stats: array<string, int>}
+     */
+    public function searchPayload(array $listFilters, array $baseFilters, int $perPage = 25): array
+    {
+        $paginator = $this->paginate($listFilters, $perPage);
+
+        return [
+            'data' => collect($paginator->items())
+                ->map(fn (AgendaItem $item) => $this->toArray($item))
+                ->values()
+                ->all(),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+            ],
+            'stats' => $this->stats($baseFilters),
+        ];
+    }
+
+    /**
      * @param  array<string, mixed>  $filters
      */
     protected function baseQuery(array $filters): Builder

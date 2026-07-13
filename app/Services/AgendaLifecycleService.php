@@ -80,16 +80,27 @@ class AgendaLifecycleService
         }
     }
 
-    public function syncNewSession(LegislativeSession $session, ?int $userId = null): void
-    {
+    /**
+     * Place (and optionally relocate) eligible agendas into a session OB using lifecycle rules.
+     *
+     * @return array{added: int, relocated: int}
+     */
+    public function syncNewSession(
+        LegislativeSession $session,
+        ?int $userId = null,
+        bool $clearManualOverrides = true,
+    ): array {
+        $added = 0;
+        $relocated = 0;
+
         if (! in_array($session->status, ['draft', 'scheduled'], true)) {
-            return;
+            return compact('added', 'relocated');
         }
 
         $session->loadMissing(['obDocument', 'priorSession']);
 
         if (! $session->obDocument) {
-            return;
+            return compact('added', 'relocated');
         }
 
         AgendaItem::query()
@@ -98,20 +109,70 @@ class AgendaLifecycleService
             ->where('committee_referred', '!=', '')
             ->with(['lastObSyncedSession', 'obPlacements.legislativeSession'])
             ->orderBy('id')
-            ->chunkById(100, function ($agendas) use ($session, $userId): void {
+            ->chunkById(100, function ($agendas) use ($session, $userId, $clearManualOverrides, &$added, &$relocated): void {
                 foreach ($agendas as $agenda) {
                     if (! $this->prescribedDaysPermit($agenda)) {
                         continue;
                     }
 
-                    if (! $this->shouldSyncAgendaToSession($agenda, $session)) {
+                    if ($agenda->isObLifecycleResolved() || blank($agenda->committee_referred)) {
                         continue;
                     }
 
-                    $agenda->forceFill(['ob_manual_override_at' => null])->saveQuietly();
-                    $this->syncAgendaToSession($agenda->fresh(['lastObSyncedSession', 'obPlacements.legislativeSession']), $session, $userId);
+                    $fresh = $agenda->fresh(['lastObSyncedSession', 'obPlacements.legislativeSession']);
+
+                    if ($fresh === null) {
+                        continue;
+                    }
+
+                    if ($this->isAgendaInSession($fresh, $session)) {
+                        if ($fresh->hasObManualOverride() && ! $clearManualOverrides) {
+                            continue;
+                        }
+
+                        $targetSection = $this->resolveTargetSection($fresh, $session);
+
+                        if ($targetSection === null) {
+                            continue;
+                        }
+
+                        $currentSection = $this->documentService->sectionForAgendaInDocument(
+                            $session->obDocument,
+                            $fresh->id,
+                        );
+
+                        if ($currentSection === $targetSection) {
+                            continue;
+                        }
+
+                        if ($clearManualOverrides) {
+                            $fresh->forceFill(['ob_manual_override_at' => null])->saveQuietly();
+                            $fresh->refresh();
+                        }
+
+                        if ($this->relocateAgendaInSession($fresh, $session, $targetSection, $userId)) {
+                            $relocated++;
+                        }
+
+                        continue;
+                    }
+
+                    if ($this->resolveTargetSection($fresh, $session) === null) {
+                        continue;
+                    }
+
+                    if ($clearManualOverrides) {
+                        $fresh->forceFill(['ob_manual_override_at' => null])->saveQuietly();
+                        $fresh->refresh();
+                    }
+
+                    if ($this->syncAgendaToSession($fresh, $session, $userId)) {
+                        $added++;
+                    }
                 }
             });
+
+        return compact('added', 'relocated');
     }
 
     public function nearestUpcomingSession(): ?LegislativeSession

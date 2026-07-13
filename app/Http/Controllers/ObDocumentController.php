@@ -6,6 +6,7 @@ use App\Enums\ObBlockType;
 use App\Models\LegislativeSession;
 use App\Models\ObBlock;
 use App\Models\ObDocument;
+use App\Services\AgendaLifecycleService;
 use App\Services\ObAgendaPoolService;
 use App\Services\ObDocumentService;
 use App\Services\ObPrintRenderer;
@@ -38,6 +39,7 @@ class ObDocumentController extends Controller
                     'storeBlock' => route('ob.document.blocks.store', $session),
                     'reorder' => route('ob.document.blocks.reorder', $session),
                     'fromAgenda' => route('ob.document.blocks.from-agenda', $session),
+                    'syncAgendas' => route('ob.document.sync-agendas', $session),
                     'agendaPool' => route('ob.document.agenda-pool', $session),
                     'updateBlock' => route('ob.document.blocks.update', [$session, '__BLOCK__']),
                     'deleteBlock' => route('ob.document.blocks.destroy', [$session, '__BLOCK__']),
@@ -237,6 +239,36 @@ class ObDocumentController extends Controller
             'all_blocks' => $service->blocksPayload($document->fresh()),
             'document' => $service->documentPayload($document->fresh()),
         ], 201);
+    }
+
+    public function syncAgendas(
+        LegislativeSession $legislativeSession,
+        ObDocumentService $service,
+        AgendaLifecycleService $lifecycle,
+    ): JsonResponse {
+        $document = $this->documentFor($legislativeSession);
+        $this->authorize('update', $document);
+
+        if (! in_array($legislativeSession->status, ['draft', 'scheduled'], true)) {
+            return response()->json([
+                'message' => 'Auto-place is only available for draft or scheduled sessions.',
+            ], 422);
+        }
+
+        $result = $lifecycle->syncNewSession(
+            $legislativeSession->fresh(['obDocument', 'priorSession']),
+            auth()->id(),
+            clearManualOverrides: false,
+        );
+
+        $document = $document->fresh();
+
+        return response()->json([
+            'added' => $result['added'],
+            'relocated' => $result['relocated'],
+            'blocks' => $service->blocksPayload($document),
+            'document' => $service->documentPayload($document),
+        ]);
     }
 
     protected function documentFor(LegislativeSession $session): ObDocument

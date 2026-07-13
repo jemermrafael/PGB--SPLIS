@@ -13,14 +13,18 @@ class AdminAnalyticsMapController extends Controller
     {
         abort_unless($request->user()?->canAdmin(), 403);
 
-        $committee = Committee::query()
-            ->active()
-            ->find((int) $request->integer('committee_id'));
+        $committee = null;
 
-        if ($committee === null) {
-            return response()->json([
-                'message' => 'Committee not found.',
-            ], 422);
+        if ($request->filled('committee_id')) {
+            $committee = Committee::query()
+                ->active()
+                ->find((int) $request->integer('committee_id'));
+
+            if ($committee === null) {
+                return response()->json([
+                    'message' => 'Committee not found.',
+                ], 422);
+            }
         }
 
         $year = (int) $request->integer('year', (int) now()->format('Y'));

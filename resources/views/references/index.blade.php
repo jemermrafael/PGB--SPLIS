@@ -12,13 +12,13 @@
         @can('create', App\Models\ReferenceMaterial::class)
             <a href="{{ route('references.create') }}" class="splis-btn-primary">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                Add reference
+                Add Reference
             </a>
         @endcan
     </div>
 
     <form method="GET" action="{{ route('references.index') }}" class="splis-filter-panel">
-        <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">Search reference library</h2>
+        <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">Search Reference Library</h2>
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
             <div class="xl:col-span-2">
                 <label class="splis-label">Keyword</label>

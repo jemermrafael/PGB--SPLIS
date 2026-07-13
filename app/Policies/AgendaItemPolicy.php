@@ -54,7 +54,14 @@ class AgendaItemPolicy
 
     public function addToOrderOfBusiness(User $user, AgendaItem $agendaItem): bool
     {
-        return $user->canEncode() && $agendaItem->status !== AgendaItem::STATUS_DONE;
+        return $user->canEncode()
+            && $agendaItem->status !== AgendaItem::STATUS_DONE
+            && ! $agendaItem->obPlacements()->exists();
+    }
+
+    public function removeFromOrderOfBusiness(User $user, AgendaItem $agendaItem): bool
+    {
+        return $user->canEncode() && $agendaItem->obPlacements()->exists();
     }
 
     public function linkOutput(User $user, AgendaItem $agendaItem): bool

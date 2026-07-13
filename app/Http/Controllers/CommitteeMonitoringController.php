@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Committee;
 use App\Services\CommitteeMonitoringService;
 use App\Support\CommitteeTermSelection;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -14,7 +15,7 @@ class CommitteeMonitoringController extends Controller
         protected CommitteeMonitoringService $monitoringService,
     ) {}
 
-    public function index(Request $request): View
+    public function index(Request $request): View|JsonResponse
     {
         $this->authorize('viewAny', Committee::class);
 
@@ -30,18 +31,28 @@ class CommitteeMonitoringController extends Controller
 
         $view = $this->resolveView($request);
         $listFilters = $this->listFilters($baseFilters, $request, $view);
+        $filters = array_merge($baseFilters, [
+            'status' => (string) ($listFilters['status'] ?? ''),
+            'has_report' => (string) ($listFilters['has_report'] ?? ''),
+            'has_schedule' => (string) ($listFilters['has_schedule'] ?? ''),
+            'view' => $view,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(array_merge(
+                $this->monitoringService->searchPayload($listFilters, $baseFilters),
+                [
+                    'filters' => $filters,
+                    'empty_message' => $this->emptyMessage($view),
+                ],
+            ));
+        }
 
         return view('committee-monitoring.index', [
             'selectedTerm' => $selectedTerm,
             'committees' => $this->monitoringService->committeeOptions($selectedTerm->id),
-            'filters' => array_merge($baseFilters, [
-                'status' => (string) ($listFilters['status'] ?? ''),
-                'has_report' => (string) ($listFilters['has_report'] ?? ''),
-                'has_schedule' => (string) ($listFilters['has_schedule'] ?? ''),
-                'view' => $view,
-            ]),
+            'filters' => $filters,
             'stats' => $this->monitoringService->stats($baseFilters),
-            'items' => $this->monitoringService->paginate($listFilters, 25),
         ]);
     }
 
@@ -102,5 +113,15 @@ class CommitteeMonitoringController extends Controller
 
         return $filters;
     }
-}
 
+    protected function emptyMessage(string $view): string
+    {
+        return match ($view) {
+            'pending' => 'No pending referred measures found for the selected filters.',
+            'scheduled' => 'No scheduled committee meetings found for the selected filters.',
+            'reports' => 'No referred measures with committee reports found for the selected filters.',
+            'completed' => 'No completed referred measures found for the selected filters.',
+            default => 'No referred measures found for the selected filters.',
+        };
+    }
+}

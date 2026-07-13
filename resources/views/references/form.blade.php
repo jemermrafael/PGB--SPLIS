@@ -6,7 +6,7 @@
 <div class="max-w-4xl">
     <div class="splis-page-header">
         <div>
-            <h1 class="splis-page-title">{{ $reference->exists ? 'Edit reference material' : 'Add reference material' }}</h1>
+            <h1 class="splis-page-title">{{ $reference->exists ? 'Edit reference material' : 'Add Reference Material' }}</h1>
             <p class="splis-page-subtitle">Upload and maintain official reference documents and metadata.</p>
         </div>
     </div>
@@ -92,7 +92,7 @@
         </div>
 
         <div class="flex gap-2">
-            <button type="submit" class="splis-btn-primary">{{ $reference->exists ? 'Save changes' : 'Create reference' }}</button>
+            <button type="submit" class="splis-btn-primary">{{ $reference->exists ? 'Save changes' : 'Create Reference' }}</button>
             @if ($reference->exists)
                 <a href="{{ route('references.show', $reference) }}" class="splis-btn-secondary">Cancel</a>
             @else

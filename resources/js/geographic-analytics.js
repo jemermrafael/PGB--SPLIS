@@ -62,19 +62,14 @@ function updateMapSubtitle(root, payload) {
         return;
     }
 
-    if (!payload?.committee) {
-        subtitle.textContent = 'Select a committee to view the map';
-
-        return;
-    }
-
+    const committee = payload?.committee || 'All committees';
     const measureLabel = {
         both: 'agendas and resolutions',
         agendas: 'agendas',
         resolutions: 'resolutions',
-    }[payload.measure ?? 'both'] ?? 'items';
+    }[payload?.measure ?? 'both'] ?? 'items';
 
-    subtitle.textContent = `${payload.committee} · ${payload.period_label ?? ''} · ${formatMapValue(payload.total ?? 0)} ${measureLabel}`;
+    subtitle.textContent = `${committee} · ${payload?.period_label ?? ''} · ${formatMapValue(payload?.total ?? 0)} ${measureLabel}`;
 }
 
 export function initCommitteeMunicipalityMap() {
@@ -95,17 +90,14 @@ export function initCommitteeMunicipalityMap() {
     const renderFromFilters = async () => {
         const { committeeId, year, month, measure } = readMapFilters(root);
 
-        if (!committeeId) {
-            updateMapSubtitle(root, null);
-
-            return;
-        }
-
         const params = new URLSearchParams({
-            committee_id: committeeId,
             year: year || String(new Date().getFullYear()),
             measure,
         });
+
+        if (committeeId !== '') {
+            params.set('committee_id', committeeId);
+        }
 
         if (month !== '') {
             params.set('month', month);

@@ -93,7 +93,7 @@ function renderGridItem(doc) {
                 <div><dt>Enacted</dt><dd>${formatDate(doc.date)}</dd></div>
                 <div><dt>Approved</dt><dd>${formatDate(doc.date_approved)}</dd></div>
                 <div><dt>Effectivity</dt><dd>${formatDate(doc.effectivity_date)}</dd></div>
-                ${doc.board_members_attribution ? `<div class="col-span-2"><dt>Board members</dt><dd>${escapeHtml(doc.board_members_attribution)}</dd></div>` : ''}
+                ${doc.board_members_attribution ? `<div class="col-span-2"><dt>Board Members</dt><dd>${escapeHtml(doc.board_members_attribution)}</dd></div>` : ''}
             </dl>
             <div class="mt-auto flex items-center justify-between gap-2 border-t border-slate-100 pt-3 dark:border-slate-700">
                 <span class="text-xs text-slate-500">${escapeHtml(doc.series_label)}</span>

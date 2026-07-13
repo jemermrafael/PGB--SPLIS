@@ -154,6 +154,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/agenda/{agenda}/unlink-resolution', [AgendaItemController::class, 'unlinkResolution'])->name('agenda.unlink-resolution');
     Route::post('/agenda/{agenda}/link-output', [AgendaItemController::class, 'linkOutput'])->name('agenda.link-output');
     Route::post('/agenda/{agenda}/add-to-order-of-business', [AgendaItemController::class, 'addToOrderOfBusiness'])->name('agenda.add-to-order-of-business');
+    Route::post('/agenda/{agenda}/remove-from-order-of-business', [AgendaItemController::class, 'removeFromOrderOfBusiness'])->name('agenda.remove-from-order-of-business');
     Route::delete('/agenda/{agenda}/versions/{version}', [AgendaItemController::class, 'destroyVersion'])->name('agenda.versions.destroy');
 
     Route::get('/committees', [CommitteeController::class, 'index'])->name('committees.index');
@@ -192,6 +193,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/{legislativeSession}/document/blocks', [ObDocumentController::class, 'storeBlock'])->name('document.blocks.store');
         Route::put('/{legislativeSession}/document/blocks/reorder', [ObDocumentController::class, 'reorderBlocks'])->name('document.blocks.reorder');
         Route::post('/{legislativeSession}/document/blocks/from-agenda', [ObDocumentController::class, 'addFromAgenda'])->name('document.blocks.from-agenda');
+        Route::post('/{legislativeSession}/document/sync-agendas', [ObDocumentController::class, 'syncAgendas'])->name('document.sync-agendas');
         Route::put('/{legislativeSession}/document/blocks/{block}', [ObDocumentController::class, 'updateBlock'])->name('document.blocks.update');
         Route::post('/{legislativeSession}/document/blocks/{block}/move-section', [ObDocumentController::class, 'moveBlockToSection'])->name('document.blocks.move-section');
         Route::delete('/{legislativeSession}/document/blocks/{block}', [ObDocumentController::class, 'destroyBlock'])->name('document.blocks.destroy');

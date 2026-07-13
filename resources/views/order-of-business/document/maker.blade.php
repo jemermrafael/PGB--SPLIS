@@ -78,11 +78,21 @@
         @endif
 
         <div class="splis-ob-maker-canvas splis-card min-w-0 flex-1">
-            <div class="splis-card-header flex items-center justify-between">
+            <div class="splis-card-header flex items-center justify-between gap-3">
                 <div>
                     <h2 class="splis-card-title">Document</h2>
                     <p class="splis-card-subtitle">Click a block to select · edits save automatically</p>
                 </div>
+                @if ($canEdit)
+                    <button
+                        type="button"
+                        id="ob-sync-agendas"
+                        class="splis-btn-secondary shrink-0"
+                        title="Place eligible agendas using lifecycle rules"
+                    >
+                        Auto-place agendas
+                    </button>
+                @endif
             </div>
             <div id="ob-blocks-list" class="splis-card-body space-y-3"></div>
             <div id="ob-blocks-empty" class="hidden splis-card-body text-center text-slate-500">

@@ -13,7 +13,7 @@
 <div class="max-w-2xl">
     <div class="splis-page-header !mb-6">
         <div>
-            <h1 class="splis-page-title">{{ $isEdit ? 'Edit board member' : 'New board member' }}</h1>
+            <h1 class="splis-page-title">{{ $isEdit ? 'Edit board member' : 'New Board Member' }}</h1>
             <p class="splis-page-subtitle">Personnel record and term roster assignment.</p>
         </div>
     </div>

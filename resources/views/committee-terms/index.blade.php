@@ -16,7 +16,7 @@
 
     <div class="mb-4 flex flex-wrap gap-2 text-sm">
         <a href="{{ route('committees.index') }}" class="splis-btn-secondary">Committees</a>
-        <a href="{{ route('board-members.index') }}" class="splis-btn-secondary">Board members</a>
+        <a href="{{ route('board-members.index') }}" class="splis-btn-secondary">Board Members</a>
     </div>
 
     @if (session('status'))

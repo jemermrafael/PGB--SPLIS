@@ -12,13 +12,13 @@
         @can('create', App\Models\Committee::class)
             <a href="{{ route('committees.create') }}" class="splis-btn-primary">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                Add committee
+                Add Committee
             </a>
         @endcan
     </div>
 
     <div class="mb-4 flex flex-wrap gap-2 text-sm">
-        <a href="{{ route('board-members.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary">Board members</a>
+        <a href="{{ route('board-members.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary">Board Members</a>
         <a href="{{ route('committee-terms.index') }}" class="splis-btn-secondary">Election terms</a>
     </div>
 

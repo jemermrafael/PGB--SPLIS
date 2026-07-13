@@ -153,7 +153,7 @@
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <div class="md:col-span-2 space-y-2">
                         <p class="splis-page-title !text-xl md:!text-2xl">{{ $incoming->displayLabel() }}</p>
-                        <label class="splis-label" for="link-resolution-q">Search resolution</label>
+                        <label class="splis-label" for="link-resolution-q">Search Resolution</label>
                         <input
                             type="text"
                             id="link-resolution-q"

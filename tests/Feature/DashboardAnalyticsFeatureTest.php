@@ -27,6 +27,7 @@ class DashboardAnalyticsFeatureTest extends TestCase
             ->assertSee('Monthly Output')
             ->assertSee('Bataan — Agendas')
             ->assertSee('All months')
+            ->assertSee('All committees')
             ->assertDontSee('Geographic dashboard')
             ->assertDontSee('Department × Budget Amount')
             ->assertDontSee('Municipality × Resolution Category')
@@ -53,6 +54,15 @@ class DashboardAnalyticsFeatureTest extends TestCase
             ->assertJsonPath('committee_id', $committee->id)
             ->assertJsonPath('period_label', '2024 (all months)')
             ->assertJsonStructure(['municipalities', 'total', 'measure']);
+
+        $this->actingAs($admin)
+            ->getJson(route('admin.analytics.municipality-map', [
+                'year' => 2024,
+                'measure' => 'both',
+            ]))
+            ->assertOk()
+            ->assertJsonPath('committee', 'All committees')
+            ->assertJsonPath('committee_id', null);
     }
 
     public function test_geographic_dashboard_route_is_removed(): void

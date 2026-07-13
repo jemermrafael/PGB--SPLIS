@@ -5,7 +5,7 @@
 @section('content')
 <div class="splis-page-header">
     <div>
-        <h1 class="splis-page-title">Database backups</h1>
+        <h1 class="splis-page-title">Database Backups</h1>
         <p class="splis-page-subtitle">Daily MySQL dumps for disaster recovery and refreshing other environments.</p>
     </div>
     <form method="POST" action="{{ route('admin.backups.store') }}">

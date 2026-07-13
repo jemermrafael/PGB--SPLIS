@@ -117,6 +117,10 @@ class AgendaItemController extends Controller
             'finalObPlacements.legislativeSession',
             'finalObPlacements.agendaItemVersion',
             'finalObPlacements.obBlock',
+            'obPlacements.legislativeSession',
+            'obPlacements.agendaItemVersion',
+            'obPlacements.obBlock',
+            'obPlacements.obDocument',
             'activityLogs.user',
         ]);
 
@@ -131,6 +135,7 @@ class AgendaItemController extends Controller
         return view('agenda.show', [
             'agenda' => $agenda,
             'finalObPlacements' => $agenda->finalObPlacements,
+            'obPlacements' => $agenda->obPlacements,
             'obSessions' => $obSessions,
             'splisActivityLogs' => $agenda->activityLogs,
             'obPlacementCount' => $agenda->activityLogs->where('action', 'agenda.added_to_ob')->count(),
@@ -336,6 +341,43 @@ class AgendaItemController extends Controller
         return redirect()
             ->route('ob.document.maker', $session)
             ->with('status', 'Agenda '.$agenda->displayLabel().' added to '.$session->displayTitle().'.');
+    }
+
+    public function removeFromOrderOfBusiness(
+        Request $request,
+        AgendaItem $agenda,
+        ObDocumentService $documentService,
+    ): RedirectResponse {
+        $this->authorize('removeFromOrderOfBusiness', $agenda);
+
+        $validated = $request->validate([
+            'legislative_session_id' => ['required', 'integer', 'exists:legislative_sessions,id'],
+        ]);
+
+        $session = LegislativeSession::query()
+            ->with('obDocument')
+            ->findOrFail($validated['legislative_session_id']);
+
+        abort_unless($session->obDocument, 404, 'This session has no Order of Business document.');
+
+        $hasPlacement = $agenda->obPlacements()
+            ->where('legislative_session_id', $session->id)
+            ->exists();
+
+        abort_unless($hasPlacement, 404, 'This agenda item is not on that Order of Business.');
+
+        $documentService->removeAgendaFromDocument(
+            $session->obDocument,
+            $agenda,
+            $request->user()->id,
+            'manual',
+        );
+
+        $agenda->forceFill(['ob_manual_override_at' => now()])->saveQuietly();
+
+        return redirect()
+            ->route('agenda.show', $agenda)
+            ->with('status', 'Agenda '.$agenda->displayLabel().' removed from '.$session->displayTitle().'.');
     }
 
     public function destroyVersion(

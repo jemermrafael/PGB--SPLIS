@@ -92,12 +92,12 @@
                                 <p class="px-3 py-2 text-sm font-medium text-slate-800 dark:text-slate-100">{{ auth()->user()->name }}</p>
                                 <p class="px-3 pb-2 text-xs text-slate-500">{{ auth()->user()->role->label() }}</p>
                                 @if (auth()->user()->canAdmin())
-                                    <a href="{{ route('admin.analytics.index') }}" class="splis-user-menu-link">Executive dashboard</a>
+                                    <a href="{{ route('admin.analytics.index') }}" class="splis-user-menu-link">Executive Dashboard</a>
                                 @endif
                                 @if (auth()->user()->canManageUsers())
-                                    <a href="{{ route('users.index') }}" class="splis-user-menu-link">Manage users</a>
-                                    <a href="{{ route('admin.data-sync.index') }}" class="splis-user-menu-link">Data sync</a>
-                                    <a href="{{ route('admin.backups.index') }}" class="splis-user-menu-link">Database backups</a>
+                                    <a href="{{ route('users.index') }}" class="splis-user-menu-link">Manage Users</a>
+                                    <a href="{{ route('admin.data-sync.index') }}" class="splis-user-menu-link">Data Sync</a>
+                                    <a href="{{ route('admin.backups.index') }}" class="splis-user-menu-link">Database Backups</a>
                                 @endif
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf

@@ -29,7 +29,7 @@
     </div>
     <div class="flex gap-2">
         @can('update', $document)
-            <a href="{{ route('ob.document.maker', $session) }}" class="splis-btn-secondary">Back to maker</a>
+            <a href="{{ route('ob.document.maker', $session) }}" class="splis-btn-secondary">Back to Maker</a>
         @else
             <a href="{{ route('ob.sessions.show', $session) }}" class="splis-btn-secondary">Back</a>
         @endcan

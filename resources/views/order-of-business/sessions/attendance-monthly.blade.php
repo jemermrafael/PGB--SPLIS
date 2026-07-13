@@ -9,7 +9,7 @@
             <h1 class="splis-page-title">Monthly Attendance Report</h1>
             <p class="splis-page-subtitle">{{ \Carbon\Carbon::create($year, $month, 1)->format('F Y') }} · {{ $sessions->count() }} session(s)</p>
         </div>
-        <a href="{{ route('ob.sessions.index') }}" class="splis-btn-secondary">Back to sessions</a>
+        <a href="{{ route('ob.sessions.index') }}" class="splis-btn-secondary">Back to Sessions</a>
     </div>
 
     <form method="GET" class="splis-card splis-card-body mb-6 flex flex-wrap items-end gap-4">
@@ -25,7 +25,7 @@
             <label class="splis-label" for="year">Year</label>
             <input type="number" name="year" id="year" value="{{ $year }}" min="2020" max="2100" class="splis-input w-28">
         </div>
-        <button type="submit" class="splis-btn-primary">View report</button>
+        <button type="submit" class="splis-btn-primary">View Report</button>
     </form>
 
     @if ($sessions->isEmpty())

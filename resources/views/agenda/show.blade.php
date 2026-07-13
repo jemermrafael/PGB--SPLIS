@@ -173,7 +173,7 @@
         </div>
 
         <div class="splis-detail-sidebar-column">
-            @if ($agenda->hasIncoming() || $agenda->resolution || $agenda->ordinance || $agenda->appropriationOrdinance || $finalObPlacements->isNotEmpty() || auth()->user()?->can('addToOrderOfBusiness', $agenda) || auth()->user()?->can('linkOutput', $agenda))
+            @if ($agenda->hasIncoming() || $agenda->resolution || $agenda->ordinance || $agenda->appropriationOrdinance || $obPlacements->isNotEmpty() || auth()->user()?->can('addToOrderOfBusiness', $agenda) || auth()->user()?->can('linkOutput', $agenda) || auth()->user()?->can('removeFromOrderOfBusiness', $agenda))
                 <aside class="splis-card">
                     <div class="splis-card-header">
                         <h2 class="splis-card-title">Connections</h2>
@@ -262,7 +262,7 @@
                                 @enderror
                             </div>
                         @endcan
-                        @include('agenda.partials.ob-placements', ['placements' => $finalObPlacements])
+                        @include('agenda.partials.ob-placements', ['agenda' => $agenda, 'placements' => $obPlacements])
                         @can('addToOrderOfBusiness', $agenda)
                             <div class="border-t border-slate-200 pt-4 dark:border-slate-700">
                                 <p class="splis-detail-label">Add to Order of Business</p>

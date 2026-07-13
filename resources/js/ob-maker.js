@@ -740,7 +740,7 @@ export function initObMaker() {
         }
     }
 
-    function confirmAction({ title, message, confirmLabel = 'Delete' }) {
+    function confirmAction({ title, message, confirmLabel = 'Delete', danger = true }) {
         if (!confirmDialog || !confirmTitleEl || !confirmMessageEl || !confirmOkBtn) {
             return Promise.resolve(window.confirm(message));
         }
@@ -750,6 +750,8 @@ export function initObMaker() {
             confirmTitleEl.textContent = title;
             confirmMessageEl.textContent = message;
             confirmOkBtn.textContent = confirmLabel;
+            confirmOkBtn.classList.toggle('splis-btn-danger', danger);
+            confirmOkBtn.classList.toggle('splis-btn-primary', !danger);
             confirmDialog.classList.add('is-open');
             confirmDialog.setAttribute('aria-hidden', 'false');
             document.body.classList.add('splis-ob-dialog-open');
@@ -1078,6 +1080,53 @@ export function initObMaker() {
         }
     }
 
+    async function syncAgendas() {
+        if (!canEdit || !urls.syncAgendas) {
+            return;
+        }
+
+        const confirmed = await confirmAction({
+            title: 'Auto-place agendas?',
+            message:
+                'Place eligible agendas into this Order of Business using lifecycle rules (unassigned, unfinished, or committee reports). Manually moved items are left as-is. Items already in the correct section are skipped.',
+            confirmLabel: 'Auto-place',
+            danger: false,
+        });
+
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            setStatus('Auto-placing agendas…');
+            const data = await api(urls.syncAgendas, { method: 'POST', body: '{}' });
+            blocks = normalizeBlocks(data.blocks ?? blocks).sort((a, b) => a.sort_order - b.sort_order);
+            documentState = data.document ?? documentState;
+            if (selectedBlockId && !blocks.some((block) => block.id === selectedBlockId)) {
+                selectedBlockId = blocks[0]?.id ?? null;
+            }
+            renderBlocks();
+            loadAgendaPool(1, false);
+
+            const added = Number(data.added ?? 0);
+            const relocated = Number(data.relocated ?? 0);
+            if (added === 0 && relocated === 0) {
+                setStatus('No eligible agendas to place or move.');
+            } else {
+                const parts = [];
+                if (added > 0) {
+                    parts.push(`${added} placed`);
+                }
+                if (relocated > 0) {
+                    parts.push(`${relocated} moved`);
+                }
+                setStatus(`Auto-place complete: ${parts.join(', ')}.`);
+            }
+        } catch (error) {
+            setStatus(error.message, true);
+        }
+    }
+
     const saveDocumentMeta = debounce(async () => {
         if (!canEdit) {
             return;
@@ -1114,6 +1163,11 @@ export function initObMaker() {
 
         if (target.matches('#ob-add-selected-agenda')) {
             addSelectedAgenda();
+            return;
+        }
+
+        if (target.matches('#ob-sync-agendas')) {
+            syncAgendas();
             return;
         }
 

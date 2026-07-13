@@ -76,9 +76,9 @@ class ExecutiveAnalyticsService
     }
 
     /**
-     * @return array{municipalities: list<array<string, mixed>>, year: int, month: ?int, committee: string, committee_id: int, measure: string, period_label: string, total: int}
+     * @return array{municipalities: list<array<string, mixed>>, year: int, month: ?int, committee: string, committee_id: ?int, measure: string, period_label: string, total: int}
      */
-    public function committeeMunicipalityMap(Committee $committee, int $year, ?int $month, string $measure = 'both'): array
+    public function committeeMunicipalityMap(?Committee $committee, int $year, ?int $month, string $measure = 'both'): array
     {
         if (! in_array($measure, ['both', 'agendas', 'resolutions'], true)) {
             $measure = 'both';
@@ -89,7 +89,7 @@ class ExecutiveAnalyticsService
         $municipalities = Municipality::query()
             ->orderBy('description')
             ->get()
-            ->map(function (Municipality $municipality) use ($committee, $measure, $year, $month, $start, $end): array {
+            ->map(function (Municipality $municipality) use ($committee, $measure, $start, $end): array {
                 $label = $municipality->senderLabel();
                 $slug = BataanPoliticalMap::slugForName($label);
 
@@ -100,7 +100,10 @@ class ExecutiveAnalyticsService
                     $agendas = AgendaItem::query()
                         ->whereNotNull('committee_referred')
                         ->where('committee_referred', '!=', '')
-                        ->tap(fn ($query) => CommitteeLookup::applyAgendaCommitteeFilter($query, $committee))
+                        ->when(
+                            $committee !== null,
+                            fn ($query) => $query->tap(fn ($builder) => CommitteeLookup::applyAgendaCommitteeFilter($builder, $committee))
+                        )
                         ->where(function ($query) use ($label, $municipality): void {
                             $query->where('sender', 'like', '%'.$label.'%')
                                 ->orWhere('sender', 'like', '%'.$municipality->description.'%');
@@ -114,7 +117,10 @@ class ExecutiveAnalyticsService
                     $resolutions = Resolution::query()
                         ->whereNotNull('committee')
                         ->where('committee', '!=', '')
-                        ->tap(fn ($query) => CommitteeLookup::applyResolutionCommitteeFilter($query, $committee))
+                        ->when(
+                            $committee !== null,
+                            fn ($query) => $query->tap(fn ($builder) => CommitteeLookup::applyResolutionCommitteeFilter($builder, $committee))
+                        )
                         ->where('municipality_id', $municipality->id)
                         ->whereNotNull('date_approved')
                         ->whereBetween('date_approved', [$start, $end])
@@ -143,8 +149,8 @@ class ExecutiveAnalyticsService
             'municipalities' => $municipalities,
             'year' => $year,
             'month' => $month,
-            'committee' => $committee->name,
-            'committee_id' => $committee->id,
+            'committee' => $committee?->name ?? 'All committees',
+            'committee_id' => $committee?->id,
             'measure' => $measure,
             'period_label' => $this->mapPeriodLabel($year, $month),
             'total' => (int) collect($municipalities)->sum('total'),

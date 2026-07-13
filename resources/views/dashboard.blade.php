@@ -9,7 +9,7 @@
         <div class="relative w-full">
             <p class="splis-dashboard-hero-eyebrow">Legislative archive</p>
             <h1 class="splis-page-title text-white">Dashboard</h1>
-            <p class="splis-dashboard-hero-subtitle">Search resolutions and ordinances — {{ number_format($totalDocuments) }} documents in the archive ({{ number_format($totalResolutions) }} resolutions · {{ number_format($totalOrdinances) }} ordinances).</p>
+            <p class="splis-dashboard-hero-subtitle">Search Resolutions and ordinances — {{ number_format($totalDocuments) }} documents in the archive ({{ number_format($totalResolutions) }} resolutions · {{ number_format($totalOrdinances) }} ordinances).</p>
         </div>
     </div>
 

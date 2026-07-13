@@ -184,11 +184,7 @@
                 <h2 class="splis-exec-panel-title">Bataan — Agendas &amp; Resolutions by Municipality</h2>
                 <p class="text-sm text-slate-500 dark:text-slate-400">Agendas counted by date passed · Resolutions by date approved</p>
                 <p class="splis-exec-panel-subtitle" data-map-subtitle>
-                    @if ($committeeMap['committee'] ?? false)
-                        {{ $committeeMap['committee'] }} · {{ $committeeMap['period_label'] ?? '' }} · {{ number_format($committeeMapTotal) }} shown
-                    @else
-                        Select a committee to view the map
-                    @endif
+                    {{ $committeeMap['committee'] ?? 'All committees' }} · {{ $committeeMap['period_label'] ?? '' }} · {{ number_format($committeeMapTotal) }} shown
                 </p>
             </div>
 
@@ -196,7 +192,7 @@
                 <div class="sm:col-span-2">
                     <label class="splis-label" for="map-committee-id">Committee</label>
                     <select id="map-committee-id" class="splis-input" data-map-filter="committee_id">
-                        <option value="" disabled @selected(! $mapCommitteeId)>Select committee</option>
+                        <option value="" @selected($mapCommitteeId === null)>All committees</option>
                         @foreach ($committees as $committee)
                             <option value="{{ $committee->id }}" @selected($mapCommitteeId === $committee->id)>{{ $committee->name }}</option>
                         @endforeach

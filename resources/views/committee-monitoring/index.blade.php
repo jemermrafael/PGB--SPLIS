@@ -5,17 +5,12 @@
 @section('content')
 @php
     $activeView = $filters['view'] ?? 'referred';
-    $statLink = function (string $view) use ($filters): string {
-        return route('committee-monitoring.index', array_filter([
-            'view' => $view === 'referred' ? null : $view,
-            'committee_id' => $filters['committee_id'] ?? null,
-            'date_from' => $filters['date_from'] ?? null,
-            'date_to' => $filters['date_to'] ?? null,
-            'q' => $filters['q'] ?? null,
-        ]));
-    };
 @endphp
-<div class="max-w-7xl">
+<div
+    id="committee-monitoring"
+    class="max-w-7xl"
+    data-search-url="{{ route('committee-monitoring.index') }}"
+>
     <div class="splis-page-header">
         <div>
             <h1 class="splis-page-title">Committee Monitoring</h1>
@@ -24,56 +19,66 @@
     </div>
 
     <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <a
-            href="{{ $statLink('referred') }}#committee-queue"
-            class="splis-stat splis-stat--brand splis-stat--clickable {{ $activeView === 'referred' ? 'splis-stat--active' : '' }}"
+        <button
+            type="button"
+            data-committee-stat-filter
+            data-view="referred"
+            class="splis-stat splis-stat--brand splis-stat--clickable text-left {{ $activeView === 'referred' ? 'splis-stat--active' : '' }}"
         >
             <p class="splis-stat-label">Referred</p>
-            <p class="splis-stat-value">{{ number_format($stats['total']) }}</p>
+            <p class="splis-stat-value" id="committee-stat-total">{{ number_format($stats['total']) }}</p>
             <p class="splis-stat-meta">Total tracked items</p>
-        </a>
-        <a
-            href="{{ $statLink('pending') }}#committee-queue"
-            class="splis-stat splis-stat--gold splis-stat--clickable {{ $activeView === 'pending' ? 'splis-stat--active' : '' }}"
+        </button>
+        <button
+            type="button"
+            data-committee-stat-filter
+            data-view="pending"
+            class="splis-stat splis-stat--gold splis-stat--clickable text-left {{ $activeView === 'pending' ? 'splis-stat--active' : '' }}"
         >
             <p class="splis-stat-label">Pending</p>
-            <p class="splis-stat-value">{{ number_format($stats['pending']) }}</p>
+            <p class="splis-stat-value" id="committee-stat-pending">{{ number_format($stats['pending']) }}</p>
             <p class="splis-stat-meta">No outcome yet</p>
-        </a>
-        <a
-            href="{{ $statLink('scheduled') }}#committee-queue"
-            class="splis-stat splis-stat--sky splis-stat--clickable {{ $activeView === 'scheduled' ? 'splis-stat--active' : '' }}"
+        </button>
+        <button
+            type="button"
+            data-committee-stat-filter
+            data-view="scheduled"
+            class="splis-stat splis-stat--sky splis-stat--clickable text-left {{ $activeView === 'scheduled' ? 'splis-stat--active' : '' }}"
         >
             <p class="splis-stat-label">Scheduled</p>
-            <p class="splis-stat-value">{{ number_format($stats['with_schedule']) }}</p>
+            <p class="splis-stat-value" id="committee-stat-scheduled">{{ number_format($stats['with_schedule']) }}</p>
             <p class="splis-stat-meta">With committee meeting date</p>
-        </a>
-        <a
-            href="{{ $statLink('reports') }}#committee-queue"
-            class="splis-stat splis-stat--green splis-stat--clickable {{ $activeView === 'reports' ? 'splis-stat--active' : '' }}"
+        </button>
+        <button
+            type="button"
+            data-committee-stat-filter
+            data-view="reports"
+            class="splis-stat splis-stat--green splis-stat--clickable text-left {{ $activeView === 'reports' ? 'splis-stat--active' : '' }}"
         >
             <p class="splis-stat-label">Reports</p>
-            <p class="splis-stat-value">{{ number_format($stats['with_report']) }}</p>
+            <p class="splis-stat-value" id="committee-stat-reports">{{ number_format($stats['with_report']) }}</p>
             <p class="splis-stat-meta">With report link</p>
-        </a>
-        <a
-            href="{{ $statLink('completed') }}#committee-queue"
-            class="splis-stat splis-stat--clickable {{ $activeView === 'completed' ? 'splis-stat--active' : '' }}"
+        </button>
+        <button
+            type="button"
+            data-committee-stat-filter
+            data-view="completed"
+            class="splis-stat splis-stat--clickable text-left {{ $activeView === 'completed' ? 'splis-stat--active' : '' }}"
         >
             <p class="splis-stat-label">Completed</p>
-            <p class="splis-stat-value">{{ number_format($stats['completed']) }}</p>
+            <p class="splis-stat-value" id="committee-stat-completed">{{ number_format($stats['completed']) }}</p>
             <p class="splis-stat-meta">With outcome</p>
-        </a>
+        </button>
     </div>
 
-    <form method="GET" action="{{ route('committee-monitoring.index') }}" class="splis-filter-panel">
-        <input type="hidden" name="view" value="{{ $activeView }}">
+    <form id="committee-monitoring-form" class="splis-filter-panel">
+        <input type="hidden" name="view" id="committee-filter-view" value="{{ $activeView }}">
         <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">Filter committee queue</h2>
 
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div>
-                <label class="splis-label">Committee</label>
-                <select name="committee_id" class="splis-select">
+                <label class="splis-label" for="committee-filter-committee">Committee</label>
+                <select name="committee_id" id="committee-filter-committee" class="splis-select">
                     <option value="">All committees</option>
                     @foreach ($committees as $committee)
                         <option value="{{ $committee->id }}" @selected((int) ($filters['committee_id'] ?? 0) === $committee->id)>{{ $committee->name }}</option>
@@ -81,111 +86,65 @@
                 </select>
             </div>
             <div>
-                <label class="splis-label">Status</label>
-                <select name="status" class="splis-select">
+                <label class="splis-label" for="committee-filter-status">Status</label>
+                <select name="status" id="committee-filter-status" class="splis-select">
                     <option value="">All</option>
-                    <option value="pending" @selected(($filters['status'] ?? '') === 'pending')>Pending</option>
-                    <option value="completed" @selected(($filters['status'] ?? '') === 'completed')>Completed</option>
+                    <option value="pending" @selected(($filters['status'] ?? '') === 'pending' && $activeView !== 'pending')>Pending</option>
+                    <option value="completed" @selected(($filters['status'] ?? '') === 'completed' && $activeView !== 'completed')>Completed</option>
                 </select>
             </div>
             <div>
-                <label class="splis-label">Has report</label>
-                <select name="has_report" class="splis-select">
+                <label class="splis-label" for="committee-filter-has-report">Has report</label>
+                <select name="has_report" id="committee-filter-has-report" class="splis-select">
                     <option value="">All</option>
-                    <option value="yes" @selected(($filters['has_report'] ?? '') === 'yes')>Yes</option>
+                    <option value="yes" @selected(($filters['has_report'] ?? '') === 'yes' && $activeView !== 'reports')>Yes</option>
                     <option value="no" @selected(($filters['has_report'] ?? '') === 'no')>No</option>
                 </select>
             </div>
             <div>
-                <label class="splis-label">Search</label>
-                <input type="text" name="q" class="splis-input" value="{{ $filters['q'] ?? '' }}" placeholder="Tracking no., title, sender, outcome">
+                <label class="splis-label" for="committee-filter-q">Search</label>
+                <input type="text" name="q" id="committee-filter-q" class="splis-input" value="{{ $filters['q'] ?? '' }}" placeholder="Tracking no., title, sender, outcome">
             </div>
             <div>
-                <label class="splis-label">Referral date from</label>
-                <input type="date" name="date_from" class="splis-input" value="{{ $filters['date_from'] ?? '' }}">
+                <label class="splis-label" for="committee-filter-date-from">Referral date from</label>
+                <input type="date" name="date_from" id="committee-filter-date-from" class="splis-input" value="{{ $filters['date_from'] ?? '' }}">
             </div>
             <div>
-                <label class="splis-label">Referral date to</label>
-                <input type="date" name="date_to" class="splis-input" value="{{ $filters['date_to'] ?? '' }}">
+                <label class="splis-label" for="committee-filter-date-to">Referral date to</label>
+                <input type="date" name="date_to" id="committee-filter-date-to" class="splis-input" value="{{ $filters['date_to'] ?? '' }}">
             </div>
         </div>
 
         <div class="mt-4 flex gap-2">
             <button type="submit" class="splis-btn-primary">Apply filters</button>
-            <a href="{{ route('committee-monitoring.index') }}" class="splis-btn-ghost">Clear</a>
+            <button type="reset" class="splis-btn-ghost">Clear</button>
         </div>
     </form>
 
-    <div id="committee-queue" class="mt-6 splis-table-wrap">
-        <table class="splis-table">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th class="min-w-[14rem]">Title</th>
-                    <th class="hidden md:table-cell">Committee</th>
-                    <th class="hidden lg:table-cell">Referred</th>
-                    <th class="hidden lg:table-cell">Meeting</th>
-                    <th>Report</th>
-                    <th>Status</th>
-                    <th>Outcome</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($items as $item)
+    <div id="committee-queue" class="mt-6">
+        <p id="committee-monitoring-meta" class="mb-3 text-sm text-slate-500" aria-live="polite">Loading…</p>
+        <div id="committee-monitoring-results" class="splis-table-wrap">
+            <table class="splis-table">
+                <thead>
                     <tr>
-                        <td class="whitespace-nowrap">{{ $item->displayLabel() }}</td>
-                        <td>
-                            <a href="{{ route('agenda.show', $item) }}" class="splis-table-title splis-table-title--list">{{ $item->title ?: '—' }}</a>
-                            <p class="text-xs text-slate-500">{{ $item->sender ?: '—' }}</p>
-                        </td>
-                        <td class="hidden md:table-cell">{{ $item->committee_referred ?: '—' }}</td>
-                        <td class="hidden lg:table-cell whitespace-nowrap">{{ $item->date_of_referral?->format('M d, Y') ?: '—' }}</td>
-                        <td class="hidden lg:table-cell whitespace-nowrap">{{ $item->date_of_committee_meeting?->format('M d, Y') ?: '—' }}</td>
-                        <td>
-                            @if (filled($item->committee_report_url))
-                                <a href="{{ $item->committee_report_url }}" target="_blank" rel="noopener" class="splis-link">View report</a>
-                            @else
-                                <span class="text-slate-500">—</span>
-                            @endif
-                        </td>
-                        <td>
-                            @if (filled($item->outcome))
-                                <span class="splis-badge-linked">Completed</span>
-                            @else
-                                <span class="splis-badge-unlinked">Pending</span>
-                            @endif
-                        </td>
-                        <td>{{ $item->outcome ?: '—' }}</td>
+                        <th>#</th>
+                        <th class="min-w-[14rem]">Title</th>
+                        <th class="hidden md:table-cell">Committee</th>
+                        <th class="hidden lg:table-cell">Referred</th>
+                        <th class="hidden lg:table-cell">Meeting</th>
+                        <th>Report</th>
+                        <th>Status</th>
+                        <th>Outcome</th>
                     </tr>
-                @empty
+                </thead>
+                <tbody id="committee-monitoring-list-body">
                     <tr>
-                        <td colspan="8" class="py-10 text-center text-slate-500">
-                            @switch ($activeView)
-                                @case ('pending')
-                                    No pending referred measures found for the selected filters.
-                                    @break
-                                @case ('scheduled')
-                                    No scheduled committee meetings found for the selected filters.
-                                    @break
-                                @case ('reports')
-                                    No referred measures with committee reports found for the selected filters.
-                                    @break
-                                @case ('completed')
-                                    No completed referred measures found for the selected filters.
-                                    @break
-                                @default
-                                    No referred measures found for the selected filters.
-                            @endswitch
-                        </td>
+                        <td colspan="8" class="py-10 text-center text-slate-500">Loading…</td>
                     </tr>
-                @endforelse
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
+        <div id="committee-monitoring-pagination" class="mt-4"></div>
     </div>
-
-    @if ($items->hasPages())
-        <div class="mt-4">{{ $items->links() }}</div>
-    @endif
 </div>
 @endsection
-

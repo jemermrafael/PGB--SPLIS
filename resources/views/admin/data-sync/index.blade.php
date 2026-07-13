@@ -5,7 +5,7 @@
 @section('content')
 <div class="splis-page-header">
     <div>
-        <h1 class="splis-page-title">Data sync</h1>
+        <h1 class="splis-page-title">Data Sync</h1>
         <p class="splis-page-subtitle">Refresh SPLIS from oldsp CSV exports and sptrack — upload a file or use exports already on the server.</p>
     </div>
 </div>

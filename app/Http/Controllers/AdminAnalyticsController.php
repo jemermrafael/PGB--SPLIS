@@ -30,9 +30,13 @@ class AdminAnalyticsController extends Controller
             fn (Committee $committee): bool => stripos($committee->name, 'Housing') !== false
         ) ?? $committees->first();
 
-        $mapCommitteeId = $request->filled('map_committee_id')
-            ? (int) $request->integer('map_committee_id')
-            : ($defaultCommittee?->id);
+        $mapCommittee = $defaultCommittee;
+        if ($request->exists('map_committee_id')) {
+            $mapCommittee = $request->filled('map_committee_id')
+                ? ($committees->firstWhere('id', (int) $request->integer('map_committee_id')) ?? $defaultCommittee)
+                : null;
+        }
+
         $mapYear = (int) $request->integer('map_year', $focusYear);
         $mapMonth = $request->filled('map_month') ? max(1, min(12, (int) $request->integer('map_month'))) : null;
         $mapMeasure = $request->string('map_measure', 'both')->toString();
@@ -40,19 +44,7 @@ class AdminAnalyticsController extends Controller
             $mapMeasure = 'both';
         }
 
-        $mapCommittee = $committees->firstWhere('id', $mapCommitteeId) ?? $defaultCommittee;
-        $committeeMap = $mapCommittee
-            ? $executive->committeeMunicipalityMap($mapCommittee, $mapYear, $mapMonth, $mapMeasure)
-            : [
-                'municipalities' => [],
-                'year' => $mapYear,
-                'month' => $mapMonth,
-                'committee' => '',
-                'committee_id' => null,
-                'measure' => $mapMeasure,
-                'period_label' => '',
-                'total' => 0,
-            ];
+        $committeeMap = $executive->committeeMunicipalityMap($mapCommittee, $mapYear, $mapMonth, $mapMeasure);
 
         $payload = $executive->payload($yearFrom, $yearTo, $focusYear);
 
