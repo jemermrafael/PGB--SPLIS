@@ -9,7 +9,7 @@
 <div id="board-members-index" class="max-w-6xl">
     <div class="splis-page-header">
         <div>
-            <h1 class="splis-page-title">Board members</h1>
+            <h1 class="splis-page-title">Board Members</h1>
             <p class="splis-page-subtitle">Sangguniang Panlalawigan roster — Vice Governor, district board members, and ex officio members.</p>
         </div>
         @can('create', App\Models\BoardMember::class)

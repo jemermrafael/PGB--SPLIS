@@ -69,7 +69,7 @@
         <div id="board-member-link-wrap" @class(['hidden' => old('role', $user->role?->value) !== 'board_member'])>
             <label class="splis-label" for="board_member_id">Linked board member</label>
             <select name="board_member_id" id="board_member_id" class="splis-select">
-                <option value="">Select board member</option>
+                <option value="">Select Board Member</option>
                 @foreach ($boardMembers as $member)
                     <option value="{{ $member->id }}" @selected((string) old('board_member_id', $user->board_member_id) === (string) $member->id)>{{ $member->displayName() }}{{ $member->district ? ' · '.$member->district : '' }}</option>
                 @endforeach

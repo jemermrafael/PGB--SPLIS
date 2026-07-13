@@ -14,7 +14,7 @@
 <div class="max-w-3xl">
     <div class="splis-page-header !mb-6">
         <div>
-            <h1 class="splis-page-title">{{ $isEdit ? 'Edit legislative session' : 'New legislative session' }}</h1>
+            <h1 class="splis-page-title">{{ $isEdit ? 'Edit Legislative Session' : 'New legislative session' }}</h1>
             <p class="splis-page-subtitle">
                 @if ($isEdit)
                     Session details for the Order of Business document.
@@ -86,7 +86,7 @@
         @if ($isEdit)
             <div class="splis-card splis-card-body space-y-4">
                 <div>
-                    <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">Session documents (PDF links)</h2>
+                    <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">Session Documents (PDF links)</h2>
                     <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Google Drive or other PDF links shown on the session page.</p>
                 </div>
                 <div class="grid grid-cols-1 gap-4">

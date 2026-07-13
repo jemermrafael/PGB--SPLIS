@@ -256,7 +256,7 @@
                                     'splis-nav-dropdown-link-active' => request()->routeIs('board-members.*'),
                                 ])
                             >
-                                Board members
+                                Board Members
                             </a>
                             <a
                                 href="{{ route('committee-monitoring.index') }}"
@@ -269,8 +269,8 @@
                                 Committee Monitoring
                             </a>
                             @if ($user?->canRecordAttendance())
-                                <a href="{{ route('ob.sessions.attendance.monthly') }}" role="menuitem" @class(['splis-nav-dropdown-link', 'splis-nav-dropdown-link-active' => request()->routeIs('ob.sessions.attendance.monthly')])>Monthly attendance</a>
-                                <a href="{{ route('admin.board-member-ordinances') }}" role="menuitem" @class(['splis-nav-dropdown-link', 'splis-nav-dropdown-link-active' => request()->routeIs('admin.board-member-ordinances')])>BM authored ordinances</a>
+                                <a href="{{ route('ob.sessions.attendance.monthly') }}" role="menuitem" @class(['splis-nav-dropdown-link', 'splis-nav-dropdown-link-active' => request()->routeIs('ob.sessions.attendance.monthly')])>Monthly Attendance</a>
+                                <a href="{{ route('admin.board-member-ordinances') }}" role="menuitem" @class(['splis-nav-dropdown-link', 'splis-nav-dropdown-link-active' => request()->routeIs('admin.board-member-ordinances')])>BM Authored Ordinances</a>
                             @endif
                         </div>
                     </div>

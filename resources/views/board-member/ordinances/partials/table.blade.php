@@ -13,10 +13,10 @@
                 @endif
                 <th>Number</th>
                 <th>Title</th>
-                <th class="hidden md:table-cell">Date received</th>
-                <th class="hidden lg:table-cell">Date passed</th>
-                <th class="hidden lg:table-cell">Date approved</th>
-                <th class="hidden xl:table-cell">Board members</th>
+                <th class="hidden md:table-cell">Date Received</th>
+                <th class="hidden lg:table-cell">Date Passed</th>
+                <th class="hidden lg:table-cell">Date Approved</th>
+                <th class="hidden xl:table-cell">Board Members</th>
             </tr>
         </thead>
         <tbody>

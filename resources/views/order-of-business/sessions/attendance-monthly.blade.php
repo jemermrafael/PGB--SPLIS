@@ -6,7 +6,7 @@
 <div class="max-w-full">
     <div class="splis-page-header !mb-6">
         <div>
-            <h1 class="splis-page-title">Monthly attendance report</h1>
+            <h1 class="splis-page-title">Monthly Attendance Report</h1>
             <p class="splis-page-subtitle">{{ \Carbon\Carbon::create($year, $month, 1)->format('F Y') }} · {{ $sessions->count() }} session(s)</p>
         </div>
         <a href="{{ route('ob.sessions.index') }}" class="splis-btn-secondary">Back to sessions</a>

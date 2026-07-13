@@ -62,6 +62,32 @@ function renderListItem(item) {
     `;
 }
 
+function renderGridItem(item) {
+    const { display, full, truncated } = truncateWords(item.title);
+    const number = item.list_number ?? item.display_label ?? item.tracking_no ?? 'Unnumbered';
+    const toneClass = item.days_left_tone ? ` splis-agenda-days--${escapeHtml(item.days_left_tone)}` : '';
+
+    return `
+        <article class="splis-doc-card flex flex-col gap-3">
+            <div class="flex items-start justify-between gap-2">
+                <a href="${escapeHtml(item.url)}" class="splis-doc-card-number">${escapeHtml(number)}</a>
+                ${renderStatusBadge(item.status, item.status_label)}
+            </div>
+            <p class="splis-doc-card-title">${renderTruncatedTitle(display, full, truncated)}</p>
+            <dl class="splis-doc-card-meta">
+                <div><dt>Sender</dt><dd>${escapeHtml(item.sender || '—')}</dd></div>
+                <div><dt>Due</dt><dd>${formatDate(item.due_date)}</dd></div>
+                <div class="col-span-2"><dt>Committee</dt><dd>${escapeHtml(item.committee || '—')}</dd></div>
+                <div class="col-span-2"><dt>Days left</dt><dd><span class="splis-agenda-days${toneClass}">${escapeHtml(item.days_left_label || '—')}</span></dd></div>
+            </dl>
+            <div class="mt-auto flex items-center justify-between gap-2 border-t border-slate-100 pt-3 dark:border-slate-700">
+                <span class="text-xs text-slate-500">${escapeHtml(item.reso_label || 'No output yet')}</span>
+                <a href="${escapeHtml(item.url)}" class="splis-doc-list-link text-xs font-semibold">View</a>
+            </div>
+        </article>
+    `;
+}
+
 function updateStats(stats) {
     if (!stats) {
         return;
@@ -99,17 +125,22 @@ export function initAgendaSearch() {
     const form = document.getElementById('agenda-search-form');
     const results = document.getElementById('agenda-search-results');
     const listBody = document.getElementById('agenda-list-body');
+    const grid = document.getElementById('agenda-grid');
+    const listWrap = document.getElementById('agenda-list-wrap');
     const meta = document.getElementById('agenda-search-meta');
     const pagination = document.getElementById('agenda-search-pagination');
+    const viewToggle = document.getElementById('agenda-view-toggle');
     const searchUrl = root.dataset.searchUrl;
     const statusSelect = document.getElementById('agenda-filter-status');
     const dueSoonInput = document.getElementById('agenda-filter-due-soon');
     const hasIncomingInput = document.getElementById('agenda-filter-has-incoming');
 
     let currentPage = 1;
+    let viewMode = localStorage.getItem('splis-agenda-view') || 'list';
     let debounceTimer;
     let activeFilterButton = null;
 
+    setViewMode(viewMode);
     fetchResults();
 
     form.addEventListener('submit', (event) => {
@@ -156,6 +187,13 @@ export function initAgendaSearch() {
         });
     });
 
+    viewToggle?.querySelectorAll('[data-view]').forEach((button) => {
+        button.addEventListener('click', () => {
+            setViewMode(button.dataset.view);
+            localStorage.setItem('splis-agenda-view', viewMode);
+        });
+    });
+
     listBody.addEventListener('click', (event) => {
         const wrap = event.target.closest('[data-drag-scroll]');
         if (wrap?.dataset.dragScrollMoved === '1') {
@@ -174,6 +212,17 @@ export function initAgendaSearch() {
             window.location.href = href;
         }
     });
+
+    function setViewMode(mode) {
+        viewMode = mode;
+        viewToggle?.querySelectorAll('[data-view]').forEach((button) => {
+            const isActive = button.dataset.view === mode;
+            button.classList.toggle('active', isActive);
+            button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+        listWrap?.classList.toggle('hidden', mode !== 'list');
+        grid?.classList.toggle('hidden', mode !== 'grid');
+    }
 
     function applyQuickFilter(button) {
         const isReset = button.hasAttribute('data-filter-reset');
@@ -241,6 +290,9 @@ export function initAgendaSearch() {
         } catch {
             meta.textContent = 'Unable to load agenda items.';
             listBody.innerHTML = '';
+            if (grid) {
+                grid.innerHTML = '';
+            }
             pagination.innerHTML = '';
         } finally {
             results.classList.remove('opacity-60');
@@ -256,11 +308,17 @@ export function initAgendaSearch() {
 
         if (items.length === 0) {
             listBody.innerHTML = '<tr><td colspan="10" class="py-12 text-center text-slate-400">No agenda items match your filters.</td></tr>';
+            if (grid) {
+                grid.innerHTML = '<p class="col-span-full py-12 text-center text-slate-400">No agenda items match your filters.</p>';
+            }
             pagination.innerHTML = '';
             return;
         }
 
         listBody.innerHTML = items.map(renderListItem).join('');
+        if (grid) {
+            grid.innerHTML = items.map(renderGridItem).join('');
+        }
         bindTitleTooltips(results);
         renderAjaxPagination(pagination, {
             page,

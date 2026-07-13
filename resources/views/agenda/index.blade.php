@@ -60,7 +60,7 @@
             <span class="splis-filter-panel-icon">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
             </span>
-            Search agenda
+            Search Agenda
         </h2>
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div>
@@ -156,8 +156,12 @@
     </form>
 
     <div id="agenda-search-results" class="transition-opacity">
-        <p id="agenda-search-meta" class="mb-4 text-sm text-slate-500 dark:text-slate-400">Loading agenda items…</p>
-        <div class="splis-table-wrap" data-drag-scroll>
+        <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p id="agenda-search-meta" class="text-sm text-slate-500 dark:text-slate-400">Loading agenda items…</p>
+            @include('partials.view-toggle', ['id' => 'agenda-view-toggle'])
+        </div>
+
+        <div id="agenda-list-wrap" class="splis-table-wrap" data-drag-scroll>
             <table class="splis-table min-w-[70rem]">
                 <thead>
                     <tr>
@@ -176,6 +180,9 @@
                 <tbody id="agenda-list-body"></tbody>
             </table>
         </div>
+
+        <div id="agenda-grid" class="splis-doc-grid hidden"></div>
+
         <div id="agenda-search-pagination" class="mt-6"></div>
     </div>
 </div>

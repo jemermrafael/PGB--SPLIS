@@ -15,7 +15,7 @@
         <div class="min-w-[16rem] flex-1">
             <label class="splis-label" for="board_member_id">Board member</label>
             <select name="board_member_id" id="board_member_id" class="splis-select" required>
-                <option value="">Select board member</option>
+                <option value="">Select Board Member</option>
                 @foreach ($boardMembers as $member)
                     <option value="{{ $member->id }}" @selected($selectedMember?->id === $member->id)>{{ $member->displayName() }}</option>
                 @endforeach

@@ -17,7 +17,7 @@
     </div>
 
     <div class="mb-4 flex flex-wrap gap-2 text-sm">
-        <a href="{{ route('board-members.index') }}" class="splis-btn-secondary">Board members</a>
+        <a href="{{ route('board-members.index') }}" class="splis-btn-secondary">Board Members</a>
         <a href="{{ route('committee-terms.index') }}" class="splis-btn-secondary">Election terms</a>
     </div>
 
@@ -64,7 +64,7 @@
                 <div>
                     <label class="splis-label" for="chair_id">Chair</label>
                     <select name="chair_id" id="chair_id" class="splis-input">
-                        <option value="">— Select board member —</option>
+                        <option value="">— Select Board Member —</option>
                         @foreach ($boardMembers as $member)
                             @php $assignment = $member->termAssignments->first(); @endphp
                             <option value="{{ $member->id }}" @selected(old('chair_id', $roster['chair_id'] ?? null) == $member->id)>

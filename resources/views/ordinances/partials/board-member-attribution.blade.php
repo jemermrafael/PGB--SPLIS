@@ -13,7 +13,7 @@
 
 @if ($attributionRows->isNotEmpty())
     <div class="md:col-span-2">
-        <dt class="splis-label">Board members</dt>
+        <dt class="splis-label">Board Members</dt>
         <dd class="mt-2 space-y-2">
             @foreach ($attributionRows as $row)
                 <div class="flex flex-col gap-1 sm:flex-row sm:gap-3">
