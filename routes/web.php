@@ -168,6 +168,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/board-members', [BoardMemberController::class, 'index'])->name('board-members.index');
     Route::get('/board-members/create', [BoardMemberController::class, 'create'])->name('board-members.create');
     Route::post('/board-members', [BoardMemberController::class, 'store'])->name('board-members.store');
+    Route::delete('/board-members/bulk', [BoardMemberController::class, 'bulkDestroy'])->name('board-members.bulk-destroy');
     Route::get('/board-members/{boardMember}', [BoardMemberController::class, 'show'])->name('board-members.show');
     Route::get('/board-members/{boardMember}/edit', [BoardMemberController::class, 'edit'])->name('board-members.edit');
     Route::put('/board-members/{boardMember}', [BoardMemberController::class, 'update'])->name('board-members.update');

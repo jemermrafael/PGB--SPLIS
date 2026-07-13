@@ -74,7 +74,7 @@
             </div>
         </div>
 
-        <div class="flex gap-2 pt-2">
+        <div class="flex flex-wrap gap-2 pt-2">
             <button type="submit" class="splis-btn-primary">Save</button>
             @if ($isEdit)
                 <a href="{{ route('board-members.show', ['boardMember' => $boardMember, 'term' => $term->id]) }}" class="splis-btn-secondary">View profile</a>
@@ -82,5 +82,24 @@
             <a href="{{ route('board-members.index', ['term' => $term->id]) }}" class="splis-btn-secondary">Cancel</a>
         </div>
     </form>
+
+    @if ($isEdit)
+        @can('delete', $boardMember)
+            <form
+                method="POST"
+                action="{{ route('board-members.destroy', $boardMember) }}"
+                class="mt-6"
+                data-confirm-submit
+                data-confirm-title="Delete board member?"
+                data-confirm-message="Delete {{ $boardMember->displayName() }}? This removes their roster and committee assignments."
+                data-confirm-label="Delete"
+            >
+                @csrf
+                @method('DELETE')
+                <input type="hidden" name="term" value="{{ $term->id }}">
+                <button type="submit" class="splis-btn-ghost text-red-600">Delete board member</button>
+            </form>
+        @endcan
+    @endif
 </div>
 @endsection

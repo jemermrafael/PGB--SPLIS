@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\BoardMember;
-use App\Models\BoardMemberTerm;
 use App\Models\CommitteeTerm;
 use App\Services\BoardMemberProfileService;
 use App\Services\BoardMemberRosterService;
@@ -11,7 +10,6 @@ use App\Support\CommitteeTermSelection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class BoardMemberController extends Controller
@@ -121,7 +119,7 @@ class BoardMemberController extends Controller
     {
         $this->authorize('update', $boardMember);
 
-        $data = $this->validated($request, $boardMember);
+        $data = $this->validated($request);
         $term = CommitteeTerm::query()->findOrFail((int) $request->input('committee_term_id'));
 
         $boardMember->update([
@@ -139,27 +137,58 @@ class BoardMemberController extends Controller
             ->with('status', 'Board member updated.');
     }
 
-    public function destroy(BoardMember $boardMember): RedirectResponse
+    public function destroy(Request $request, BoardMember $boardMember): RedirectResponse
     {
         $this->authorize('delete', $boardMember);
+
+        $termId = $request->integer('term') ?: null;
 
         $boardMember->delete();
 
         return redirect()
-            ->route('board-members.index')
+            ->route('board-members.index', array_filter(['term' => $termId]))
             ->with('status', 'Board member deleted.');
+    }
+
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $this->authorize('create', BoardMember::class);
+
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct', 'exists:board_members,id'],
+            'term' => ['nullable', 'integer', 'exists:committee_terms,id'],
+        ]);
+
+        $members = BoardMember::query()
+            ->whereIn('id', $data['ids'])
+            ->get();
+
+        $deleted = 0;
+
+        foreach ($members as $member) {
+            $this->authorize('delete', $member);
+            $member->delete();
+            $deleted++;
+        }
+
+        $termId = isset($data['term']) ? (int) $data['term'] : null;
+
+        return redirect()
+            ->route('board-members.index', array_filter(['term' => $termId]))
+            ->with('status', $deleted === 1
+                ? 'Board member deleted.'
+                : "{$deleted} board members deleted.");
     }
 
     /**
      * @return array<string, mixed>
      */
-    protected function validated(Request $request, ?BoardMember $boardMember = null): array
+    protected function validated(Request $request): array
     {
-        $termId = (int) $request->input('committee_term_id');
         $districts = config('board_members.districts', []);
-        $singleSeatDistricts = array_values(array_diff($districts, ['Ex Officio']));
 
-        $data = $request->validate([
+        return $request->validate([
             'name' => ['required', 'string', 'max:200'],
             'honorific' => ['nullable', 'string', 'max:50'],
             'committee_term_id' => ['required', 'integer', 'exists:committee_terms,id'],
@@ -168,32 +197,5 @@ class BoardMemberController extends Controller
         ]) + [
             'is_active' => $request->boolean('is_active'),
         ];
-
-        $district = $data['district'] ?? null;
-
-        if ($district !== null && $district !== '' && in_array($district, $singleSeatDistricts, true)) {
-            $alreadyAssignedToMember = $boardMember !== null
-                && BoardMemberTerm::query()
-                    ->where('committee_term_id', $termId)
-                    ->where('board_member_id', $boardMember->id)
-                    ->where('district', $district)
-                    ->exists();
-
-            if (! $alreadyAssignedToMember) {
-                $conflict = BoardMemberTerm::query()
-                    ->where('committee_term_id', $termId)
-                    ->where('district', $district)
-                    ->when($boardMember !== null, fn ($query) => $query->where('board_member_id', '!=', $boardMember->id))
-                    ->exists();
-
-                if ($conflict) {
-                    throw ValidationException::withMessages([
-                        'district' => "Another board member is already assigned to {$district} for this term.",
-                    ]);
-                }
-            }
-        }
-
-        return $data;
     }
 }

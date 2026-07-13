@@ -16,9 +16,26 @@
             <h1 class="splis-page-title">{{ $boardMember->displayName() }}</h1>
             <p class="splis-page-subtitle">Committee assignments for the selected election term.</p>
         </div>
-        @can('update', $boardMember)
-            <a href="{{ route('board-members.edit', ['boardMember' => $boardMember, 'term' => $selectedTerm->id]) }}" class="splis-btn-primary">Edit profile</a>
-        @endcan
+        <div class="flex flex-wrap gap-2">
+            @can('update', $boardMember)
+                <a href="{{ route('board-members.edit', ['boardMember' => $boardMember, 'term' => $selectedTerm->id]) }}" class="splis-btn-primary">Edit profile</a>
+            @endcan
+            @can('delete', $boardMember)
+                <form
+                    method="POST"
+                    action="{{ route('board-members.destroy', $boardMember) }}"
+                    data-confirm-submit
+                    data-confirm-title="Delete board member?"
+                    data-confirm-message="Delete {{ $boardMember->displayName() }}? This removes their roster and committee assignments."
+                    data-confirm-label="Delete"
+                >
+                    @csrf
+                    @method('DELETE')
+                    <input type="hidden" name="term" value="{{ $selectedTerm->id }}">
+                    <button type="submit" class="splis-btn-ghost text-red-600">Delete</button>
+                </form>
+            @endcan
+        </div>
     </div>
 
     <div class="mb-6 flex flex-wrap gap-2">

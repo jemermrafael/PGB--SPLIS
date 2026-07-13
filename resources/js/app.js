@@ -28,12 +28,15 @@ import {
 import { initAdminAnalytics } from './admin-analytics';
 import { initCommitteeMunicipalityMap } from './geographic-analytics';
 import { initDragScroll } from './drag-scroll';
+import { initBoardMemberBulkDelete, initConfirmSubmitForms } from './board-members';
 
 document.addEventListener('DOMContentLoaded', () => {
     initDropdowns();
     initAccessibility();
     initComboboxes();
     initDragScroll();
+    initConfirmSubmitForms();
+    initBoardMemberBulkDelete();
     initAgendaForm();
     initAgendaVersionCompare();
     initMemberMultiSelect();
