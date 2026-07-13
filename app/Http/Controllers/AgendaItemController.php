@@ -10,6 +10,7 @@ use App\Services\AgendaIncomingPromoter;
 use App\Services\AgendaItemRepository;
 use App\Services\AgendaLifecycleService;
 use App\Services\AgendaLinkService;
+use App\Services\AgendaOutputLinker;
 use App\Services\AgendaOutputPublisher;
 use App\Services\AgendaVersionService;
 use App\Services\BoardMemberNotifier;
@@ -79,12 +80,31 @@ class AgendaItemController extends Controller
             ->with('status', $this->statusMessage('created', $agenda, false, $outputHandled));
     }
 
-    public function show(Request $request, AgendaItem $agenda): View|RedirectResponse
+    public function show(Request $request, AgendaItem $agenda, AgendaOutputLinker $linker): View|RedirectResponse
     {
         if ($request->user()?->isMunicipalViewer()) {
             $this->authorize('view', $agenda);
 
             return redirect()->route('municipal.requests.show', $agenda);
+        }
+
+        $this->authorize('view', $agenda);
+
+        $autoLinked = false;
+        if ($request->user()?->can('update', $agenda)) {
+            $linker->clearDanglingOutputLinks($agenda);
+            $agenda->refresh();
+
+            if ($agenda->needsOutputLink()) {
+                $autoLinked = $linker->linkExistingIfPossible($agenda);
+                $agenda->refresh();
+            }
+        }
+
+        if ($autoLinked) {
+            return redirect()
+                ->route('agenda.show', $agenda)
+                ->with('status', 'Provincial output linked to '.$agenda->publishedTargetLabel().'.');
         }
 
         $agenda->load([
@@ -114,6 +134,9 @@ class AgendaItemController extends Controller
             'obSessions' => $obSessions,
             'splisActivityLogs' => $agenda->activityLogs,
             'obPlacementCount' => $agenda->activityLogs->where('action', 'agenda.added_to_ob')->count(),
+            'outputLinkCandidates' => $agenda->needsOutputLink()
+                ? $linker->candidateOptions($agenda)
+                : collect(),
         ]);
     }
 
@@ -262,6 +285,28 @@ class AgendaItemController extends Controller
         return redirect()
             ->route('agenda.show', $agenda)
             ->with('status', 'Resolution link removed from this agenda item.');
+    }
+
+    public function linkOutput(Request $request, AgendaItem $agenda, AgendaOutputLinker $linker): RedirectResponse
+    {
+        $this->authorize('linkOutput', $agenda);
+
+        $validated = $request->validate([
+            'output_type' => ['required', 'string', Rule::in(AgendaMeasureType::options())],
+            'output_id' => ['required', 'integer', 'min:1'],
+        ]);
+
+        try {
+            $linker->linkManual($agenda, $validated['output_type'], (int) $validated['output_id']);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['link_output' => $e->getMessage()]);
+        }
+
+        $agenda->refresh();
+
+        return redirect()
+            ->route('agenda.show', $agenda)
+            ->with('status', 'Provincial output linked to '.$agenda->publishedTargetLabel().'.');
     }
 
     public function addToOrderOfBusiness(Request $request, AgendaItem $agenda, ObDocumentService $documentService): RedirectResponse

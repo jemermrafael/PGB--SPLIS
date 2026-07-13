@@ -152,6 +152,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/agenda/{agenda}/promote-incoming', [AgendaItemController::class, 'promote'])->name('agenda.promote-incoming');
     Route::post('/agenda/{agenda}/unlink-incoming', [AgendaItemController::class, 'unlinkIncoming'])->name('agenda.unlink-incoming');
     Route::post('/agenda/{agenda}/unlink-resolution', [AgendaItemController::class, 'unlinkResolution'])->name('agenda.unlink-resolution');
+    Route::post('/agenda/{agenda}/link-output', [AgendaItemController::class, 'linkOutput'])->name('agenda.link-output');
     Route::post('/agenda/{agenda}/add-to-order-of-business', [AgendaItemController::class, 'addToOrderOfBusiness'])->name('agenda.add-to-order-of-business');
     Route::delete('/agenda/{agenda}/versions/{version}', [AgendaItemController::class, 'destroyVersion'])->name('agenda.versions.destroy');
 

@@ -8,7 +8,7 @@
     }
 @endphp
 
-@section('title', ($isEdit ? 'Edit session' : 'New session').' — Order of Business — '.config('app.name'))
+@section('title', ($isEdit ? 'Edit Session' : 'New session').' — Order of Business — '.config('app.name'))
 
 @section('content')
 <div class="max-w-3xl">

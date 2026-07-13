@@ -157,20 +157,20 @@
 
     <div id="agenda-search-results" class="transition-opacity">
         <p id="agenda-search-meta" class="mb-4 text-sm text-slate-500 dark:text-slate-400">Loading agenda items…</p>
-        <div class="splis-table-wrap">
-            <table class="splis-table">
+        <div class="splis-table-wrap" data-drag-scroll>
+            <table class="splis-table min-w-[70rem]">
                 <thead>
                     <tr>
-                        <th>#</th>
+                        <th class="whitespace-nowrap">#</th>
                         <th class="min-w-[12rem] max-w-md">Title</th>
-                        <th class="hidden md:table-cell">Sender</th>
-                        <th class="hidden lg:table-cell">Committee</th>
-                        <th class="hidden sm:table-cell">Received</th>
-                        <th>Due</th>
-                        <th>Days left</th>
-                        <th>Status</th>
-                        <th class="hidden xl:table-cell">Reso no.</th>
-                        <th class="w-32">Remarks</th>
+                        <th class="hidden whitespace-nowrap md:table-cell">Sender</th>
+                        <th class="hidden whitespace-nowrap lg:table-cell">Committee</th>
+                        <th class="hidden whitespace-nowrap sm:table-cell">Received</th>
+                        <th class="whitespace-nowrap">Due</th>
+                        <th class="whitespace-nowrap">Days left</th>
+                        <th class="whitespace-nowrap">Status</th>
+                        <th class="hidden whitespace-nowrap xl:table-cell">Reso no.</th>
+                        <th class="w-32 whitespace-nowrap">Remarks</th>
                     </tr>
                 </thead>
                 <tbody id="agenda-list-body"></tbody>

@@ -353,15 +353,15 @@ class AgendaItem extends Model
 
     public function publishedTargetLabel(): ?string
     {
-        if ($this->resolution_id) {
+        if ($this->resolution_id && $this->resolution()->exists()) {
             return 'Resolution';
         }
 
-        if ($this->ordinance_id) {
+        if ($this->ordinance_id && $this->ordinance()->exists()) {
             return 'Ordinance';
         }
 
-        if ($this->appropriation_ordinance_id) {
+        if ($this->appropriation_ordinance_id && $this->appropriationOrdinance()->exists()) {
             return 'Appropriation Ordinance';
         }
 
@@ -411,10 +411,19 @@ class AgendaItem extends Model
 
     public function isPublished(): bool
     {
-        return $this->published_at !== null
-            || $this->resolution_id !== null
-            || $this->ordinance_id !== null
-            || $this->appropriation_ordinance_id !== null;
+        return ($this->resolution_id !== null && $this->resolution()->exists())
+            || ($this->ordinance_id !== null && $this->ordinance()->exists())
+            || ($this->appropriation_ordinance_id !== null && $this->appropriationOrdinance()->exists());
+    }
+
+    public function hasProvincialOutputFields(): bool
+    {
+        return filled($this->reso_ord_ao_no) && (int) $this->reso_ord_ao_series > 0;
+    }
+
+    public function needsOutputLink(): bool
+    {
+        return $this->hasProvincialOutputFields() && ! $this->isPublished();
     }
 
     public static function inferMeasureType(?string $resolutionTitle): ?string

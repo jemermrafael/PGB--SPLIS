@@ -173,7 +173,7 @@
         </div>
 
         <div class="splis-detail-sidebar-column">
-            @if ($agenda->hasIncoming() || $agenda->resolution || $agenda->ordinance || $agenda->appropriationOrdinance || $finalObPlacements->isNotEmpty() || auth()->user()?->can('addToOrderOfBusiness', $agenda))
+            @if ($agenda->hasIncoming() || $agenda->resolution || $agenda->ordinance || $agenda->appropriationOrdinance || $finalObPlacements->isNotEmpty() || auth()->user()?->can('addToOrderOfBusiness', $agenda) || auth()->user()?->can('linkOutput', $agenda))
                 <aside class="splis-card">
                     <div class="splis-card-header">
                         <h2 class="splis-card-title">Connections</h2>
@@ -231,6 +231,37 @@
                                 </div>
                             </div>
                         @endif
+                        @can('linkOutput', $agenda)
+                            <div class="border-t border-slate-200 pt-4 dark:border-slate-700">
+                                <p class="splis-detail-label">Link provincial output</p>
+                                <p class="mt-1 text-xs text-slate-500">
+                                    No exact match for
+                                    {{ $agenda->measureTypeLabel() }}
+                                    {{ $agenda->resoDisplayLabel() ?: ($agenda->reso_ord_ao_no.' / '.$agenda->reso_ord_ao_series) }}.
+                                    Choose from the list:
+                                </p>
+                                @if (($outputLinkCandidates ?? collect())->isEmpty())
+                                    <p class="mt-2 text-sm text-slate-500">No candidates found in SPLIS for this series.</p>
+                                @else
+                                    <form method="POST" action="{{ route('agenda.link-output', $agenda) }}" class="mt-2 space-y-2">
+                                        @csrf
+                                        <select name="output_id" class="splis-select" required onchange="document.getElementById('agenda-output-type').value = this.options[this.selectedIndex].dataset.type || ''">
+                                            <option value="">Select output…</option>
+                                            @foreach ($outputLinkCandidates as $candidate)
+                                                <option value="{{ $candidate['id'] }}" data-type="{{ $candidate['type'] }}">
+                                                    {{ $candidate['label'] }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        <input type="hidden" name="output_type" id="agenda-output-type" value="{{ $agenda->effectiveMeasureType() }}">
+                                        <button type="submit" class="splis-btn-secondary w-full text-sm">Link selected output</button>
+                                    </form>
+                                @endif
+                                @error('link_output')
+                                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        @endcan
                         @include('agenda.partials.ob-placements', ['placements' => $finalObPlacements])
                         @can('addToOrderOfBusiness', $agenda)
                             <div class="border-t border-slate-200 pt-4 dark:border-slate-700">

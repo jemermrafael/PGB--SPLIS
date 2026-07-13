@@ -756,7 +756,23 @@
     }
 
     .splis-table-wrap {
-        @apply overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/50;
+        @apply overflow-x-auto rounded-2xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/50;
+    }
+
+    .splis-drag-scroll {
+        cursor: grab;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .splis-drag-scroll.is-dragging {
+        cursor: grabbing;
+        user-select: none;
+        scroll-behavior: auto;
+    }
+
+    .splis-drag-scroll.is-dragging a {
+        pointer-events: none;
     }
 
     .splis-table {

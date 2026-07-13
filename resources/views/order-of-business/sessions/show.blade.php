@@ -45,7 +45,7 @@
                 <a href="{{ route('ob.sessions.attendance', $session) }}" class="splis-btn-secondary">Attendance</a>
             @endif
             @can('update', $session)
-                <a href="{{ route('ob.sessions.edit', $session) }}" class="splis-btn-secondary">Edit session</a>
+                <a href="{{ route('ob.sessions.edit', $session) }}" class="splis-btn-secondary">Edit Session</a>
             @endcan
             <a href="{{ route('ob.sessions.index') }}" class="splis-btn-secondary">Back to list</a>
         </div>

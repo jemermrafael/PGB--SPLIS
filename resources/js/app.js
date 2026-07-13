@@ -27,11 +27,13 @@ import {
 } from './municipal-requests';
 import { initAdminAnalytics } from './admin-analytics';
 import { initCommitteeMunicipalityMap } from './geographic-analytics';
+import { initDragScroll } from './drag-scroll';
 
 document.addEventListener('DOMContentLoaded', () => {
     initDropdowns();
     initAccessibility();
     initComboboxes();
+    initDragScroll();
     initAgendaForm();
     initAgendaVersionCompare();
     initMemberMultiSelect();

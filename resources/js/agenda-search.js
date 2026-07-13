@@ -157,6 +157,13 @@ export function initAgendaSearch() {
     });
 
     listBody.addEventListener('click', (event) => {
+        const wrap = event.target.closest('[data-drag-scroll]');
+        if (wrap?.dataset.dragScrollMoved === '1') {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+        }
+
         const row = event.target.closest('.splis-agenda-row');
         if (!row || event.target.closest('a')) {
             return;
