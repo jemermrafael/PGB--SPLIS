@@ -7,12 +7,16 @@
     $headerNotificationCount = 0;
 
     $authUser = auth()->user();
-    if ($authUser instanceof User && ($authUser->isBoardMember() || $authUser->canAdmin())) {
+    if ($authUser instanceof User && $authUser->receivesInAppNotifications()) {
         $controller = app(UserNotificationController::class);
-        $query = UserNotification::query()->where('user_id', $authUser->id);
+        $query = UserNotification::query()
+            ->withinRetention()
+            ->where('user_id', $authUser->id);
 
         if ($authUser->canAdmin()) {
             $query->where('type', UserNotification::TYPE_ACTIVITY_LOG);
+        } elseif ($authUser->isMunicipalViewer()) {
+            $query->whereIn('type', UserNotification::municipalTypes());
         } else {
             $query->where('type', '!=', UserNotification::TYPE_ACTIVITY_LOG);
         }
@@ -32,7 +36,7 @@
     data-dropdown
     data-initial-notifications='@json($headerNotifications)'
     data-initial-count="{{ $headerNotificationCount }}"
-    data-notifications-feed-url="{{ route('notifications.feed') }}"
+    data-notifications-feed-url="{{ route('notifications.index') }}"
 >
     <button type="button" id="splis-notify-trigger" class="splis-header-btn splis-header-btn-icon splis-notify-trigger" data-dropdown-trigger aria-expanded="false" aria-controls="splis-notify-panel" aria-haspopup="true" aria-label="Notifications">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
@@ -55,7 +59,7 @@
             @endif
         </div>
         <div class="splis-notify-panel-footer">
-            <a href="{{ route('notifications.feed') }}" class="splis-notify-see-all">See all notifications</a>
+            <a href="{{ route('notifications.index') }}" class="splis-notify-see-all">See all notifications</a>
         </div>
     </div>
 </div>

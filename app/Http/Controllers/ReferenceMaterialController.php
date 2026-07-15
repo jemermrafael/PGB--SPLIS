@@ -136,7 +136,7 @@ class ReferenceMaterialController extends Controller
 
         return redirect()
             ->route('references.show', $reference)
-            ->with('status', 'Reference material created.');
+            ->with('status', 'Reference Material created.');
     }
 
     public function edit(ReferenceMaterial $reference): View
@@ -186,7 +186,7 @@ class ReferenceMaterialController extends Controller
 
         return redirect()
             ->route('references.show', $reference)
-            ->with('status', 'Reference material updated.');
+            ->with('status', 'Reference Material updated.');
     }
 
     public function archive(ReferenceMaterial $reference): RedirectResponse
@@ -205,7 +205,7 @@ class ReferenceMaterialController extends Controller
 
         return redirect()
             ->route('references.show', $reference)
-            ->with('status', 'Reference material archived.');
+            ->with('status', 'Reference Material archived.');
     }
 
     public function restore(ReferenceMaterial $reference): RedirectResponse
@@ -224,7 +224,7 @@ class ReferenceMaterialController extends Controller
 
         return redirect()
             ->route('references.show', $reference)
-            ->with('status', 'Reference material restored.');
+            ->with('status', 'Reference Material restored.');
     }
 
     public function destroy(ReferenceMaterial $reference): RedirectResponse
@@ -239,7 +239,7 @@ class ReferenceMaterialController extends Controller
 
         return redirect()
             ->route('references.index')
-            ->with('status', 'Reference material deleted.');
+            ->with('status', 'Reference Material deleted.');
     }
 
     public function download(ReferenceMaterial $reference)

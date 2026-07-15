@@ -15,7 +15,7 @@ class UserNotificationController extends Controller
 {
     private const DEFAULT_LIMIT = 10;
 
-    public function feed(Request $request): View
+    public function index(Request $request): View
     {
         $user = $this->authorizedUser($request);
         $page = $this->paginatedNotifications($user, self::DEFAULT_LIMIT);
@@ -28,7 +28,7 @@ class UserNotificationController extends Controller
         ]);
     }
 
-    public function index(Request $request): JsonResponse
+    public function feed(Request $request): JsonResponse
     {
         $user = $this->authorizedUser($request);
         $limit = min(max((int) $request->input('limit', self::DEFAULT_LIMIT), 1), 30);
@@ -78,7 +78,7 @@ class UserNotificationController extends Controller
     {
         $user = $request->user();
 
-        abort_unless($user instanceof User && ($user->isBoardMember() || $user->canAdmin()), 403);
+        abort_unless($user instanceof User && $user->receivesInAppNotifications(), 403);
 
         return $user;
     }
@@ -125,6 +125,10 @@ class UserNotificationController extends Controller
             return $query->where('type', UserNotification::TYPE_ACTIVITY_LOG);
         }
 
+        if ($user->isMunicipalViewer()) {
+            return $query->whereIn('type', UserNotification::municipalTypes());
+        }
+
         return $query->where('type', '!=', UserNotification::TYPE_ACTIVITY_LOG);
     }
 
@@ -137,6 +141,10 @@ class UserNotificationController extends Controller
     {
         if ($user->canAdmin()) {
             return $notification->type === UserNotification::TYPE_ACTIVITY_LOG;
+        }
+
+        if ($user->isMunicipalViewer()) {
+            return in_array($notification->type, UserNotification::municipalTypes(), true);
         }
 
         return $notification->type !== UserNotification::TYPE_ACTIVITY_LOG;
@@ -172,17 +180,20 @@ class UserNotificationController extends Controller
             UserNotification::TYPE_COMMITTEE_REFERRAL,
             UserNotification::TYPE_AGENDA_PUBLISHED,
             UserNotification::TYPE_AGENDA_ADDED_TO_OB,
-            UserNotification::TYPE_AGENDA_EXPIRING_SOON => str_contains((string) $notification->link, '/agenda/')
-                ? 'View agenda'
-                : match (true) {
-                    str_contains((string) $notification->link, '/resolutions/') => 'View resolution',
-                    str_contains((string) $notification->link, '/ordinances/') => 'View ordinance',
-                    str_contains((string) $notification->link, '/appropriation-ordinances/') => 'View ordinance',
-                    default => 'View details',
-                },
+            UserNotification::TYPE_AGENDA_EXPIRING_SOON => str_contains((string) $notification->link, '/my-requests/')
+                ? 'View request'
+                : (str_contains((string) $notification->link, '/agenda/')
+                    ? 'View agenda'
+                    : match (true) {
+                        str_contains((string) $notification->link, '/resolutions/') => 'View resolution',
+                        str_contains((string) $notification->link, '/ordinances/') => 'View ordinance',
+                        str_contains((string) $notification->link, '/appropriation-ordinances/') => 'View ordinance',
+                        default => 'View details',
+                    }),
             UserNotification::TYPE_SESSION_CREATED,
             UserNotification::TYPE_OB_DOCUMENT_CREATED => 'View session',
             default => match (true) {
+                str_contains((string) $notification->link, '/my-requests/') => 'View request',
                 str_contains((string) $notification->link, '/agenda/') => 'View agenda',
                 str_contains((string) $notification->link, '/resolutions/') => 'View resolution',
                 str_contains((string) $notification->link, '/incoming/') => 'View incoming',

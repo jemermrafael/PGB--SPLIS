@@ -14,6 +14,7 @@ use App\Services\AgendaOutputLinker;
 use App\Services\AgendaOutputPublisher;
 use App\Services\AgendaVersionService;
 use App\Services\BoardMemberNotifier;
+use App\Services\MunicipalNotifier;
 use App\Services\ObDocumentService;
 use App\Support\ActivityLogger;
 use App\Support\AgendaFieldOptions;
@@ -213,6 +214,7 @@ class AgendaItemController extends Controller
 
         if (filled($agenda->committee_referred)) {
             $notifier->notifyCommitteeReferral($agenda);
+            app(MunicipalNotifier::class)->notifyCommitteeReferral($agenda);
         }
 
         app(AgendaExpirationNotifier::class)->syncForAgenda($agenda);
@@ -222,6 +224,7 @@ class AgendaItemController extends Controller
 
             if (! $wasPublishedBefore && $agenda->isPublished()) {
                 $notifier->notifyAgendaPublished($agenda);
+                app(MunicipalNotifier::class)->notifyAgendaPublished($agenda);
 
                 ActivityLogger::log('agenda.published', $agenda, [
                     'target' => $agenda->publishedTargetLabel(),

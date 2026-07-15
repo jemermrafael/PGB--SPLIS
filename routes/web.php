@@ -62,8 +62,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin/analytics/municipality-map', AdminAnalyticsMapController::class)->name('admin.analytics.municipality-map');
     Route::get('/dashboard/documents/search', DashboardSearchController::class)->name('dashboard.documents.search');
 
-    Route::get('/notifications/all', [UserNotificationController::class, 'feed'])->name('notifications.feed');
     Route::get('/notifications', [UserNotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/feed', [UserNotificationController::class, 'feed'])->name('notifications.feed');
+    Route::redirect('/notifications/all', '/notifications');
     Route::post('/notifications/{notification}/read', [UserNotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [UserNotificationController::class, 'markAllRead'])->name('notifications.read-all');
     Route::delete('/activity-logs/{activityLog}', [ActivityLogController::class, 'destroy'])->name('activity-logs.destroy');

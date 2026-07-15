@@ -120,7 +120,7 @@ export function initHeaderNotifications() {
     const markAllBtn = document.getElementById('splis-notify-mark-all');
     const stack = document.getElementById('splis-toast-stack');
     const wrap = document.querySelector('.splis-notify-wrap');
-    const feedUrl = wrap?.dataset.notificationsFeedUrl ?? '/notifications/all';
+    const feedUrl = wrap?.dataset.notificationsFeedUrl ?? '/notifications';
 
     if (! badge || ! listEl) {
         return;
@@ -306,7 +306,7 @@ export function initHeaderNotifications() {
 
     async function poll() {
         try {
-            const response = await fetch('/notifications?limit=10', {
+            const response = await fetch('/notifications/feed?limit=10', {
                 headers: { Accept: 'application/json' },
             });
 

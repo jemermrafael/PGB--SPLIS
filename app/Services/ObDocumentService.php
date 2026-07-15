@@ -24,6 +24,7 @@ class ObDocumentService
     public function __construct(
         private AgendaObPlacementService $placements,
         private BoardMemberNotifier $boardMemberNotifier,
+        private MunicipalNotifier $municipalNotifier,
     ) {}
 
     /**
@@ -387,6 +388,7 @@ class ObDocumentService
         if ($document->legislativeSession && $document->isFinal()) {
             foreach ($items as $item) {
                 $this->boardMemberNotifier->notifyAgendaAddedToOb($item, $document->legislativeSession);
+                $this->municipalNotifier->notifyAgendaAddedToOb($item, $document->legislativeSession);
             }
         }
 
@@ -508,7 +510,10 @@ class ObDocumentService
         AgendaItem::query()
             ->whereIn('id', $agendaIds)
             ->get()
-            ->each(fn (AgendaItem $item) => $this->boardMemberNotifier->notifyAgendaAddedToOb($item, $session, reNotify: true));
+            ->each(function (AgendaItem $item) use ($session): void {
+                $this->boardMemberNotifier->notifyAgendaAddedToOb($item, $session, reNotify: true);
+                $this->municipalNotifier->notifyAgendaAddedToOb($item, $session, reNotify: true);
+            });
     }
 
     protected function nextSortOrder(ObDocument $document, ?int $afterBlockId): int

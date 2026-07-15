@@ -96,6 +96,11 @@ class User extends Authenticatable
         return $this->role === UserRole::MunicipalViewer;
     }
 
+    public function receivesInAppNotifications(): bool
+    {
+        return $this->isBoardMember() || $this->canAdmin() || $this->isMunicipalViewer();
+    }
+
     public function canAdmin(): bool
     {
         return $this->role->canAdmin();

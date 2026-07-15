@@ -21,7 +21,7 @@
         $isBoardMember = $user?->isBoardMember() ?? false;
         $isMunicipalViewer = $user?->isMunicipalViewer() ?? false;
         $canAdmin = $user?->canAdmin() ?? false;
-        $showNotifications = $isBoardMember || $canAdmin;
+        $showNotifications = $user?->receivesInAppNotifications() ?? false;
         $incomingEnabled = config('incoming.enabled', false);
         $ordinancesNavActive = request()->routeIs('ordinances.*')
             || request()->routeIs('appropriation-ordinances.*')

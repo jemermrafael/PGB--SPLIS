@@ -85,6 +85,17 @@ class UserNotification extends Model
         ];
     }
 
+    /** @return list<string> */
+    public static function municipalTypes(): array
+    {
+        return [
+            self::TYPE_COMMITTEE_REFERRAL,
+            self::TYPE_AGENDA_PUBLISHED,
+            self::TYPE_AGENDA_ADDED_TO_OB,
+            self::TYPE_AGENDA_EXPIRING_SOON,
+        ];
+    }
+
     public function isUnread(): bool
     {
         return $this->read_at === null;

@@ -8,7 +8,10 @@ use Illuminate\Database\Eloquent\Builder;
 
 class AgendaExpirationNotifier
 {
-    public function __construct(private BoardMemberNotifier $notifier) {}
+    public function __construct(
+        private BoardMemberNotifier $boardMemberNotifier,
+        private MunicipalNotifier $municipalNotifier,
+    ) {}
 
     public function isExpiringSoon(AgendaItem $agenda): bool
     {
@@ -21,7 +24,8 @@ class AgendaExpirationNotifier
             return;
         }
 
-        $this->notifier->notifyAgendaExpiringSoon($agenda);
+        $this->boardMemberNotifier->notifyAgendaExpiringSoon($agenda);
+        $this->municipalNotifier->notifyAgendaExpiringSoon($agenda);
     }
 
     public function syncAll(): int
@@ -30,7 +34,8 @@ class AgendaExpirationNotifier
 
         $this->expiringSoonQuery()->chunkById(100, function ($agendas) use (&$count): void {
             foreach ($agendas as $agenda) {
-                $this->notifier->notifyAgendaExpiringSoon($agenda);
+                $this->boardMemberNotifier->notifyAgendaExpiringSoon($agenda);
+                $this->municipalNotifier->notifyAgendaExpiringSoon($agenda);
                 $count++;
             }
         });

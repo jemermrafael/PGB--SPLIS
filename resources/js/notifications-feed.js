@@ -128,7 +128,7 @@ export function initNotificationsFeed() {
         loadMoreBtn.textContent = 'Loading…';
 
         try {
-            const url = new URL('/notifications', window.location.origin);
+            const url = new URL('/notifications/feed', window.location.origin);
             url.searchParams.set('limit', '10');
             url.searchParams.set('before_id', String(nextBeforeId));
 
