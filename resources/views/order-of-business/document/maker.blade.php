@@ -90,7 +90,7 @@
                         class="splis-btn-secondary shrink-0"
                         title="Place eligible agendas using lifecycle rules"
                     >
-                        Auto-place agendas
+                        Auto-place Agendas
                     </button>
                 @endif
             </div>

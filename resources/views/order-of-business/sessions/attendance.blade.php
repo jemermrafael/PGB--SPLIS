@@ -50,7 +50,7 @@
         <div id="session-guests" class="border-t border-slate-200 pt-4 dark:border-slate-700">
             <div class="mb-3 flex items-center justify-between gap-3">
                 <p class="splis-detail-label mb-0">Guests</p>
-                <button type="button" class="splis-btn-secondary text-sm" data-guest-add>Add guest</button>
+                <button type="button" class="splis-btn-secondary text-sm" data-guest-add>Add Guest</button>
             </div>
 
             <div class="space-y-3" data-guest-rows>

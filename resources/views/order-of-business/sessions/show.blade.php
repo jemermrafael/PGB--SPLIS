@@ -149,7 +149,7 @@
                     <p class="splis-card-subtitle">{{ $session->obDocument->blocks->count() }} blocks</p>
                 </div>
                 @can('update', $session->obDocument)
-                    <a href="{{ route('ob.document.maker', $session) }}" class="splis-link text-sm">Open maker</a>
+                    <a href="{{ route('ob.document.maker', $session) }}" class="splis-link text-sm">Open OB Maker</a>
                 @elsecan('view', $session->obDocument)
                     <a href="{{ route('ob.document.print', $session) }}" class="splis-link text-sm">View OB</a>
                 @endcan

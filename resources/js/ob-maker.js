@@ -1086,7 +1086,7 @@ export function initObMaker() {
         }
 
         const confirmed = await confirmAction({
-            title: 'Auto-place agendas?',
+            title: 'Auto-place Agendas?',
             message:
                 'Place eligible agendas into this Order of Business using lifecycle rules (unassigned, unfinished, or committee reports). Manually moved items are left as-is. Items already in the correct section are skipped.',
             confirmLabel: 'Auto-place',
