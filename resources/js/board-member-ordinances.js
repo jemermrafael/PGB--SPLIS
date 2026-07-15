@@ -46,7 +46,8 @@ function renderRow(record) {
     return `
         <tr>
             <td class="whitespace-nowrap">
-                <a href="${escapeHtml(record.url)}" class="splis-link">${escapeHtml(record.number_label)} (${escapeHtml(record.series_year)})</a>
+                <a href="${escapeHtml(record.url)}" class="splis-link font-semibold">${escapeHtml(record.number_label)}</a>
+                <p class="mt-0.5 text-xs font-normal text-slate-500 dark:text-slate-400">${escapeHtml(record.series_label || `Series of ${record.series_year}`)}</p>
             </td>
             <td class="splis-table-title splis-table-title--list">
                 ${title.truncated

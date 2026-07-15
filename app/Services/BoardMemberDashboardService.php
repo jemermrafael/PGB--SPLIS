@@ -11,15 +11,18 @@ use App\Models\CommitteeTerm;
 use App\Models\LegislativeSession;
 use App\Models\User;
 use App\Support\AgendaDeadline;
+use App\Support\CommitteeTermSelection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 class BoardMemberDashboardService
 {
     /**
-     * @return Collection<int, array{committee: Committee, role: CommitteeMembershipRole, role_label: string}>
+     * Election terms where the board member has at least one committee assignment.
+     *
+     * @return Collection<int, CommitteeTerm>
      */
-    public function committeeAssignmentsFor(User $user): Collection
+    public function termsWithAssignmentsFor(User $user): Collection
     {
         $boardMember = $user->boardMember;
 
@@ -27,12 +30,66 @@ class BoardMemberDashboardService
             return collect();
         }
 
-        $termId = CommitteeTerm::query()->current()->value('id');
+        $termIds = CommitteeMembership::query()
+            ->where('board_member_id', $boardMember->id)
+            ->distinct()
+            ->pluck('committee_term_id');
+
+        if ($termIds->isEmpty()) {
+            return collect();
+        }
+
+        return $this->availableTerms()
+            ->filter(fn (CommitteeTerm $term) => $termIds->contains($term->id))
+            ->values();
+    }
+
+    public function resolveTermForUser(User $user, ?int $requestedTermId = null): CommitteeTerm
+    {
+        $memberTerms = $this->termsWithAssignmentsFor($user);
+
+        if ($memberTerms->isEmpty()) {
+            return $this->resolveTerm($requestedTermId);
+        }
+
+        if ($requestedTermId && $memberTerms->contains(fn (CommitteeTerm $term) => $term->id === $requestedTermId)) {
+            return $memberTerms->firstWhere('id', $requestedTermId);
+        }
+
+        return $memberTerms->firstWhere('is_current', true) ?? $memberTerms->first();
+    }
+
+    public function resolveTerm(?int $requestedTermId = null): CommitteeTerm
+    {
+        return CommitteeTermSelection::resolve($requestedTermId)['selectedTerm'];
+    }
+
+    /**
+     * @return Collection<int, CommitteeTerm>
+     */
+    public function availableTerms(): Collection
+    {
+        return CommitteeTermSelection::resolve()['terms'];
+    }
+
+    /**
+     * @return Collection<int, array{committee: Committee, role: CommitteeMembershipRole, role_label: string}>
+     */
+    public function committeeAssignmentsFor(User $user, ?CommitteeTerm $term = null): Collection
+    {
+        $boardMember = $user->boardMember;
+
+        if ($boardMember === null) {
+            return collect();
+        }
+
+        $term ??= $this->resolveTerm();
+        $termId = $term->id;
 
         return CommitteeMembership::query()
             ->with('committee')
             ->where('board_member_id', $boardMember->id)
-            ->when($termId, fn (Builder $query) => $query->where('committee_term_id', $termId))
+            ->where('committee_term_id', $termId)
             ->get()
             ->filter(fn (CommitteeMembership $membership) => $membership->committee !== null)
             ->sortBy(fn (CommitteeMembership $membership) => $membership->committee->sort_order ?? 999)
@@ -45,20 +102,80 @@ class BoardMemberDashboardService
     }
 
     /**
+     * @return array{chair: Collection<int, array{committee: Committee, role: CommitteeMembershipRole, role_label: string}>, vice_chair: Collection<int, array{committee: Committee, role: CommitteeMembershipRole, role_label: string}>, member: Collection<int, array{committee: Committee, role: CommitteeMembershipRole, role_label: string}>}
+     */
+    public function assignmentsGroupedByRole(User $user, ?CommitteeTerm $term = null): array
+    {
+        $assignments = $this->committeeAssignmentsFor($user, $term);
+
+        return [
+            'chair' => $assignments->filter(fn (array $a) => $a['role'] === CommitteeMembershipRole::Chair)->values(),
+            'vice_chair' => $assignments->filter(fn (array $a) => $a['role'] === CommitteeMembershipRole::ViceChair)->values(),
+            'member' => $assignments->filter(fn (array $a) => $a['role'] === CommitteeMembershipRole::Member)->values(),
+        ];
+    }
+
+    /**
+     * Full term roster for a committee the member belongs to.
+     *
+     * @return Collection<string, Collection<int, CommitteeMembership>>
+     */
+    public function rosterForCommittee(Committee $committee, CommitteeTerm $term): Collection
+    {
+        return $committee->memberships()
+            ->where('committee_term_id', $term->id)
+            ->with('boardMember')
+            ->orderBy('sort_order')
+            ->get()
+            ->groupBy(fn (CommitteeMembership $membership) => $membership->role->value);
+    }
+
+    /**
+     * Agenda items from the member's committees that appear on a session OB.
+     *
+     * @return Collection<int, AgendaItem>
+     */
+    public function myCommitteeItemsOnSession(User $user, LegislativeSession $session): Collection
+    {
+        $committeeNames = $this->committeesFor($user)
+            ->pluck('name')
+            ->filter()
+            ->map(fn ($name) => mb_strtolower((string) $name))
+            ->values();
+
+        if ($committeeNames->isEmpty()) {
+            return collect();
+        }
+
+        $session->loadMissing('obDocument.blocks.agendaItem');
+
+        return $session->obDocument?->blocks
+            ?->filter(fn ($block) => $block->agendaItem !== null)
+            ->map(fn ($block) => $block->agendaItem)
+            ->filter(function (AgendaItem $agendaItem) use ($committeeNames) {
+                $committee = mb_strtolower((string) ($agendaItem->committee_referred ?? ''));
+
+                return $committeeNames->contains(fn ($name) => $name !== '' && str_contains($committee, $name));
+            })
+            ->unique('id')
+            ->values() ?? collect();
+    }
+
+    /**
      * @return array{committee: Committee, role: CommitteeMembershipRole, role_label: string}|null
      */
-    public function membershipForCommittee(User $user, Committee $committee): ?array
+    public function membershipForCommittee(User $user, Committee $committee, ?CommitteeTerm $term = null): ?array
     {
-        return $this->committeeAssignmentsFor($user)
+        return $this->committeeAssignmentsFor($user, $term)
             ->first(fn (array $assignment) => $assignment['committee']->id === $committee->id);
     }
 
     /**
      * @return Builder<AgendaItem>
      */
-    public function agendaQueryForCommittee(User $user, Committee $committee): Builder
+    public function agendaQueryForCommittee(User $user, Committee $committee, ?CommitteeTerm $term = null): Builder
     {
-        abort_unless($this->membershipForCommittee($user, $committee) !== null, 403);
+        abort_unless($this->membershipForCommittee($user, $committee, $term) !== null, 403);
 
         return AgendaItem::query()
             ->where('committee_referred', 'like', '%'.$committee->name.'%');
@@ -67,9 +184,9 @@ class BoardMemberDashboardService
     /**
      * @return array<string, int>
      */
-    public function agendaStatsForCommittee(User $user, Committee $committee): array
+    public function agendaStatsForCommittee(User $user, Committee $committee, ?CommitteeTerm $term = null): array
     {
-        $base = $this->agendaQueryForCommittee($user, $committee);
+        $base = $this->agendaQueryForCommittee($user, $committee, $term);
 
         return [
             'pending' => (clone $base)->where('status', AgendaItem::STATUS_PENDING)->count(),
@@ -95,7 +212,7 @@ class BoardMemberDashboardService
     /**
      * @return Collection<int, Committee>
      */
-    public function committeesFor(User $user): Collection
+    public function committeesFor(User $user, ?CommitteeTerm $term = null): Collection
     {
         $boardMember = $user->boardMember;
 
@@ -103,11 +220,11 @@ class BoardMemberDashboardService
             return collect();
         }
 
-        $termId = CommitteeTerm::query()->current()->value('id');
+        $term ??= $this->resolveTerm();
 
         $committeeIds = CommitteeMembership::query()
             ->where('board_member_id', $boardMember->id)
-            ->when($termId, fn (Builder $query) => $query->where('committee_term_id', $termId))
+            ->where('committee_term_id', $term->id)
             ->pluck('committee_id');
 
         return Committee::query()

@@ -8,7 +8,7 @@
                 <div class="splis-accordion-summary-top">
                     <div>
                         <span class="splis-card-title">Agenda deadlines within {{ $expiringSoonDays }} days</span>
-                        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ $expiringSubtitle ?? 'Committee referrals approaching their due date.' }}</p>
+                        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ $expiringSubtitle ?? 'Committee Referrals approaching their due date.' }}</p>
                     </div>
                     <span class="flex items-center gap-2">
                         <span class="splis-accordion-count">{{ number_format($expiringCount) }}</span>

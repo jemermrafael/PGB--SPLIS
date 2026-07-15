@@ -29,6 +29,8 @@
         $myOrdinancesNavActive = request()->routeIs('board-member.ordinances.*');
         $myAgendaNavActive = request()->routeIs('board-member.agenda.*')
             || ($isBoardMember && request()->routeIs('agenda.*'));
+        $myCommitteesNavActive = request()->routeIs('board-member.committees.*');
+        $myProfileNavActive = request()->routeIs('board-member.profile.*');
 
         $myRequestsNavActive = request()->routeIs('municipal.requests.*');
 
@@ -41,6 +43,7 @@
             $navItems[] = ['label' => 'Order of Business', 'url' => route('ob.sessions.index'), 'active' => request()->routeIs('ob.*')];
             $navItems[] = ['label' => 'Reference Materials', 'url' => route('references.index'), 'active' => request()->routeIs('references.*')];
         } elseif ($isBoardMember) {
+            $navItems[] = ['label' => 'My Committees', 'url' => route('board-member.committees.index'), 'active' => $myCommitteesNavActive];
             $navItems[] = ['label' => 'Order of Business', 'url' => route('ob.sessions.index'), 'active' => request()->routeIs('ob.*')];
         }
 
@@ -91,6 +94,10 @@
                             <div class="splis-user-menu-panel" data-dropdown-panel>
                                 <p class="px-3 py-2 text-sm font-medium text-slate-800 dark:text-slate-100">{{ auth()->user()->name }}</p>
                                 <p class="px-3 pb-2 text-xs text-slate-500">{{ auth()->user()->role->label() }}</p>
+                                @if (auth()->user()->isBoardMember())
+                                    <a href="{{ route('board-member.profile.edit') }}" @class(['splis-user-menu-link', 'font-semibold' => $myProfileNavActive])>My Profile</a>
+                                    <a href="{{ route('board-member.committees.index') }}" class="splis-user-menu-link">My Committees</a>
+                                @endif
                                 @if (auth()->user()->canAdmin())
                                     <a href="{{ route('admin.analytics.index') }}" class="splis-user-menu-link">Executive Dashboard</a>
                                 @endif

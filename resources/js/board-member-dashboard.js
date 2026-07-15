@@ -355,27 +355,59 @@ export function initBoardMemberDashboardOb() {
         }
     }
 
-    function renderListItem(session) {
-        const action = session.can_view && session.print_url
-            ? `<a href="${escapeHtml(session.print_url)}" target="_blank" class="splis-btn-primary !py-1.5 text-sm">View OB</a>`
+    function renderMyItems(session) {
+        const count = Number(session.my_items_count || 0);
+        if (count <= 0) {
+            return '<p class="mt-2 text-xs text-slate-500">No items from your committees on this OB.</p>';
+        }
+
+        const items = (session.my_items || []).map((item) => `
+            <li>
+                <a href="${escapeHtml(item.url)}" class="splis-link text-sm">${escapeHtml(item.label)} — ${escapeHtml(item.title)}</a>
+            </li>
+        `).join('');
+
+        const more = count > (session.my_items || []).length
+            ? `<p class="mt-1 text-xs text-slate-500">+ ${count - (session.my_items || []).length} more from your committees</p>`
             : '';
 
         return `
-            <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                <div>
+            <div class="mt-2">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">${count} from your committees</p>
+                <ul class="mt-1 space-y-1">${items}</ul>
+                ${more}
+            </div>
+        `;
+    }
+
+    function renderObActions(session) {
+        const actions = [];
+
+        if (session.can_view && session.print_url) {
+            actions.push(`<a href="${escapeHtml(session.print_url)}" target="_blank" class="splis-btn-primary !py-1.5 text-sm">View OB</a>`);
+        }
+
+        if (session.ics_url) {
+            actions.push(`<a href="${escapeHtml(session.ics_url)}" class="splis-btn-ghost !py-1.5 text-sm">Calendar</a>`);
+        }
+
+        return actions.join('');
+    }
+
+    function renderListItem(session) {
+        return `
+            <li class="flex flex-wrap items-start justify-between gap-3 px-4 py-3">
+                <div class="min-w-0 flex-1">
                     <p class="font-medium text-slate-900 dark:text-slate-100">${escapeHtml(session.title)}</p>
                     <p class="text-sm text-slate-500">${escapeHtml(session.session_date_label || '')}${session.venue ? ` · ${escapeHtml(session.venue)}` : ''}</p>
+                    ${renderMyItems(session)}
                 </div>
-                <div class="flex gap-2">${action}</div>
+                <div class="flex flex-wrap gap-2">${renderObActions(session)}</div>
             </li>
         `;
     }
 
     function renderGridItem(session) {
-        const action = session.can_view && session.print_url
-            ? `<a href="${escapeHtml(session.print_url)}" target="_blank" class="splis-doc-list-link text-xs font-semibold">View OB</a>`
-            : '';
-
         return `
             <article class="splis-doc-card flex flex-col gap-3">
                 <p class="splis-doc-card-number">${escapeHtml(session.title)}</p>
@@ -383,8 +415,10 @@ export function initBoardMemberDashboardOb() {
                     <div><dt>Date</dt><dd>${escapeHtml(session.session_date_label || '—')}</dd></div>
                     <div class="col-span-2"><dt>Venue</dt><dd>${escapeHtml(session.venue || '—')}</dd></div>
                     <div><dt>Type</dt><dd>${escapeHtml(session.kind_label || '—')}</dd></div>
+                    <div><dt>My items</dt><dd>${Number(session.my_items_count || 0)}</dd></div>
                 </dl>
-                <div class="mt-auto border-t border-slate-100 pt-3 dark:border-slate-700">${action}</div>
+                ${renderMyItems(session)}
+                <div class="mt-auto flex flex-wrap gap-2 border-t border-slate-100 pt-3 dark:border-slate-700">${renderObActions(session)}</div>
             </article>
         `;
     }

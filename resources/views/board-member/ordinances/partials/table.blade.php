@@ -28,7 +28,8 @@
                         </td>
                     @endif
                     <td class="whitespace-nowrap">
-                        <a href="{{ $record['url'] }}" class="splis-link">{{ $record['number_label'] }} ({{ $record['series_year'] }})</a>
+                        <a href="{{ $record['url'] }}" class="splis-link font-semibold">{{ $record['number_label'] }}</a>
+                        <p class="mt-0.5 text-xs font-normal text-slate-500 dark:text-slate-400">{{ $record['series_label'] ?? ('Series of '.$record['series_year']) }}</p>
                     </td>
                     <td class="splis-table-title splis-table-title--list">
                         @php

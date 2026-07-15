@@ -74,7 +74,7 @@
                     <option value="{{ $member->id }}" @selected((string) old('board_member_id', $user->board_member_id) === (string) $member->id)>{{ $member->displayName() }}{{ $member->district ? ' · '.$member->district : '' }}</option>
                 @endforeach
             </select>
-            <p class="mt-1 text-xs text-slate-500">Required for Board Member accounts — links the login to the legislative roster.</p>
+            <p class="mt-1 text-xs text-slate-500">Required for Board Member accounts — each login must stay uniquely linked to one legislative roster profile.</p>
         </div>
 
         <div id="municipality-link-wrap" @class(['hidden' => old('role', $user->role?->value) !== 'municipal_viewer'])>

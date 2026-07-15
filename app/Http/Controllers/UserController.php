@@ -131,6 +131,7 @@ class UserController extends Controller
                 'integer',
                 'exists:board_members,id',
                 Rule::requiredIf(fn () => $request->input('role') === UserRole::BoardMember->value),
+                Rule::unique('users', 'board_member_id')->ignore($user?->id),
             ],
             'municipality_id' => [
                 'nullable',

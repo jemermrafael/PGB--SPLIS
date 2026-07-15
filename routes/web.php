@@ -4,7 +4,10 @@ use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\BoardMemberAgendaController;
 use App\Http\Controllers\BoardMemberAgendaSearchController;
 use App\Http\Controllers\BoardMemberCommitteeAgendaController;
+use App\Http\Controllers\BoardMemberCommitteeController;
 use App\Http\Controllers\BoardMemberObSearchController;
+use App\Http\Controllers\BoardMemberProfileController;
+use App\Http\Controllers\BoardMemberSessionCalendarController;
 use App\Http\Controllers\MunicipalRequestController;
 use App\Http\Controllers\MunicipalRequestSearchController;
 use App\Http\Controllers\MyOrdinanceController;
@@ -72,7 +75,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/my-agenda', [BoardMemberAgendaController::class, 'index'])->name('board-member.agenda.index');
     Route::get('/my-agenda/search', BoardMemberAgendaSearchController::class)->name('board-member.agenda.search');
     Route::get('/my-agenda/committees/{committee}', [BoardMemberCommitteeAgendaController::class, 'show'])->name('board-member.agenda.committee');
+    Route::get('/my-committees', [BoardMemberCommitteeController::class, 'index'])->name('board-member.committees.index');
+    Route::get('/my-committees/{committee}', [BoardMemberCommitteeController::class, 'show'])->name('board-member.committees.show');
+    Route::get('/my-profile', [BoardMemberProfileController::class, 'edit'])->name('board-member.profile.edit');
+    Route::put('/my-profile', [BoardMemberProfileController::class, 'update'])->name('board-member.profile.update');
     Route::get('/dashboard/ob/search', BoardMemberObSearchController::class)->name('board-member.dashboard.ob.search');
+    Route::get('/my-sessions/{session}/calendar.ics', BoardMemberSessionCalendarController::class)->name('board-member.sessions.ics');
 
     Route::get('/my-requests', [MunicipalRequestController::class, 'index'])->name('municipal.requests.index');
     Route::get('/my-requests/search', MunicipalRequestSearchController::class)->name('municipal.requests.search');

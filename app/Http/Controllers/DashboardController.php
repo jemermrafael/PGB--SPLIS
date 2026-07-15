@@ -10,6 +10,7 @@ use App\Models\Ordinance;
 use App\Models\Resolution;
 use App\Models\SeriesYear;
 use App\Models\User;
+use App\Services\BoardMemberBriefingService;
 use App\Services\BoardMemberDashboardService;
 use App\Services\MunicipalRequestService;
 use App\Services\ResolutionRepository;
@@ -20,6 +21,7 @@ class DashboardController extends Controller
     public function __invoke(
         ResolutionRepository $repository,
         BoardMemberDashboardService $boardDashboard,
+        BoardMemberBriefingService $briefing,
         MunicipalRequestService $municipalRequests,
     ): View {
         $user = auth()->user();
@@ -42,18 +44,18 @@ class DashboardController extends Controller
         }
 
         if ($user instanceof User && $user->isBoardMember()) {
+            $linked = $user->board_member_id !== null;
+            $term = $boardDashboard->resolveTerm();
+
             return view('board-member.dashboard', [
                 'user' => $user,
-                'committeeAssignments' => $user->board_member_id ? $boardDashboard->committeeAssignmentsFor($user) : collect(),
-                'agendaStats' => $user->board_member_id
+                'selectedTerm' => $term,
+                'agendaStats' => $linked
                     ? $boardDashboard->agendaStatsFor($user)
                     : ['pending' => 0, 'expiring_soon' => 0, 'due_soon' => 0, 'done' => 0, 'lapsed' => 0],
-                'expiringSoonAgendas' => $user->board_member_id
-                    ? $boardDashboard->expiringSoonAgendasFor($user)
-                    : collect(),
                 'expiringSoonDays' => $boardDashboard->expiringSoonDays(),
-                'sessions' => $boardDashboard->upcomingSessions(),
-                'unlinked' => $user->board_member_id === null,
+                'briefing' => $briefing->for($user),
+                'unlinked' => ! $linked,
             ]);
         }
 

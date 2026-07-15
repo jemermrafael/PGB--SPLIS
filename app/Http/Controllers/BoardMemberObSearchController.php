@@ -17,7 +17,8 @@ class BoardMemberObSearchController extends Controller
         $user = $request->user();
         abort_unless($user->isBoardMember(), 403);
 
-        $query = $dashboard->orderOfBusinessQuery();
+        $query = $dashboard->orderOfBusinessQuery()
+            ->with(['obDocument.blocks.agendaItem']);
 
         if ($request->filled('q')) {
             $term = trim($request->string('q'));
@@ -30,9 +31,12 @@ class BoardMemberObSearchController extends Controller
 
         $perPage = min(max($request->integer('per_page', 10), 5), 50);
 
-        $paginator = $query->paginate($perPage)->through(function (LegislativeSession $session) use ($user) {
+        $paginator = $query->paginate($perPage)->through(function (LegislativeSession $session) use ($user, $dashboard) {
             $document = $session->obDocument;
             $canView = $document !== null && $user->can('view', $document);
+            $myItems = $user->board_member_id
+                ? $dashboard->myCommitteeItemsOnSession($user, $session)
+                : collect();
 
             return [
                 'id' => $session->id,
@@ -43,6 +47,14 @@ class BoardMemberObSearchController extends Controller
                 'kind_label' => $session->sessionKindLabel(),
                 'can_view' => $canView,
                 'print_url' => $canView ? route('ob.document.print', $session) : null,
+                'ics_url' => route('board-member.sessions.ics', $session),
+                'my_items_count' => $myItems->count(),
+                'my_items' => $myItems->take(5)->map(fn ($item) => [
+                    'id' => $item->id,
+                    'label' => $item->displayLabel(),
+                    'title' => \Illuminate\Support\Str::limit($item->title ?: 'Untitled', 80),
+                    'url' => route('agenda.show', $item),
+                ])->values(),
             ];
         });
 

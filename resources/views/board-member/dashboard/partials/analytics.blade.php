@@ -40,7 +40,7 @@
                     <h3 class="splis-card-title">Pending by committee</h3>
                     <p class="splis-card-subtitle">Open items under your committee assignments</p>
                 </div>
-                <a href="{{ route('board-member.agenda.index') }}" class="splis-link text-sm">My agenda</a>
+                <a href="{{ route('board-member.agenda.index') }}" class="splis-link text-sm">My Agenda</a>
             </div>
             <div class="splis-card-body">
                 @include('partials.analytics-bar-chart', ['rows' => $committeeBreakdownChart])

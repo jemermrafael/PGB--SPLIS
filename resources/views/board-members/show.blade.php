@@ -82,11 +82,11 @@
                     'memberships' => $roles['chair'],
                 ])
                 @include('board-members.partials.role-list', [
-                    'title' => 'Vice chairmanship',
+                    'title' => 'Vice Chairmanship',
                     'memberships' => $roles['vice_chair'],
                 ])
                 @include('board-members.partials.role-list', [
-                    'title' => 'Committee membership',
+                    'title' => 'Committee Membership',
                     'memberships' => $roles['member'],
                 ])
             </div>
@@ -119,7 +119,7 @@
                             'empty' => '—',
                         ])
                         @include('board-members.partials.role-list', [
-                            'title' => 'Vice chairmanship',
+                            'title' => 'Vice Chairmanship',
                             'memberships' => $entry['roles']['vice_chair'],
                             'empty' => '—',
                         ])
