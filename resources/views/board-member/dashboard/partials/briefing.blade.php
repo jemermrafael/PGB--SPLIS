@@ -41,7 +41,7 @@
                     @can('view', $next->obDocument)
                         <a href="{{ route('ob.document.print', $next) }}" target="_blank" class="splis-btn-primary !py-1.5 text-sm">View OB</a>
                     @endcan
-                    <a href="{{ route('board-member.sessions.ics', $next) }}" class="splis-btn-ghost !py-1.5 text-sm">Add to calendar</a>
+                    <a href="{{ route('board-member.sessions.ics', $next) }}" class="splis-btn-ghost !py-1.5 text-sm">Add to Calendar</a>
                 </div>
             @else
                 <p class="text-sm text-slate-500">No upcoming scheduled Session.</p>
@@ -64,7 +64,7 @@
                     <p class="mt-2 text-xs text-slate-500">+ {{ $myItems->count() - 6 }} more on this OB</p>
                 @endif
             @else
-                <p class="text-sm text-slate-500">No items from your committees on the next Order of Business.</p>
+                <p class="text-sm text-slate-500">No items from your Committees on the next Order of Business.</p>
             @endif
         </div>
     </div>
@@ -130,7 +130,7 @@
                         </p>
                     @endif
                 @else
-                    <p class="text-sm text-slate-500">No agenda deadlines within {{ $deadlineDays }} days.</p>
+                    <p class="text-sm text-slate-500">No Agenda deadlines within {{ $deadlineDays }} days.</p>
                 @endif
             </div>
         </details>
