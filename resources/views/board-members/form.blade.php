@@ -13,7 +13,7 @@
 <div class="max-w-2xl">
     <div class="splis-page-header !mb-6">
         <div>
-            <h1 class="splis-page-title">{{ $isEdit ? 'Edit board member' : 'New Board Member' }}</h1>
+            <h1 class="splis-page-title">{{ $isEdit ? 'Edit Board Member' : 'New Board Member' }}</h1>
             <p class="splis-page-subtitle">Personnel record and term roster assignment.</p>
         </div>
     </div>
@@ -77,7 +77,7 @@
         <div class="flex flex-wrap gap-2 pt-2">
             <button type="submit" class="splis-btn-primary">Save</button>
             @if ($isEdit)
-                <a href="{{ route('board-members.show', ['boardMember' => $boardMember, 'term' => $term->id]) }}" class="splis-btn-secondary">View profile</a>
+                <a href="{{ route('board-members.show', ['boardMember' => $boardMember, 'term' => $term->id]) }}" class="splis-btn-secondary">View Profile</a>
             @endif
             <a href="{{ route('board-members.index', ['term' => $term->id]) }}" class="splis-btn-secondary">Cancel</a>
         </div>
@@ -90,14 +90,14 @@
                 action="{{ route('board-members.destroy', $boardMember) }}"
                 class="mt-6"
                 data-confirm-submit
-                data-confirm-title="Delete board member?"
+                data-confirm-title="Delete Board Member?"
                 data-confirm-message="Delete {{ $boardMember->displayName() }}? This removes their roster and committee assignments."
                 data-confirm-label="Delete"
             >
                 @csrf
                 @method('DELETE')
                 <input type="hidden" name="term" value="{{ $term->id }}">
-                <button type="submit" class="splis-btn-ghost text-red-600">Delete board member</button>
+                <button type="submit" class="splis-btn-ghost text-red-600">Delete Board Member</button>
             </form>
         @endcan
     @endif

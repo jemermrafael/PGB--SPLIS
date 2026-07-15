@@ -22,6 +22,8 @@ class LegislativeSession extends Model
         'prior_session_id',
         'status',
         'notes',
+        'guest_name',
+        'guest_remarks',
         'pdf_summary_committee_reports',
         'pdf_committee_reports',
         'pdf_draft_journal',
@@ -152,7 +154,7 @@ class LegislativeSession extends Model
     }
 
     /**
-     * Sessions board members may browse (session must be scheduled).
+     * Sessions Board Members may browse (session must be scheduled).
      *
      * @param  Builder<self>  $query
      * @return Builder<self>

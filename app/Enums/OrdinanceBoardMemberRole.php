@@ -13,7 +13,7 @@ enum OrdinanceBoardMemberRole: string
         return match ($this) {
             self::Author => 'Authored by',
             self::Sponsor => 'Sponsored by',
-            self::AuthoredSponsored => 'Authored & sponsored by',
+            self::AuthoredSponsored => 'Authored & Sponsored by',
         };
     }
 

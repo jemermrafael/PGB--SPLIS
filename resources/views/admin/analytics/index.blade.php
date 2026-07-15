@@ -32,7 +32,7 @@
     <header class="splis-exec-header">
         <div>
             <h1 class="splis-exec-title">Executive Dashboard</h1>
-            <p class="splis-exec-subtitle">Overview of legislative operations and performance</p>
+            <p class="splis-exec-subtitle">Overview of Legislative Operations and Performance</p>
         </div>
         <p class="text-sm text-slate-500">{{ now()->format('M j, Y | l') }}</p>
     </header>
@@ -48,7 +48,7 @@
                 <input id="analytics-year-to" type="number" min="{{ $minYear }}" max="2100" name="year_to" value="{{ $yearTo }}" class="splis-input">
             </div>
             <div>
-                <label class="splis-label" for="analytics-focus-year">Focus year</label>
+                <label class="splis-label" for="analytics-focus-year">Focus Year</label>
                 <input id="analytics-focus-year" type="number" min="{{ $minYear }}" max="2100" name="focus_year" value="{{ $focusYear }}" class="splis-input">
             </div>
             <div class="flex items-end gap-2">
@@ -70,7 +70,7 @@
     <div class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
         <div class="splis-exec-panel">
             <h2 class="splis-exec-panel-title">Legislative Output by Year</h2>
-            <p class="splis-exec-panel-subtitle">Resolutions vs ordinances (includes appropriation ordinances) · by date approved</p>
+            <p class="splis-exec-panel-subtitle">Resolutions vs Ordinances (includes Appropriation Ordinances) · by date approved</p>
             <div class="splis-exec-chart-wrap">
                 <canvas id="chart-legislative-output-year" aria-label="Legislative output by year"></canvas>
             </div>
@@ -78,7 +78,7 @@
 
         <div class="splis-exec-panel">
             <h2 class="splis-exec-panel-title">Monthly Output — {{ $focusYear }}</h2>
-            <p class="splis-exec-panel-subtitle">Based on approved dates (resolutions + ordinances, including appropriation ordinances)</p>
+            <p class="splis-exec-panel-subtitle">Based on approved dates (Resolutions + Ordinances, including Appropriation Ordinances)</p>
             <div class="splis-exec-chart-wrap">
                 <canvas id="chart-legislative-output-month" aria-label="Monthly legislative output"></canvas>
             </div>
@@ -122,7 +122,7 @@
     <div class="splis-exec-chart-grid">
         <div class="splis-exec-panel">
             <h2 class="splis-exec-panel-title">Requests by Sender</h2>
-            <p class="splis-exec-panel-subtitle">Grouped source analytics</p>
+            <p class="splis-exec-panel-subtitle">Grouped Source Analytics</p>
             <div class="splis-exec-chart-wrap">
                 <canvas id="chart-source-senders" aria-label="Requests by sender"></canvas>
             </div>
@@ -130,7 +130,7 @@
 
         <div class="splis-exec-panel">
             <h2 class="splis-exec-panel-title">Resolutions Trend</h2>
-            <p class="splis-exec-panel-subtitle">Monthly approved — {{ $focusYear }}</p>
+            <p class="splis-exec-panel-subtitle">Monthly Approved — {{ $focusYear }}</p>
             <div class="splis-exec-chart-wrap">
                 <canvas id="chart-resolution-trend" aria-label="Resolutions trend"></canvas>
             </div>
@@ -138,7 +138,7 @@
 
         <div class="splis-exec-panel">
             <h2 class="splis-exec-panel-title">Resolutions by Category</h2>
-            <p class="splis-exec-panel-subtitle">{{ number_format($categoryTotal) }} total resolutions</p>
+            <p class="splis-exec-panel-subtitle">{{ number_format($categoryTotal) }} total Resolutions</p>
             <div class="splis-exec-chart-wrap splis-exec-chart-wrap--donut">
                 <canvas id="chart-resolution-categories" aria-label="Resolutions by category"></canvas>
             </div>
@@ -146,7 +146,7 @@
 
         <div class="splis-exec-panel">
             <h2 class="splis-exec-panel-title">Committee Workload</h2>
-            <p class="splis-exec-panel-subtitle">Resolutions handled by committee</p>
+            <p class="splis-exec-panel-subtitle">Resolutions handled by Committee</p>
             <div class="splis-exec-chart-wrap">
                 <canvas id="chart-committee-workload" aria-label="Committee workload"></canvas>
             </div>
@@ -201,7 +201,7 @@
                 <div>
                     <label class="splis-label" for="map-measure">Show</label>
                     <select id="map-measure" class="splis-input" data-map-filter="measure">
-                        <option value="both" @selected($mapMeasure === 'both')>Agendas and resolutions</option>
+                        <option value="both" @selected($mapMeasure === 'both')>Agendas and Aesolutions</option>
                         <option value="agendas" @selected($mapMeasure === 'agendas')>Agendas only</option>
                         <option value="resolutions" @selected($mapMeasure === 'resolutions')>Resolutions only</option>
                     </select>

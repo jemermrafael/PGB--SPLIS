@@ -228,7 +228,7 @@ function initMunicipalSearch(root, { compact = false } = {}) {
         const { total, current_page: page, last_page: lastPage } = payload.meta || {};
         const colSpan = compact ? 6 : 8;
 
-        meta.textContent = `${Number(total || 0).toLocaleString()} request(s) found`;
+        meta.textContent = `${Number(total || 0).toLocaleString()} Request(s) found`;
         updateStats(payload.stats);
 
         if (items.length === 0) {

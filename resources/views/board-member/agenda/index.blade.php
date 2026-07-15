@@ -17,7 +17,7 @@
     </div>
 
     @if ($unlinked)
-        <div class="splis-alert-error mb-6">This account is not linked to a board member profile yet.</div>
+        <div class="splis-alert-error mb-6">This account is not linked to a Board Member profile yet.</div>
     @endif
 
     @include('board-member.agenda.partials.expiring-soon', [

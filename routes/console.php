@@ -19,3 +19,8 @@ Schedule::command('splis:notify-expiring-agendas')
     ->dailyAt('08:00')
     ->withoutOverlapping()
     ->onOneServer();
+
+Schedule::command('splis:prune-notifications')
+    ->dailyAt('03:15')
+    ->withoutOverlapping()
+    ->onOneServer();

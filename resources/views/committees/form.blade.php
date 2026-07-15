@@ -18,7 +18,7 @@
 
     <div class="mb-4 flex flex-wrap gap-2 text-sm">
         <a href="{{ route('board-members.index') }}" class="splis-btn-secondary">Board Members</a>
-        <a href="{{ route('committee-terms.index') }}" class="splis-btn-secondary">Election terms</a>
+        <a href="{{ route('committee-terms.index') }}" class="splis-btn-secondary">Election Terms</a>
     </div>
 
     <form method="POST" action="{{ $isEdit ? route('committees.update', $committee) : route('committees.store') }}" class="splis-card splis-card-body space-y-6">
@@ -76,7 +76,7 @@
                 <div>
                     <label class="splis-label" for="vice_chair_id">Vice chair</label>
                     <select name="vice_chair_id" id="vice_chair_id" class="splis-input">
-                        <option value="">— Select board member —</option>
+                        <option value="">— Select Board Member —</option>
                         @foreach ($boardMembers as $member)
                             @php $assignment = $member->termAssignments->first(); @endphp
                             <option value="{{ $member->id }}" @selected(old('vice_chair_id', $roster['vice_chair_id'] ?? null) == $member->id)>

@@ -1,6 +1,6 @@
 @props(['session'])
 
-<div {{ $attributes->merge(['class' => 'flex flex-wrap items-center justify-end gap-3']) }}>
+<div {{ $attributes->merge(['class' => 'flex flex-nowrap items-center justify-end gap-3']) }}>
     @can('view', $session)
         <a href="{{ route('ob.sessions.show', $session) }}" class="splis-link inline-flex items-center gap-1.5 whitespace-nowrap">
             <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true">

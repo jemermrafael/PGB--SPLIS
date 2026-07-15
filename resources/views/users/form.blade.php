@@ -67,7 +67,7 @@
         </div>
 
         <div id="board-member-link-wrap" @class(['hidden' => old('role', $user->role?->value) !== 'board_member'])>
-            <label class="splis-label" for="board_member_id">Linked board member</label>
+            <label class="splis-label" for="board_member_id">Linked Board Member</label>
             <select name="board_member_id" id="board_member_id" class="splis-select">
                 <option value="">Select Board Member</option>
                 @foreach ($boardMembers as $member)

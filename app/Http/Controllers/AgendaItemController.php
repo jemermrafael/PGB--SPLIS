@@ -104,7 +104,7 @@ class AgendaItemController extends Controller
         if ($autoLinked) {
             return redirect()
                 ->route('agenda.show', $agenda)
-                ->with('status', 'Provincial output linked to '.$agenda->publishedTargetLabel().'.');
+                ->with('status', 'Provincial Output linked to '.$agenda->publishedTargetLabel().'.');
         }
 
         $agenda->load([
@@ -311,7 +311,7 @@ class AgendaItemController extends Controller
 
         return redirect()
             ->route('agenda.show', $agenda)
-            ->with('status', 'Provincial output linked to '.$agenda->publishedTargetLabel().'.');
+            ->with('status', 'Provincial Output linked to '.$agenda->publishedTargetLabel().'.');
     }
 
     public function addToOrderOfBusiness(Request $request, AgendaItem $agenda, ObDocumentService $documentService): RedirectResponse

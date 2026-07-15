@@ -41,6 +41,8 @@ class SessionAttendanceController extends Controller
         $validated = $request->validate([
             'presence' => ['nullable', 'array'],
             'presence.*' => ['nullable', 'boolean'],
+            'guest_name' => ['nullable', 'string', 'max:255'],
+            'guest_remarks' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $presence = [];
@@ -54,6 +56,15 @@ class SessionAttendanceController extends Controller
             (int) $request->user()->id,
         );
 
+        $legislativeSession->update([
+            'guest_name' => filled($validated['guest_name'] ?? null)
+                ? trim((string) $validated['guest_name'])
+                : null,
+            'guest_remarks' => filled($validated['guest_remarks'] ?? null)
+                ? trim((string) $validated['guest_remarks'])
+                : null,
+        ]);
+
         return redirect()
             ->route('ob.sessions.attendance', $legislativeSession)
             ->with('status', 'Attendance saved for this session.');
@@ -65,10 +76,12 @@ class SessionAttendanceController extends Controller
 
         $year = (int) $request->input('year', now()->year);
         $month = (int) $request->input('month', now()->month);
+        $currentTermId = \App\Models\CommitteeTerm::query()->current()->value('id');
 
         return view('order-of-business.sessions.attendance-monthly', [
             'year' => $year,
             'month' => $month,
+            'currentTermId' => $currentTermId,
             'summary' => $this->attendanceService->monthlySummary($year, $month),
             'sessions' => $this->attendanceService->sessionsForMonth($year, $month),
         ]);

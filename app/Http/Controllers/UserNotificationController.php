@@ -117,7 +117,9 @@ class UserNotificationController extends Controller
     /** @return Builder<UserNotification> */
     private function notificationsQuery(User $user): Builder
     {
-        $query = UserNotification::query()->where('user_id', $user->id);
+        $query = UserNotification::query()
+            ->withinRetention()
+            ->where('user_id', $user->id);
 
         if ($user->canAdmin()) {
             return $query->where('type', UserNotification::TYPE_ACTIVITY_LOG);

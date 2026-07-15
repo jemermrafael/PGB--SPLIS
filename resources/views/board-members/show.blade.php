@@ -25,7 +25,7 @@
                     method="POST"
                     action="{{ route('board-members.destroy', $boardMember) }}"
                     data-confirm-submit
-                    data-confirm-title="Delete board member?"
+                    data-confirm-title="Delete Board Member?"
                     data-confirm-message="Delete {{ $boardMember->displayName() }}? This removes their roster and committee assignments."
                     data-confirm-label="Delete"
                 >
@@ -135,7 +135,7 @@
     @endif
 
     <div class="mt-6">
-        <a href="{{ route('board-members.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary">Back to board members</a>
+        <a href="{{ route('board-members.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary">Back to Board Members</a>
     </div>
 </div>
 @endsection

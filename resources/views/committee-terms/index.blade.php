@@ -6,11 +6,11 @@
 <div class="max-w-4xl">
     <div class="splis-page-header">
         <div>
-            <h1 class="splis-page-title">Election terms</h1>
+            <h1 class="splis-page-title">Election Terms</h1>
             <p class="splis-page-subtitle">Track committee rosters per election period. Mark one term as current for new assignments.</p>
         </div>
         @can('create', App\Models\CommitteeTerm::class)
-            <a href="{{ route('committee-terms.create') }}" class="splis-btn-primary">Add term</a>
+            <a href="{{ route('committee-terms.create') }}" class="splis-btn-primary">Add Term</a>
         @endcan
     </div>
 

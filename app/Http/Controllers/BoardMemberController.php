@@ -178,7 +178,7 @@ class BoardMemberController extends Controller
             ->route('board-members.index', array_filter(['term' => $termId]))
             ->with('status', $deleted === 1
                 ? 'Board member deleted.'
-                : "{$deleted} board members deleted.");
+                : "{$deleted} Board Members deleted.");
     }
 
     /**

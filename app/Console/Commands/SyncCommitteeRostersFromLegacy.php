@@ -11,7 +11,7 @@ class SyncCommitteeRostersFromLegacy extends Command
 {
     protected $signature = 'splis:sync-committee-rosters {--dry-run : Preview without writing}';
 
-    protected $description = 'Create board members and term rosters from legacy committee text fields';
+    protected $description = 'Create Board Members and term rosters from legacy committee text fields';
 
     public function handle(CommitteeRosterService $rosterService): int
     {

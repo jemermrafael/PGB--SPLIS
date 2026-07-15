@@ -12,7 +12,7 @@ class ImportDistrictBoardMembers extends Command
     protected $signature = 'splis:import-district-board-members
                             {--dry-run : Preview without writing}';
 
-    protected $description = 'Import historical 1st and 2nd District board member rosters by election term';
+    protected $description = 'Import historical 1st and 2nd District Board Member rosters by election term';
 
     /**
      * Canonical name aliases (sheet label => preferred stored name / match key).

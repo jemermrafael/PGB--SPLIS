@@ -6,8 +6,8 @@
 <div class="max-w-6xl">
     <div class="splis-page-header !mb-6">
         <div>
-            <h1 class="splis-page-title">Board member authored ordinances</h1>
-            <p class="splis-page-subtitle">Provincial ordinances by board member — passed or pending.</p>
+            <h1 class="splis-page-title">Board Member Authored Ordinances</h1>
+            <p class="splis-page-subtitle">Provincial Ordinances by Board Member — passed or pending.</p>
         </div>
     </div>
 
@@ -21,14 +21,14 @@
                 @endforeach
             </select>
         </div>
-        <button type="submit" class="splis-btn-primary">View ordinances</button>
+        <button type="submit" class="splis-btn-primary">View Ordinances</button>
     </form>
 
     @if ($selectedMember)
         <div class="splis-card overflow-hidden">
             <div class="splis-card-header">
                 <h2 class="splis-card-title">{{ $selectedMember->displayName() }}</h2>
-                <p class="splis-card-subtitle">{{ $ordinances instanceof \Illuminate\Pagination\LengthAwarePaginator ? $ordinances->total() : $ordinances->count() }} ordinance(s)</p>
+                <p class="splis-card-subtitle">{{ $ordinances instanceof \Illuminate\Pagination\LengthAwarePaginator ? $ordinances->total() : $ordinances->count() }} Ordinance(s)</p>
             </div>
             <div class="splis-table-wrap">
                 <table class="splis-table">
@@ -60,7 +60,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="py-8 text-center text-sm text-slate-500">No authored ordinances found for this board member.</td>
+                                <td colspan="5" class="py-8 text-center text-sm text-slate-500">No Authored Ordinances found for this Board Member.</td>
                             </tr>
                         @endforelse
                     </tbody>

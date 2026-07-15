@@ -15,6 +15,8 @@ class UserNotification extends Model
     public const TYPE_OB_DOCUMENT_CREATED = 'ob_document_created';
     public const TYPE_AGENDA_EXPIRING_SOON = 'agenda_expiring_soon';
 
+    public const RETENTION_DAYS = 30;
+
     protected $fillable = [
         'user_id',
         'type',
@@ -52,6 +54,22 @@ class UserNotification extends Model
     public function legislativeSession(): BelongsTo
     {
         return $this->belongsTo(LegislativeSession::class);
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<self>
+     */
+    public function scopeWithinRetention($query)
+    {
+        return $query->where('created_at', '>=', now()->subDays(self::RETENTION_DAYS));
+    }
+
+    public static function pruneExpired(): int
+    {
+        return self::query()
+            ->where('created_at', '<', now()->subDays(self::RETENTION_DAYS))
+            ->delete();
     }
 
     /** @return list<string> */

@@ -19,7 +19,7 @@
 
     <div class="mb-4 flex flex-wrap gap-2 text-sm">
         <a href="{{ route('board-members.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary">Board Members</a>
-        <a href="{{ route('committee-terms.index') }}" class="splis-btn-secondary">Election terms</a>
+        <a href="{{ route('committee-terms.index') }}" class="splis-btn-secondary">Election Terms</a>
     </div>
 
     <div class="mb-6 flex flex-wrap gap-2">

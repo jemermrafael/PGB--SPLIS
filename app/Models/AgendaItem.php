@@ -308,7 +308,7 @@ class AgendaItem extends Model
             ],
             [
                 'key' => 'output',
-                'label' => 'Provincial output',
+                'label' => 'Provincial Output',
                 'complete' => $outputComplete,
                 'date' => $this->date_passed?->format('M d, Y')
                     ?? $this->date_signed_by_gov?->format('M d, Y'),

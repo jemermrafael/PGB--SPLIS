@@ -10,16 +10,16 @@
     <div class="splis-page-header">
         <div>
             <h1 class="splis-page-title">Board Members</h1>
-            <p class="splis-page-subtitle">Sangguniang Panlalawigan roster — Vice Governor, district board members, and ex officio members.</p>
+            <p class="splis-page-subtitle">Sangguniang Panlalawigan roster — Vice Governor, District Board Members, and Ex Officio Members.</p>
         </div>
         @can('create', App\Models\BoardMember::class)
-            <a href="{{ route('board-members.create', ['term' => $selectedTerm->id]) }}" class="splis-btn-primary">Add board member</a>
+            <a href="{{ route('board-members.create', ['term' => $selectedTerm->id]) }}" class="splis-btn-primary">Add Board Member</a>
         @endcan
     </div>
 
     <div class="mb-4 flex flex-wrap gap-2 text-sm">
         <a href="{{ route('committees.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary">Committees</a>
-        <a href="{{ route('committee-terms.index') }}" class="splis-btn-secondary">Election terms</a>
+        <a href="{{ route('committee-terms.index') }}" class="splis-btn-secondary">Election Terms</a>
     </div>
 
     <div class="mb-6 flex flex-wrap gap-2">
@@ -128,7 +128,7 @@
                                                     method="POST"
                                                     action="{{ route('board-members.destroy', $member) }}"
                                                     data-confirm-submit
-                                                    data-confirm-title="Delete board member?"
+                                                    data-confirm-title="Delete Board Member?"
                                                     data-confirm-message="Delete {{ $member->displayName() }}? This removes their roster and committee assignments."
                                                     data-confirm-label="Delete"
                                                 >
@@ -149,7 +149,7 @@
         </section>
     @empty
         <div class="splis-card splis-card-body py-10 text-center text-slate-500">
-            No board members for {{ $selectedTerm->label }} yet. Add personnel for this term or switch to another election period.
+            No Board Members for {{ $selectedTerm->label }} yet. Add personnel for this term or switch to another election period.
         </div>
     @endforelse
 </div>

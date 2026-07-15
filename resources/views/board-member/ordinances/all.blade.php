@@ -7,7 +7,7 @@
     <div class="splis-page-header">
         <div>
             <h1 class="splis-page-title">All Ordinances</h1>
-            <p class="splis-page-subtitle">Provincial ordinances and appropriation ordinances in one list.</p>
+            <p class="splis-page-subtitle">Provincial Ordinances and Appropriation Ordinances in one list.</p>
         </div>
     </div>
 
@@ -18,7 +18,7 @@
                 <input type="text" name="q" id="q" value="{{ request('q') }}" class="splis-input" placeholder="Number or title">
             </div>
             <div>
-                <label class="splis-label" for="series">Series year</label>
+                <label class="splis-label" for="series">Series Year</label>
                 <select name="series" id="series" class="splis-select">
                     <option value="">All years</option>
                     @foreach ($seriesYears as $year)
@@ -51,7 +51,7 @@
                     <div class="flex items-end">
                         <label class="splis-filter-check">
                             <input type="checkbox" name="has_authors" value="1" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
-                            Has board member attribution
+                            Has Board Member attribution
                         </label>
                     </div>
                 </div>

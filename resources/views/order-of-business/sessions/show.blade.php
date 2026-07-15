@@ -18,7 +18,7 @@
                 <p class="splis-page-subtitle">{{ $session->venue }}</p>
             @endif
         </div>
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap justify-end gap-2">
             @can('update', $session->obDocument)
                 <a href="{{ route('ob.document.maker', $session) }}" class="splis-btn-primary inline-flex items-center gap-2">
                     <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true">

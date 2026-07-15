@@ -115,7 +115,7 @@ export function initBoardMemberBulkDelete() {
         });
 
         const confirmed = await showConfirmDialog({
-            title: selected.length === 1 ? 'Delete board member?' : `Delete ${selected.length} board members?`,
+            title: selected.length === 1 ? 'Delete Board Member?' : `Delete ${selected.length} Board Members?`,
             message: 'Selected members will be removed from the roster, including committee assignments. This cannot be undone.',
             confirmLabel: selected.length === 1 ? 'Delete' : `Delete ${selected.length}`,
             danger: true,

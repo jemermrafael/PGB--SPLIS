@@ -56,7 +56,7 @@
                     @foreach ($summary as $row)
                         @php
                             $member = $row['member'];
-                            $district = $member->districtForTerm(null) ?? $member->district ?? '—';
+                            $district = $member->districtForTerm($currentTermId ?? null) ?? $member->district ?? '—';
                             $rate = $row['total'] > 0 ? round(($row['present'] / $row['total']) * 100) : 0;
                         @endphp
                         <tr>

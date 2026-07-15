@@ -163,7 +163,7 @@ export function initBoardMemberOrdinancesTable() {
         const items = payload.data || [];
         const { total, current_page: page, last_page: lastPage } = payload.meta || {};
 
-        meta.textContent = `${Number(total || 0).toLocaleString()} ordinance(s) found`;
+        meta.textContent = `${Number(total || 0).toLocaleString()} Ordinance(s) found`;
 
         if (items.length === 0) {
             body.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-sm text-slate-500">No ordinances found.</td></tr>';

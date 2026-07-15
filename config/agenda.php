@@ -20,10 +20,10 @@ return [
 
     'version_reasons' => [
         'encoded' => 'Initial encoding',
-        'referral' => 'Committee referral',
-        'committee_meeting' => 'Committee meeting update',
-        'session' => 'Session / hearing update',
-        'output' => 'Provincial output update',
+        'referral' => 'Committee Referral',
+        'committee_meeting' => 'Committee Meeting update',
+        'session' => 'Session / Hearing update',
+        'output' => 'Provincial Output update',
         'general' => 'General update',
     ],
 

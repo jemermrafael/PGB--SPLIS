@@ -70,7 +70,7 @@
             <div data-attribution-panel="combined">
                 @include('ordinances.partials.board-member-picker', [
                     'name' => 'authored_sponsored_member_ids',
-                    'label' => 'Authored & sponsored by',
+                    'label' => 'Authored & Sponsored by',
                     'showLabel' => false,
                     'selectedIds' => $selectedAuthoredSponsoredIds,
                     'boardMembers' => $boardMembers,

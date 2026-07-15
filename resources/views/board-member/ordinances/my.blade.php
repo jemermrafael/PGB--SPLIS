@@ -7,12 +7,12 @@
     <div class="splis-page-header">
         <div>
             <h1 class="splis-page-title">My Ordinances</h1>
-            <p class="splis-page-subtitle">Provincial ordinances you authored or sponsored.</p>
+            <p class="splis-page-subtitle">Provincial Ordinances you Authored or Sponsored.</p>
         </div>
     </div>
 
     @if ($unlinked)
-        <div class="splis-alert-error mb-6">This account is not linked to a board member profile yet.</div>
+        <div class="splis-alert-error mb-6">This account is not linked to a Board Member profile yet.</div>
     @endif
 
     <form method="GET" class="splis-filter-panel mb-6">
@@ -40,7 +40,7 @@
     @include('board-member.ordinances.partials.table', [
         'records' => $records,
         'showType' => false,
-        'emptyMessage' => 'No authored or sponsored ordinances found.',
+        'emptyMessage' => 'No Authored or Sponsored Ordinances found.',
     ])
 </div>
 @endsection

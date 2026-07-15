@@ -219,7 +219,7 @@ export function initOrdinancesSearch() {
         const docs = payload.data || [];
         const { total, current_page: page, last_page: lastPage } = payload.meta || {};
 
-        meta.textContent = `${Number(total || 0).toLocaleString()} ordinance(s) found`;
+        meta.textContent = `${Number(total || 0).toLocaleString()} Ordinance(s) found`;
 
         if (docs.length === 0) {
             listBody.innerHTML = '<tr><td colspan="8" class="py-12 text-center text-slate-400">No ordinances match your filters.</td></tr>';

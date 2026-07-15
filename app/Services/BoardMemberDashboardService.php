@@ -213,11 +213,16 @@ class BoardMemberDashboardService
 
     public function rosterForAttendance(): Collection
     {
-        $termId = CommitteeTerm::query()->current()->value('id');
+        $term = CommitteeTerm::query()->current()->first() ?? CommitteeTerm::currentOrCreate();
+        $termId = $term->id;
 
         return BoardMember::query()
-            ->with(['termAssignments' => fn ($query) => $query->when($termId, fn ($q) => $q->where('committee_term_id', $termId))])
-            ->where('is_active', true)
+            ->whereHas('termAssignments', function ($query) use ($termId): void {
+                $query
+                    ->where('committee_term_id', $termId)
+                    ->where('is_active', true);
+            })
+            ->with(['termAssignments' => fn ($query) => $query->where('committee_term_id', $termId)])
             ->get()
             ->sortBy(function (BoardMember $member) use ($termId) {
                 $district = $member->districtForTerm($termId) ?? $member->district ?? '';

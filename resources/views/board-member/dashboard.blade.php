@@ -7,14 +7,14 @@
     <div class="splis-dashboard-hero mb-8">
         <div class="splis-dashboard-hero-glow" aria-hidden="true"></div>
         <div class="relative">
-            <p class="splis-dashboard-hero-eyebrow">Board member portal</p>
+            <p class="splis-dashboard-hero-eyebrow">Board Member Portal</p>
             <h1 class="splis-page-title text-white">Welcome, Hon. {{ $user->name }}</h1>
-            <p class="splis-dashboard-hero-subtitle">Your committee agenda, session calendar, and Order of Business.</p>
+            <p class="splis-dashboard-hero-subtitle">Your Committee Agenda, Session Calendar, and Order of Business.</p>
         </div>
     </div>
 
     @if ($unlinked)
-        <div class="splis-alert-error mb-6">This account is not linked to a board member profile yet. Please contact the SP office administrator.</div>
+        <div class="splis-alert-error mb-6">This account is not linked to a Board Member profile yet. Please contact the SP office administrator.</div>
     @endif
 
     @include('board-member.agenda.partials.expiring-soon', [
@@ -28,7 +28,7 @@
             <details class="splis-accordion">
                 <summary class="splis-accordion-summary">
                     <div class="splis-accordion-summary-top">
-                        <span class="splis-card-title">Your committees</span>
+                        <span class="splis-card-title">Your Committees</span>
                         <span class="flex items-center gap-2">
                             <span class="splis-accordion-count">{{ $committeeAssignments->count() }}</span>
                             <svg class="splis-accordion-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -69,8 +69,8 @@
 
         <div class="splis-card">
             <div class="splis-card-header flex items-center justify-between">
-                <h2 class="splis-card-title">Session calendar</h2>
-                <a href="{{ route('ob.sessions.index') }}" class="splis-link text-sm">All sessions</a>
+                <h2 class="splis-card-title">Session Calendar</h2>
+                <a href="{{ route('ob.sessions.index') }}" class="splis-link text-sm">All Sessions</a>
             </div>
             <ul class="divide-y divide-slate-200 dark:divide-slate-700">
                 @forelse ($sessions as $session)
@@ -84,7 +84,7 @@
                         @endcan
                     </li>
                 @empty
-                    <li class="px-4 py-6 text-center text-sm text-slate-500">No upcoming sessions scheduled.</li>
+                    <li class="px-4 py-6 text-center text-sm text-slate-500">No Upcoming Sessions Scheduled.</li>
                 @endforelse
             </ul>
             @if ($sessions->isNotEmpty())
@@ -179,8 +179,8 @@
     >
         <div class="splis-card-header flex flex-wrap items-start justify-between gap-3">
             <div>
-                <h2 class="splis-card-title">Agenda referred to your committees</h2>
-                <p class="splis-card-subtitle">Recent referrals</p>
+                <h2 class="splis-card-title">Agenda Referred to Your Committees</h2>
+                <p class="splis-card-subtitle">Recent Referrals</p>
             </div>
             <a href="{{ route('board-member.agenda.index') }}" class="splis-link text-sm">My agenda</a>
         </div>

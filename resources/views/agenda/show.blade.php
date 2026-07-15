@@ -136,7 +136,7 @@
 
             <div class="splis-card">
                 <div class="splis-card-header">
-                    <h2 class="splis-card-title">Provincial output</h2>
+                    <h2 class="splis-card-title">Provincial Output</h2>
                 </div>
                 <dl>
                     @foreach ([

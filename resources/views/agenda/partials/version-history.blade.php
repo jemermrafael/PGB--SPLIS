@@ -67,7 +67,7 @@
                             <p class="line-clamp-2">{{ $version->snapshotTitle() ?? '—' }}</p>
                             @if ($version->snapshotOutputLabel() || $version->snapshotOutputTypeLabel())
                                 <p class="mt-1 text-xs text-slate-500">
-                                    Provincial output:
+                                    Provincial Output:
                                     @if ($version->snapshotOutputTypeLabel())
                                         {{ $version->snapshotOutputTypeLabel() }}
                                     @endif

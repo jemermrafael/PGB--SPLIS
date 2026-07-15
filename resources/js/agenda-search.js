@@ -303,7 +303,7 @@ export function initAgendaSearch() {
         const items = payload.data || [];
         const { total, current_page: page, last_page: lastPage } = payload.meta || {};
 
-        meta.textContent = `${Number(total || 0).toLocaleString()} agenda item(s) found`;
+        meta.textContent = `${Number(total || 0).toLocaleString()} Agenda item(s) found`;
         updateStats(payload.stats);
 
         if (items.length === 0) {

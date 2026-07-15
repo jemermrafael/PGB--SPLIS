@@ -252,7 +252,7 @@ export function initBoardMemberDashboardAgenda() {
         const items = payload.data || [];
         const { total, current_page: page, last_page: lastPage } = payload.meta || {};
 
-        meta.textContent = `${Number(total || 0).toLocaleString()} agenda item(s) found`;
+        meta.textContent = `${Number(total || 0).toLocaleString()} Agenda item(s) found`;
         updateStats(payload.stats);
 
         if (items.length === 0) {
@@ -393,7 +393,7 @@ export function initBoardMemberDashboardOb() {
         const sessions = payload.data || [];
         const { total, current_page: page, last_page: lastPage } = payload.meta || {};
 
-        meta.textContent = `${Number(total || 0).toLocaleString()} session(s) found`;
+        meta.textContent = `${Number(total || 0).toLocaleString()} Session(s) found`;
 
         if (sessions.length === 0) {
             list.innerHTML = '<li class="px-4 py-6 text-center text-sm text-slate-500">No Order of Business documents match your search.</li>';
@@ -582,7 +582,7 @@ export function initBoardMemberAgendaSearch() {
         const isCommitteePage = Boolean(committeeId);
         const colSpan = isCommitteePage ? 7 : 9;
 
-        meta.textContent = `${Number(total || 0).toLocaleString()} agenda item(s) found`;
+        meta.textContent = `${Number(total || 0).toLocaleString()} Agenda item(s) found`;
         updateStats(payload.stats);
 
         if (items.length === 0) {

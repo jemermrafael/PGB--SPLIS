@@ -155,7 +155,7 @@
         <div id="agenda-provincial-output" class="splis-card splis-card-body space-y-4 splis-agenda-output">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Provincial output</h2>
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Provincial Output</h2>
                     <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Required when status is Done. Choose the measure type first — fields below will adjust.</p>
                 </div>
                 @if ($isEdit && $agenda->isPublished() && $agenda->publishedTargetRoute())

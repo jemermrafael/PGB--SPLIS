@@ -56,7 +56,9 @@ class User extends Authenticatable
 
     public function unreadNotifications(): HasMany
     {
-        return $this->notifications()->whereNull('read_at');
+        return $this->notifications()
+            ->withinRetention()
+            ->whereNull('read_at');
     }
 
     public function hasRole(UserRole ...$roles): bool

@@ -9,7 +9,7 @@ class NotifyExpiringAgendas extends Command
 {
     protected $signature = 'splis:notify-expiring-agendas';
 
-    protected $description = 'Notify board members about committee agenda items due within two weeks';
+    protected $description = 'Notify Board Members about Committee Agenda items due within two weeks';
 
     public function handle(AgendaExpirationNotifier $notifier): int
     {

@@ -7,7 +7,7 @@
     <div class="splis-page-header">
         <div>
             <h1 class="splis-page-title">Order of Business</h1>
-            <p class="splis-page-subtitle">Legislative sessions and OB documents — {{ $sessions->total() }} session{{ $sessions->total() === 1 ? '' : 's' }} on file.</p>
+            <p class="splis-page-subtitle">Legislative Sessions and OB documents — {{ $sessions->total() }} session{{ $sessions->total() === 1 ? '' : 's' }} on file.</p>
         </div>
         @can('create', App\Models\LegislativeSession::class)
             <a href="{{ route('ob.sessions.create') }}" class="splis-btn-primary">
@@ -24,7 +24,7 @@
     <div class="splis-card overflow-hidden">
         @if ($sessions->isEmpty())
             <div class="splis-card-body text-center text-slate-600 dark:text-slate-400">
-                <p class="mb-4">No legislative sessions yet.</p>
+                <p class="mb-4">No Legislative Sessions yet.</p>
                 @can('create', App\Models\LegislativeSession::class)
                     <a href="{{ route('ob.sessions.create') }}" class="splis-btn-primary inline-flex">Create first session</a>
                 @endcan
@@ -67,7 +67,7 @@
                                         —
                                     @endif
                                 </td>
-                                <td class="text-right">
+                                <td class="whitespace-nowrap text-right">
                                     @include('order-of-business.partials.session-action-links', ['session' => $session])
                                 </td>
                             </tr>

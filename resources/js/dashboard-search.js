@@ -273,7 +273,7 @@ export function initDashboardSearch() {
         const docs = payload.data || [];
         const { total, current_page: page, last_page: lastPage } = payload.meta || {};
 
-        meta.textContent = `${Number(total || 0).toLocaleString()} document(s) found`;
+        meta.textContent = `${Number(total || 0).toLocaleString()} Document(s) found`;
 
         if (docs.length === 0) {
             listBody.innerHTML = '<tr><td colspan="9" class="py-12 text-center text-slate-400">No documents match your filters.</td></tr>';

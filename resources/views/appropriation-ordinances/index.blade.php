@@ -51,7 +51,8 @@
                 @forelse ($records as $record)
                     <tr>
                         <td class="whitespace-nowrap">
-                            <a href="{{ route('appropriation-ordinances.show', $record) }}" class="splis-link">{{ $record->displayNumber() }} ({{ $record->series_year }})</a>
+                            <a href="{{ route('appropriation-ordinances.show', $record) }}" class="splis-link font-semibold">{{ $record->displayNumber() }}</a>
+                            <p class="mt-0.5 text-xs font-normal text-slate-500 dark:text-slate-400">{{ $record->displaySeries() }}</p>
                         </td>
                         <td>{{ \Illuminate\Support\Str::limit($record->subject, 100) }}</td>
                         <td class="whitespace-nowrap">{{ $record->date_received?->format('M j, Y') ?? '—' }}</td>
