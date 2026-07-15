@@ -21,7 +21,7 @@
             <h1 class="splis-page-title">{{ $committee->name }}</h1>
             <p class="splis-page-subtitle">Your role: {{ $roleLabel }} · {{ $selectedTerm->label }}</p>
         </div>
-        <a href="{{ route('board-member.agenda.committee', $committee) }}" class="splis-btn-secondary">Search agenda</a>
+        <a href="{{ route('board-member.agenda.committee', $committee) }}" class="splis-btn-secondary">Search Agenda</a>
     </div>
 
     <div class="mb-6 flex flex-wrap gap-2">
@@ -105,7 +105,7 @@
                 <h2 class="splis-card-title">Agenda items</h2>
                 <p class="splis-card-subtitle">Referrals to {{ $committee->name }}</p>
             </div>
-            <a href="{{ route('board-member.agenda.committee', $committee) }}" class="splis-link text-sm">Full agenda search</a>
+            <a href="{{ route('board-member.agenda.committee', $committee) }}" class="splis-link text-sm">Full Agenda search</a>
         </div>
         <div class="splis-table-wrap">
             <table class="splis-table">
@@ -137,7 +137,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-4 py-8 text-center text-sm text-slate-500">No agenda items referred to this committee.</td>
+                            <td colspan="6" class="px-4 py-8 text-center text-sm text-slate-500">No Agenda items referred to this committee.</td>
                         </tr>
                     @endforelse
                 </tbody>
