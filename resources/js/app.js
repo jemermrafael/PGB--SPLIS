@@ -30,6 +30,7 @@ import { initCommitteeMunicipalityMap } from './geographic-analytics';
 import { initDragScroll } from './drag-scroll';
 import { initBoardMemberBulkDelete, initConfirmSubmitForms } from './board-members';
 import { initCommitteeMonitoring } from './committee-monitoring';
+import { initSessionGuests } from './session-guests';
 
 document.addEventListener('DOMContentLoaded', () => {
     initDropdowns();
@@ -61,4 +62,5 @@ document.addEventListener('DOMContentLoaded', () => {
     initAdminAnalytics();
     initCommitteeMunicipalityMap();
     initCommitteeMonitoring();
+    initSessionGuests();
 });

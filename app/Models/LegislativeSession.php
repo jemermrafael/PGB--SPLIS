@@ -22,8 +22,7 @@ class LegislativeSession extends Model
         'prior_session_id',
         'status',
         'notes',
-        'guest_name',
-        'guest_remarks',
+        'guests',
         'pdf_summary_committee_reports',
         'pdf_committee_reports',
         'pdf_draft_journal',
@@ -37,7 +36,22 @@ class LegislativeSession extends Model
     {
         return [
             'session_date' => 'date',
+            'guests' => 'array',
         ];
+    }
+
+    public function guestsList(): array
+    {
+        $guests = collect($this->guests ?? [])
+            ->filter(fn ($guest) => is_array($guest) && (filled($guest['name'] ?? null) || filled($guest['remarks'] ?? null)))
+            ->map(fn (array $guest) => [
+                'name' => trim((string) ($guest['name'] ?? '')),
+                'remarks' => trim((string) ($guest['remarks'] ?? '')),
+            ])
+            ->values()
+            ->all();
+
+        return $guests !== [] ? $guests : [['name' => '', 'remarks' => '']];
     }
 
     public function priorSession(): BelongsTo

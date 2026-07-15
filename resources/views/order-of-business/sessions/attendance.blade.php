@@ -47,38 +47,71 @@
             @endforeach
         </div>
 
-        <div class="border-t border-slate-200 pt-4 dark:border-slate-700">
-            <p class="splis-detail-label mb-3">Guests</p>
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                    <label class="splis-label" for="guest_name">Name</label>
-                    <input
-                        type="text"
-                        name="guest_name"
-                        id="guest_name"
-                        class="splis-input"
-                        value="{{ old('guest_name', $session->guest_name) }}"
-                        placeholder="Guest name"
-                    >
-                    @error('guest_name')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div>
-                    <label class="splis-label" for="guest_remarks">Remarks</label>
-                    <input
-                        type="text"
-                        name="guest_remarks"
-                        id="guest_remarks"
-                        class="splis-input"
-                        value="{{ old('guest_remarks', $session->guest_remarks) }}"
-                        placeholder="Optional remarks"
-                    >
-                    @error('guest_remarks')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
+        <div id="session-guests" class="border-t border-slate-200 pt-4 dark:border-slate-700">
+            <div class="mb-3 flex items-center justify-between gap-3">
+                <p class="splis-detail-label mb-0">Guests</p>
+                <button type="button" class="splis-btn-secondary text-sm" data-guest-add>Add guest</button>
             </div>
+
+            <div class="space-y-3" data-guest-rows>
+                @foreach (old('guests', $session->guestsList()) as $index => $guest)
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto]" data-guest-row>
+                        <div>
+                            <label class="splis-label">Name</label>
+                            <input
+                                type="text"
+                                name="guests[{{ $index }}][name]"
+                                class="splis-input"
+                                value="{{ $guest['name'] ?? '' }}"
+                                placeholder="Guest name"
+                            >
+                        </div>
+                        <div>
+                            <label class="splis-label">Remarks</label>
+                            <input
+                                type="text"
+                                name="guests[{{ $index }}][remarks]"
+                                class="splis-input"
+                                value="{{ $guest['remarks'] ?? '' }}"
+                                placeholder="Optional remarks"
+                            >
+                        </div>
+                        <div class="flex items-end">
+                            <button type="button" class="splis-btn-ghost text-sm text-red-600 hover:text-red-700" data-guest-remove>
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            @error('guests')
+                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+            @enderror
+            @error('guests.*.name')
+                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+            @enderror
+            @error('guests.*.remarks')
+                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+            @enderror
+
+            <template data-guest-template>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto]" data-guest-row>
+                    <div>
+                        <label class="splis-label">Name</label>
+                        <input type="text" name="guests[__INDEX__][name]" class="splis-input" value="" placeholder="Guest name">
+                    </div>
+                    <div>
+                        <label class="splis-label">Remarks</label>
+                        <input type="text" name="guests[__INDEX__][remarks]" class="splis-input" value="" placeholder="Optional remarks">
+                    </div>
+                    <div class="flex items-end">
+                        <button type="button" class="splis-btn-ghost text-sm text-red-600 hover:text-red-700" data-guest-remove>
+                            Remove
+                        </button>
+                    </div>
+                </div>
+            </template>
         </div>
 
         <div class="pt-2">

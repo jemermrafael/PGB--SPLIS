@@ -41,8 +41,9 @@ class SessionAttendanceController extends Controller
         $validated = $request->validate([
             'presence' => ['nullable', 'array'],
             'presence.*' => ['nullable', 'boolean'],
-            'guest_name' => ['nullable', 'string', 'max:255'],
-            'guest_remarks' => ['nullable', 'string', 'max:2000'],
+            'guests' => ['nullable', 'array'],
+            'guests.*.name' => ['nullable', 'string', 'max:255'],
+            'guests.*.remarks' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $presence = [];
@@ -56,13 +57,17 @@ class SessionAttendanceController extends Controller
             (int) $request->user()->id,
         );
 
+        $guests = collect($validated['guests'] ?? [])
+            ->map(fn (array $guest) => [
+                'name' => trim((string) ($guest['name'] ?? '')),
+                'remarks' => trim((string) ($guest['remarks'] ?? '')),
+            ])
+            ->filter(fn (array $guest) => $guest['name'] !== '' || $guest['remarks'] !== '')
+            ->values()
+            ->all();
+
         $legislativeSession->update([
-            'guest_name' => filled($validated['guest_name'] ?? null)
-                ? trim((string) $validated['guest_name'])
-                : null,
-            'guest_remarks' => filled($validated['guest_remarks'] ?? null)
-                ? trim((string) $validated['guest_remarks'])
-                : null,
+            'guests' => $guests !== [] ? $guests : null,
         ]);
 
         return redirect()
