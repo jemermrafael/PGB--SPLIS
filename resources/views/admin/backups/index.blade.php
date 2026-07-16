@@ -11,7 +11,10 @@
     <div class="splis-page-header-actions">
         <form method="POST" action="{{ route('admin.backups.store') }}">
             @csrf
-            <button type="submit" class="splis-btn-primary">Backup now</button>
+            <button type="submit" class="splis-btn-primary inline-flex items-center gap-2">
+                <x-icon name="database" class="h-4 w-4" />
+                Backup now
+            </button>
         </form>
     </div>
 </div>

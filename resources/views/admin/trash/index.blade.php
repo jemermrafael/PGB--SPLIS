@@ -32,8 +32,14 @@
         @csrf
         <input type="hidden" name="type" value="{{ $type }}">
         <input type="hidden" name="days" value="{{ $retentionDays }}">
-        <button type="submit" class="splis-btn-secondary text-sm" formaction="{{ route('admin.trash.bulk-restore') }}">Restore selected</button>
-        <button type="submit" class="splis-btn-danger text-sm" formaction="{{ route('admin.trash.bulk-force-destroy') }}" onclick="return confirm('Permanently delete selected items? This cannot be undone.');">Delete selected forever</button>
+        <button type="submit" class="splis-btn-secondary text-sm inline-flex items-center gap-1.5" formaction="{{ route('admin.trash.bulk-restore') }}">
+            <x-icon name="check-circle" class="h-4 w-4" />
+            Restore selected
+        </button>
+        <button type="submit" class="splis-btn-danger text-sm inline-flex items-center gap-1.5" formaction="{{ route('admin.trash.bulk-force-destroy') }}" onclick="return confirm('Permanently delete selected items? This cannot be undone.');">
+            <x-icon name="trash" class="h-4 w-4" />
+            Delete selected forever
+        </button>
         <button type="submit" class="splis-btn-ghost text-sm" formaction="{{ route('admin.trash.purge-older') }}" onclick="return confirm('Permanently delete all {{ strtolower($types[$type]['label']) }} in trash older than {{ $retentionDays }} days?');">Purge older than {{ $retentionDays }} days</button>
     </form>
 
@@ -71,7 +77,7 @@
                             <div class="flex flex-wrap justify-end gap-2">
                                 <form method="POST" action="{{ route('admin.trash.restore', ['type' => $type, 'id' => $row['id']]) }}">
                                     @csrf
-                                    <button type="submit" class="splis-link text-sm">Restore</button>
+                                    <button type="submit" class="splis-link inline-flex items-center gap-1 text-sm"><x-icon name="check-circle" class="h-4 w-4" />Restore</button>
                                 </form>
                                 <form
                                     method="POST"
@@ -80,7 +86,7 @@
                                 >
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="text-sm font-medium text-red-700 hover:underline dark:text-red-400">Delete forever</button>
+                                    <button type="submit" class="inline-flex items-center gap-1 text-sm font-medium text-red-700 hover:underline dark:text-red-400"><x-icon name="trash" class="h-4 w-4" />Delete forever</button>
                                 </form>
                             </div>
                         </td>

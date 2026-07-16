@@ -11,7 +11,10 @@
         </div>
         @if (isset($incoming) && $incoming->exists)
             @can('publish', $incoming)
-                <a href="{{ route('incoming.publish', $incoming) }}" class="splis-btn-primary">Publish to Resolution</a>
+                <a href="{{ route('incoming.publish', $incoming) }}" class="splis-btn-primary inline-flex items-center gap-2">
+                    <x-icon name="file-text" class="h-4 w-4" />
+                    Publish to Resolution
+                </a>
             @endcan
         @endif
     </div>
@@ -125,7 +128,10 @@
 
         <div class="flex gap-2 pt-2">
             <button type="submit" class="splis-btn-primary">Save</button>
-            <a href="{{ isset($incoming) && $incoming->exists ? route('incoming.show', $incoming) : route('incoming.index') }}" class="splis-btn-secondary">Cancel</a>
+            <a href="{{ isset($incoming) && $incoming->exists ? route('incoming.show', $incoming) : route('incoming.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="arrow-left" class="h-4 w-4" />
+                Cancel
+            </a>
         </div>
     </form>
 </div>

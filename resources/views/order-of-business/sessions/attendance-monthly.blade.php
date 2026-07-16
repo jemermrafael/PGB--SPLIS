@@ -9,7 +9,10 @@
             <h1 class="splis-page-title">Monthly Attendance Report</h1>
             <p class="splis-page-subtitle">{{ \Carbon\Carbon::create($year, $month, 1)->format('F Y') }} · {{ $sessions->count() }} session(s)</p>
         </div>
-        <a href="{{ route('ob.sessions.index') }}" class="splis-btn-secondary">Back to Sessions</a>
+        <a href="{{ route('ob.sessions.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
+            <x-icon name="arrow-left" class="h-4 w-4" />
+            Back to Sessions
+        </a>
     </div>
 
     <form method="GET" class="splis-card splis-card-body mb-6 flex flex-wrap items-end gap-4">
@@ -37,7 +40,7 @@
             <table class="splis-table splis-attendance-monthly-table min-w-max">
                 <thead>
                     <tr>
-                        <th class="splis-attendance-monthly-sticky splis-attendance-monthly-sticky--member">Board member</th>
+                        <th class="splis-attendance-monthly-sticky splis-attendance-monthly-sticky--member">Board Member</th>
                         <th class="splis-attendance-monthly-sticky splis-attendance-monthly-sticky--district">District</th>
                         @foreach ($sessions as $session)
                             <th class="splis-attendance-monthly-session whitespace-nowrap text-center">

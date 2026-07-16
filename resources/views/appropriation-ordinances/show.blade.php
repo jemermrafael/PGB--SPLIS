@@ -11,9 +11,15 @@
         </div>
         <div class="flex flex-wrap gap-2">
             @can('update', $appropriationOrdinance)
-                <a href="{{ route('appropriation-ordinances.edit', $appropriationOrdinance) }}" class="splis-btn-primary">Edit</a>
+                <a href="{{ route('appropriation-ordinances.edit', $appropriationOrdinance) }}" class="splis-btn-primary inline-flex items-center gap-2">
+                    <x-icon name="edit" class="h-4 w-4" />
+                    Edit
+                </a>
             @endcan
-            <a href="{{ route('appropriation-ordinances.index') }}" class="splis-btn-secondary">Back</a>
+            <a href="{{ route('appropriation-ordinances.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="arrow-left" class="h-4 w-4" />
+                Back
+            </a>
         </div>
     </div>
 
@@ -51,12 +57,18 @@
     ])
 
     <div class="mt-6 flex flex-wrap gap-2">
-        <a href="{{ route('appropriation-ordinances.index') }}" class="splis-btn-secondary">Back to list</a>
+        <a href="{{ route('appropriation-ordinances.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
+            <x-icon name="arrow-left" class="h-4 w-4" />
+            Back to list
+        </a>
         @can('delete', $appropriationOrdinance)
             <form method="POST" action="{{ route('appropriation-ordinances.destroy', $appropriationOrdinance) }}" onsubmit="return confirm('Move this appropriation ordinance to trash?');">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="splis-btn-danger">Delete</button>
+                <button type="submit" class="splis-btn-danger inline-flex items-center gap-2">
+                    <x-icon name="trash" class="h-4 w-4" />
+                    Delete
+                </button>
             </form>
         @endcan
     </div>

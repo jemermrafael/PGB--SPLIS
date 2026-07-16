@@ -29,11 +29,20 @@
     </div>
     <div class="flex gap-2">
         @can('update', $document)
-            <a href="{{ route('ob.document.maker', $session) }}" class="splis-btn-secondary">Back to Maker</a>
+            <a href="{{ route('ob.document.maker', $session) }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="arrow-left" class="h-4 w-4" />
+                Back to Maker
+            </a>
         @else
-            <a href="{{ route('ob.sessions.show', $session) }}" class="splis-btn-secondary">Back</a>
+            <a href="{{ route('ob.sessions.show', $session) }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="arrow-left" class="h-4 w-4" />
+                Back
+            </a>
         @endcan
-        <button type="button" class="splis-btn-primary" onclick="window.print()">Print / Save as PDF</button>
+        <button type="button" class="splis-btn-primary inline-flex items-center gap-2" onclick="window.print()">
+            <x-icon name="printer" class="h-4 w-4" />
+            Print / Save as PDF
+        </button>
     </div>
 </div>
 

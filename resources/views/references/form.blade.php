@@ -10,9 +10,15 @@
     >
         <x-slot:actions>
             @if ($reference->exists)
-                <a href="{{ route('references.show', $reference) }}" class="splis-btn-ghost">Back to details</a>
+                <a href="{{ route('references.show', $reference) }}" class="splis-btn-ghost inline-flex items-center gap-2">
+                    <x-icon name="arrow-left" class="h-4 w-4" />
+                    Back to details
+                </a>
             @else
-                <a href="{{ route('references.index') }}" class="splis-btn-ghost">Back to list</a>
+                <a href="{{ route('references.index') }}" class="splis-btn-ghost inline-flex items-center gap-2">
+                    <x-icon name="arrow-left" class="h-4 w-4" />
+                    Back to list
+                </a>
             @endif
         </x-slot:actions>
     </x-page-header>
@@ -106,9 +112,15 @@
         <div class="splis-form-actions">
             <button type="submit" class="splis-btn-primary">{{ $reference->exists ? 'Save changes' : 'Create Reference' }}</button>
             @if ($reference->exists)
-                <a href="{{ route('references.show', $reference) }}" class="splis-btn-secondary">Cancel</a>
+                <a href="{{ route('references.show', $reference) }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                    <x-icon name="arrow-left" class="h-4 w-4" />
+                    Cancel
+                </a>
             @else
-                <a href="{{ route('references.index') }}" class="splis-btn-secondary">Cancel</a>
+                <a href="{{ route('references.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                    <x-icon name="arrow-left" class="h-4 w-4" />
+                    Cancel
+                </a>
             @endif
         </div>
     </form>

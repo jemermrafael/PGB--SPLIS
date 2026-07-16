@@ -18,12 +18,21 @@
         </x-slot:badges>
         <x-slot:actions>
             @can('publish', $incoming)
-                <a href="{{ route('incoming.publish', $incoming) }}" class="splis-btn-primary">Publish to Resolution</a>
+                <a href="{{ route('incoming.publish', $incoming) }}" class="splis-btn-primary inline-flex items-center gap-2">
+                    <x-icon name="file-text" class="h-4 w-4" />
+                    Publish to Resolution
+                </a>
             @endcan
             @can('update', $incoming)
-                <a href="{{ route('incoming.edit', $incoming) }}" class="splis-btn-secondary">Edit</a>
+                <a href="{{ route('incoming.edit', $incoming) }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                    <x-icon name="edit" class="h-4 w-4" />
+                    Edit
+                </a>
             @endcan
-            <a href="{{ route('incoming.index') }}" class="splis-btn-ghost">Back to list</a>
+            <a href="{{ route('incoming.index') }}" class="splis-btn-ghost inline-flex items-center gap-2">
+                <x-icon name="arrow-left" class="h-4 w-4" />
+                Back to list
+            </a>
         </x-slot:actions>
     </x-page-header>
 

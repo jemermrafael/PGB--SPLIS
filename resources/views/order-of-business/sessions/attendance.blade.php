@@ -10,8 +10,14 @@
             <p class="splis-page-subtitle">{{ $session->displayTitle() }} · {{ $session->session_date->format('F j, Y') }}</p>
         </div>
         <div class="flex flex-wrap gap-2">
-            <a href="{{ route('ob.sessions.attendance.monthly') }}" class="splis-btn-secondary">Monthly Report</a>
-            <a href="{{ route('ob.sessions.show', $session) }}" class="splis-btn-secondary">Back to Session</a>
+            <a href="{{ route('ob.sessions.attendance.monthly') }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="calendar" class="h-4 w-4" />
+                Monthly Report
+            </a>
+            <a href="{{ route('ob.sessions.show', $session) }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="arrow-left" class="h-4 w-4" />
+                Back to Session
+            </a>
         </div>
     </div>
 
@@ -111,7 +117,10 @@
         </div>
 
         <div class="pt-2">
-            <button type="submit" class="splis-btn-primary">Save Attendance</button>
+            <button type="submit" class="splis-btn-primary inline-flex items-center gap-2">
+                <x-icon name="check-circle" class="h-4 w-4" />
+                Save Attendance
+            </button>
         </div>
     </form>
 </div>

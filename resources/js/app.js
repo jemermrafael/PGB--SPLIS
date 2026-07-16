@@ -17,6 +17,7 @@ import { initHeaderNav } from './header-nav';
 import { initHeaderNotifications } from './header-notifications';
 import { initNotificationsFeed } from './notifications-feed';
 import { initBoardMemberOrdinancesTable } from './board-member-ordinances';
+import { initAdminBoardMemberOrdinancesSearch } from './admin-board-member-ordinances';
 import {
     initBoardMemberAgendaSearch,
     initBoardMemberDashboardAgenda,
@@ -57,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initHeaderNotifications();
     initNotificationsFeed();
     initBoardMemberOrdinancesTable();
+    initAdminBoardMemberOrdinancesSearch();
     initBoardMemberDashboardAgenda();
     initBoardMemberDashboardOb();
     initBoardMemberAgendaSearch();

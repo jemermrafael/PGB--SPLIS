@@ -94,7 +94,7 @@ class BoardMemberController extends Controller
 
         return redirect()
             ->route('board-members.index', ['term' => $term->id])
-            ->with('status', 'Board member created.');
+            ->with('status', 'Board Member created.');
     }
 
     public function edit(Request $request, BoardMember $boardMember): View
@@ -134,7 +134,7 @@ class BoardMemberController extends Controller
 
         return redirect()
             ->route('board-members.index', ['term' => $term->id])
-            ->with('status', 'Board member updated.');
+            ->with('status', 'Board Member updated.');
     }
 
     public function destroy(Request $request, BoardMember $boardMember): RedirectResponse
@@ -153,7 +153,7 @@ class BoardMemberController extends Controller
                     ? ['type' => 'board-members']
                     : array_filter(['term' => $termId])
             )
-            ->with('status', 'Board member moved to trash.');
+            ->with('status', 'Board Member moved to trash.');
     }
 
     public function bulkDestroy(Request $request): RedirectResponse
@@ -189,7 +189,7 @@ class BoardMemberController extends Controller
                     : array_filter(['term' => $termId])
             )
             ->with('status', $deleted === 1
-                ? 'Board member moved to trash.'
+                ? 'Board Member moved to trash.'
                 : "{$deleted} Board Members moved to trash.");
     }
 

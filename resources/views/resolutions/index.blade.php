@@ -11,8 +11,8 @@
         </div>
         <div class="flex flex-wrap gap-2">
             @can('create', App\Models\Resolution::class)
-                <a href="{{ route('resolutions.create') }}" class="splis-btn-primary">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                <a href="{{ route('resolutions.create') }}" class="splis-btn-primary inline-flex items-center gap-2">
+                    <x-icon name="plus" class="h-4 w-4" stroke-width="2" />
                     Add Resolution
                 </a>
             @endcan

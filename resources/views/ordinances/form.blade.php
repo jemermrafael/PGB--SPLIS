@@ -58,7 +58,7 @@
         >
             <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Board member attribution</h2>
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Board Member attribution</h2>
                     <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Optional — {{ $rosterTerm->label }} roster.</p>
                 </div>
                 <div class="splis-attribution-toggle" role="group" aria-label="Attribution type">
@@ -186,9 +186,15 @@
         <div class="flex flex-wrap gap-2 pt-2">
             <button type="submit" class="splis-btn-primary">Save</button>
             @if ($isEdit)
-                <a href="{{ route('ordinances.show', $ordinance) }}" class="splis-btn-secondary">View record</a>
+                <a href="{{ route('ordinances.show', $ordinance) }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                    <x-icon name="eye" class="h-4 w-4" />
+                    View record
+                </a>
             @endif
-            <a href="{{ route('ordinances.index') }}" class="splis-btn-secondary">Cancel</a>
+            <a href="{{ route('ordinances.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="arrow-left" class="h-4 w-4" />
+                Cancel
+            </a>
         </div>
     </form>
 </div>

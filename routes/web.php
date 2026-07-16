@@ -90,6 +90,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/my-requests/{agenda}', [MunicipalRequestController::class, 'show'])->name('municipal.requests.show');
 
     Route::get('/admin/board-member-ordinances', [BoardMemberOrdinanceReportController::class, 'index'])->name('admin.board-member-ordinances');
+    Route::get('/admin/board-member-ordinances/search', [BoardMemberOrdinanceReportController::class, 'search'])->name('admin.board-member-ordinances.search');
 
     Route::get('/resolutions', [ResolutionController::class, 'index'])->name('resolutions.index');
     Route::get('/resolutions/search', ResolutionSearchController::class)->name('resolutions.search');

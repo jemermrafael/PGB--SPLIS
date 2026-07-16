@@ -10,7 +10,10 @@
             <p class="splis-page-subtitle">Provincial appropriation ordinances — intake through SP passage and gubernatorial approval.</p>
         </div>
         @can('create', App\Models\AppropriationOrdinance::class)
-            <a href="{{ route('appropriation-ordinances.create') }}" class="splis-btn-primary">Add Appropriation Ordinance</a>
+            <a href="{{ route('appropriation-ordinances.create') }}" class="splis-btn-primary inline-flex items-center gap-2">
+                <x-icon name="plus" class="h-4 w-4" stroke-width="2" />
+                Add Appropriation Ordinance
+            </a>
         @endcan
     </div>
 

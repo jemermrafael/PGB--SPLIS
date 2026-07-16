@@ -116,8 +116,14 @@
         @endunless
 
         <div class="flex flex-wrap gap-2">
-            <button type="submit" class="splis-btn-primary">{{ $isEdit ? 'Save changes' : 'Create session' }}</button>
-            <a href="{{ $isEdit ? route('ob.sessions.show', $session) : route('ob.sessions.index') }}" class="splis-btn-secondary">Cancel</a>
+            <button type="submit" class="splis-btn-primary inline-flex items-center gap-2">
+                <x-icon :name="$isEdit ? 'edit' : 'plus'" class="h-4 w-4" :stroke-width="$isEdit ? '1.75' : '2'" />
+                {{ $isEdit ? 'Save changes' : 'Create session' }}
+            </button>
+            <a href="{{ $isEdit ? route('ob.sessions.show', $session) : route('ob.sessions.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="arrow-left" class="h-4 w-4" />
+                Cancel
+            </a>
         </div>
     </form>
 
@@ -127,7 +133,10 @@
                 <form method="POST" action="{{ route('ob.sessions.destroy', $session) }}" onsubmit="return confirm('Move this Order of Business session to trash?')">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="splis-btn-danger">Delete</button>
+                    <button type="submit" class="splis-btn-danger inline-flex items-center gap-2">
+                        <x-icon name="trash" class="h-4 w-4" />
+                        Delete
+                    </button>
                 </form>
             </div>
         @endcan

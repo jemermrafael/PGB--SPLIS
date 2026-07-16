@@ -10,13 +10,22 @@
             <p class="splis-page-subtitle">Track committee rosters per election period. Mark one term as current for new assignments.</p>
         </div>
         @can('create', App\Models\CommitteeTerm::class)
-            <a href="{{ route('committee-terms.create') }}" class="splis-btn-primary">Add Term</a>
+            <a href="{{ route('committee-terms.create') }}" class="splis-btn-primary inline-flex items-center gap-2">
+                <x-icon name="plus" class="h-4 w-4" stroke-width="2" />
+                Add Term
+            </a>
         @endcan
     </div>
 
     <div class="mb-4 flex flex-wrap gap-2 text-sm">
-        <a href="{{ route('committees.index') }}" class="splis-btn-secondary">Committees</a>
-        <a href="{{ route('board-members.index') }}" class="splis-btn-secondary">Board Members</a>
+        <a href="{{ route('committees.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
+            <x-icon name="users" class="h-4 w-4" />
+            Committees
+        </a>
+        <a href="{{ route('board-members.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
+            <x-icon name="users" class="h-4 w-4" />
+            Board Members
+        </a>
     </div>
 
     <div class="splis-table-wrap">

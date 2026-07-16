@@ -33,18 +33,33 @@
         </div>
         <div class="splis-page-header-actions">
             @can('update', $resolution)
-                <a href="{{ route('resolutions.edit', $resolution) }}" class="splis-btn-secondary">Edit</a>
+                <a href="{{ route('resolutions.edit', $resolution) }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                    <x-icon name="edit" class="h-4 w-4" />
+                    Edit
+                </a>
             @endcan
             @if ($resolution->trashed())
                 @if (auth()->user()?->isSuperadmin())
-                    <a href="{{ route('admin.trash.index', ['type' => 'resolutions']) }}" class="splis-btn-ghost">Back to trash</a>
+                    <a href="{{ route('admin.trash.index', ['type' => 'resolutions']) }}" class="splis-btn-ghost inline-flex items-center gap-2">
+                        <x-icon name="arrow-left" class="h-4 w-4" />
+                        Back to trash
+                    </a>
                 @else
-                    <a href="{{ route('resolutions.index') }}" class="splis-btn-ghost">Back to list</a>
+                    <a href="{{ route('resolutions.index') }}" class="splis-btn-ghost inline-flex items-center gap-2">
+                        <x-icon name="arrow-left" class="h-4 w-4" />
+                        Back to list
+                    </a>
                 @endif
             @elseif (auth()->user()?->isMunicipalViewer())
-                <a href="{{ route('municipal.requests.index') }}" class="splis-btn-ghost">Back to requests</a>
+                <a href="{{ route('municipal.requests.index') }}" class="splis-btn-ghost inline-flex items-center gap-2">
+                    <x-icon name="arrow-left" class="h-4 w-4" />
+                    Back to requests
+                </a>
             @else
-                <a href="{{ route('resolutions.index') }}" class="splis-btn-ghost">Back to list</a>
+                <a href="{{ route('resolutions.index') }}" class="splis-btn-ghost inline-flex items-center gap-2">
+                    <x-icon name="arrow-left" class="h-4 w-4" />
+                    Back to list
+                </a>
             @endif
         </div>
     </div>
@@ -96,8 +111,8 @@
         <div class="splis-card mt-6">
             <div class="splis-card-header flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <h2 class="splis-card-title">PDF Document</h2>
-                <a href="{{ $pdfUrl }}" target="_blank" rel="noopener" class="splis-btn-secondary text-sm">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
+                <a href="{{ $pdfUrl }}" target="_blank" rel="noopener" class="splis-btn-secondary text-sm inline-flex items-center gap-2">
+                    <x-icon name="external-link" class="h-4 w-4" />
                     Open PDF in new tab
                 </a>
             </div>
@@ -135,14 +150,20 @@
             @can('restore', $resolution)
                 <form method="POST" action="{{ route('resolutions.restore', $resolution) }}" onsubmit="return confirm('Restore this resolution?')">
                     @csrf
-                    <button type="submit" class="splis-btn-secondary">Restore resolution</button>
+                    <button type="submit" class="splis-btn-secondary inline-flex items-center gap-2">
+                        <x-icon name="check-circle" class="h-4 w-4" />
+                        Restore resolution
+                    </button>
                 </form>
             @endcan
             @can('forceDelete', $resolution)
                 <form method="POST" action="{{ route('resolutions.force-destroy', $resolution) }}" onsubmit="return confirm('Permanently delete this resolution? This cannot be undone. The PDF file will not be deleted.')">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="splis-btn-danger">Delete permanently</button>
+                    <button type="submit" class="splis-btn-danger inline-flex items-center gap-2">
+                        <x-icon name="trash" class="h-4 w-4" />
+                        Delete permanently
+                    </button>
                 </form>
             @endcan
         </div>
@@ -152,7 +173,10 @@
                 <form method="POST" action="{{ route('resolutions.destroy', $resolution) }}" onsubmit="return confirm('Move this resolution to trash?')">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="splis-btn-danger">Delete</button>
+                    <button type="submit" class="splis-btn-danger inline-flex items-center gap-2">
+                        <x-icon name="trash" class="h-4 w-4" />
+                        Delete
+                    </button>
                 </form>
             </div>
         @endcan

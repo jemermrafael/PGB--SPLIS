@@ -234,7 +234,10 @@
 
         <div class="splis-form-actions">
             <button type="submit" class="splis-btn-primary">Save</button>
-            <a href="{{ $isEdit ? route('agenda.show', $agenda) : route('agenda.index') }}" class="splis-btn-secondary">Cancel</a>
+            <a href="{{ $isEdit ? route('agenda.show', $agenda) : route('agenda.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="arrow-left" class="h-4 w-4" />
+                Cancel
+            </a>
         </div>
     </form>
 </div>

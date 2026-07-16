@@ -10,7 +10,10 @@
         class="!mb-6"
     >
         <x-slot:actions>
-            <a href="{{ route('incoming.show', $incoming) }}" class="splis-btn-ghost">Back to incoming</a>
+            <a href="{{ route('incoming.show', $incoming) }}" class="splis-btn-ghost inline-flex items-center gap-2">
+                <x-icon name="arrow-left" class="h-4 w-4" />
+                Back to incoming
+            </a>
         </x-slot:actions>
     </x-page-header>
 
@@ -42,8 +45,14 @@
         ])
 
         <div class="splis-form-actions !mx-0 !mt-2 border-0 bg-transparent p-0 shadow-none dark:bg-transparent">
-            <button type="submit" class="splis-btn-primary">Publish resolution</button>
-            <a href="{{ route('incoming.show', $incoming) }}" class="splis-btn-ghost">Cancel</a>
+            <button type="submit" class="splis-btn-primary inline-flex items-center gap-2">
+                <x-icon name="file-text" class="h-4 w-4" />
+                Publish resolution
+            </button>
+            <a href="{{ route('incoming.show', $incoming) }}" class="splis-btn-ghost inline-flex items-center gap-2">
+                <x-icon name="arrow-left" class="h-4 w-4" />
+                Cancel
+            </a>
         </div>
     </form>
 </div>

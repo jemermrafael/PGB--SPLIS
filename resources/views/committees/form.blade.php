@@ -126,7 +126,10 @@
             @if ($isEdit)
                 <a href="{{ route('committees.show', ['committee' => $committee, 'term' => $term->id]) }}" class="splis-btn-secondary">View Roster</a>
             @endif
-            <a href="{{ route('committees.index') }}" class="splis-btn-secondary">Cancel</a>
+            <a href="{{ route('committees.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="arrow-left" class="h-4 w-4" />
+                Cancel
+            </a>
         </div>
     </form>
 </div>

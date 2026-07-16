@@ -12,13 +12,16 @@
 <div class="max-w-4xl">
     <div class="splis-page-header">
         <div>
-            <p class="text-sm text-slate-500">{{ $district ?: 'Board member' }}</p>
+            <p class="text-sm text-slate-500">{{ $district ?: 'Board Member' }}</p>
             <h1 class="splis-page-title">{{ $boardMember->displayName() }}</h1>
             <p class="splis-page-subtitle">Committee assignments for the selected election term.</p>
         </div>
         <div class="flex flex-wrap gap-2">
             @can('update', $boardMember)
-                <a href="{{ route('board-members.edit', ['boardMember' => $boardMember, 'term' => $selectedTerm->id]) }}" class="splis-btn-primary">Edit profile</a>
+                <a href="{{ route('board-members.edit', ['boardMember' => $boardMember, 'term' => $selectedTerm->id]) }}" class="splis-btn-primary inline-flex items-center gap-2">
+                    <x-icon name="edit" class="h-4 w-4" />
+                    Edit profile
+                </a>
             @endcan
             @can('delete', $boardMember)
                 <form
@@ -27,12 +30,15 @@
                     data-confirm-submit
                     data-confirm-title="Move Board Member to trash?"
                     data-confirm-message="Move {{ $boardMember->displayName() }} to trash? Superadmin can restore from Trash."
-                    data-confirm-label=""
+                    data-confirm-label="Delete"
                 >
                     @csrf
                     @method('DELETE')
                     <input type="hidden" name="term" value="{{ $selectedTerm->id }}">
-                    <button type="submit" class="splis-btn-danger"></button>
+                    <button type="submit" class="splis-btn-danger inline-flex items-center gap-2">
+                        <x-icon name="trash" class="h-4 w-4" />
+                        Delete
+                    </button>
                 </form>
             @endcan
         </div>
@@ -109,7 +115,10 @@
                                 <p class="text-sm text-slate-500">{{ $entry['term']->year_from ?? '?' }}–{{ $entry['term']->year_to ?? 'present' }}</p>
                             @endif
                         </div>
-                        <a href="{{ route('board-members.show', ['boardMember' => $boardMember, 'term' => $entry['term']->id]) }}" class="splis-btn-secondary text-sm">View Term</a>
+                        <a href="{{ route('board-members.show', ['boardMember' => $boardMember, 'term' => $entry['term']->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-sm">
+                            <x-icon name="eye" class="h-4 w-4" />
+                            View Term
+                        </a>
                     </div>
 
                     <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -135,7 +144,10 @@
     @endif
 
     <div class="mt-6">
-        <a href="{{ route('board-members.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary">Back to Board Members</a>
+        <a href="{{ route('board-members.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2">
+            <x-icon name="arrow-left" class="h-4 w-4" />
+            Back to Board Members
+        </a>
     </div>
 </div>
 @endsection

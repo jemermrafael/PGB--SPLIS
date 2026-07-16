@@ -7,19 +7,25 @@
     <div class="splis-page-header">
         <div>
             <h1 class="splis-page-title">Committees</h1>
-            <p class="splis-page-subtitle">Sangguniang Panlalawigan standing committees — used for agenda referral and Order of Business grouping.</p>
+            <p class="splis-page-subtitle">Sangguniang Panlalawigan standing committees — used for Agenda Referral and Order of Business grouping.</p>
         </div>
         @can('create', App\Models\Committee::class)
-            <a href="{{ route('committees.create') }}" class="splis-btn-primary">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+            <a href="{{ route('committees.create') }}" class="splis-btn-primary inline-flex items-center gap-2">
+                <x-icon name="plus" class="h-4 w-4" stroke-width="2" />
                 Add Committee
             </a>
         @endcan
     </div>
 
     <div class="mb-4 flex flex-wrap gap-2 text-sm">
-        <a href="{{ route('board-members.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary">Board Members</a>
-        <a href="{{ route('committee-terms.index') }}" class="splis-btn-secondary">Election Terms</a>
+        <a href="{{ route('board-members.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2">
+            <x-icon name="eye" class="h-4 w-4" />
+            Board Members
+        </a>
+        <a href="{{ route('committee-terms.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
+            <x-icon name="eye" class="h-4 w-4" />
+            Election Terms
+        </a>
     </div>
 
     <div class="mb-6 flex flex-wrap gap-2">
@@ -64,15 +70,24 @@
                         </td>
                         <td class="text-right">
                             <div class="flex justify-end gap-2">
-                                <a href="{{ route('committees.show', ['committee' => $committee, 'term' => $selectedTerm->id]) }}" class="splis-btn-secondary text-sm">Roster</a>
+                                <a href="{{ route('committees.show', ['committee' => $committee, 'term' => $selectedTerm->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-sm">
+                                    <x-icon name="eye" class="h-4 w-4" />
+                                    Roster
+                                </a>
                                 @can('update', $committee)
-                                    <a href="{{ route('committees.edit', ['committee' => $committee, 'term' => $selectedTerm->id]) }}" class="splis-btn-secondary text-sm">Edit</a>
+                                    <a href="{{ route('committees.edit', ['committee' => $committee, 'term' => $selectedTerm->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-sm">
+                                        <x-icon name="edit" class="h-4 w-4" />
+                                        Edit
+                                    </a>
                                 @endcan
                                 @can('delete', $committee)
                                     <form method="POST" action="{{ route('committees.destroy', $committee) }}" onsubmit="return confirm('Move this committee to trash?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="splis-btn-danger text-sm">Delete</button>
+                                        <button type="submit" class="splis-btn-danger inline-flex items-center gap-2 text-sm">
+                                            <x-icon name="trash" class="h-4 w-4" />
+                                            Delete
+                                        </button>
                                     </form>
                                 @endcan
                             </div>

@@ -20,15 +20,27 @@
         </x-slot:badges>
         <x-slot:actions>
             @if ($reference->hasFile() && $reference->isPdf())
-                <button type="button" id="reference-view-file-btn" class="splis-btn-primary text-nowrap">View file</button>
+                <button type="button" id="reference-view-file-btn" class="splis-btn-primary inline-flex items-center gap-2 text-nowrap">
+                    <x-icon name="eye" class="h-4 w-4" />
+                    View file
+                </button>
             @endif
             @if ($reference->hasFile())
-                <a href="{{ route('references.download', $reference) }}" class="splis-btn-secondary text-nowrap">Download</a>
+                <a href="{{ route('references.download', $reference) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-nowrap">
+                    <x-icon name="download" class="h-4 w-4" />
+                    Download
+                </a>
             @endif
             @can('update', $reference)
-                <a href="{{ route('references.edit', $reference) }}" class="splis-btn-secondary text-nowrap">Edit</a>
+                <a href="{{ route('references.edit', $reference) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-nowrap">
+                    <x-icon name="edit" class="h-4 w-4" />
+                    Edit
+                </a>
             @endcan
-            <a href="{{ route('references.index') }}" class="splis-btn-ghost text-nowrap">Back to list</a>
+            <a href="{{ route('references.index') }}" class="splis-btn-ghost inline-flex items-center gap-2 text-nowrap">
+                <x-icon name="arrow-left" class="h-4 w-4" />
+                Back to list
+            </a>
         </x-slot:actions>
     </x-page-header>
 
@@ -121,19 +133,28 @@
                         @if ($reference->status !== 'archived')
                             <form method="POST" action="{{ route('references.archive', $reference) }}" onsubmit="return confirm('Archive this reference material?')">
                                 @csrf
-                                <button type="submit" class="splis-btn-secondary w-full">Archive</button>
+                                <button type="submit" class="splis-btn-secondary inline-flex w-full items-center justify-center gap-2">
+                                    <x-icon name="archive" class="h-4 w-4" />
+                                    Archive
+                                </button>
                             </form>
                         @else
                             <form method="POST" action="{{ route('references.restore', $reference) }}" onsubmit="return confirm('Restore this reference material?')">
                                 @csrf
-                                <button type="submit" class="splis-btn-secondary w-full">Restore</button>
+                                <button type="submit" class="splis-btn-secondary inline-flex w-full items-center justify-center gap-2">
+                                    <x-icon name="check-circle" class="h-4 w-4" />
+                                    Restore
+                                </button>
                             </form>
                         @endif
                         @can('delete', $reference)
                             <form method="POST" action="{{ route('references.destroy', $reference) }}" onsubmit="return confirm('Move this reference material to trash?')">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="splis-btn-danger w-full">Delete</button>
+                                <button type="submit" class="splis-btn-danger inline-flex w-full items-center justify-center gap-2">
+                                    <x-icon name="trash" class="h-4 w-4" />
+                                    Delete
+                                </button>
                             </form>
                         @endcan
                     </div>
@@ -174,7 +195,8 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <a class="splis-link" href="{{ route('references.versions.download', ['reference' => $reference, 'version' => $version]) }}">
+                                    <a class="splis-link inline-flex items-center gap-1.5" href="{{ route('references.versions.download', ['reference' => $reference, 'version' => $version]) }}">
+                                        <x-icon name="download" class="h-4 w-4" />
                                         Download
                                     </a>
                                 </td>

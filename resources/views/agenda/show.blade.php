@@ -55,17 +55,29 @@
                 @if (config('incoming.enabled', false))
                 <form method="POST" action="{{ route('agenda.promote-incoming', $agenda) }}">
                     @csrf
-                    <button type="submit" class="splis-btn-primary">Create Incoming</button>
+                    <button type="submit" class="splis-btn-primary inline-flex items-center gap-2">
+                        <x-icon name="inbox" class="h-4 w-4" />
+                        Create Incoming
+                    </button>
                 </form>
                 @endif
             @endcan
             @if ($agenda->request_pdf_url)
-                <a href="{{ $agenda->request_pdf_url }}" target="_blank" rel="noopener" class="splis-btn-secondary">Request PDF</a>
+                <a href="{{ $agenda->request_pdf_url }}" target="_blank" rel="noopener" class="splis-btn-secondary inline-flex items-center gap-2">
+                    <x-icon name="external-link" class="h-4 w-4" />
+                    Request PDF
+                </a>
             @endif
             @can('update', $agenda)
-                <a href="{{ route('agenda.edit', $agenda) }}" class="splis-btn-secondary">Edit</a>
+                <a href="{{ route('agenda.edit', $agenda) }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                    <x-icon name="edit" class="h-4 w-4" />
+                    Edit
+                </a>
             @endcan
-            <a href="{{ route('agenda.index') }}" class="splis-btn-secondary">Back to list</a>
+            <a href="{{ route('agenda.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="arrow-left" class="h-4 w-4" />
+                Back to list
+            </a>
         </div>
     </div>
 

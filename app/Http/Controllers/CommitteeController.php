@@ -7,6 +7,7 @@ use App\Models\CommitteeTerm;
 use App\Services\BoardMemberRosterService;
 use App\Services\CommitteeRosterService;
 use App\Support\TrashActivity;
+use App\Support\CommitteeSecretaryOptions;
 use App\Support\CommitteeTermSelection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;

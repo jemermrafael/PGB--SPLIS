@@ -44,8 +44,8 @@
     </div>
 
     <div class="splis-help-callout mt-6 text-sm text-slate-600 dark:text-slate-300">
-        <p><strong>Limited</strong> means scoped access (e.g. board members see scheduled OB / their committees; municipal viewers see their municipality’s requests).</p>
-        <p class="mt-2"><strong>Encoder with Delete</strong> historically meant resolution delete; soft-delete (“Move to trash”) is now allowed for all encode roles. Only Superadmin can open Trash, restore, or permanently delete.</p>
+        <p><strong>Limited</strong> means scoped access (e.g. Board Members see scheduled OB / their committees; municipal viewers see their municipality’s requests).</p>
+        <p class="mt-2"><strong>Encoder with Delete</strong> historically meant resolution delete; soft-delete (`Delete`) is now allowed for all encode roles. Only Superadmin can open Trash, restore, or permanently delete.</p>
     </div>
 </div>
 @endsection

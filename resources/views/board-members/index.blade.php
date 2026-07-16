@@ -13,13 +13,22 @@
             <p class="splis-page-subtitle">Sangguniang Panlalawigan roster — Vice Governor, District Board Members, and Ex Officio Members.</p>
         </div>
         @can('create', App\Models\BoardMember::class)
-            <a href="{{ route('board-members.create', ['term' => $selectedTerm->id]) }}" class="splis-btn-primary">Add Board Member</a>
+            <a href="{{ route('board-members.create', ['term' => $selectedTerm->id]) }}" class="splis-btn-primary inline-flex items-center gap-2">
+                <x-icon name="plus" class="h-4 w-4" stroke-width="2" />
+                Add Board Member
+            </a>
         @endcan
     </div>
 
     <div class="mb-4 flex flex-wrap gap-2 text-sm">
-        <a href="{{ route('committees.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary">Committees</a>
-        <a href="{{ route('committee-terms.index') }}" class="splis-btn-secondary">Election Terms</a>
+        <a href="{{ route('committees.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2">
+            <x-icon name="eye" class="h-4 w-4" />
+            Committees
+        </a>
+        <a href="{{ route('committee-terms.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
+            <x-icon name="eye" class="h-4 w-4" />
+            Election Terms
+        </a>
     </div>
 
     <div class="mb-6 flex flex-wrap gap-2">
@@ -49,7 +58,8 @@
                 @csrf
                 @method('DELETE')
                 <input type="hidden" name="term" value="{{ $selectedTerm->id }}">
-                <button type="submit" data-board-member-bulk-delete class="splis-btn-danger text-sm" disabled>
+                <button type="submit" data-board-member-bulk-delete class="splis-btn-danger inline-flex items-center gap-2 text-sm" disabled>
+                    <x-icon name="trash" class="h-4 w-4" />
                     Move selected to trash
                 </button>
             </form>
@@ -105,9 +115,15 @@
                                     </td>
                                     <td class="text-right">
                                         <div class="flex justify-end gap-2">
-                                            <a href="{{ route('board-members.show', ['boardMember' => $member, 'term' => $selectedTerm->id]) }}" class="splis-btn-secondary text-sm">Profile</a>
+                                            <a href="{{ route('board-members.show', ['boardMember' => $member, 'term' => $selectedTerm->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-sm">
+                                                <x-icon name="eye" class="h-4 w-4" />
+                                                Profile
+                                            </a>
                                             @can('update', $member)
-                                                <a href="{{ route('board-members.edit', ['boardMember' => $member, 'term' => $selectedTerm->id]) }}" class="splis-btn-secondary text-sm">Edit</a>
+                                                <a href="{{ route('board-members.edit', ['boardMember' => $member, 'term' => $selectedTerm->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-sm">
+                                                    <x-icon name="edit" class="h-4 w-4" />
+                                                    Edit
+                                                </a>
                                             @endcan
                                             @can('delete', $member)
                                                 <form
@@ -121,7 +137,10 @@
                                                     @csrf
                                                     @method('DELETE')
                                                     <input type="hidden" name="term" value="{{ $selectedTerm->id }}">
-                                                    <button type="submit" class="splis-btn-danger text-sm">Delete</button>
+                                                    <button type="submit" class="splis-btn-danger inline-flex items-center gap-2 text-sm">
+                                                        <x-icon name="trash" class="h-4 w-4" />
+                                                        Delete
+                                                    </button>
                                                 </form>
                                             @endcan
                                         </div>

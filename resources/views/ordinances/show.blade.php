@@ -18,7 +18,10 @@
         </div>
         <div class="flex flex-wrap gap-2">
             @can('update', $ordinance)
-                <a href="{{ route('ordinances.edit', $ordinance) }}" class="splis-btn-primary">Edit</a>
+                <a href="{{ route('ordinances.edit', $ordinance) }}" class="splis-btn-primary inline-flex items-center gap-2">
+                    <x-icon name="edit" class="h-4 w-4" />
+                    Edit
+                </a>
             @endcan
         </div>
     </div>
@@ -76,7 +79,10 @@
                         <p class="text-slate-500">—</p>
                     @endif
                     @if ($ordinance->mov_bulletin_url)
-                        <a href="{{ $ordinance->mov_bulletin_url }}" target="_blank" rel="noopener" class="splis-btn-secondary inline-flex text-sm">Bulletin PDF</a>
+                        <a href="{{ $ordinance->mov_bulletin_url }}" target="_blank" rel="noopener" class="splis-btn-secondary inline-flex items-center gap-2 text-sm">
+                            <x-icon name="external-link" class="h-4 w-4" />
+                            Bulletin PDF
+                        </a>
                     @endif
                 </dd>
             </div>
@@ -89,7 +95,10 @@
                         <p class="text-slate-500">—</p>
                     @endif
                     @if ($ordinance->mov_certification_url)
-                        <a href="{{ $ordinance->mov_certification_url }}" target="_blank" rel="noopener" class="splis-btn-secondary inline-flex text-sm">Certification PDF</a>
+                        <a href="{{ $ordinance->mov_certification_url }}" target="_blank" rel="noopener" class="splis-btn-secondary inline-flex items-center gap-2 text-sm">
+                            <x-icon name="external-link" class="h-4 w-4" />
+                            Certification PDF
+                        </a>
                     @endif
                 </dd>
             </div>
@@ -102,7 +111,10 @@
                         <p class="text-slate-500">—</p>
                     @endif
                     @if ($ordinance->mov_newspaper_url)
-                        <a href="{{ $ordinance->mov_newspaper_url }}" target="_blank" rel="noopener" class="splis-btn-secondary inline-flex text-sm">Newspaper PDF</a>
+                        <a href="{{ $ordinance->mov_newspaper_url }}" target="_blank" rel="noopener" class="splis-btn-secondary inline-flex items-center gap-2 text-sm">
+                            <x-icon name="external-link" class="h-4 w-4" />
+                            Newspaper PDF
+                        </a>
                     @endif
                 </dd>
             </div>
@@ -130,12 +142,18 @@
     ])
 
     <div class="mt-6 flex flex-wrap gap-2">
-        <a href="{{ route('ordinances.index') }}" class="splis-btn-secondary">Back to ordinances</a>
+        <a href="{{ route('ordinances.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
+            <x-icon name="arrow-left" class="h-4 w-4" />
+            Back to ordinances
+        </a>
         @can('delete', $ordinance)
             <form method="POST" action="{{ route('ordinances.destroy', $ordinance) }}" onsubmit="return confirm('Move this ordinance to trash?');">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="splis-btn-danger">Delete</button>
+                <button type="submit" class="splis-btn-danger inline-flex items-center gap-2">
+                    <x-icon name="trash" class="h-4 w-4" />
+                    Delete
+                </button>
             </form>
         @endcan
     </div>

@@ -46,11 +46,11 @@ class RolePermissionMatrix
         return [
             ['group' => 'Resolutions', 'action' => 'View list / search', 'cells' => array_merge($viewStaff, [$b => 'no', $m => 'limited'])],
             ['group' => 'Resolutions', 'action' => 'Create / edit', 'cells' => $encode],
-            ['group' => 'Resolutions', 'action' => 'Move to trash', 'cells' => $encode],
+            ['group' => 'Resolutions', 'action' => 'Delete', 'cells' => $encode],
             ['group' => 'Resolutions', 'action' => 'Restore / permanent delete', 'cells' => $super],
             ['group' => 'Ordinances', 'action' => 'Create / edit / trash', 'cells' => $encode],
             ['group' => 'Appropriation ordinances', 'action' => 'Create / edit', 'cells' => $encode],
-            ['group' => 'Appropriation ordinances', 'action' => 'Move to trash', 'cells' => $admin],
+            ['group' => 'Appropriation ordinances', 'action' => 'Delete', 'cells' => $admin],
             ['group' => 'Agenda', 'action' => 'Create / edit / trash', 'cells' => array_merge($encode, [])],
             ['group' => 'Committees / board members', 'action' => 'Manage / trash', 'cells' => $encode],
             ['group' => 'References', 'action' => 'Create / edit / archive / trash', 'cells' => $encode],

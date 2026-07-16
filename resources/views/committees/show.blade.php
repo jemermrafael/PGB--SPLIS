@@ -23,7 +23,10 @@
             <p class="splis-page-subtitle">Committee roster by election term.</p>
         </div>
         @can('update', $committee)
-            <a href="{{ route('committees.edit', ['committee' => $committee, 'term' => $selectedTerm->id]) }}" class="splis-btn-primary">Edit Roster</a>
+            <a href="{{ route('committees.edit', ['committee' => $committee, 'term' => $selectedTerm->id]) }}" class="splis-btn-primary inline-flex items-center gap-2">
+                <x-icon name="edit" class="h-4 w-4" />
+                Edit Roster
+            </a>
         @endcan
     </div>
 
@@ -89,7 +92,10 @@
     </div>
 
     <div class="mt-4">
-        <a href="{{ route('committees.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary">Back to Committees</a>
+        <a href="{{ route('committees.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2">
+            <x-icon name="arrow-left" class="h-4 w-4" />
+            Back to Committees
+        </a>
     </div>
 </div>
 @endsection

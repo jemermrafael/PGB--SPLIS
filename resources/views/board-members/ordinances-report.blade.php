@@ -1,9 +1,14 @@
 @extends('layouts.app')
 
-@section('title', 'Board member ordinances — '.config('app.name'))
+@section('title', 'Board Member Ordinances — '.config('app.name'))
 
 @section('content')
-<div class="max-w-6xl">
+<div
+    class="max-w-6xl"
+    id="bm-authored-ordinances"
+    data-search-url="{{ route('admin.board-member-ordinances.search') }}"
+    data-initial-member-id="{{ $selectedMemberId }}"
+>
     <div class="splis-page-header !mb-6">
         <div>
             <h1 class="splis-page-title">Board Member Authored Ordinances</h1>
@@ -11,67 +16,57 @@
         </div>
     </div>
 
-    <form method="GET" class="splis-card splis-card-body mb-6 flex flex-wrap items-end gap-4">
-        <div class="min-w-[16rem] flex-1">
-            <label class="splis-label" for="board_member_id">Board member</label>
-            <select name="board_member_id" id="board_member_id" class="splis-select" required>
-                <option value="">Select Board Member</option>
-                @foreach ($boardMembers as $member)
-                    <option value="{{ $member->id }}" @selected($selectedMember?->id === $member->id)>{{ $member->displayName() }}</option>
-                @endforeach
-            </select>
+    <form method="GET" id="bm-authored-ordinances-form" class="splis-card splis-card-body mb-6">
+        <div class="flex flex-wrap items-end gap-4">
+            <div class="min-w-[16rem] flex-1">
+                <label class="splis-label" for="board_member_id">Board Member</label>
+                <select name="board_member_id" id="board_member_id" class="splis-select">
+                    <option value="">Select Board Member</option>
+                    @foreach ($boardMembers as $member)
+                        <option value="{{ $member->id }}" @selected($selectedMemberId === $member->id)>{{ $member->displayName() }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="min-w-[16rem] flex-1">
+                <label class="splis-label" for="q">Search ordinances</label>
+                <input
+                    type="text"
+                    name="q"
+                    id="q"
+                    value="{{ request('q') }}"
+                    class="splis-input"
+                    placeholder="Number or title"
+                    autocomplete="off"
+                >
+            </div>
+            <button type="submit" class="splis-btn-primary">Search</button>
         </div>
-        <button type="submit" class="splis-btn-primary">View Ordinances</button>
     </form>
 
-    @if ($selectedMember)
-        <div class="splis-card overflow-hidden">
-            <div class="splis-card-header">
-                <h2 class="splis-card-title">{{ $selectedMember->displayName() }}</h2>
-                <p class="splis-card-subtitle">{{ $ordinances instanceof \Illuminate\Pagination\LengthAwarePaginator ? $ordinances->total() : $ordinances->count() }} Ordinance(s)</p>
-            </div>
-            <div class="splis-table-wrap">
-                <table class="splis-table">
-                    <thead>
-                        <tr>
-                            <th>Number</th>
-                            <th>Subject</th>
-                            <th>Date enacted</th>
-                            <th>Date approved</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($ordinances as $ordinance)
-                            <tr>
-                                <td class="whitespace-nowrap">
-                                    <a href="{{ route('ordinances.show', $ordinance) }}" class="splis-link">{{ $ordinance->displayNumber() }} ({{ $ordinance->series_year }})</a>
-                                </td>
-                                <td>{{ $ordinance->shortSubject(100) }}</td>
-                                <td class="whitespace-nowrap">{{ $ordinance->date_enacted?->format('M j, Y') ?? '—' }}</td>
-                                <td class="whitespace-nowrap">{{ $ordinance->date_approved?->format('M j, Y') ?? '—' }}</td>
-                                <td>
-                                    @if ($ordinance->date_enacted)
-                                        <span class="splis-badge-linked">Passed</span>
-                                    @else
-                                        <span class="splis-badge">Not passed</span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="py-8 text-center text-sm text-slate-500">No Authored Ordinances found for this Board Member.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-            @if ($ordinances instanceof \Illuminate\Pagination\LengthAwarePaginator && $ordinances->hasPages())
-                <div class="border-t border-slate-200 px-4 py-3 dark:border-slate-700">
-                    {{ $ordinances->links() }}
-                </div>
-            @endif
+    <p id="bm-authored-ordinances-hint" class="mb-4 text-sm text-slate-500 dark:text-slate-400">
+        Select a Board Member to view authored ordinances.
+    </p>
+
+    <div id="bm-authored-ordinances-results" class="splis-card overflow-hidden" hidden>
+        <div class="splis-card-header">
+            <h2 id="bm-authored-ordinances-member-name" class="splis-card-title"></h2>
+            <p id="bm-authored-ordinances-meta" class="splis-card-subtitle"></p>
         </div>
-    @endif
+        <div id="bm-authored-ordinances-table" class="splis-table-wrap">
+            <table class="splis-table">
+                <thead>
+                    <tr>
+                        <th>Number</th>
+                        <th>Subject</th>
+                        <th>Date enacted</th>
+                        <th>Date approved</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div id="bm-authored-ordinances-pagination" class="border-t border-slate-200 px-4 py-3 dark:border-slate-700"></div>
+    </div>
 </div>
 @endsection

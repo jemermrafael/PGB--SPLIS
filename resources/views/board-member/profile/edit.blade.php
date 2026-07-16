@@ -9,7 +9,10 @@
             <h1 class="splis-page-title">My Profile</h1>
             <p class="splis-page-subtitle">Update your login details. Legislative roster data stays tied to your linked Board Member record.</p>
         </div>
-        <a href="{{ route('dashboard') }}" class="splis-btn-ghost">Dashboard</a>
+        <a href="{{ route('dashboard') }}" class="splis-btn-ghost inline-flex items-center gap-2">
+            <x-icon name="layout-dashboard" class="h-4 w-4" />
+            Dashboard
+        </a>
     </div>
 
     @if ($unlinked)
@@ -64,7 +67,10 @@
 
         <div class="flex flex-wrap gap-2">
             <button type="submit" class="splis-btn-primary">Save changes</button>
-            <a href="{{ route('dashboard') }}" class="splis-btn-ghost">Cancel</a>
+            <a href="{{ route('dashboard') }}" class="splis-btn-ghost inline-flex items-center gap-2">
+                <x-icon name="arrow-left" class="h-4 w-4" />
+                Cancel
+            </a>
         </div>
     </form>
 </div>

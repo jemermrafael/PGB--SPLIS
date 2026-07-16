@@ -21,7 +21,10 @@
 
         <div class="flex gap-2 pt-2">
             <button type="submit" class="splis-btn-primary">Save Resolution</button>
-            <a href="{{ route('resolutions.index') }}" class="splis-btn-secondary">Cancel</a>
+            <a href="{{ route('resolutions.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="arrow-left" class="h-4 w-4" />
+                Cancel
+            </a>
         </div>
     </form>
 </div>

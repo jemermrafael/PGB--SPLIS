@@ -77,9 +77,15 @@
         <div class="flex flex-wrap gap-2 pt-2">
             <button type="submit" class="splis-btn-primary">Save</button>
             @if ($isEdit)
-                <a href="{{ route('board-members.show', ['boardMember' => $boardMember, 'term' => $term->id]) }}" class="splis-btn-secondary">View Profile</a>
+                <a href="{{ route('board-members.show', ['boardMember' => $boardMember, 'term' => $term->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                    <x-icon name="eye" class="h-4 w-4" />
+                    View Profile
+                </a>
             @endif
-            <a href="{{ route('board-members.index', ['term' => $term->id]) }}" class="splis-btn-secondary">Cancel</a>
+            <a href="{{ route('board-members.index', ['term' => $term->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="arrow-left" class="h-4 w-4" />
+                Cancel
+            </a>
         </div>
     </form>
 

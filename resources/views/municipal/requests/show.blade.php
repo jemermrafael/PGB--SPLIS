@@ -42,9 +42,15 @@
         </div>
         <div class="flex flex-wrap gap-2">
             @if ($agenda->request_pdf_url)
-                <a href="{{ $agenda->request_pdf_url }}" target="_blank" rel="noopener" class="splis-btn-secondary">Request PDF</a>
+                <a href="{{ $agenda->request_pdf_url }}" target="_blank" rel="noopener" class="splis-btn-secondary inline-flex items-center gap-2">
+                    <x-icon name="external-link" class="h-4 w-4" />
+                    Request PDF
+                </a>
             @endif
-            <a href="{{ route('municipal.requests.index') }}" class="splis-btn-secondary">Back to requests</a>
+            <a href="{{ route('municipal.requests.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="arrow-left" class="h-4 w-4" />
+                Back to requests
+            </a>
         </div>
     </div>
 
