@@ -135,7 +135,7 @@
             <form method="POST" action="{{ route('ordinances.destroy', $ordinance) }}" onsubmit="return confirm('Move this ordinance to trash?');">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="splis-btn-danger">Move to trash</button>
+                <button type="submit" class="splis-btn-danger">Delete</button>
             </form>
         @endcan
     </div>

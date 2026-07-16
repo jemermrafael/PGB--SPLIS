@@ -131,7 +131,7 @@ class BoardMemberNotifier
                     'type' => UserNotification::TYPE_SESSION_CREATED,
                 ],
                 [
-                    'title' => 'New session scheduled',
+                    'title' => 'New Session scheduled',
                     'body' => $body,
                     'link' => route('ob.sessions.show', $session, absolute: false),
                 ],

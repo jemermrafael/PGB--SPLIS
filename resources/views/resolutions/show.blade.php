@@ -152,7 +152,7 @@
                 <form method="POST" action="{{ route('resolutions.destroy', $resolution) }}" onsubmit="return confirm('Move this resolution to trash?')">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="splis-btn-danger">Move to trash</button>
+                    <button type="submit" class="splis-btn-danger">Delete</button>
                 </form>
             </div>
         @endcan

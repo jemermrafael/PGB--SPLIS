@@ -133,7 +133,7 @@
                             <form method="POST" action="{{ route('references.destroy', $reference) }}" onsubmit="return confirm('Move this reference material to trash?')">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="splis-btn-danger w-full">Move to trash</button>
+                                <button type="submit" class="splis-btn-danger w-full">Delete</button>
                             </form>
                         @endcan
                     </div>

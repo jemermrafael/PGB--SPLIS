@@ -16,7 +16,7 @@ class ResolutionPolicy
     public function view(User $user, Resolution $resolution): bool
     {
         if ($resolution->trashed()) {
-            return $user->canDeleteResolutions() && $resolution->legacy_sp_id === null;
+            return $user->canEncode() || $user->isSuperadmin();
         }
 
         return MunicipalRequestAccess::userCanViewResolution($user, $resolution);
@@ -24,23 +24,17 @@ class ResolutionPolicy
 
     public function restore(User $user, Resolution $resolution): bool
     {
-        return $user->isSuperadmin()
-            && $resolution->legacy_sp_id === null
-            && $resolution->trashed();
+        return $user->isSuperadmin() && $resolution->trashed();
     }
 
     public function forceDelete(User $user, Resolution $resolution): bool
     {
-        return $user->isSuperadmin()
-            && $resolution->legacy_sp_id === null
-            && $resolution->trashed();
+        return $user->isSuperadmin() && $resolution->trashed();
     }
 
     public function delete(User $user, Resolution $resolution): bool
     {
-        return $user->canDeleteResolutions()
-            && $resolution->legacy_sp_id === null
-            && ! $resolution->trashed();
+        return $user->canEncode() && ! $resolution->trashed();
     }
 
     public function create(User $user): bool

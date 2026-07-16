@@ -72,7 +72,7 @@
                                     <form method="POST" action="{{ route('committees.destroy', $committee) }}" onsubmit="return confirm('Move this committee to trash?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="splis-btn-danger text-sm">Move to trash</button>
+                                        <button type="submit" class="splis-btn-danger text-sm">Delete</button>
                                     </form>
                                 @endcan
                             </div>

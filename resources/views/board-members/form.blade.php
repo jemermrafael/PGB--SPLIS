@@ -92,12 +92,12 @@
                 data-confirm-submit
                 data-confirm-title="Move Board Member to trash?"
                 data-confirm-message="Move {{ $boardMember->displayName() }} to trash? Superadmin can restore from Trash."
-                data-confirm-label="Move to trash"
+                data-confirm-label="Delete"
             >
                 @csrf
                 @method('DELETE')
                 <input type="hidden" name="term" value="{{ $term->id }}">
-                <button type="submit" class="splis-btn-danger">Move to trash</button>
+                <button type="submit" class="splis-btn-danger">Delete</button>
             </form>
         @endcan
     @endif

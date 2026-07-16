@@ -171,7 +171,7 @@
             <form method="POST" action="{{ route('ob.sessions.destroy', $session) }}" onsubmit="return confirm('Move this Order of Business session to trash?')">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="splis-btn-danger">Move to trash</button>
+                <button type="submit" class="splis-btn-danger">Delete</button>
             </form>
         </div>
     @endcan

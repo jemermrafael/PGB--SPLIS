@@ -131,7 +131,7 @@ class TrashController extends Controller
         $query = $class::query()->onlyTrashed();
 
         if ($type === 'resolutions') {
-            $query->whereNull('legacy_sp_id')->with('creator');
+            $query->with('creator');
         }
 
         return $query;
