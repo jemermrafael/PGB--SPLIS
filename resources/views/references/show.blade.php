@@ -21,14 +21,21 @@
                 <p class="splis-page-subtitle">Reference no.: {{ $reference->reference_no }}</p>
             @endif
         </div>
-        <div class="flex flex-wrap gap-2">
+    </div>
+    <div class="splis-page-header">
+        <div>
+            <div class="mb-2 flex flex-wrap items-center gap-2">
+               
+            </div>
+        </div>
+        <div class="flex flex-nowrap justify-end gap-2">
             @if ($reference->hasFile())
-                <a href="{{ route('references.download', $reference) }}" class="splis-btn-primary">Download file</a>
+                <a href="{{ route('references.download', $reference) }}" class="splis-btn-primary text-nowrap">Download file</a>
             @endif
             @can('update', $reference)
-                <a href="{{ route('references.edit', $reference) }}" class="splis-btn-secondary">Edit</a>
+                <a href="{{ route('references.edit', $reference) }}" class="splis-btn-secondary text-nowrap">Edit</a>
             @endcan
-            <a href="{{ route('references.index') }}" class="splis-btn-secondary">Back to list</a>
+            <a href="{{ route('references.index') }}" class="splis-btn-secondary text-nowrap">Back to list</a>
         </div>
     </div>
 
@@ -108,12 +115,18 @@
                 <div class="splis-card-header">
                     <h2 class="splis-card-title">File</h2>
                 </div>
-                <div class="splis-card-body space-y-2 text-sm">
+                <div class="splis-card-body space-y-3 text-sm">
                     <p><span class="splis-detail-label">Filename:</span> {{ $reference->original_filename ?: '—' }}</p>
                     <p><span class="splis-detail-label">Type:</span> {{ $reference->mime_type ?: '—' }}</p>
                     <p><span class="splis-detail-label">Size:</span> {{ $reference->file_size ? number_format((int) $reference->file_size / 1024, 1).' KB' : '—' }}</p>
                     @if ($reference->hasFile())
-                        <a href="{{ route('references.download', $reference) }}" class="splis-link">Download file</a>
+                        <div class="flex flex-wrap gap-2 pt-1">
+                            @if ($reference->isPdf())
+                                <button type="button" id="reference-view-file-btn" class="splis-btn-primary text-nowrap w-full">
+                                    View file
+                                </button>
+                            @endif
+                        </div>
                     @endif
                 </div>
             </div>
@@ -196,5 +209,64 @@
         </div>
     </div>
 </div>
+
+@if ($reference->hasFile() && $reference->isPdf())
+    <div id="reference-pdf-modal" class="splis-modal" hidden>
+        <div class="splis-modal-backdrop" data-reference-modal-close tabindex="-1" aria-hidden="true"></div>
+        <div class="splis-modal-panel !max-h-[92vh] !max-w-5xl" role="dialog" aria-modal="true" aria-labelledby="reference-pdf-modal-title">
+            <div class="splis-modal-header">
+                <h3 id="reference-pdf-modal-title" class="splis-modal-title">{{ $reference->original_filename ?: $reference->title }}</h3>
+                <button type="button" class="splis-modal-close" data-reference-modal-close aria-label="Close">×</button>
+            </div>
+            <div class="splis-modal-body !p-0">
+                <iframe
+                    id="reference-pdf-frame"
+                    title="Reference material PDF preview"
+                    class="block h-[75vh] w-full border-0 bg-slate-100 dark:bg-slate-900"
+                    src="about:blank"
+                    data-src="{{ route('references.view', $reference) }}"
+                ></iframe>
+            </div>
+        </div>
+    </div>
+
+    @push('scripts')
+    <script>
+        (function () {
+            const modal = document.getElementById('reference-pdf-modal');
+            const openBtn = document.getElementById('reference-view-file-btn');
+            const frame = document.getElementById('reference-pdf-frame');
+
+            if (! modal || ! openBtn || ! frame) {
+                return;
+            }
+
+            function openModal() {
+                if (frame.getAttribute('src') === 'about:blank') {
+                    frame.setAttribute('src', frame.dataset.src);
+                }
+
+                modal.hidden = false;
+                document.body.classList.add('splis-modal-open');
+            }
+
+            function closeModal() {
+                modal.hidden = true;
+                document.body.classList.remove('splis-modal-open');
+            }
+
+            openBtn.addEventListener('click', openModal);
+            modal.querySelectorAll('[data-reference-modal-close]').forEach((el) => {
+                el.addEventListener('click', closeModal);
+            });
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && ! modal.hidden) {
+                    closeModal();
+                }
+            });
+        })();
+    </script>
+    @endpush
+@endif
 @endsection
 

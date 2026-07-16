@@ -89,5 +89,13 @@ class ReferenceMaterial extends Model
     {
         return filled($this->file_path);
     }
+
+    public function isPdf(): bool
+    {
+        $mime = strtolower((string) ($this->mime_type ?? ''));
+        $name = strtolower((string) ($this->original_filename ?? $this->file_path ?? ''));
+
+        return str_contains($mime, 'pdf') || str_ends_with($name, '.pdf');
+    }
 }
 

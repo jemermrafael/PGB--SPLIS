@@ -253,6 +253,23 @@ class ReferenceMaterialController extends Controller
         );
     }
 
+    public function view(ReferenceMaterial $reference)
+    {
+        $this->authorize('view', $reference);
+        abort_unless($reference->hasFile() && Storage::disk('local')->exists($reference->file_path), 404);
+        abort_unless($reference->isPdf(), 404);
+
+        $filename = $reference->original_filename ?: basename($reference->file_path);
+
+        return response()->file(
+            Storage::disk('local')->path($reference->file_path),
+            [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="'.$filename.'"',
+            ],
+        );
+    }
+
     public function downloadVersion(ReferenceMaterial $reference, ReferenceMaterialVersion $version)
     {
         $this->authorize('view', $reference);

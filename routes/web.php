@@ -110,6 +110,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/references', [ReferenceMaterialController::class, 'store'])->name('references.store');
     Route::get('/references/{reference}', [ReferenceMaterialController::class, 'show'])->name('references.show');
     Route::get('/references/{reference}/download', [ReferenceMaterialController::class, 'download'])->name('references.download');
+    Route::get('/references/{reference}/view', [ReferenceMaterialController::class, 'view'])->name('references.view');
     Route::get('/references/{reference}/versions/{version}/download', [ReferenceMaterialController::class, 'downloadVersion'])->name('references.versions.download');
     Route::get('/references/{reference}/edit', [ReferenceMaterialController::class, 'edit'])->name('references.edit');
     Route::put('/references/{reference}', [ReferenceMaterialController::class, 'update'])->name('references.update');

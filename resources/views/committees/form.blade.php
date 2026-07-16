@@ -11,8 +11,8 @@
 <div class="max-w-3xl">
     <div class="splis-page-header !mb-6">
         <div>
-            <h1 class="splis-page-title">{{ $isEdit ? 'Edit committee' : 'New committee' }}</h1>
-            <p class="splis-page-subtitle">Assign chair, vice chair, and members from the board roster for a specific term.</p>
+            <h1 class="splis-page-title">{{ $isEdit ? 'Edit Committee' : 'New committee' }}</h1>
+            <p class="splis-page-subtitle">Assign Chair, Vice Chair, and Members from the Board roster for a specific term.</p>
         </div>
     </div>
 
@@ -122,9 +122,9 @@
         </div>
 
         <div class="flex gap-2 pt-2">
-            <button type="submit" class="splis-btn-primary">Save committee</button>
+            <button type="submit" class="splis-btn-primary">Save Committee</button>
             @if ($isEdit)
-                <a href="{{ route('committees.show', ['committee' => $committee, 'term' => $term->id]) }}" class="splis-btn-secondary">View roster</a>
+                <a href="{{ route('committees.show', ['committee' => $committee, 'term' => $term->id]) }}" class="splis-btn-secondary">View Roster</a>
             @endif
             <a href="{{ route('committees.index') }}" class="splis-btn-secondary">Cancel</a>
         </div>
