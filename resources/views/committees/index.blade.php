@@ -33,10 +33,6 @@
         @endforeach
     </div>
 
-    @if (session('status'))
-        <p class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">{{ session('status') }}</p>
-    @endif
-
     <div class="splis-table-wrap">
         <table class="splis-table">
             <thead>
@@ -73,10 +69,10 @@
                                     <a href="{{ route('committees.edit', ['committee' => $committee, 'term' => $selectedTerm->id]) }}" class="splis-btn-secondary text-sm">Edit</a>
                                 @endcan
                                 @can('delete', $committee)
-                                    <form method="POST" action="{{ route('committees.destroy', $committee) }}" onsubmit="return confirm('Delete this committee?');">
+                                    <form method="POST" action="{{ route('committees.destroy', $committee) }}" onsubmit="return confirm('Move this committee to trash?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="splis-btn-ghost text-sm text-red-600">Delete</button>
+                                        <button type="submit" class="splis-btn-danger text-sm">Move to trash</button>
                                     </form>
                                 @endcan
                             </div>

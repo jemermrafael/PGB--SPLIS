@@ -25,6 +25,7 @@ return new class extends Migration
             $table->string('mandate_ppa', 100)->nullable();
             $table->text('remarks')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->index('date_enacted');
             $table->index('effectivity_date');

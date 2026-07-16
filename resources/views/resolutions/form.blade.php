@@ -20,7 +20,7 @@
         @include('resolutions._form-fields', ['resolution' => $resolution])
 
         <div class="flex gap-2 pt-2">
-            <button type="submit" class="splis-btn-primary">Save resolution</button>
+            <button type="submit" class="splis-btn-primary">Save Resolution</button>
             <a href="{{ route('resolutions.index') }}" class="splis-btn-secondary">Cancel</a>
         </div>
     </form>

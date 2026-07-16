@@ -19,10 +19,6 @@
         <a href="{{ route('board-members.index') }}" class="splis-btn-secondary">Board Members</a>
     </div>
 
-    @if (session('status'))
-        <p class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">{{ session('status') }}</p>
-    @endif
-
     <div class="splis-table-wrap">
         <table class="splis-table">
             <thead>

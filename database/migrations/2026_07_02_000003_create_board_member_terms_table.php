@@ -33,7 +33,7 @@ return new class extends Migration
 
         $districts = config('board_members.districts', []);
 
-        BoardMember::query()
+        BoardMember::withoutGlobalScopes()
             ->whereIn('district', $districts)
             ->orderBy('id')
             ->each(function (BoardMember $member) use ($currentTerm): void {
@@ -48,7 +48,7 @@ return new class extends Migration
                 ]);
             });
 
-        $memberIdsWithDistrict = BoardMember::query()
+        $memberIdsWithDistrict = BoardMember::withoutGlobalScopes()
             ->whereIn('district', $districts)
             ->pluck('id');
 

@@ -29,6 +29,7 @@ import {
 import { initAdminAnalytics } from './admin-analytics';
 import { initCommitteeMunicipalityMap } from './geographic-analytics';
 import { initDragScroll } from './drag-scroll';
+import { initTableScrollHints } from './table-scroll-hint';
 import { initBoardMemberBulkDelete, initConfirmSubmitForms } from './board-members';
 import { initCommitteeMonitoring } from './committee-monitoring';
 import { initSessionGuests } from './session-guests';
@@ -39,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initAccessibility();
     initComboboxes();
     initDragScroll();
+    initTableScrollHints();
     initConfirmSubmitForms();
     initBoardMemberBulkDelete();
     initAgendaForm();

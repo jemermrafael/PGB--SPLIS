@@ -24,14 +24,14 @@ class ResolutionPolicy
 
     public function restore(User $user, Resolution $resolution): bool
     {
-        return $user->canDeleteResolutions()
+        return $user->isSuperadmin()
             && $resolution->legacy_sp_id === null
             && $resolution->trashed();
     }
 
     public function forceDelete(User $user, Resolution $resolution): bool
     {
-        return $user->canDeleteResolutions()
+        return $user->isSuperadmin()
             && $resolution->legacy_sp_id === null
             && $resolution->trashed();
     }
@@ -50,6 +50,6 @@ class ResolutionPolicy
 
     public function update(User $user, Resolution $resolution): bool
     {
-        return $user->canEncode() && $resolution->legacy_sp_id === null && ! $resolution->trashed();
+        return $user->canEncode() && ! $resolution->trashed();
     }
 }

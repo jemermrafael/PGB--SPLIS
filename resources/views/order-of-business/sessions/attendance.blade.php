@@ -15,10 +15,6 @@
         </div>
     </div>
 
-    @if (session('status'))
-        <div class="splis-alert-success mb-6">{{ session('status') }}</div>
-    @endif
-
     <form method="POST" action="{{ route('ob.sessions.attendance.update', $session) }}" class="splis-card splis-card-body space-y-4">
         @csrf
         @method('PUT')

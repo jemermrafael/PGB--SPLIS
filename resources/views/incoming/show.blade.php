@@ -4,49 +4,54 @@
 
 @section('content')
 <div class="max-w-6xl">
-    <div class="splis-page-header !mb-6">
-        <div>
-            <div class="mb-2 flex flex-wrap items-center gap-2">
-                @if ($incoming->isLinked())
-                    <span class="splis-badge-linked">Linked</span>
-                @else
-                    <span class="splis-badge-unlinked">Unlinked</span>
-                @endif
-                <span class="splis-badge-doc-type splis-badge-doc-type--resolution capitalize">{{ $incoming->source }}</span>
-                @if ($incoming->legacy_file_id)
-                    <span class="text-sm text-slate-500">sptrack File #{{ $incoming->legacy_file_id }}</span>
-                @endif
-            </div>
-            <h1 class="splis-page-title">{{ $incoming->displayLabel() }}</h1>
-        </div>
-        <div class="flex flex-wrap gap-2">
+    <x-page-header :title="$incoming->displayLabel()" class="!mb-6">
+        <x-slot:badges>
+            @if ($incoming->isLinked())
+                <span class="splis-badge-linked">Linked</span>
+            @else
+                <span class="splis-badge-unlinked">Unlinked</span>
+            @endif
+            <span class="splis-badge-doc-type splis-badge-doc-type--resolution capitalize">{{ $incoming->source }}</span>
+            @if ($incoming->legacy_file_id)
+                <span class="text-sm text-slate-500">sptrack File #{{ $incoming->legacy_file_id }}</span>
+            @endif
+        </x-slot:badges>
+        <x-slot:actions>
             @can('publish', $incoming)
                 <a href="{{ route('incoming.publish', $incoming) }}" class="splis-btn-primary">Publish to Resolution</a>
             @endcan
             @can('update', $incoming)
                 <a href="{{ route('incoming.edit', $incoming) }}" class="splis-btn-secondary">Edit</a>
             @endcan
-            <a href="{{ route('incoming.index') }}" class="splis-btn-secondary">Back to list</a>
-        </div>
-    </div>
+            <a href="{{ route('incoming.index') }}" class="splis-btn-ghost">Back to list</a>
+        </x-slot:actions>
+    </x-page-header>
+
+    @include('incoming.partials.publish-workflow', ['incoming' => $incoming, 'currentStep' => $incoming->isLinked() ? 3 : 1])
+
+    @can('publish', $incoming)
+        <x-help-callout title="Next step">
+            Review the details below, then continue to <strong>Publish to Resolution</strong> to create the final SP record and attach the PDF for the embedded viewer.
+        </x-help-callout>
+    @endcan
 
     @if ($incoming->agendaItem)
-        <div class="splis-alert-success mb-6">
+        <x-alert variant="success">
             From agenda item
-            <a href="{{ route('agenda.show', $incoming->agendaItem) }}" class="font-semibold underline">
+            <a href="{{ route('agenda.show', $incoming->agendaItem) }}" class="splis-link font-semibold">
                 {{ $incoming->agendaItem->displayLabel() }}
             </a>.
-        </div>
+        </x-alert>
     @endif
 
     @if ($incoming->isLinked() && $incoming->resolution)
-        <div class="splis-alert-success mb-6">
+        <x-alert variant="success">
             Linked to resolution
-            <a href="{{ route('resolutions.show', $incoming->resolution) }}" class="font-semibold underline">
+            <a href="{{ route('resolutions.show', $incoming->resolution) }}" class="splis-link font-semibold">
                 {{ $incoming->resolution->resolution_no }}
             </a>
             (Series {{ $incoming->resolution->series }}).
-        </div>
+        </x-alert>
     @endif
 
     <div class="splis-detail-with-sidebar">

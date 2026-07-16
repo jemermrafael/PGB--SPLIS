@@ -31,16 +31,20 @@
             </div>
             <h1 class="splis-page-title">Resolution No.: {{ $resolution->resolution_no }}</h1>
         </div>
-        <div class="flex flex-wrap gap-2">
+        <div class="splis-page-header-actions">
             @can('update', $resolution)
                 <a href="{{ route('resolutions.edit', $resolution) }}" class="splis-btn-secondary">Edit</a>
             @endcan
             @if ($resolution->trashed())
-                <a href="{{ route('resolutions.trash') }}" class="splis-btn-secondary">Back to trash</a>
+                @if (auth()->user()?->isSuperadmin())
+                    <a href="{{ route('admin.trash.index', ['type' => 'resolutions']) }}" class="splis-btn-ghost">Back to trash</a>
+                @else
+                    <a href="{{ route('resolutions.index') }}" class="splis-btn-ghost">Back to list</a>
+                @endif
             @elseif (auth()->user()?->isMunicipalViewer())
-                <a href="{{ route('municipal.requests.index') }}" class="splis-btn-secondary">Back to requests</a>
+                <a href="{{ route('municipal.requests.index') }}" class="splis-btn-ghost">Back to requests</a>
             @else
-                <a href="{{ route('resolutions.index') }}" class="splis-btn-secondary">Back to list</a>
+                <a href="{{ route('resolutions.index') }}" class="splis-btn-ghost">Back to list</a>
             @endif
         </div>
     </div>

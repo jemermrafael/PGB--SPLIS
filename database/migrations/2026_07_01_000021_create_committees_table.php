@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('secretary', 100)->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+            $table->softDeletes();
 
             $table->unique('name');
         });

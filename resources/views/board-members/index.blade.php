@@ -33,20 +33,6 @@
         @endforeach
     </div>
 
-    @if (session('status'))
-        <p class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">{{ session('status') }}</p>
-    @endif
-
-    @if ($errors->any())
-        <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
-            <ul class="list-disc pl-5">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
     @if ($canManage && $boardMembersByDistrict->isNotEmpty())
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <label class="flex items-center gap-2.5 text-sm text-slate-700 dark:text-slate-300">
@@ -63,8 +49,8 @@
                 @csrf
                 @method('DELETE')
                 <input type="hidden" name="term" value="{{ $selectedTerm->id }}">
-                <button type="submit" data-board-member-bulk-delete class="splis-btn-ghost text-sm text-red-600" disabled>
-                    Delete selected
+                <button type="submit" data-board-member-bulk-delete class="splis-btn-danger text-sm" disabled>
+                    Move selected to trash
                 </button>
             </form>
         </div>
@@ -128,14 +114,14 @@
                                                     method="POST"
                                                     action="{{ route('board-members.destroy', $member) }}"
                                                     data-confirm-submit
-                                                    data-confirm-title="Delete Board Member?"
-                                                    data-confirm-message="Delete {{ $member->displayName() }}? This removes their roster and committee assignments."
-                                                    data-confirm-label="Delete"
+                                                    data-confirm-title="Move Board Member to trash?"
+                                                    data-confirm-message="Move {{ $member->displayName() }} to trash? Superadmin can restore from Trash."
+                                                    data-confirm-label="Move to trash"
                                                 >
                                                     @csrf
                                                     @method('DELETE')
                                                     <input type="hidden" name="term" value="{{ $selectedTerm->id }}">
-                                                    <button type="submit" class="splis-btn-ghost text-sm text-red-600">Delete</button>
+                                                    <button type="submit" class="splis-btn-danger text-sm">Move to trash</button>
                                                 </form>
                                             @endcan
                                         </div>

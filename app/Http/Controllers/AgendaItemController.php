@@ -246,8 +246,8 @@ class AgendaItemController extends Controller
         $agenda->delete();
 
         return redirect()
-            ->route('agenda.index')
-            ->with('status', 'Agenda item deleted.');
+            ->route(auth()->user()?->isSuperadmin() ? 'admin.trash.index' : 'agenda.index', auth()->user()?->isSuperadmin() ? ['type' => 'agenda'] : [])
+            ->with('status', 'Agenda item moved to trash.');
     }
 
     public function promote(Request $request, AgendaItem $agenda, AgendaIncomingPromoter $promoter): RedirectResponse

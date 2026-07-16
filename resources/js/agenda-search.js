@@ -1,5 +1,6 @@
 import { renderAjaxPagination } from './pagination';
 import { bindTitleTooltips, renderTruncatedTitle, truncateWords } from './title-tooltip';
+import { preferredDocView } from './doc-view';
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -136,7 +137,7 @@ export function initAgendaSearch() {
     const hasIncomingInput = document.getElementById('agenda-filter-has-incoming');
 
     let currentPage = 1;
-    let viewMode = localStorage.getItem('splis-agenda-view') || 'list';
+    let viewMode = preferredDocView('splis-agenda-view');
     let debounceTimer;
     let activeFilterButton = null;
 

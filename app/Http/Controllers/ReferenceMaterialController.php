@@ -238,8 +238,8 @@ class ReferenceMaterialController extends Controller
         ]);
 
         return redirect()
-            ->route('references.index')
-            ->with('status', 'Reference Material deleted.');
+            ->route(auth()->user()?->isSuperadmin() ? 'admin.trash.index' : 'references.index', auth()->user()?->isSuperadmin() ? ['type' => 'references'] : [])
+            ->with('status', 'Reference Material moved to trash.');
     }
 
     public function download(ReferenceMaterial $reference)

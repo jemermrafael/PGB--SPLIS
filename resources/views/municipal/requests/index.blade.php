@@ -94,7 +94,7 @@
 
     <div id="municipal-request-search-results" class="transition-opacity">
         <p id="municipal-request-search-meta" class="mb-4 text-sm text-slate-500 dark:text-slate-400">Loading requests…</p>
-        <div class="splis-table-wrap">
+        <div class="splis-table-wrap" data-drag-scroll>
             <table class="splis-table">
                 <thead>
                     <tr>

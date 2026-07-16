@@ -44,7 +44,7 @@ return new class extends Migration
                 );
             });
 
-        Committee::query()
+        Committee::withoutGlobalScopes()
             ->whereNotNull('secretary')
             ->where('secretary', '!=', '')
             ->each(function ($committee): void {
@@ -69,7 +69,7 @@ return new class extends Migration
 
         $districts = config('board_members.districts', []);
 
-        BoardMember::query()
+        BoardMember::withoutGlobalScopes()
             ->where(function ($query) use ($districts): void {
                 $query
                     ->whereNull('district')

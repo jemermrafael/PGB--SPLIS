@@ -170,7 +170,7 @@
             @include('partials.view-toggle', ['id' => 'dashboard-view-toggle'])
         </div>
 
-        <div id="dashboard-list-wrap" class="splis-table-wrap">
+        <div id="dashboard-list-wrap" class="splis-table-wrap" data-drag-scroll>
             <table class="splis-table">
                 <thead>
                     <tr>

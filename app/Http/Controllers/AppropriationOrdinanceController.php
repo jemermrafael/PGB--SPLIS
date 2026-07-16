@@ -99,8 +99,8 @@ class AppropriationOrdinanceController extends Controller
         $appropriationOrdinance->delete();
 
         return redirect()
-            ->route('appropriation-ordinances.index')
-            ->with('status', 'Appropriation ordinance deleted.');
+            ->route(auth()->user()?->isSuperadmin() ? 'admin.trash.index' : 'appropriation-ordinances.index', auth()->user()?->isSuperadmin() ? ['type' => 'appropriation-ordinances'] : [])
+            ->with('status', 'Appropriation ordinance moved to trash.');
     }
 
     /**

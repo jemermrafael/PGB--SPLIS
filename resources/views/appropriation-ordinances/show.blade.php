@@ -17,10 +17,6 @@
         </div>
     </div>
 
-    @if (session('status'))
-        <div class="splis-alert-success mb-6">{{ session('status') }}</div>
-    @endif
-
     <div class="splis-card splis-card-body space-y-6">
         <div>
             <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Title</p>
@@ -57,10 +53,10 @@
     <div class="mt-6 flex flex-wrap gap-2">
         <a href="{{ route('appropriation-ordinances.index') }}" class="splis-btn-secondary">Back to list</a>
         @can('delete', $appropriationOrdinance)
-            <form method="POST" action="{{ route('appropriation-ordinances.destroy', $appropriationOrdinance) }}" onsubmit="return confirm('Delete this appropriation ordinance?');">
+            <form method="POST" action="{{ route('appropriation-ordinances.destroy', $appropriationOrdinance) }}" onsubmit="return confirm('Move this appropriation ordinance to trash?');">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="splis-btn-ghost text-red-600">Delete</button>
+                <button type="submit" class="splis-btn-danger">Move to trash</button>
             </form>
         @endcan
     </div>

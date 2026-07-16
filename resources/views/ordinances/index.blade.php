@@ -82,7 +82,7 @@
             @include('partials.view-toggle', ['id' => 'ordinances-view-toggle'])
         </div>
 
-        <div id="ordinances-list-wrap" class="splis-table-wrap">
+        <div id="ordinances-list-wrap" class="splis-table-wrap" data-drag-scroll>
             <table class="splis-table">
                 <thead>
                     <tr>

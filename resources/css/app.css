@@ -294,7 +294,11 @@
     }
 
     .splis-page-header {
-        @apply mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between;
+        @apply mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between;
+    }
+
+    .splis-page-header-actions {
+        @apply flex flex-wrap items-center gap-2 sm:justify-end sm:pt-1;
     }
 
     .splis-page-title {
@@ -303,6 +307,114 @@
 
     .splis-page-subtitle {
         @apply mt-1 text-sm text-slate-500;
+    }
+
+    .splis-form-section {
+        @apply overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/50 dark:border-slate-700 dark:bg-slate-900 dark:shadow-none;
+    }
+
+    .splis-form-section-header {
+        @apply border-b border-slate-100 px-6 py-4 dark:border-slate-700;
+    }
+
+    .splis-form-section-title {
+        @apply text-base font-semibold text-slate-900 dark:text-slate-100;
+    }
+
+    .splis-form-section-subtitle {
+        @apply mt-0.5 text-sm text-slate-500 dark:text-slate-400;
+    }
+
+    .splis-form-section-body {
+        @apply grid grid-cols-1 gap-4 p-6 md:grid-cols-2;
+    }
+
+    .splis-form-actions {
+        @apply sticky bottom-0 z-20 -mx-6 mt-6 flex flex-wrap gap-2 border-t border-slate-200 bg-white/95 px-6 py-4 backdrop-blur-md dark:border-slate-700 dark:bg-slate-950/95 md:mx-0 md:rounded-2xl md:border md:shadow-sm;
+    }
+
+    .splis-risk-badge {
+        @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide;
+    }
+
+    .splis-risk-badge--safe {
+        @apply bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300;
+    }
+
+    .splis-risk-badge--caution {
+        @apply bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200;
+    }
+
+    .splis-risk-badge--danger {
+        @apply bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300;
+    }
+
+    .splis-admin-section-title {
+        @apply mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400;
+    }
+
+    .splis-danger-zone {
+        @apply rounded-2xl border-2 border-red-300 bg-red-50/60 p-6 dark:border-red-900 dark:bg-red-950/30;
+    }
+
+    .splis-danger-zone-title {
+        @apply text-lg font-semibold text-red-800 dark:text-red-300;
+    }
+
+    .splis-workflow-steps {
+        @apply mb-6 overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900;
+    }
+
+    .splis-workflow-steps-list {
+        @apply flex flex-col gap-3 sm:flex-row sm:items-stretch sm:gap-0;
+    }
+
+    .splis-workflow-step {
+        @apply relative flex min-w-0 flex-1 items-start gap-3 sm:px-3;
+    }
+
+    .splis-workflow-step:not(:last-child)::after {
+        content: '';
+        @apply absolute right-0 top-4 hidden h-px w-full bg-slate-200 sm:block dark:bg-slate-700;
+        left: 2.25rem;
+        width: calc(100% - 1.5rem);
+        z-index: 0;
+    }
+
+    .splis-workflow-step-index {
+        @apply relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-slate-300 bg-white text-xs font-bold text-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-400;
+    }
+
+    .splis-workflow-step.is-complete .splis-workflow-step-index {
+        @apply border-emerald-500 bg-emerald-500 text-white;
+    }
+
+    .splis-workflow-step.is-current .splis-workflow-step-index {
+        @apply border-brand-700 bg-brand-700 text-white;
+    }
+
+    .splis-workflow-step-label {
+        @apply block text-sm font-semibold text-slate-700 dark:text-slate-200;
+    }
+
+    .splis-workflow-step.is-current .splis-workflow-step-label {
+        @apply text-brand-800 dark:text-brand-gold;
+    }
+
+    .splis-workflow-step-desc {
+        @apply mt-0.5 block text-xs text-slate-500 dark:text-slate-400;
+    }
+
+    .splis-help-callout {
+        @apply mb-6 rounded-2xl border border-brand-200 bg-brand-50/80 px-4 py-3 text-sm text-brand-900 dark:border-brand-800 dark:bg-brand-950/40 dark:text-brand-100;
+    }
+
+    .splis-help-callout-title {
+        @apply text-xs font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-gold;
+    }
+
+    .splis-help-callout-body {
+        @apply mt-1 text-sm leading-relaxed;
     }
 
     .splis-card {
@@ -772,11 +884,15 @@
     }
 
     .splis-btn-ghost {
-        @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900;
+        @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus:ring-slate-300;
     }
 
     .splis-btn-danger {
-        @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 text-red-600 hover:bg-red-50 focus:ring-red-300;
+        @apply inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 shadow-sm transition-all duration-200 hover:border-red-300 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2;
+    }
+
+    .splis-link {
+        @apply font-medium text-brand-700 underline-offset-2 transition hover:text-brand-900 hover:underline;
     }
 
     .splis-label {
@@ -790,7 +906,31 @@
     }
 
     .splis-table-wrap {
-        @apply overflow-x-auto rounded-2xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/50;
+        @apply relative overflow-x-auto rounded-2xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/50;
+    }
+
+    .splis-table-scroll-hint {
+        @apply pointer-events-none sticky left-0 top-0 z-10 hidden border-b border-brand-gold/30 bg-brand-50 px-3 py-1.5 text-center text-[11px] font-medium text-brand-800;
+    }
+
+    .splis-table-wrap.has-x-overflow .splis-table-scroll-hint {
+        @apply block;
+    }
+
+    .splis-table-wrap.has-x-overflow.is-scrolled .splis-table-scroll-hint {
+        @apply opacity-0;
+    }
+
+    .splis-table-wrap.has-x-overflow {
+        background-image:
+            linear-gradient(to right, white, white),
+            linear-gradient(to right, white, white),
+            linear-gradient(to right, rgb(15 23 42 / 0.12), transparent),
+            linear-gradient(to left, rgb(15 23 42 / 0.12), transparent);
+        background-position: left center, right center, left center, right center;
+        background-repeat: no-repeat;
+        background-size: 1.25rem 100%, 1.25rem 100%, 0.75rem 100%, 0.75rem 100%;
+        background-attachment: local, local, scroll, scroll;
     }
 
     .splis-drag-scroll {
@@ -1855,12 +1995,11 @@
     }
 
     .splis-doc-card-number {
-        @apply font-semibold hover:underline;
-        color: #12325a;
+        @apply font-semibold text-brand-800 hover:underline;
     }
 
     .splis-doc-list-link {
-        color: #12325a;
+        @apply font-semibold text-brand-800;
     }
 
     .splis-doc-list-link:hover {
@@ -1868,8 +2007,23 @@
     }
 
     .splis-doc-pdf-icon {
-        @apply inline-flex h-8 w-8 items-center justify-center rounded-lg transition hover:bg-slate-100;
-        color: #12325a;
+        @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-brand-800 transition hover:bg-slate-100;
+    }
+
+    .splis-mobile-card-list {
+        @apply grid grid-cols-1 gap-3;
+    }
+
+    .splis-mobile-card {
+        @apply rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm;
+    }
+
+    .splis-mobile-card-title {
+        @apply text-sm font-semibold text-brand-800;
+    }
+
+    .splis-mobile-card-meta {
+        @apply mt-2 space-y-1 text-xs text-slate-600;
     }
 
     .splis-doc-card-title {
@@ -2061,8 +2215,51 @@
     }
 
     html.dark .splis-doc-card-number,
-    html.dark .splis-doc-list-link {
-        color: #12325a;
+    html.dark .splis-doc-list-link,
+    html.dark .splis-doc-pdf-icon,
+    html.dark .splis-mobile-card-title,
+    html.dark .splis-link {
+        @apply text-brand-gold;
+    }
+
+    html.dark .splis-doc-pdf-icon:hover {
+        @apply bg-slate-800;
+    }
+
+    html.dark .splis-btn-primary {
+        @apply bg-brand-600 text-white hover:bg-brand-500 focus:ring-brand-gold;
+    }
+
+    html.dark .splis-btn-secondary {
+        @apply border-slate-600 bg-slate-800 text-slate-100 hover:border-slate-500 hover:bg-slate-700 focus:ring-slate-500;
+    }
+
+    html.dark .splis-btn-ghost {
+        @apply text-slate-300 hover:bg-slate-800 hover:text-slate-100 focus:ring-slate-600;
+    }
+
+    html.dark .splis-btn-danger {
+        @apply border-red-800 bg-red-950/50 text-red-300 hover:border-red-700 hover:bg-red-900/40 focus:ring-red-700;
+    }
+
+    html.dark .splis-table-scroll-hint {
+        @apply border-brand-gold/20 bg-slate-800 text-brand-gold;
+    }
+
+    html.dark .splis-table-wrap.has-x-overflow {
+        background-image:
+            linear-gradient(to right, rgb(15 23 42), rgb(15 23 42)),
+            linear-gradient(to right, rgb(15 23 42), rgb(15 23 42)),
+            linear-gradient(to right, rgb(148 163 184 / 0.25), transparent),
+            linear-gradient(to left, rgb(148 163 184 / 0.25), transparent);
+    }
+
+    html.dark .splis-mobile-card {
+        @apply border-slate-700 bg-slate-900;
+    }
+
+    html.dark .splis-mobile-card-meta {
+        @apply text-slate-400;
     }
 
     html.dark .splis-badge-doc-type--resolution {

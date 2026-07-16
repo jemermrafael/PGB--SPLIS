@@ -25,14 +25,14 @@
                     method="POST"
                     action="{{ route('board-members.destroy', $boardMember) }}"
                     data-confirm-submit
-                    data-confirm-title="Delete Board Member?"
-                    data-confirm-message="Delete {{ $boardMember->displayName() }}? This removes their roster and committee assignments."
-                    data-confirm-label="Delete"
+                    data-confirm-title="Move Board Member to trash?"
+                    data-confirm-message="Move {{ $boardMember->displayName() }} to trash? Superadmin can restore from Trash."
+                    data-confirm-label="Move to trash"
                 >
                     @csrf
                     @method('DELETE')
                     <input type="hidden" name="term" value="{{ $selectedTerm->id }}">
-                    <button type="submit" class="splis-btn-ghost text-red-600">Delete</button>
+                    <button type="submit" class="splis-btn-danger">Move to trash</button>
                 </form>
             @endcan
         </div>
@@ -109,7 +109,7 @@
                                 <p class="text-sm text-slate-500">{{ $entry['term']->year_from ?? '?' }}–{{ $entry['term']->year_to ?? 'present' }}</p>
                             @endif
                         </div>
-                        <a href="{{ route('board-members.show', ['boardMember' => $boardMember, 'term' => $entry['term']->id]) }}" class="splis-btn-secondary text-sm">View term</a>
+                        <a href="{{ route('board-members.show', ['boardMember' => $boardMember, 'term' => $entry['term']->id]) }}" class="splis-btn-secondary text-sm">View Term</a>
                     </div>
 
                     <div class="grid grid-cols-1 gap-6 md:grid-cols-2">

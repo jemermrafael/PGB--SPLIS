@@ -16,14 +16,6 @@
                     Add Resolution
                 </a>
             @endcan
-            @if (auth()->user()?->canDeleteResolutions())
-                <a href="{{ route('resolutions.trash') }}" class="splis-btn-secondary">
-                    Trash
-                    @if (($trashCount ?? 0) > 0)
-                        ({{ number_format($trashCount) }})
-                    @endif
-                </a>
-            @endif
         </div>
     </div>
 
@@ -122,7 +114,7 @@
             @include('partials.view-toggle', ['id' => 'resolutions-view-toggle'])
         </div>
 
-        <div id="resolutions-list-wrap" class="splis-table-wrap">
+        <div id="resolutions-list-wrap" class="splis-table-wrap" data-drag-scroll>
             <table class="splis-table">
                 <thead>
                     <tr>

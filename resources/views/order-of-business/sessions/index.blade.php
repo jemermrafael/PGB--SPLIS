@@ -17,10 +17,6 @@
         @endcan
     </div>
 
-    @if (session('status'))
-        <div class="splis-alert-success mb-6">{{ session('status') }}</div>
-    @endif
-
     <div class="splis-card overflow-hidden">
         @if ($sessions->isEmpty())
             <div class="splis-card-body text-center text-slate-600 dark:text-slate-400">

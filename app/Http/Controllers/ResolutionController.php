@@ -34,24 +34,6 @@ class ResolutionController extends Controller
             'departments' => Department::orderBy('description')->get(),
             'municipalities' => Municipality::orderBy('description')->get(),
             'seriesYears' => SeriesYear::orderByDesc('year')->pluck('year'),
-            'trashCount' => Resolution::query()->onlyTrashed()->whereNull('legacy_sp_id')->count(),
-        ]);
-    }
-
-    public function trash(): View
-    {
-        $this->authorize('viewAny', Resolution::class);
-        abort_unless(auth()->user()?->canDeleteResolutions(), 403);
-
-        $resolutions = Resolution::query()
-            ->onlyTrashed()
-            ->whereNull('legacy_sp_id')
-            ->with('creator')
-            ->orderByDesc('deleted_at')
-            ->paginate(25);
-
-        return view('resolutions.trash', [
-            'resolutions' => $resolutions,
         ]);
     }
 
@@ -155,7 +137,7 @@ class ResolutionController extends Controller
         $resolution->delete();
 
         return redirect()
-            ->route('resolutions.trash')
+            ->route(auth()->user()?->isSuperadmin() ? 'admin.trash.index' : 'resolutions.index', auth()->user()?->isSuperadmin() ? ['type' => 'resolutions'] : [])
             ->with('status', 'Resolution '.$resolution->series.'-'.$resolution->resolution_no.' moved to trash.');
     }
 
@@ -183,7 +165,7 @@ class ResolutionController extends Controller
         $resolution->forceDelete();
 
         return redirect()
-            ->route('resolutions.trash')
+            ->route(auth()->user()?->isSuperadmin() ? 'admin.trash.index' : 'resolutions.index', auth()->user()?->isSuperadmin() ? ['type' => 'resolutions'] : [])
             ->with('status', 'Resolution '.$label.' permanently deleted.');
     }
 
@@ -237,7 +219,7 @@ class ResolutionController extends Controller
             'departmentOptions' => ResolutionFieldOptions::departments(),
             'sponsoredByOptions' => ResolutionFieldOptions::sponsoredBy(),
             'committeeOptions' => IncomingFieldOptions::committees(),
-            'keywordsUrl' => route('incoming.keywords'),
+            'keywordsUrl' => route('resolutions.keywords'),
         ];
     }
 }

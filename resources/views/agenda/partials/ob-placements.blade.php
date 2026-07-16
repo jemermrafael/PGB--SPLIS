@@ -35,7 +35,7 @@
                             >
                                 @csrf
                                 <input type="hidden" name="legislative_session_id" value="{{ $placement->legislative_session_id }}">
-                                <button type="submit" class="splis-btn-ghost w-full justify-center text-sm text-red-600 hover:text-red-700">Remove from OB</button>
+                                <button type="submit" class="splis-btn-danger w-full justify-center text-sm">Remove from OB</button>
                             </form>
                         @endcan
                     </li>

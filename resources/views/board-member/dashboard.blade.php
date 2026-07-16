@@ -93,7 +93,7 @@
         </div>
 
         <div id="bm-dashboard-agenda-search-results" class="transition-opacity">
-            <div id="bm-dashboard-agenda-list-wrap" class="splis-table-wrap">
+            <div id="bm-dashboard-agenda-list-wrap" class="splis-table-wrap" data-drag-scroll>
                 <table class="splis-table">
                     <thead>
                         <tr>

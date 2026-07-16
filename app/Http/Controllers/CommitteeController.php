@@ -163,8 +163,8 @@ class CommitteeController extends Controller
         $committee->delete();
 
         return redirect()
-            ->route('committees.index')
-            ->with('status', 'Committee deleted.');
+            ->route(auth()->user()?->isSuperadmin() ? 'admin.trash.index' : 'committees.index', auth()->user()?->isSuperadmin() ? ['type' => 'committees'] : [])
+            ->with('status', 'Committee moved to trash.');
     }
 
     /**

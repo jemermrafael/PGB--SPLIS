@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\UserRole;
 use App\Models\ActivityLog;
+use App\Models\Committee;
 use App\Models\Resolution;
 use App\Models\User;
 use App\Models\UserNotification;
@@ -30,7 +31,7 @@ class ResolutionTrashTest extends TestCase
 
         $this->actingAs($encoder)
             ->delete(route('resolutions.destroy', $resolution))
-            ->assertRedirect(route('resolutions.trash'));
+            ->assertRedirect(route('resolutions.index'));
 
         $resolution->refresh();
         $this->assertTrue($resolution->trashed());
@@ -74,12 +75,13 @@ class ResolutionTrashTest extends TestCase
             ->first();
 
         $this->assertNotNull($notification);
-        $this->assertSame(route('resolutions.show', $resolution->id), $notification->link);
+        $this->assertSame('/resolutions/'.$resolution->id, parse_url((string) $notification->link, PHP_URL_PATH) ?: $notification->link);
     }
 
     public function test_restore_and_force_delete_flow(): void
     {
-        $encoder = User::factory()->create(['role' => UserRole::EncoderDelete]);
+        $encoder = User::factory()->create(['role' => UserRole::EncoderDelete, 'is_active' => true]);
+        $superadmin = User::factory()->create(['role' => UserRole::Superadmin, 'is_active' => true]);
 
         $resolution = Resolution::create([
             'resolution_no' => '99',
@@ -93,7 +95,7 @@ class ResolutionTrashTest extends TestCase
         $resolution->refresh();
         $this->assertTrue($resolution->trashed());
 
-        $this->actingAs($encoder)
+        $this->actingAs($superadmin)
             ->post(route('resolutions.restore', $resolution))
             ->assertRedirect(route('resolutions.show', $resolution));
 
@@ -102,14 +104,42 @@ class ResolutionTrashTest extends TestCase
 
         $this->actingAs($encoder)->delete(route('resolutions.destroy', $resolution));
 
-        $this->actingAs($encoder)
+        $this->actingAs($superadmin)
             ->delete(route('resolutions.force-destroy', $resolution))
-            ->assertRedirect(route('resolutions.trash'));
+            ->assertRedirect(route('admin.trash.index', ['type' => 'resolutions']));
 
         $this->assertNull(Resolution::withTrashed()->find($resolution->id));
         $this->assertDatabaseHas('activity_logs', [
             'action' => 'resolution.deleted',
             'subject_id' => $resolution->id,
         ]);
+    }
+
+    public function test_unified_trash_is_superadmin_only_and_lists_soft_deleted_items(): void
+    {
+        $encoder = User::factory()->create(['role' => UserRole::Encoder, 'is_active' => true]);
+        $superadmin = User::factory()->create(['role' => UserRole::Superadmin, 'is_active' => true]);
+
+        $committee = Committee::create([
+            'sort_order' => 1,
+            'name' => 'Committee on Trash',
+            'is_active' => true,
+        ]);
+        $committee->delete();
+
+        $this->actingAs($encoder)
+            ->get(route('admin.trash.index'))
+            ->assertForbidden();
+
+        $this->actingAs($superadmin)
+            ->get(route('admin.trash.index', ['type' => 'committees']))
+            ->assertOk()
+            ->assertSee('Committee on Trash');
+
+        $this->actingAs($superadmin)
+            ->post(route('admin.trash.restore', ['type' => 'committees', 'id' => $committee->id]))
+            ->assertRedirect(route('admin.trash.index', ['type' => 'committees']));
+
+        $this->assertFalse($committee->fresh()->trashed());
     }
 }

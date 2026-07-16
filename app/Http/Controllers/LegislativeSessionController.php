@@ -123,8 +123,8 @@ class LegislativeSessionController extends Controller
         $legislativeSession->delete();
 
         return redirect()
-            ->route('ob.sessions.index')
-            ->with('status', 'Order of Business session deleted.');
+            ->route(auth()->user()?->isSuperadmin() ? 'admin.trash.index' : 'ob.sessions.index', auth()->user()?->isSuperadmin() ? ['type' => 'sessions'] : [])
+            ->with('status', 'Order of Business session moved to trash.');
     }
 
     /**

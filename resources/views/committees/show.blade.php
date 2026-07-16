@@ -23,13 +23,9 @@
             <p class="splis-page-subtitle">Committee roster by election term.</p>
         </div>
         @can('update', $committee)
-            <a href="{{ route('committees.edit', ['committee' => $committee, 'term' => $selectedTerm->id]) }}" class="splis-btn-primary">Edit roster</a>
+            <a href="{{ route('committees.edit', ['committee' => $committee, 'term' => $selectedTerm->id]) }}" class="splis-btn-primary">Edit Roster</a>
         @endcan
     </div>
-
-    @if (session('status'))
-        <p class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">{{ session('status') }}</p>
-    @endif
 
     <div class="mb-6 flex flex-wrap gap-2">
         @foreach ($terms as $term)
@@ -93,7 +89,7 @@
     </div>
 
     <div class="mt-4">
-        <a href="{{ route('committees.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary">Back to committees</a>
+        <a href="{{ route('committees.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary">Back to Committees</a>
     </div>
 </div>
 @endsection

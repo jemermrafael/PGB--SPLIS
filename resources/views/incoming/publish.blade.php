@@ -4,19 +4,23 @@
 
 @section('content')
 <div class="max-w-3xl">
-    <div class="splis-page-header !mb-6">
-        <div>
-            <h1 class="splis-page-title">Publish to Resolution</h1>
-            <p class="splis-page-subtitle">
-                Create a final resolution from incoming
-                <span class="font-medium text-slate-700 dark:text-slate-200">{{ $incoming->displayLabel() }}</span>.
-                Review and adjust the fields below before saving.
-            </p>
-        </div>
-        <a href="{{ route('incoming.show', $incoming) }}" class="splis-btn-secondary">Back to incoming</a>
-    </div>
+    <x-page-header
+        title="Publish to Resolution"
+        :subtitle="'Create a final resolution from '.$incoming->displayLabel().'. Review and adjust the fields below before saving.'"
+        class="!mb-6"
+    >
+        <x-slot:actions>
+            <a href="{{ route('incoming.show', $incoming) }}" class="splis-btn-ghost">Back to incoming</a>
+        </x-slot:actions>
+    </x-page-header>
 
-    <div class="splis-card splis-card-body mb-6 text-sm text-slate-600 dark:text-slate-300">
+    @include('incoming.partials.publish-workflow', ['incoming' => $incoming, 'currentStep' => 2])
+
+    <x-help-callout title="What happens next">
+        Saving creates a final resolution, links this incoming item to it, and stores the uploaded PDF for the embedded viewer.
+    </x-help-callout>
+
+    <x-alert variant="info" class="!mb-6">
         <p class="font-semibold text-slate-800 dark:text-slate-100">Pre-filled from incoming</p>
         <ul class="mt-2 list-inside list-disc space-y-1">
             <li>SP Title → Title</li>
@@ -25,7 +29,7 @@
             <li>Keyword → Keyword</li>
             <li>Referral → Committee</li>
         </ul>
-    </div>
+    </x-alert>
 
     <form method="POST" action="{{ route('incoming.publish.store', $incoming) }}" enctype="multipart/form-data" class="splis-card splis-card-body space-y-5">
         @csrf
@@ -37,7 +41,7 @@
                 : null,
         ])
 
-        <div class="flex gap-3 border-t border-slate-100 pt-5 dark:border-slate-700">
+        <div class="splis-form-actions !mx-0 !mt-2 border-0 bg-transparent p-0 shadow-none dark:bg-transparent">
             <button type="submit" class="splis-btn-primary">Publish resolution</button>
             <a href="{{ route('incoming.show', $incoming) }}" class="splis-btn-ghost">Cancel</a>
         </div>

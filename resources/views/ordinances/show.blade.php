@@ -23,10 +23,6 @@
         </div>
     </div>
 
-    @if (session('status'))
-        <p class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">{{ session('status') }}</p>
-    @endif
-
     @if ($ordinance->publication_status)
         <div class="mb-6">
             @include('partials.ordinance-publication-button', ['status' => $ordinance->publication_status])
@@ -136,10 +132,10 @@
     <div class="mt-6 flex flex-wrap gap-2">
         <a href="{{ route('ordinances.index') }}" class="splis-btn-secondary">Back to ordinances</a>
         @can('delete', $ordinance)
-            <form method="POST" action="{{ route('ordinances.destroy', $ordinance) }}" onsubmit="return confirm('Delete this ordinance?');">
+            <form method="POST" action="{{ route('ordinances.destroy', $ordinance) }}" onsubmit="return confirm('Move this ordinance to trash?');">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="splis-btn-ghost text-red-600">Delete</button>
+                <button type="submit" class="splis-btn-danger">Move to trash</button>
             </form>
         @endcan
     </div>

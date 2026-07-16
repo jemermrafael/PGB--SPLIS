@@ -4,25 +4,31 @@
 
 @section('content')
 <div class="max-w-4xl">
-    <div class="splis-page-header">
-        <div>
-            <h1 class="splis-page-title">{{ $reference->exists ? 'Edit reference material' : 'Add Reference Material' }}</h1>
-            <p class="splis-page-subtitle">Upload and maintain official reference documents and metadata.</p>
-        </div>
-    </div>
+    <x-page-header
+        :title="$reference->exists ? 'Edit reference material' : 'Add Reference Material'"
+        subtitle="Upload and maintain official reference documents and metadata."
+    >
+        <x-slot:actions>
+            @if ($reference->exists)
+                <a href="{{ route('references.show', $reference) }}" class="splis-btn-ghost">Back to details</a>
+            @else
+                <a href="{{ route('references.index') }}" class="splis-btn-ghost">Back to list</a>
+            @endif
+        </x-slot:actions>
+    </x-page-header>
 
     <form
         method="POST"
         action="{{ $reference->exists ? route('references.update', $reference) : route('references.store') }}"
         enctype="multipart/form-data"
-        class="splis-card splis-card-body space-y-4"
+        class="space-y-6"
     >
         @csrf
         @if ($reference->exists)
             @method('PUT')
         @endif
 
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <x-form-section title="Basic information" subtitle="Title, type, status, and identifiers.">
             <div class="md:col-span-2">
                 <label class="splis-label" for="title">Title</label>
                 <input type="text" name="title" id="title" class="splis-input" value="{{ old('title', $reference->title) }}" required>
@@ -51,6 +57,9 @@
                 <label class="splis-label" for="version_no">Version</label>
                 <input type="text" name="version_no" id="version_no" class="splis-input" value="{{ old('version_no', $reference->version_no) }}" placeholder="e.g. 1.0">
             </div>
+        </x-form-section>
+
+        <x-form-section title="Issuance & relationships" subtitle="Office, dates, and supersession links.">
             <div>
                 <label class="splis-label" for="issuing_office">Issuing office</label>
                 <input type="text" name="issuing_office" id="issuing_office" class="splis-input" value="{{ old('issuing_office', $reference->issuing_office) }}">
@@ -74,6 +83,9 @@
                 <label class="splis-label" for="effective_date">Effective date</label>
                 <input type="date" name="effective_date" id="effective_date" class="splis-input" value="{{ old('effective_date', $reference->effective_date?->format('Y-m-d')) }}">
             </div>
+        </x-form-section>
+
+        <x-form-section title="Content & file" subtitle="Summary, keywords, and document upload.">
             <div class="md:col-span-2">
                 <label class="splis-label" for="keywords">Keywords</label>
                 <input type="text" name="keywords" id="keywords" class="splis-input" value="{{ old('keywords', $reference->keywords) }}" placeholder="comma-separated keywords">
@@ -89,9 +101,9 @@
                     <p class="mt-1 text-xs text-slate-500">Current file: {{ $reference->original_filename ?: basename($reference->file_path) }}</p>
                 @endif
             </div>
-        </div>
+        </x-form-section>
 
-        <div class="flex gap-2">
+        <div class="splis-form-actions">
             <button type="submit" class="splis-btn-primary">{{ $reference->exists ? 'Save changes' : 'Create Reference' }}</button>
             @if ($reference->exists)
                 <a href="{{ route('references.show', $reference) }}" class="splis-btn-secondary">Cancel</a>
@@ -102,4 +114,3 @@
     </form>
 </div>
 @endsection
-

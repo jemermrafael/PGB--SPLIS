@@ -69,10 +69,6 @@
         </div>
     </div>
 
-    @if (session('status'))
-        <div class="splis-alert-success mb-6">{{ session('status') }}</div>
-    @endif
-
     @if ($errors->has('promote') || $errors->has('unlink') || $errors->has('version'))
         <div class="splis-alert-error mb-6">{{ $errors->first('promote') ?: $errors->first('unlink') ?: $errors->first('version') }}</div>
     @endif

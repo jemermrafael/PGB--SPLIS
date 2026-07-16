@@ -146,8 +146,13 @@ class BoardMemberController extends Controller
         $boardMember->delete();
 
         return redirect()
-            ->route('board-members.index', array_filter(['term' => $termId]))
-            ->with('status', 'Board member deleted.');
+            ->route(
+                auth()->user()?->isSuperadmin() ? 'admin.trash.index' : 'board-members.index',
+                auth()->user()?->isSuperadmin()
+                    ? ['type' => 'board-members']
+                    : array_filter(['term' => $termId])
+            )
+            ->with('status', 'Board member moved to trash.');
     }
 
     public function bulkDestroy(Request $request): RedirectResponse
@@ -175,10 +180,15 @@ class BoardMemberController extends Controller
         $termId = isset($data['term']) ? (int) $data['term'] : null;
 
         return redirect()
-            ->route('board-members.index', array_filter(['term' => $termId]))
+            ->route(
+                auth()->user()?->isSuperadmin() ? 'admin.trash.index' : 'board-members.index',
+                auth()->user()?->isSuperadmin()
+                    ? ['type' => 'board-members']
+                    : array_filter(['term' => $termId])
+            )
             ->with('status', $deleted === 1
-                ? 'Board member deleted.'
-                : "{$deleted} Board Members deleted.");
+                ? 'Board member moved to trash.'
+                : "{$deleted} Board Members moved to trash.");
     }
 
     /**

@@ -102,8 +102,8 @@ class OrdinanceController extends Controller
         $ordinance->delete();
 
         return redirect()
-            ->route('ordinances.index')
-            ->with('status', 'Ordinance deleted.');
+            ->route(auth()->user()?->isSuperadmin() ? 'admin.trash.index' : 'ordinances.index', auth()->user()?->isSuperadmin() ? ['type' => 'ordinances'] : [])
+            ->with('status', 'Ordinance moved to trash.');
     }
 
     /**

@@ -67,7 +67,40 @@
         </div>
     </form>
 
-    <div class="mt-6 splis-table-wrap">
+    {{-- Mobile / tablet cards --}}
+    <div class="mt-6 splis-mobile-card-list md:hidden">
+        @forelse ($materials as $material)
+            <article class="splis-mobile-card">
+                <a href="{{ route('references.show', $material) }}" class="splis-mobile-card-title">{{ $material->title }}</a>
+                <div class="splis-mobile-card-meta">
+                    <p>{{ $material->documentTypeLabel() }} · {{ $material->statusLabel() }}</p>
+                    <p>{{ $material->reference_no ?: 'No reference no.' }}@if ($material->version_no) · v{{ $material->version_no }}@endif</p>
+                    <p>{{ $material->issuing_office ?: 'No issuing office' }}</p>
+                    <p>Issued {{ $material->date_issued?->format('M d, Y') ?: '—' }}</p>
+                </div>
+                <div class="mt-3 flex items-center gap-3">
+                    <a href="{{ route('references.show', $material) }}" class="splis-link text-sm">Open</a>
+                    @if ($material->hasFile())
+                        <a href="{{ route('references.download', $material) }}" class="splis-link text-sm">Download</a>
+                    @endif
+                </div>
+            </article>
+        @empty
+            <x-empty-state
+                title="No reference materials found"
+                description="Try clearing filters or add a new reference."
+            >
+                @can('create', App\Models\ReferenceMaterial::class)
+                    <x-slot:actions>
+                        <a href="{{ route('references.create') }}" class="splis-btn-primary">Add Reference</a>
+                    </x-slot:actions>
+                @endcan
+            </x-empty-state>
+        @endforelse
+    </div>
+
+    {{-- Desktop table --}}
+    <div class="mt-6 hidden splis-table-wrap md:block" data-drag-scroll>
         <table class="splis-table">
             <thead>
                 <tr>
@@ -125,4 +158,3 @@
     @endif
 </div>
 @endsection
-

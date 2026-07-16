@@ -46,7 +46,7 @@
         </div>
 
         <div class="flex gap-2 pt-2">
-            <button type="submit" class="splis-btn-primary">Save term</button>
+            <button type="submit" class="splis-btn-primary">Save Term</button>
             <a href="{{ route('committee-terms.index') }}" class="splis-btn-secondary">Cancel</a>
         </div>
     </form>

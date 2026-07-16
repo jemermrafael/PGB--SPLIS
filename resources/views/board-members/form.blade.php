@@ -90,14 +90,14 @@
                 action="{{ route('board-members.destroy', $boardMember) }}"
                 class="mt-6"
                 data-confirm-submit
-                data-confirm-title="Delete Board Member?"
-                data-confirm-message="Delete {{ $boardMember->displayName() }}? This removes their roster and committee assignments."
-                data-confirm-label="Delete"
+                data-confirm-title="Move Board Member to trash?"
+                data-confirm-message="Move {{ $boardMember->displayName() }} to trash? Superadmin can restore from Trash."
+                data-confirm-label="Move to trash"
             >
                 @csrf
                 @method('DELETE')
                 <input type="hidden" name="term" value="{{ $term->id }}">
-                <button type="submit" class="splis-btn-ghost text-red-600">Delete Board Member</button>
+                <button type="submit" class="splis-btn-danger">Move to trash</button>
             </form>
         @endcan
     @endif

@@ -15,6 +15,7 @@ return new class extends Migration
             $table->string('district', 100)->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+            $table->softDeletes();
 
             $table->index(['is_active', 'name']);
         });

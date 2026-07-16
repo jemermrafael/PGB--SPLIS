@@ -6,9 +6,12 @@ use App\Enums\CommitteeMembershipRole;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Committee extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'sort_order',
         'name',

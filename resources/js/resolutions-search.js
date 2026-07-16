@@ -1,6 +1,7 @@
 import { renderAjaxPagination } from './pagination';
 import { applyKeywordFromQuery } from './search-query';
 import { bindTitleTooltips, renderTruncatedTitle, truncateWords } from './title-tooltip';
+import { preferredDocView } from './doc-view';
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -98,7 +99,7 @@ export function initResolutionsSearch() {
     const searchUrl = root.dataset.searchUrl;
 
     let currentPage = 1;
-    let viewMode = localStorage.getItem('splis-doc-view') || 'list';
+    let viewMode = preferredDocView('splis-doc-view');
     let debounceTimer;
 
     setViewMode(viewMode);

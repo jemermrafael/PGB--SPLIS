@@ -26,7 +26,10 @@
         @endif
 
         <div class="splis-card splis-card-body space-y-4">
-            <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Intake</h2>
+            <div>
+                <h2 class="splis-form-section-title">Intake</h2>
+                <p class="splis-form-section-subtitle">Receipt details and sender information.</p>
+            </div>
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                     <label class="splis-label" for="tracking_no">Tracking no.</label>
@@ -113,7 +116,10 @@
         </div>
 
         <div class="splis-card splis-card-body space-y-4">
-            <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Committee</h2>
+            <div>
+                <h2 class="splis-form-section-title">Committee</h2>
+                <p class="splis-form-section-subtitle">Referral and committee action tracking.</p>
+            </div>
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div class="md:col-span-2">
                     @include('partials.combobox-field', [
@@ -155,8 +161,8 @@
         <div id="agenda-provincial-output" class="splis-card splis-card-body space-y-4 splis-agenda-output">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Provincial Output</h2>
-                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Required when status is Done. Choose the measure type first — fields below will adjust.</p>
+                    <h2 class="splis-form-section-title">Provincial Output</h2>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Required when status is Done. Choose the measure type first — fields below will adjust.</p>
                 </div>
                 @if ($isEdit && $agenda->isPublished() && $agenda->publishedTargetRoute())
                     <a href="{{ $agenda->publishedTargetRoute() }}" class="splis-badge-linked shrink-0">
@@ -226,7 +232,7 @@
             </div>
         </div>
 
-        <div class="flex flex-wrap gap-2">
+        <div class="splis-form-actions">
             <button type="submit" class="splis-btn-primary">Save</button>
             <a href="{{ $isEdit ? route('agenda.show', $agenda) : route('agenda.index') }}" class="splis-btn-secondary">Cancel</a>
         </div>

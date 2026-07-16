@@ -137,7 +137,7 @@
 
     <div id="bm-agenda-search-results" class="transition-opacity">
         <p id="bm-agenda-search-meta" class="mb-4 text-sm text-slate-500 dark:text-slate-400">Loading agenda items…</p>
-        <div class="splis-table-wrap">
+        <div class="splis-table-wrap" data-drag-scroll>
             <table class="splis-table">
                 <thead>
                     <tr>

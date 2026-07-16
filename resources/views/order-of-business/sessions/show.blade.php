@@ -51,10 +51,6 @@
         </div>
     </div>
 
-    @if (session('status'))
-        <div class="splis-alert-success mb-6">{{ session('status') }}</div>
-    @endif
-
     <div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div class="splis-card lg:col-span-2">
             <div class="splis-card-header">
@@ -172,10 +168,10 @@
 
     @can('delete', $session)
         <div class="mt-6 flex justify-end">
-            <form method="POST" action="{{ route('ob.sessions.destroy', $session) }}" onsubmit="return confirm('Delete this Order of Business session and its document? This cannot be undone.')">
+            <form method="POST" action="{{ route('ob.sessions.destroy', $session) }}" onsubmit="return confirm('Move this Order of Business session to trash?')">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="splis-btn-danger">Delete session</button>
+                <button type="submit" class="splis-btn-danger">Move to trash</button>
             </form>
         </div>
     @endcan

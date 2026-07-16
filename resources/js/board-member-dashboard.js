@@ -1,5 +1,6 @@
 import { renderAjaxPagination } from './pagination';
 import { bindTitleTooltips, renderTruncatedTitle, truncateWords } from './title-tooltip';
+import { preferredDocView } from './doc-view';
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -124,7 +125,7 @@ function setActiveChip(root, activeButton) {
 }
 
 function initViewToggle(viewToggle, listWrap, grid, storageKey, onChange) {
-    let viewMode = localStorage.getItem(storageKey) || 'list';
+    let viewMode = preferredDocView(storageKey);
 
     const setViewMode = (mode) => {
         viewMode = mode;

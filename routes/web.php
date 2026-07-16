@@ -27,6 +27,7 @@ use App\Http\Controllers\AdminAnalyticsMapController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin\DatabaseBackupController;
 use App\Http\Controllers\Admin\DataSyncController;
+use App\Http\Controllers\Admin\TrashController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DashboardSearchController;
 use App\Http\Controllers\IncomingDocumentController;
@@ -91,9 +92,11 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/resolutions', [ResolutionController::class, 'index'])->name('resolutions.index');
     Route::get('/resolutions/search', ResolutionSearchController::class)->name('resolutions.search');
+    Route::get('/resolutions/keywords', IncomingKeywordController::class)->name('resolutions.keywords');
     Route::get('/resolutions/create', [ResolutionController::class, 'create'])->name('resolutions.create');
     Route::post('/resolutions', [ResolutionController::class, 'store'])->name('resolutions.store');
-    Route::get('/resolutions/trash', [ResolutionController::class, 'trash'])->name('resolutions.trash');
+    Route::get('/resolutions/trash', fn () => redirect()->route('admin.trash.index', ['type' => 'resolutions']))
+        ->name('resolutions.trash');
     Route::get('/resolutions/legacy/{id}', [ResolutionController::class, 'showLegacy'])->name('resolutions.show-legacy');
     Route::get('/resolutions/pdf/{series}/{resolutionNo}', ResolutionPdfController::class)
         ->where('resolutionNo', '.*')
@@ -232,6 +235,14 @@ Route::middleware('auth')->group(function () {
         Route::get('/backups/{filename}', [DatabaseBackupController::class, 'download'])
             ->where('filename', 'splis-\d{4}-\d{2}-\d{2}-\d{6}\.sql\.gz')
             ->name('backups.download');
+
+        Route::get('/trash', [TrashController::class, 'index'])->name('trash.index');
+        Route::post('/trash/{type}/{id}/restore', [TrashController::class, 'restore'])
+            ->whereNumber('id')
+            ->name('trash.restore');
+        Route::delete('/trash/{type}/{id}', [TrashController::class, 'forceDestroy'])
+            ->whereNumber('id')
+            ->name('trash.force-destroy');
     });
 
     Route::middleware('role:superadmin')->prefix('admin')->name('users.')->group(function () {

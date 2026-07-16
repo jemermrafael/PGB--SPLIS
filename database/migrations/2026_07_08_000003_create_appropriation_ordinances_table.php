@@ -20,6 +20,7 @@ return new class extends Migration
             $table->foreignId('agenda_item_id')->nullable()->constrained('agenda_items')->nullOnDelete();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->unique(['ordinance_no', 'series_year'], 'ao_no_series_unique');
             $table->index('date_received');
