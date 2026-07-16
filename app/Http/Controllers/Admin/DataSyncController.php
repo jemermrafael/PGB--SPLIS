@@ -9,6 +9,7 @@ use App\Services\CsvExportReader;
 use App\Services\DataSyncCsvStorage;
 use App\Services\IncomingDocumentImporter;
 use App\Services\ResolutionCsvImporter;
+use App\Services\ResolutionPdfLinkService;
 use App\Services\SptrackReader;
 use App\Services\SptrackResolutionSyncService;
 use App\Support\ActivityLogger;
@@ -33,6 +34,7 @@ class DataSyncController extends Controller
                 'data_sync.sptrack_incoming',
                 'data_sync.sptrack_resolutions',
                 'data_sync.agenda_csv',
+                'data_sync.link_pdfs',
             ])
             ->with('user')
             ->latest('created_at')
@@ -207,6 +209,44 @@ class DataSyncController extends Controller
             ($stats['urgent'] ?? 0) > 0
                 ? sprintf(', %d urgent without tracking no.', $stats['urgent'])
                 : '',
+        ));
+    }
+
+    public function linkPdfs(
+        Request $request,
+        ResolutionPdfLinkService $linker,
+    ): RedirectResponse {
+        $request->validate([
+            'only_missing' => ['nullable', 'boolean'],
+            'dry_run' => ['nullable', 'boolean'],
+        ]);
+
+        $dryRun = $request->boolean('dry_run');
+        $onlyMissing = $request->boolean('only_missing');
+
+        try {
+            $stats = $linker->link(
+                onlyMissing: $onlyMissing,
+                dryRun: $dryRun,
+            );
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        if (! $dryRun) {
+            ActivityLogger::log('data_sync.link_pdfs', null, [
+                'only_missing' => $onlyMissing,
+                'stats' => $stats,
+            ]);
+        }
+
+        $prefix = $dryRun ? '[Dry run] ' : '';
+
+        return back()->with('status', sprintf(
+            '%sResolution pdf_path backfilled (format resolutions/{series}/{resolution_no}.pdf) — %d updated, %d skipped.',
+            $prefix,
+            $stats['updated'],
+            $stats['skipped'],
         ));
     }
 

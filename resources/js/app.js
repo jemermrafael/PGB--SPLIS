@@ -13,6 +13,7 @@ import { initOrdinancesSearch } from './ordinances-search';
 import { initResolutionsSearch } from './resolutions-search';
 
 import { initAgendaVersionCompare } from './agenda-version-compare';
+import { initHeaderNav } from './header-nav';
 import { initHeaderNotifications } from './header-notifications';
 import { initNotificationsFeed } from './notifications-feed';
 import { initBoardMemberOrdinancesTable } from './board-member-ordinances';
@@ -34,6 +35,7 @@ import { initSessionGuests } from './session-guests';
 
 document.addEventListener('DOMContentLoaded', () => {
     initDropdowns();
+    initHeaderNav();
     initAccessibility();
     initComboboxes();
     initDragScroll();

@@ -74,6 +74,19 @@
                     <div class="splis-header-actions">
                         <span class="splis-header-date hidden lg:inline">{{ now()->format('M j, Y') }}</span>
 
+                        <button
+                            type="button"
+                            id="splis-nav-toggle"
+                            class="splis-header-btn splis-header-btn-icon lg:hidden"
+                            aria-expanded="false"
+                            aria-controls="splis-main-nav"
+                            aria-label="Open menu"
+                        >
+                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
+                            </svg>
+                        </button>
+
                         <div class="splis-a11y-wrap" data-dropdown>
                             <button type="button" id="splis-a11y-trigger" class="splis-header-btn splis-header-btn-icon" data-dropdown-trigger aria-expanded="false" aria-controls="splis-a11y-panel" aria-haspopup="true" aria-label="Accessibility">
                                 <svg viewBox="0 0 640 640" fill="currentColor" aria-hidden="true"><path d="M64 320C64 178.6 178.6 64 320 64C461.4 64 576 178.6 576 320C576 461.4 461.4 576 320 576C178.6 576 64 461.4 64 320zM225.5 233.9C213.3 228.7 199.2 234.3 194 246.5C188.8 258.7 194.4 272.8 206.6 278L218.5 283.1C235.8 290.5 253.7 296 272.1 299.4L272.1 349.5C272.1 353.8 271.4 358.1 270 362.1L241.3 448.2C237.1 460.8 243.9 474.4 256.5 478.6C269.1 482.8 282.7 476 286.9 463.4L311.3 390.2C312.6 386.4 316.1 383.8 320.1 383.8C324.1 383.8 327.7 386.4 328.9 390.2L353.3 463.4C357.5 476 371.1 482.8 383.7 478.6C396.3 474.4 403 461 398.8 448.4L370.1 362.3C368.7 358.2 368 354 368 349.7L368 299.6C386.4 296.1 404.3 290.7 421.6 283.3L433.5 278.2C445.7 273 451.3 258.9 446.1 246.7C440.9 234.5 426.8 228.9 414.6 234.1L402.7 239C376.6 250.2 348.5 256 320 256C291.5 256 263.5 250.2 237.3 239L225.4 233.9zM320 224C342.1 224 360 206.1 360 184C360 161.9 342.1 144 320 144C297.9 144 280 161.9 280 184C280 206.1 297.9 224 320 224z"/></svg>
@@ -86,10 +99,12 @@
                         @endif
 
                         <div class="splis-user-menu" data-dropdown>
-                            <button type="button" class="splis-header-btn splis-user-menu-trigger" data-dropdown-trigger aria-expanded="false" aria-haspopup="true">
-                                <span class="hidden sm:inline">{{ auth()->user()->role->label() }}</span>
-                                <span class="sm:hidden">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
-                                <svg class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+                            <button type="button" class="splis-header-btn splis-user-menu-trigger splis-header-btn-icon lg:px-3 lg:py-2" data-dropdown-trigger aria-expanded="false" aria-haspopup="true" aria-label="Account menu">
+                                <svg class="h-5 w-5 lg:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/>
+                                </svg>
+                                <span class="hidden lg:inline">{{ auth()->user()->role->label() }}</span>
+                                <svg class="hidden h-4 w-4 opacity-70 lg:inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
                             </button>
                             <div class="splis-user-menu-panel" data-dropdown-panel>
                                 <p class="px-3 py-2 text-sm font-medium text-slate-800 dark:text-slate-100">{{ auth()->user()->name }}</p>
@@ -116,7 +131,7 @@
                 </div>
             </div>
 
-            <nav class="splis-header-navbar" aria-label="Main navigation">
+            <nav class="splis-header-navbar" id="splis-main-nav" aria-label="Main navigation">
                 <div class="splis-header-navbar-inner">
                     <a
                         href="{{ route('dashboard') }}"

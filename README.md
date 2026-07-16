@@ -94,7 +94,7 @@ php artisan db:seed
 php artisan splis:import-lookups
 php artisan splis:import-resolutions
 php artisan splis:import-from-csv --lookups
-php artisan resolutions:link-pdfs
+php artisan resolutions:link-pdfs --only-missing
 php artisan resolutions:verify-pdfs --limit=100
 ```
 

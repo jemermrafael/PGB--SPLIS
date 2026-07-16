@@ -34,6 +34,7 @@
 <div
     class="splis-notify-wrap"
     data-dropdown
+    data-dropdown-click-only
     data-initial-notifications='@json($headerNotifications)'
     data-initial-count="{{ $headerNotificationCount }}"
     data-notifications-feed-url="{{ route('notifications.index') }}"

@@ -57,11 +57,11 @@
 
 @layer components {
     .splis-shell-header {
-        @apply sticky top-0 z-30 shadow-md;
+        @apply sticky top-0 z-30 overflow-visible shadow-md;
     }
 
     .splis-header-top {
-        @apply bg-brand-900 text-white;
+        @apply overflow-visible bg-brand-900 text-white;
         background-color: var(--color-brand-900);
     }
 
@@ -86,7 +86,7 @@
     }
 
     .splis-header-actions {
-        @apply flex shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-3;
+        @apply flex shrink-0 flex-wrap items-center justify-end gap-1.5 overflow-visible sm:gap-3;
     }
 
     .splis-header-date {
@@ -153,6 +153,40 @@
 
     .splis-header-navbar {
         @apply border-t-[3px] border-brand-gold bg-white;
+    }
+
+    @media (max-width: 1023px) {
+        .splis-header-navbar {
+            @apply hidden;
+        }
+
+        .splis-header-navbar.is-open {
+            @apply block;
+        }
+
+        .splis-header-navbar-inner {
+            @apply max-h-[calc(100dvh-4.5rem)] flex-col items-stretch gap-0 overflow-y-auto px-4 py-2;
+        }
+
+        .splis-navbar-link {
+            @apply w-full px-3 py-2.5;
+        }
+
+        .splis-nav-dropdown {
+            @apply w-full;
+        }
+
+        .splis-nav-dropdown-trigger {
+            @apply w-full justify-between px-3 py-2.5;
+        }
+
+        .splis-nav-dropdown-panel {
+            @apply static mt-0 w-full rounded-lg border border-slate-100 bg-slate-50 py-1 shadow-none;
+        }
+
+        .splis-nav-dropdown-link {
+            @apply pl-6;
+        }
     }
 
     .splis-header-navbar-inner {
@@ -969,7 +1003,34 @@
     }
 
     .splis-notify-panel {
-        @apply absolute right-0 top-[calc(100%+0.5rem)] z-50 hidden w-80 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl sm:w-96;
+        @apply absolute right-0 top-[calc(100%+0.5rem)] z-[60] hidden w-[min(100vw-1.5rem,24rem)] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl;
+    }
+
+    @media (max-width: 1023px) {
+        .splis-notify-panel.open {
+            position: fixed;
+            top: 4.25rem;
+            right: 0.75rem;
+            left: 0.75rem;
+            width: auto;
+            max-width: none;
+        }
+
+        .splis-a11y-panel.open {
+            position: fixed;
+            top: 4.25rem;
+            right: 0.75rem;
+            left: auto;
+            width: min(18rem, calc(100vw - 1.5rem));
+        }
+
+        .splis-user-menu-panel.open {
+            position: fixed;
+            top: 4.25rem;
+            right: 0.75rem;
+            left: auto;
+            min-width: min(12rem, calc(100vw - 1.5rem));
+        }
     }
 
     .splis-notify-panel.open {
@@ -989,7 +1050,7 @@
     }
 
     .splis-notify-list {
-        @apply max-h-96 overflow-y-auto;
+        @apply max-h-[min(24rem,calc(100dvh-10rem))] overflow-y-auto;
     }
 
     .splis-notify-panel-footer {
@@ -1029,11 +1090,11 @@
     }
 
     .splis-notify-item-title {
-        @apply pr-6 text-sm font-semibold text-slate-900;
+        @apply break-words pr-6 text-sm font-semibold text-slate-900;
     }
 
     .splis-notify-item-body {
-        @apply mt-1 text-sm text-slate-600;
+        @apply mt-1 break-words text-sm text-slate-600;
     }
 
     .splis-notify-item-time {

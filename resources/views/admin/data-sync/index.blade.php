@@ -162,6 +162,28 @@
         </form>
         <p class="mt-3 text-xs text-slate-500">CLI: <code>php artisan splis:import-agenda-from-csv</code></p>
     </div>
+
+    <div class="splis-card p-6">
+        <h2 class="mb-2 text-lg font-semibold text-slate-900 dark:text-slate-100">5. Backfill resolution PDF paths</h2>
+        <p class="mb-4 text-sm text-slate-600 dark:text-slate-400">
+            Writes <code class="text-xs">pdf_path</code> from series + resolution number only — does not copy or move files.
+            Example: <code class="text-xs">resolutions/2006/2006-A-0003.pdf</code>.
+            Place PDFs under <code class="text-xs">storage/app/resolutions/</code> yourself.
+        </p>
+        <form method="POST" action="{{ route('admin.data-sync.link-pdfs') }}" class="space-y-4">
+            @csrf
+            <label class="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="only_missing" value="1" checked class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+                Only missing (skip rows that already have pdf_path)
+            </label>
+            <label class="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="dry_run" value="1" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+                Dry run (preview counts only)
+            </label>
+            <button type="submit" class="splis-btn-primary">Backfill pdf_path</button>
+        </form>
+        <p class="mt-3 text-xs text-slate-500">CLI: <code>php artisan resolutions:link-pdfs --only-missing</code></p>
+    </div>
 </div>
 
 @if ($recentLogs->isNotEmpty())
@@ -176,6 +198,7 @@
                             @case('data_sync.sptrack_incoming') Sptrack incoming @break
                             @case('data_sync.sptrack_resolutions') Linked resolutions @break
                             @case('data_sync.agenda_csv') Agenda tracker @break
+                            @case('data_sync.link_pdfs') PDF path backfill @break
                             @default {{ $log->action }}
                         @endswitch
                     </span>

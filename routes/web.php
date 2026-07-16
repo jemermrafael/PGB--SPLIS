@@ -222,6 +222,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/data-sync/incoming', [DataSyncController::class, 'syncIncoming'])->name('data-sync.incoming');
         Route::post('/data-sync/sptrack-resolutions', [DataSyncController::class, 'syncSptrackResolutions'])->name('data-sync.sptrack-resolutions');
         Route::post('/data-sync/agenda', [DataSyncController::class, 'syncAgenda'])->name('data-sync.agenda');
+        Route::post('/data-sync/link-pdfs', [DataSyncController::class, 'linkPdfs'])->name('data-sync.link-pdfs');
 
         Route::get('/backups', [DatabaseBackupController::class, 'index'])->name('backups.index');
         Route::post('/backups/settings', [DatabaseBackupController::class, 'updateSettings'])->name('backups.settings');
