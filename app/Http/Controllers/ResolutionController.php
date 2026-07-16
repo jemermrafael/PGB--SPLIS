@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Admin\TrashController;
 use App\Models\ActivityLog;
 use App\Models\Category;
 use App\Models\Department;
@@ -14,6 +15,7 @@ use App\Support\DocumentType;
 use App\Support\IncomingFieldOptions;
 use App\Support\ResolutionFieldOptions;
 use App\Support\ResolutionLookupResolver;
+use App\Support\TrashActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -98,6 +100,7 @@ class ResolutionController extends Controller
         }
 
         ActivityLog::record('resolution.created', $resolution, $this->resolutionLogProperties($resolution));
+        IncomingFieldOptions::forgetKeywordCache();
 
         return redirect()->route('resolutions.show', $resolution)->with('status', 'Resolution created.');
     }
@@ -125,6 +128,7 @@ class ResolutionController extends Controller
         }
 
         ActivityLog::record('resolution.updated', $resolution);
+        IncomingFieldOptions::forgetKeywordCache();
 
         return redirect()->route('resolutions.show', $resolution)->with('status', 'Resolution updated.');
     }
@@ -133,7 +137,7 @@ class ResolutionController extends Controller
     {
         $this->authorize('delete', $resolution);
 
-        ActivityLog::record('resolution.trashed', $resolution, $this->resolutionLogProperties($resolution));
+        TrashActivity::record('resolution.trashed', $resolution, $this->resolutionLogProperties($resolution));
         $resolution->delete();
 
         return redirect()
@@ -163,6 +167,7 @@ class ResolutionController extends Controller
 
         ActivityLog::record('resolution.deleted', $resolution, $properties);
         $resolution->forceDelete();
+        TrashController::forgetCountCache();
 
         return redirect()
             ->route(auth()->user()?->isSuperadmin() ? 'admin.trash.index' : 'resolutions.index', auth()->user()?->isSuperadmin() ? ['type' => 'resolutions'] : [])

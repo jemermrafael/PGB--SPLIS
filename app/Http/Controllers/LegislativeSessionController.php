@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\LegislativeSession;
+use App\Support\TrashActivity;
 use App\Models\ObDocument;
 use App\Services\AgendaLifecycleService;
 use App\Services\BoardMemberNotifier;
@@ -120,6 +120,7 @@ class LegislativeSessionController extends Controller
     {
         $this->authorize('delete', $legislativeSession);
 
+        TrashActivity::record('legislative_session.trashed', $legislativeSession);
         $legislativeSession->delete();
 
         return redirect()

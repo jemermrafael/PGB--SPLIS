@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\ReferenceMaterial;
 use App\Models\ReferenceMaterialVersion;
 use App\Services\PdfTextExtractor;
+use App\Http\Controllers\Admin\TrashController;
 use App\Support\ActivityLogger;
+use App\Support\TrashActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -231,11 +233,10 @@ class ReferenceMaterialController extends Controller
     {
         $this->authorize('delete', $reference);
 
-        $reference->delete();
-
-        ActivityLogger::log('reference_material.deleted', $reference, [
+        TrashActivity::record('reference_material.deleted', $reference, [
             'title' => $reference->title,
         ]);
+        $reference->delete();
 
         return redirect()
             ->route(auth()->user()?->isSuperadmin() ? 'admin.trash.index' : 'references.index', auth()->user()?->isSuperadmin() ? ['type' => 'references'] : [])

@@ -6,7 +6,7 @@ use App\Models\Committee;
 use App\Models\CommitteeTerm;
 use App\Services\BoardMemberRosterService;
 use App\Services\CommitteeRosterService;
-use App\Support\CommitteeSecretaryOptions;
+use App\Support\TrashActivity;
 use App\Support\CommitteeTermSelection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -160,6 +160,7 @@ class CommitteeController extends Controller
     {
         $this->authorize('delete', $committee);
 
+        TrashActivity::record('committee.trashed', $committee);
         $committee->delete();
 
         return redirect()

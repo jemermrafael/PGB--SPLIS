@@ -78,6 +78,21 @@ class IncomingFieldOptions
      */
     public static function keywords(): array
     {
+        return \Illuminate\Support\Facades\Cache::remember('splis.keywords.used', 3600, function () {
+            return self::buildKeywords();
+        });
+    }
+
+    public static function forgetKeywordCache(): void
+    {
+        \Illuminate\Support\Facades\Cache::forget('splis.keywords.used');
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected static function buildKeywords(): array
+    {
         $counts = [];
 
         $tally = function (?string $raw) use (&$counts): void {

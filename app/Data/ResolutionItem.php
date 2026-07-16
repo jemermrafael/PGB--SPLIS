@@ -22,6 +22,7 @@ class ResolutionItem
         public ?string $documentTypeBadgeClass = null,
         public bool $hasPdf = false,
         public ?string $pdfUrl = null,
+        public ?string $pdfStatus = null,
         public ?string $status = null,
     ) {}
 }

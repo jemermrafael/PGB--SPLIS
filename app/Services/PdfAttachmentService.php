@@ -66,6 +66,27 @@ class PdfAttachmentService
         return filled($resolution->pdf_path) || filled($resolution->sp_pdf_url);
     }
 
+    public function linkStatus(Resolution $resolution): string
+    {
+        if (! $this->hasLinkedPdf($resolution)) {
+            return 'none';
+        }
+
+        if (filled($resolution->sp_pdf_url) && ! filled($resolution->pdf_path)) {
+            return 'external';
+        }
+
+        if (filled($resolution->pdf_path) && $this->existsFor($resolution)) {
+            return 'local';
+        }
+
+        if (filled($resolution->pdf_path)) {
+            return 'missing';
+        }
+
+        return 'none';
+    }
+
     public function publicUrl(Resolution $resolution): ?string
     {
         if (filled($resolution->pdf_path)) {

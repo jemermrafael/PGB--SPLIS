@@ -96,6 +96,7 @@ class AppropriationOrdinanceController extends Controller
     {
         $this->authorize('delete', $appropriationOrdinance);
 
+        TrashActivity::record('appropriation_ordinance.trashed', $appropriationOrdinance);
         $appropriationOrdinance->delete();
 
         return redirect()

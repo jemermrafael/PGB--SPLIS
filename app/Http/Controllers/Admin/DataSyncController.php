@@ -93,7 +93,7 @@ class DataSyncController extends Controller
         $source = $uploadedPath !== null ? 'uploaded file' : 'server export';
 
         return back()->with('status', sprintf(
-            '%sFinal resolutions synced from %s (%s) — %d processed (%d created, %d updated, %d skipped).',
+            '%sFinal resolutions synced from %s (%s) — %d processed (%d created, %d updated, %d skipped).%s',
             $prefix,
             basename((string) $stats['sp_file']),
             $source,
@@ -101,7 +101,28 @@ class DataSyncController extends Controller
             $stats['created'],
             $stats['updated'],
             $stats['skipped'],
+            $this->resolutionDuplicateSummary($stats),
         ));
+    }
+
+    /**
+     * @param  array<string, mixed>  $stats
+     */
+    protected function resolutionDuplicateSummary(array $stats): string
+    {
+        $parts = [];
+
+        if (($stats['csv_duplicate_legacy'] ?? 0) > 0) {
+            $parts[] = sprintf('%d duplicate legacy ID(s) in CSV', $stats['csv_duplicate_legacy']);
+        }
+        if (($stats['csv_duplicate_number_series'] ?? 0) > 0) {
+            $parts[] = sprintf('%d duplicate series/number pair(s) in CSV', $stats['csv_duplicate_number_series']);
+        }
+        if (($stats['conflicting_active_number'] ?? 0) > 0) {
+            $parts[] = sprintf('%d row(s) conflict with a different active resolution number', $stats['conflicting_active_number']);
+        }
+
+        return $parts === [] ? '' : ' Duplicates: '.implode('; ', $parts).'.';
     }
 
     public function syncIncoming(

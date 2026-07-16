@@ -96,8 +96,14 @@ class ResolutionCsvImporter
             'created' => 0,
             'updated' => 0,
             'skipped' => 0,
+            'csv_duplicate_legacy' => 0,
+            'csv_duplicate_number_series' => 0,
+            'conflicting_active_number' => 0,
             'lookups_imported' => $includeLookups,
         ];
+
+        $seenLegacy = [];
+        $seenNumberSeries = [];
 
         foreach ($this->csv->rows($spFile) as $row) {
             $legacyId = (int) ($row['ID'] ?? 0);
@@ -108,6 +114,27 @@ class ResolutionCsvImporter
                 $stats['skipped']++;
 
                 continue;
+            }
+
+            if (isset($seenLegacy[$legacyId])) {
+                $stats['csv_duplicate_legacy']++;
+            }
+            $seenLegacy[$legacyId] = true;
+
+            $numberKey = $series.'|'.$resolutionNo;
+            if (isset($seenNumberSeries[$numberKey])) {
+                $stats['csv_duplicate_number_series']++;
+            }
+            $seenNumberSeries[$numberKey] = true;
+
+            if (Resolution::query()
+                ->where('series', $series)
+                ->where('resolution_no', $resolutionNo)
+                ->where(function ($query) use ($legacyId) {
+                    $query->whereNull('legacy_sp_id')->orWhere('legacy_sp_id', '!=', $legacyId);
+                })
+                ->exists()) {
+                $stats['conflicting_active_number']++;
             }
 
             $payload = $this->buildPayload($row, $series);

@@ -99,6 +99,7 @@ class OrdinanceController extends Controller
     {
         $this->authorize('delete', $ordinance);
 
+        TrashActivity::record('ordinance.trashed', $ordinance);
         $ordinance->delete();
 
         return redirect()

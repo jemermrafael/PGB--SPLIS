@@ -33,11 +33,27 @@ function renderTitleCell(title) {
 }
 
 function renderPdfCell(doc) {
-    return `<td class="text-center">
-        ${doc.has_pdf
-            ? `<a href="${escapeHtml(doc.pdf_url)}" target="_blank" rel="noopener noreferrer" class="splis-doc-pdf-icon" title="View PDF" aria-label="View PDF">${pdfListIcon}</a>`
-            : '<span class="text-slate-300">—</span>'}
-    </td>`;
+    const status = doc.pdf_status || (doc.has_pdf ? 'local' : 'none');
+    const titles = {
+        local: 'View PDF (file on server)',
+        external: 'View PDF (external link)',
+        missing: 'PDF path set but file missing on server',
+        none: 'No PDF linked',
+    };
+
+    if (status === 'local' || status === 'external') {
+        return `<td class="text-center">
+            <a href="${escapeHtml(doc.pdf_url)}" target="_blank" rel="noopener noreferrer" class="splis-doc-pdf-icon" title="${titles[status]}" aria-label="${titles[status]}">${pdfListIcon}</a>
+        </td>`;
+    }
+
+    if (status === 'missing') {
+        return `<td class="text-center" title="${titles.missing}">
+            <span class="inline-flex text-amber-600 dark:text-amber-400" aria-label="${titles.missing}">⚠</span>
+        </td>`;
+    }
+
+    return `<td class="text-center"><span class="text-slate-300" title="${titles.none}">—</span></td>`;
 }
 
 function renderListItem(doc) {

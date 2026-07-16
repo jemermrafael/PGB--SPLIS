@@ -1,8 +1,7 @@
 @props(['session'])
 
 @php
-    $sessionDateOver = $session->session_date
-        && $session->session_date->lt(now()->startOfDay());
+    $sessionDateOver = $session->isPastSessionDate();
 @endphp
 
 <div {{ $attributes->merge(['class' => 'flex flex-wrap items-center justify-end gap-2']) }}>

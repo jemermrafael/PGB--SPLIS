@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BoardMember;
-use App\Models\CommitteeTerm;
+use App\Support\TrashActivity;
 use App\Services\BoardMemberProfileService;
 use App\Services\BoardMemberRosterService;
 use App\Support\CommitteeTermSelection;
@@ -143,6 +143,7 @@ class BoardMemberController extends Controller
 
         $termId = $request->integer('term') ?: null;
 
+        TrashActivity::record('board_member.trashed', $boardMember);
         $boardMember->delete();
 
         return redirect()
@@ -173,6 +174,7 @@ class BoardMemberController extends Controller
 
         foreach ($members as $member) {
             $this->authorize('delete', $member);
+            TrashActivity::record('board_member.trashed', $member);
             $member->delete();
             $deleted++;
         }

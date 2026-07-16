@@ -102,6 +102,12 @@ class LegislativeSession extends Model
         return $parts !== [] ? implode(' — ', $parts) : 'Legislative session #'.$this->id;
     }
 
+    public function isPastSessionDate(): bool
+    {
+        return $this->session_date !== null
+            && $this->session_date->lt(now()->startOfDay());
+    }
+
     public function sessionKindLabel(): string
     {
         return config('order_of_business.session_kinds.'.$this->session_kind, $this->session_kind);

@@ -27,6 +27,7 @@ use App\Http\Controllers\AdminAnalyticsMapController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin\DatabaseBackupController;
 use App\Http\Controllers\Admin\DataSyncController;
+use App\Http\Controllers\Admin\RolePermissionsController;
 use App\Http\Controllers\Admin\TrashController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DashboardSearchController;
@@ -111,7 +112,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/references', [ReferenceMaterialController::class, 'index'])->name('references.index');
     Route::get('/references/create', [ReferenceMaterialController::class, 'create'])->name('references.create');
     Route::post('/references', [ReferenceMaterialController::class, 'store'])->name('references.store');
-    Route::get('/references/{reference}', [ReferenceMaterialController::class, 'show'])->name('references.show');
+    Route::get('/references/{reference}', [ReferenceMaterialController::class, 'show'])->name('references.show')->withTrashed();
     Route::get('/references/{reference}/download', [ReferenceMaterialController::class, 'download'])->name('references.download');
     Route::get('/references/{reference}/view', [ReferenceMaterialController::class, 'view'])->name('references.view');
     Route::get('/references/{reference}/versions/{version}/download', [ReferenceMaterialController::class, 'downloadVersion'])->name('references.versions.download');
@@ -140,7 +141,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/ordinances/search', OrdinanceSearchController::class)->name('ordinances.search');
     Route::get('/ordinances/create', [OrdinanceController::class, 'create'])->name('ordinances.create');
     Route::post('/ordinances', [OrdinanceController::class, 'store'])->name('ordinances.store');
-    Route::get('/ordinances/{ordinance}', [OrdinanceController::class, 'show'])->name('ordinances.show');
+    Route::get('/ordinances/{ordinance}', [OrdinanceController::class, 'show'])->name('ordinances.show')->withTrashed();
     Route::get('/ordinances/{ordinance}/edit', [OrdinanceController::class, 'edit'])->name('ordinances.edit');
     Route::put('/ordinances/{ordinance}', [OrdinanceController::class, 'update'])->name('ordinances.update');
     Route::delete('/ordinances/{ordinance}', [OrdinanceController::class, 'destroy'])->name('ordinances.destroy');
@@ -148,7 +149,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/appropriation-ordinances', [AppropriationOrdinanceController::class, 'index'])->name('appropriation-ordinances.index');
     Route::get('/appropriation-ordinances/create', [AppropriationOrdinanceController::class, 'create'])->name('appropriation-ordinances.create');
     Route::post('/appropriation-ordinances', [AppropriationOrdinanceController::class, 'store'])->name('appropriation-ordinances.store');
-    Route::get('/appropriation-ordinances/{appropriationOrdinance}', [AppropriationOrdinanceController::class, 'show'])->name('appropriation-ordinances.show');
+    Route::get('/appropriation-ordinances/{appropriationOrdinance}', [AppropriationOrdinanceController::class, 'show'])->name('appropriation-ordinances.show')->withTrashed();
     Route::get('/appropriation-ordinances/{appropriationOrdinance}/edit', [AppropriationOrdinanceController::class, 'edit'])->name('appropriation-ordinances.edit');
     Route::put('/appropriation-ordinances/{appropriationOrdinance}', [AppropriationOrdinanceController::class, 'update'])->name('appropriation-ordinances.update');
     Route::delete('/appropriation-ordinances/{appropriationOrdinance}', [AppropriationOrdinanceController::class, 'destroy'])->name('appropriation-ordinances.destroy');
@@ -158,7 +159,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/agenda/preview-deadline', AgendaDeadlinePreviewController::class)->name('agenda.preview-deadline');
     Route::get('/agenda/create', [AgendaItemController::class, 'create'])->name('agenda.create');
     Route::post('/agenda', [AgendaItemController::class, 'store'])->name('agenda.store');
-    Route::get('/agenda/{agenda}', [AgendaItemController::class, 'show'])->name('agenda.show');
+    Route::get('/agenda/{agenda}', [AgendaItemController::class, 'show'])->name('agenda.show')->withTrashed();
     Route::get('/agenda/{agenda}/edit', [AgendaItemController::class, 'edit'])->name('agenda.edit');
     Route::put('/agenda/{agenda}', [AgendaItemController::class, 'update'])->name('agenda.update');
     Route::delete('/agenda/{agenda}', [AgendaItemController::class, 'destroy'])->name('agenda.destroy');
@@ -173,7 +174,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/committees', [CommitteeController::class, 'index'])->name('committees.index');
     Route::get('/committees/create', [CommitteeController::class, 'create'])->name('committees.create');
     Route::post('/committees', [CommitteeController::class, 'store'])->name('committees.store');
-    Route::get('/committees/{committee}', [CommitteeController::class, 'show'])->name('committees.show');
+    Route::get('/committees/{committee}', [CommitteeController::class, 'show'])->name('committees.show')->withTrashed();
     Route::get('/committees/{committee}/edit', [CommitteeController::class, 'edit'])->name('committees.edit');
     Route::put('/committees/{committee}', [CommitteeController::class, 'update'])->name('committees.update');
     Route::delete('/committees/{committee}', [CommitteeController::class, 'destroy'])->name('committees.destroy');
@@ -183,7 +184,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/board-members/create', [BoardMemberController::class, 'create'])->name('board-members.create');
     Route::post('/board-members', [BoardMemberController::class, 'store'])->name('board-members.store');
     Route::delete('/board-members/bulk', [BoardMemberController::class, 'bulkDestroy'])->name('board-members.bulk-destroy');
-    Route::get('/board-members/{boardMember}', [BoardMemberController::class, 'show'])->name('board-members.show');
+    Route::get('/board-members/{boardMember}', [BoardMemberController::class, 'show'])->name('board-members.show')->withTrashed();
     Route::get('/board-members/{boardMember}/edit', [BoardMemberController::class, 'edit'])->name('board-members.edit');
     Route::put('/board-members/{boardMember}', [BoardMemberController::class, 'update'])->name('board-members.update');
     Route::delete('/board-members/{boardMember}', [BoardMemberController::class, 'destroy'])->name('board-members.destroy');
@@ -213,7 +214,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{legislativeSession}/attendance', [SessionAttendanceController::class, 'show'])->name('sessions.attendance');
         Route::put('/{legislativeSession}/attendance', [SessionAttendanceController::class, 'update'])->name('sessions.attendance.update');
         Route::get('/attendance/monthly', [SessionAttendanceController::class, 'monthlyReport'])->name('sessions.attendance.monthly');
-        Route::get('/{legislativeSession}', [LegislativeSessionController::class, 'show'])->name('sessions.show');
+        Route::get('/{legislativeSession}', [LegislativeSessionController::class, 'show'])->name('sessions.show')->withTrashed();
         Route::get('/{legislativeSession}/edit', [LegislativeSessionController::class, 'edit'])->name('sessions.edit');
         Route::put('/{legislativeSession}', [LegislativeSessionController::class, 'update'])->name('sessions.update');
         Route::delete('/{legislativeSession}', [LegislativeSessionController::class, 'destroy'])->name('sessions.destroy');
@@ -243,6 +244,10 @@ Route::middleware('auth')->group(function () {
         Route::delete('/trash/{type}/{id}', [TrashController::class, 'forceDestroy'])
             ->whereNumber('id')
             ->name('trash.force-destroy');
+        Route::post('/trash/bulk-restore', [TrashController::class, 'bulkRestore'])->name('trash.bulk-restore');
+        Route::post('/trash/bulk-force-destroy', [TrashController::class, 'bulkForceDestroy'])->name('trash.bulk-force-destroy');
+        Route::post('/trash/purge-older', [TrashController::class, 'purgeOlder'])->name('trash.purge-older');
+        Route::get('/role-permissions', RolePermissionsController::class)->name('role-permissions.index');
     });
 
     Route::middleware('role:superadmin')->prefix('admin')->name('users.')->group(function () {

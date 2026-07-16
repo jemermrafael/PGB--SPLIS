@@ -56,6 +56,7 @@ class ResolutionRepository
             'document_type_label' => $item->documentTypeLabel ?? DocumentType::label($item->documentType),
             'document_type_badge_class' => $item->documentTypeBadgeClass ?? DocumentType::badgeClass($item->documentType),
             'has_pdf' => $item->hasPdf,
+            'pdf_status' => $item->pdfStatus,
             'url' => route('resolutions.show', $item->id),
             'pdf_url' => $item->pdfUrl,
         ];
@@ -271,6 +272,7 @@ class ResolutionRepository
             documentTypeBadgeClass: DocumentType::badgeClass($documentType),
             hasPdf: $this->pdfService->hasLinkedPdf($r),
             pdfUrl: $this->pdfService->publicUrl($r),
+            pdfStatus: $this->pdfService->linkStatus($r),
             status: $r->status,
         );
     }

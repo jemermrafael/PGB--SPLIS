@@ -243,6 +243,7 @@ class AgendaItemController extends Controller
     {
         $this->authorize('delete', $agenda);
 
+        TrashActivity::record('agenda.trashed', $agenda);
         $agenda->delete();
 
         return redirect()
