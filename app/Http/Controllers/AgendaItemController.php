@@ -19,6 +19,7 @@ use App\Services\ObDocumentService;
 use App\Support\ActivityLogger;
 use App\Support\AgendaFieldOptions;
 use App\Support\AgendaMeasureType;
+use App\Support\TrashActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;

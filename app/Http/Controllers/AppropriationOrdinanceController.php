@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AppropriationOrdinance;
 use App\Models\BoardMember;
 use App\Models\Ordinance;
+use App\Support\TrashActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;

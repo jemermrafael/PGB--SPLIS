@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Support\TrashActivity;
+use App\Models\LegislativeSession;
 use App\Models\ObDocument;
 use App\Services\AgendaLifecycleService;
 use App\Services\BoardMemberNotifier;

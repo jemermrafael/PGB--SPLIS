@@ -8,6 +8,7 @@ use App\Models\ActivityLog;
 use App\Models\Ordinance;
 use App\Services\BoardMemberRosterService;
 use App\Services\OrdinanceBoardMemberService;
+use App\Support\TrashActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
