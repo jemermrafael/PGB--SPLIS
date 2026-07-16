@@ -395,15 +395,15 @@ class AgendaItem extends Model
     public function publishedTargetRoute(): ?string
     {
         if ($this->resolution_id && $this->resolution) {
-            return route('resolutions.show', $this->resolution);
+            return route('resolutions.show', $this->resolution, absolute: false);
         }
 
         if ($this->ordinance_id && $this->ordinance) {
-            return route('ordinances.show', $this->ordinance);
+            return route('ordinances.show', $this->ordinance, absolute: false);
         }
 
         if ($this->appropriation_ordinance_id && $this->appropriationOrdinance) {
-            return route('appropriation-ordinances.show', $this->appropriationOrdinance);
+            return route('appropriation-ordinances.show', $this->appropriationOrdinance, absolute: false);
         }
 
         return null;

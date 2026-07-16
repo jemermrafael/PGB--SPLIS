@@ -141,11 +141,11 @@ class ActivityLogPresenter
         }
 
         return match ($log->subject_type) {
-            Resolution::class => route('resolutions.show', $log->subject_id),
-            IncomingDocument::class => route('incoming.show', $log->subject_id),
-            AgendaItem::class => route('agenda.show', $log->subject_id),
-            Ordinance::class => route('ordinances.show', $log->subject_id),
-            ReferenceMaterial::class => route('references.show', $log->subject_id),
+            Resolution::class => route('resolutions.show', $log->subject_id, absolute: false),
+            IncomingDocument::class => route('incoming.show', $log->subject_id, absolute: false),
+            AgendaItem::class => route('agenda.show', $log->subject_id, absolute: false),
+            Ordinance::class => route('ordinances.show', $log->subject_id, absolute: false),
+            ReferenceMaterial::class => route('references.show', $log->subject_id, absolute: false),
             default => null,
         };
     }

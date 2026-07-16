@@ -44,7 +44,7 @@
             <div>
                 <label for="schedule_time" class="splis-label">Daily backup time</label>
                 <input type="time" name="schedule_time" id="schedule_time" value="{{ old('schedule_time', $scheduleTime) }}" class="splis-input mt-1" required>
-                <p class="mt-1 text-xs text-slate-500">Server timezone. Next run uses this time when the scheduler is active.</p>
+                <p class="mt-1 text-xs text-slate-500">App timezone (Asia/Manila). Next run uses this time when the scheduler is active.</p>
             </div>
             <div>
                 <label for="retention_days" class="splis-label">Keep backups (days)</label>

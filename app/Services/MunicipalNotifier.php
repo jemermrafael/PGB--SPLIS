@@ -37,7 +37,7 @@ class MunicipalNotifier
                 [
                     'title' => 'Your request was referred to a committee',
                     'body' => $body,
-                    'link' => route('municipal.requests.show', $agenda),
+                    'link' => route('municipal.requests.show', $agenda, absolute: false),
                 ],
             );
         }
@@ -73,7 +73,7 @@ class MunicipalNotifier
                 [
                     'title' => 'Your request was published',
                     'body' => $body,
-                    'link' => route('municipal.requests.show', $agenda),
+                    'link' => route('municipal.requests.show', $agenda, absolute: false),
                 ],
             );
         }
@@ -91,7 +91,7 @@ class MunicipalNotifier
             $attributes = [
                 'title' => 'Your request was added to the Order of Business',
                 'body' => $body,
-                'link' => route('municipal.requests.show', $agenda),
+                'link' => route('municipal.requests.show', $agenda, absolute: false),
             ];
 
             if ($reNotify) {
@@ -138,7 +138,7 @@ class MunicipalNotifier
                 [
                     'title' => 'Request deadline approaching',
                     'body' => $body,
-                    'link' => route('municipal.requests.show', $agenda),
+                    'link' => route('municipal.requests.show', $agenda, absolute: false),
                 ],
             );
         }

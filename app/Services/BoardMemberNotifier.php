@@ -46,7 +46,7 @@ class BoardMemberNotifier
                 [
                     'title' => 'Agenda referred to your committee',
                     'body' => $body,
-                    'link' => route('agenda.show', $agenda),
+                    'link' => route('agenda.show', $agenda, absolute: false),
                 ],
             );
         }
@@ -82,7 +82,7 @@ class BoardMemberNotifier
                 [
                     'title' => 'Agenda published',
                     'body' => $body,
-                    'link' => $agenda->publishedTargetRoute() ?? route('agenda.show', $agenda),
+                    'link' => $agenda->publishedTargetRoute() ?? route('agenda.show', $agenda, absolute: false),
                 ],
             );
         }
@@ -100,7 +100,7 @@ class BoardMemberNotifier
             $attributes = [
                 'title' => 'Agenda added to Order of Business',
                 'body' => $body,
-                'link' => route('ob.sessions.show', $session),
+                'link' => route('ob.sessions.show', $session, absolute: false),
             ];
 
             if ($reNotify) {
@@ -133,7 +133,7 @@ class BoardMemberNotifier
                 [
                     'title' => 'New session scheduled',
                     'body' => $body,
-                    'link' => route('ob.sessions.show', $session),
+                    'link' => route('ob.sessions.show', $session, absolute: false),
                 ],
             );
         }
@@ -151,7 +151,7 @@ class BoardMemberNotifier
                 [
                     'title' => 'Order of Business created',
                     'body' => $document->title,
-                    'link' => route('ob.sessions.show', $session),
+                    'link' => route('ob.sessions.show', $session, absolute: false),
                 ],
             );
         }
@@ -185,7 +185,7 @@ class BoardMemberNotifier
                 [
                     'title' => 'Agenda deadline approaching',
                     'body' => $body,
-                    'link' => route('agenda.show', $agenda),
+                    'link' => route('agenda.show', $agenda, absolute: false),
                 ],
             );
         }
