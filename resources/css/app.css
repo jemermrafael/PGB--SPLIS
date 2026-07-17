@@ -756,7 +756,7 @@
     }
 
     .splis-dashboard-hero-content {
-        @apply relative z-10 max-w-3xl pr-4 sm:pr-8;
+        @apply relative z-10 w-full max-w-none;
     }
 
     .splis-dashboard-hero-eyebrow {
@@ -764,7 +764,7 @@
     }
 
     .splis-dashboard-hero-subtitle {
-        @apply mt-2 w-full max-w-2xl text-base text-slate-300;
+        @apply mt-2 w-full max-w-none text-base text-slate-300;
     }
 
     .splis-analytics-bars {

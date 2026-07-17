@@ -3,7 +3,7 @@
 @section('title', 'Dashboard — '.config('app.name'))
 
 @section('content')
-<div class="splis-dashboard max-w-6xl">
+<div class="splis-dashboard w-full">
     <div class="splis-dashboard-hero mb-8">
         <div class="splis-dashboard-hero-glow" aria-hidden="true"></div>
         <div class="splis-dashboard-hero-building" aria-hidden="true"></div>
