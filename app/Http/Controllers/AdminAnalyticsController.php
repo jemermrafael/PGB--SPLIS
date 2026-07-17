@@ -39,12 +39,8 @@ class AdminAnalyticsController extends Controller
 
         $mapYear = (int) $request->integer('map_year', $focusYear);
         $mapMonth = $request->filled('map_month') ? max(1, min(12, (int) $request->integer('map_month'))) : null;
-        $mapMeasure = $request->string('map_measure', 'both')->toString();
-        if (! in_array($mapMeasure, ['both', 'agendas', 'resolutions'], true)) {
-            $mapMeasure = 'both';
-        }
 
-        $committeeMap = $executive->committeeMunicipalityMap($mapCommittee, $mapYear, $mapMonth, $mapMeasure);
+        $committeeMap = $executive->committeeMunicipalityMap($mapCommittee, $mapYear, $mapMonth);
 
         $payload = $executive->payload($yearFrom, $yearTo, $focusYear);
 
@@ -58,7 +54,6 @@ class AdminAnalyticsController extends Controller
             'committees' => $committees,
             'mapYear' => $mapYear,
             'mapMonth' => $mapMonth,
-            'mapMeasure' => $mapMeasure,
             'mapCommitteeId' => $mapCommittee?->id,
             'committeeMap' => $committeeMap,
         ]);

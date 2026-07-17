@@ -29,10 +29,9 @@ class AdminAnalyticsMapController extends Controller
 
         $year = (int) $request->integer('year', (int) now()->format('Y'));
         $month = $request->filled('month') ? max(1, min(12, (int) $request->integer('month'))) : null;
-        $measure = $request->string('measure', 'both')->toString();
 
         return response()->json(
-            $executive->committeeMunicipalityMap($committee, $year, $month, $measure)
+            $executive->committeeMunicipalityMap($committee, $year, $month)
         );
     }
 }

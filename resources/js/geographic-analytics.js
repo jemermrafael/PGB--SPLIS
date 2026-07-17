@@ -2,28 +2,18 @@ function formatMapValue(value) {
     return Number(value ?? 0).toLocaleString();
 }
 
-function metricForMeasure(measure) {
-    if (measure === 'agendas' || measure === 'resolutions') {
-        return measure;
-    }
-
-    return 'total';
-}
-
-function applyPoliticalMap(mapWrap, measure) {
-    const metric = metricForMeasure(measure);
+function applyPoliticalMap(mapWrap) {
     const regions = Array.from(mapWrap.querySelectorAll('[data-geo-region]'));
-    const values = regions.map((region) => Number(region.dataset[metric] ?? region.dataset.total ?? 0));
+    const values = regions.map((region) => Number(region.dataset.agendas ?? region.dataset.total ?? 0));
     const max = Math.max(1, ...values);
 
     regions.forEach((region, index) => {
         const value = values[index] ?? 0;
         const intensity = Math.max(0.12, value / max);
         const agendas = Number(region.dataset.agendas ?? 0);
-        const resolutions = Number(region.dataset.resolutions ?? 0);
 
         region.style.setProperty('--geo-intensity', intensity.toFixed(3));
-        region.title = `${region.dataset.name ?? ''}: ${agendas} agenda(s), ${resolutions} resolution(s)`;
+        region.title = `${region.dataset.name ?? ''}: ${agendas} agenda(s)`;
 
         const valueEl = region.nextElementSibling?.querySelector?.('[data-geo-region-value]');
         if (valueEl) {
@@ -39,20 +29,18 @@ function updateMapFromPayload(mapWrap, payload) {
         const municipality = bySlug[region.dataset.slug] ?? {};
 
         region.dataset.agendas = String(municipality.agendas ?? 0);
-        region.dataset.resolutions = String(municipality.resolutions ?? 0);
-        region.dataset.total = String(municipality.total ?? 0);
+        region.dataset.total = String(municipality.total ?? municipality.agendas ?? 0);
     });
 
-    applyPoliticalMap(mapWrap, payload.measure ?? 'both');
+    applyPoliticalMap(mapWrap);
 }
 
 function readMapFilters(root) {
     const committeeId = root.querySelector('[data-map-filter="committee_id"]')?.value ?? '';
     const year = root.querySelector('[data-map-filter="year"]')?.value ?? '';
     const month = root.querySelector('[data-map-filter="month"]')?.value ?? '';
-    const measure = root.querySelector('[data-map-filter="measure"]')?.value ?? 'both';
 
-    return { committeeId, year, month, measure };
+    return { committeeId, year, month };
 }
 
 function updateMapSubtitle(root, payload) {
@@ -63,13 +51,8 @@ function updateMapSubtitle(root, payload) {
     }
 
     const committee = payload?.committee || 'All committees';
-    const measureLabel = {
-        both: 'agendas and resolutions',
-        agendas: 'agendas',
-        resolutions: 'resolutions',
-    }[payload?.measure ?? 'both'] ?? 'items';
 
-    subtitle.textContent = `${committee} · ${payload?.period_label ?? ''} · ${formatMapValue(payload?.total ?? 0)} ${measureLabel}`;
+    subtitle.textContent = `${committee} · ${payload?.period_label ?? ''} · ${formatMapValue(payload?.total ?? 0)} agendas`;
 }
 
 export function initCommitteeMunicipalityMap() {
@@ -88,11 +71,10 @@ export function initCommitteeMunicipalityMap() {
     }
 
     const renderFromFilters = async () => {
-        const { committeeId, year, month, measure } = readMapFilters(root);
+        const { committeeId, year, month } = readMapFilters(root);
 
         const params = new URLSearchParams({
             year: year || String(new Date().getFullYear()),
-            measure,
         });
 
         if (committeeId !== '') {
@@ -139,6 +121,6 @@ export function initCommitteeMunicipalityMap() {
         input.addEventListener('input', scheduleRefresh);
     });
 
-    applyPoliticalMap(mapWrap, readMapFilters(root).measure);
+    applyPoliticalMap(mapWrap);
     scheduleRefresh();
 }

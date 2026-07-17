@@ -181,10 +181,10 @@
             data-min-year="{{ $minYear }}"
         >
             <div class="mb-4">
-                <h2 class="splis-exec-panel-title">Bataan — Agendas &amp; Resolutions by Municipality</h2>
-                <p class="text-sm text-slate-500 dark:text-slate-400">Agendas counted by date passed · Resolutions by date approved</p>
+                <h2 class="splis-exec-panel-title">Bataan — Agendas by Municipality</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Agendas counted by date passed</p>
                 <p class="splis-exec-panel-subtitle" data-map-subtitle>
-                    {{ $committeeMap['committee'] ?? 'All committees' }} · {{ $committeeMap['period_label'] ?? '' }} · {{ number_format($committeeMapTotal) }} shown
+                    {{ $committeeMap['committee'] ?? 'All committees' }} · {{ $committeeMap['period_label'] ?? '' }} · {{ number_format($committeeMapTotal) }} agendas
                 </p>
             </div>
 
@@ -196,14 +196,6 @@
                         @foreach ($committees as $committee)
                             <option value="{{ $committee->id }}" @selected($mapCommitteeId === $committee->id)>{{ $committee->name }}</option>
                         @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="splis-label" for="map-measure">Show</label>
-                    <select id="map-measure" class="splis-input" data-map-filter="measure">
-                        <option value="both" @selected($mapMeasure === 'both')>Agendas and Aesolutions</option>
-                        <option value="agendas" @selected($mapMeasure === 'agendas')>Agendas only</option>
-                        <option value="resolutions" @selected($mapMeasure === 'resolutions')>Resolutions only</option>
                     </select>
                 </div>
                 <div>

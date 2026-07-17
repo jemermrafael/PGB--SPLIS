@@ -18,7 +18,6 @@
                 $mun = $dataBySlug->get($path['slug'], []);
                 $total = (int) ($mun['total'] ?? $mun['requests'] ?? 0);
                 $agendas = (int) ($mun['agendas'] ?? 0);
-                $resolutions = (int) ($mun['resolutions'] ?? 0);
                 $budget = (int) ($mun['budget'] ?? 0);
                 $ordinances = (int) ($mun['ordinances'] ?? 0);
                 $requests = (int) ($mun['requests'] ?? 0);
@@ -28,7 +27,6 @@
                 data-slug="{{ $path['slug'] }}"
                 data-name="{{ $path['name'] }}"
                 data-agendas="{{ $agendas }}"
-                data-resolutions="{{ $resolutions }}"
                 data-total="{{ $total }}"
                 data-requests="{{ $requests }}"
                 data-budget="{{ $budget }}"

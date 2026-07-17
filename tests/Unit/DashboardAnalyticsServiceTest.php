@@ -169,15 +169,14 @@ class DashboardAnalyticsServiceTest extends TestCase
             'created_by' => $user->id,
         ]);
 
-        $map = app(ExecutiveAnalyticsService::class)->committeeMunicipalityMap($committee, 2024, null, 'both');
+        $map = app(ExecutiveAnalyticsService::class)->committeeMunicipalityMap($committee, 2024, null);
         $pilar = collect($map['municipalities'])->firstWhere('name', 'Pilar');
 
         $this->assertNotNull($pilar);
         $this->assertSame(1, $pilar['agendas']);
-        $this->assertSame(1, $pilar['resolutions']);
-        $this->assertSame(2, $pilar['total']);
+        $this->assertSame(1, $pilar['total']);
 
-        $justiceMap = app(ExecutiveAnalyticsService::class)->committeeMunicipalityMap($justiceCommittee, 2024, null, 'agendas');
+        $justiceMap = app(ExecutiveAnalyticsService::class)->committeeMunicipalityMap($justiceCommittee, 2024, null);
         $pilarJustice = collect($justiceMap['municipalities'])->firstWhere('name', 'Pilar');
 
         $this->assertNotNull($pilarJustice);

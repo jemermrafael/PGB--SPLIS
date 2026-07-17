@@ -48,17 +48,15 @@ class DashboardAnalyticsFeatureTest extends TestCase
             ->getJson(route('admin.analytics.municipality-map', [
                 'committee_id' => $committee->id,
                 'year' => 2024,
-                'measure' => 'both',
             ]))
             ->assertOk()
             ->assertJsonPath('committee_id', $committee->id)
             ->assertJsonPath('period_label', '2024 (all months)')
-            ->assertJsonStructure(['municipalities', 'total', 'measure']);
+            ->assertJsonStructure(['municipalities', 'total']);
 
         $this->actingAs($admin)
             ->getJson(route('admin.analytics.municipality-map', [
                 'year' => 2024,
-                'measure' => 'both',
             ]))
             ->assertOk()
             ->assertJsonPath('committee', 'All committees')
