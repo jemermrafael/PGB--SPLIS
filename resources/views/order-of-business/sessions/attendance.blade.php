@@ -7,7 +7,7 @@
     <div class="splis-page-header !mb-6">
         <div>
             <h1 class="splis-page-title">Session Attendance</h1>
-            <p class="splis-page-subtitle">{{ $session->displayTitle() }} · {{ $session->session_date->format('F j, Y') }}</p>
+            <p class="splis-page-subtitle">{{ $session->displayTitle() }}</p>
         </div>
         <div class="flex flex-wrap gap-2">
             <a href="{{ route('ob.sessions.attendance.monthly') }}" class="splis-btn-secondary inline-flex items-center gap-2">
@@ -27,7 +27,20 @@
 
         <p class="text-sm text-slate-600 dark:text-slate-400">Mark Vice Governor and Board Members present for this session.</p>
 
-        <div class="divide-y divide-slate-200 dark:divide-slate-700">
+        <div class="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/50">
+            <span class="text-xs text-slate-500" data-attendance-selected-count></span>
+            <label class="flex items-center gap-2.5 text-sm font-medium text-slate-700 dark:text-slate-200">
+                <span>Select all</span>
+                <input
+                    type="checkbox"
+                    id="attendance-select-all"
+                    class="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                    aria-controls="attendance-roster"
+                >
+            </label>
+        </div>
+
+        <div id="attendance-roster" class="divide-y divide-slate-200 dark:divide-slate-700">
             @foreach ($roster as $member)
                 @php
                     $district = $member->districtForTerm($termId ?? null) ?? $member->district ?? '';
@@ -43,7 +56,14 @@
                     <span class="flex items-center gap-2 text-sm">
                         <span class="text-slate-500">Present</span>
                         <input type="hidden" name="presence[{{ $member->id }}]" value="0">
-                        <input type="checkbox" name="presence[{{ $member->id }}]" value="1" @checked(old('presence.'.$member->id, $attendance?->is_present)) class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+                        <input
+                            type="checkbox"
+                            name="presence[{{ $member->id }}]"
+                            value="1"
+                            data-attendance-checkbox
+                            @checked(old('presence.'.$member->id, $attendance?->is_present))
+                            class="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                        >
                     </span>
                 </label>
             @endforeach

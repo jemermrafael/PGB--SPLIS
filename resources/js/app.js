@@ -33,7 +33,7 @@ import { initDragScroll } from './drag-scroll';
 import { initTableScrollHints } from './table-scroll-hint';
 import { initBoardMemberBulkDelete, initConfirmSubmitForms } from './board-members';
 import { initCommitteeMonitoring } from './committee-monitoring';
-import { initSessionGuests } from './session-guests';
+import { initSessionGuests, initSessionAttendanceSelectAll } from './session-guests';
 
 document.addEventListener('DOMContentLoaded', () => {
     initDropdowns();
@@ -69,4 +69,5 @@ document.addEventListener('DOMContentLoaded', () => {
     initCommitteeMunicipalityMap();
     initCommitteeMonitoring();
     initSessionGuests();
+    initSessionAttendanceSelectAll();
 });

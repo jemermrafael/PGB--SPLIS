@@ -53,3 +53,45 @@ export function initSessionGuests() {
         reindex();
     });
 }
+
+export function initSessionAttendanceSelectAll() {
+    const selectAll = document.getElementById('attendance-select-all');
+    const roster = document.getElementById('attendance-roster');
+    const countEl = document.querySelector('[data-attendance-selected-count]');
+
+    if (!selectAll || !roster) {
+        return;
+    }
+
+    const checkboxes = () => Array.from(roster.querySelectorAll('[data-attendance-checkbox]'));
+
+    function syncSelectAllState() {
+        const boxes = checkboxes();
+        const checkedCount = boxes.filter((box) => box.checked).length;
+
+        selectAll.checked = boxes.length > 0 && checkedCount === boxes.length;
+        selectAll.indeterminate = checkedCount > 0 && checkedCount < boxes.length;
+
+        if (countEl) {
+            countEl.textContent = boxes.length === 0
+                ? ''
+                : `${checkedCount} of ${boxes.length} present`;
+        }
+    }
+
+    selectAll.addEventListener('change', () => {
+        const checked = selectAll.checked;
+        checkboxes().forEach((box) => {
+            box.checked = checked;
+        });
+        syncSelectAllState();
+    });
+
+    roster.addEventListener('change', (event) => {
+        if (event.target?.matches?.('[data-attendance-checkbox]')) {
+            syncSelectAllState();
+        }
+    });
+
+    syncSelectAllState();
+}
