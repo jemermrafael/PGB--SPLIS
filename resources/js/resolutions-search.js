@@ -98,6 +98,49 @@ function renderGridItem(doc) {
     `;
 }
 
+const ADVANCED_FILTER_FIELDS = [
+    'author',
+    'committee',
+    'keyword',
+    'date_from',
+    'date_to',
+    'status',
+    'has_pdf',
+    'category_id',
+    'department_id',
+    'municipality_id',
+];
+
+function advancedFiltersActive(form) {
+    return ADVANCED_FILTER_FIELDS.some((name) => {
+        const field = form.elements.namedItem(name);
+        if (!field) {
+            return false;
+        }
+
+        if (field instanceof RadioNodeList) {
+            return Array.from(field).some((input) => (input.type === 'checkbox' ? input.checked : String(input.value).trim() !== ''));
+        }
+
+        if (field.type === 'checkbox') {
+            return field.checked;
+        }
+
+        return String(field.value).trim() !== '';
+    });
+}
+
+function syncAdvancedFiltersPanel(form) {
+    const advanced = document.getElementById('resolutions-advanced-filters');
+    if (!advanced) {
+        return;
+    }
+
+    if (advancedFiltersActive(form)) {
+        advanced.open = true;
+    }
+}
+
 export function initResolutionsSearch() {
     const root = document.getElementById('resolutions-search');
     if (!root) {
@@ -120,6 +163,7 @@ export function initResolutionsSearch() {
 
     setViewMode(viewMode);
     applyKeywordFromQuery(form);
+    syncAdvancedFiltersPanel(form);
     fetchResults();
 
     form.addEventListener('submit', (event) => {
@@ -143,6 +187,10 @@ export function initResolutionsSearch() {
 
     form.addEventListener('reset', () => {
         setTimeout(() => {
+            const advanced = document.getElementById('resolutions-advanced-filters');
+            if (advanced) {
+                advanced.open = false;
+            }
             currentPage = 1;
             fetchResults();
         }, 0);

@@ -155,46 +155,12 @@
         @apply border-t-[3px] border-brand-gold bg-white;
     }
 
-    @media (max-width: 1023px) {
-        .splis-header-navbar {
-            @apply hidden;
-        }
-
-        .splis-header-navbar.is-open {
-            @apply block;
-        }
-
-        .splis-header-navbar-inner {
-            @apply max-h-[calc(100dvh-4.5rem)] flex-col items-stretch gap-0 overflow-y-auto px-4 py-2;
-        }
-
-        .splis-navbar-link {
-            @apply w-full px-3 py-2.5;
-        }
-
-        .splis-nav-dropdown {
-            @apply w-full;
-        }
-
-        .splis-nav-dropdown-trigger {
-            @apply w-full justify-between px-3 py-2.5;
-        }
-
-        .splis-nav-dropdown-panel {
-            @apply static mt-0 w-full rounded-lg border border-slate-100 bg-slate-50 py-1 shadow-none;
-        }
-
-        .splis-nav-dropdown-link {
-            @apply pl-6;
-        }
-    }
-
     .splis-header-navbar-inner {
         @apply mx-auto flex max-w-7xl flex-wrap items-center justify-start gap-x-3 gap-y-1 px-6 py-2 md:gap-x-5 md:px-8;
     }
 
     .splis-navbar-link {
-        @apply rounded-md px-3 py-2 text-sm font-medium text-slate-500 transition hover:text-brand-900 md:px-4;
+        @apply rounded-md px-3 py-2 text-base font-medium text-slate-500 transition hover:text-brand-900 md:px-4 lg:text-sm;
     }
 
     .splis-navbar-link-active {
@@ -222,11 +188,45 @@
     }
 
     .splis-nav-dropdown-link {
-        @apply block px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-brand-900;
+        @apply block px-4 py-2 text-base font-medium text-slate-600 transition hover:bg-slate-50 hover:text-brand-900 lg:text-sm;
     }
 
     .splis-nav-dropdown-link-active {
         @apply font-bold text-brand-900;
+    }
+
+    @media (max-width: 1023px) {
+        .splis-header-navbar {
+            @apply hidden;
+        }
+
+        .splis-header-navbar.is-open {
+            @apply block;
+        }
+
+        .splis-header-navbar-inner {
+            @apply max-h-[calc(100dvh-4.5rem)] flex-col items-stretch gap-0 overflow-y-auto px-4 py-2;
+        }
+
+        .splis-navbar-link {
+            @apply w-full justify-start px-3 py-3 text-left;
+        }
+
+        .splis-nav-dropdown {
+            @apply w-full;
+        }
+
+        .splis-nav-dropdown-trigger {
+            @apply w-full justify-start px-3 py-3 text-left;
+        }
+
+        .splis-nav-dropdown-panel {
+            @apply static mt-0 w-full min-w-0 overflow-visible rounded-lg border border-slate-100 bg-slate-50 py-1 shadow-none;
+        }
+
+        .splis-nav-dropdown-link {
+            @apply pl-10;
+        }
     }
 
     .splis-badge-linked {

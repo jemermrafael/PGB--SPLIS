@@ -225,7 +225,7 @@
                         >
                             <x-icon name="scale" class="h-4 w-4 shrink-0 opacity-80" />
                             Ordinances
-                            <x-icon name="chevron-down" class="h-3.5 w-3.5 opacity-70" stroke-width="2" />
+                            <x-icon name="chevron-down" class="ml-auto h-3.5 w-3.5 shrink-0 opacity-70" stroke-width="2" />
                         </button>
                         <div class="splis-nav-dropdown-panel" data-dropdown-panel role="menu">
                             <a href="{{ route('ordinances.index') }}" role="menuitem" @class(['splis-nav-dropdown-link', 'splis-nav-dropdown-link-active' => request()->routeIs('ordinances.*') && ! request()->routeIs('appropriation-ordinances.*')])>Provincial Ordinances</a>
@@ -248,7 +248,7 @@
                         >
                             <x-icon name="clipboard-list" class="h-4 w-4 shrink-0 opacity-80" />
                             My Agenda
-                            <x-icon name="chevron-down" class="h-3.5 w-3.5 opacity-70" stroke-width="2" />
+                            <x-icon name="chevron-down" class="ml-auto h-3.5 w-3.5 shrink-0 opacity-70" stroke-width="2" />
                         </button>
                         <div class="splis-nav-dropdown-panel" data-dropdown-panel role="menu">
                             <a href="{{ route('board-member.agenda.index') }}" role="menuitem" @class(['splis-nav-dropdown-link', 'splis-nav-dropdown-link-active' => request()->routeIs('board-member.agenda.*')])>My Agenda</a>
@@ -271,7 +271,7 @@
                         >
                             <x-icon name="scale" class="h-4 w-4 shrink-0 opacity-80" />
                             My Ordinances
-                            <x-icon name="chevron-down" class="h-3.5 w-3.5 opacity-70" stroke-width="2" />
+                            <x-icon name="chevron-down" class="ml-auto h-3.5 w-3.5 shrink-0 opacity-70" stroke-width="2" />
                         </button>
                         <div class="splis-nav-dropdown-panel" data-dropdown-panel role="menu">
                             <a href="{{ route('board-member.ordinances.index') }}" role="menuitem" @class(['splis-nav-dropdown-link', 'splis-nav-dropdown-link-active' => request()->routeIs('board-member.ordinances.index')])>My Ordinances</a>
@@ -294,7 +294,7 @@
                         >
                             <x-icon name="users" class="h-4 w-4 shrink-0 opacity-80" />
                             Committees
-                            <x-icon name="chevron-down" class="h-3.5 w-3.5 opacity-70" stroke-width="2" />
+                            <x-icon name="chevron-down" class="ml-auto h-3.5 w-3.5 shrink-0 opacity-70" stroke-width="2" />
                         </button>
                         <div class="splis-nav-dropdown-panel" data-dropdown-panel role="menu">
                             <a

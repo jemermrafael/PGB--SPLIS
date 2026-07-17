@@ -31,26 +31,6 @@
                 <input type="text" name="title" class="splis-input" placeholder="Resolution title">
             </div>
             <div>
-                <label class="splis-label">Author / Sponsor</label>
-                <input type="text" name="author" class="splis-input" placeholder="Sponsored by">
-            </div>
-            <div>
-                <label class="splis-label">Committee</label>
-                <input type="text" name="committee" class="splis-input" placeholder="Committee">
-            </div>
-            <div>
-                <label class="splis-label">Keywords</label>
-                <input type="text" name="keyword" class="splis-input" placeholder="Keywords">
-            </div>
-            <div>
-                <label class="splis-label">Date from</label>
-                <input type="date" name="date_from" class="splis-input">
-            </div>
-            <div>
-                <label class="splis-label">Date to</label>
-                <input type="date" name="date_to" class="splis-input">
-            </div>
-            <div>
                 <label class="splis-label">Series (Year)</label>
                 <select name="series" class="splis-select">
                     <option value="">All years</option>
@@ -59,49 +39,83 @@
                     @endforeach
                 </select>
             </div>
-            <div>
-                <label class="splis-label">Status</label>
-                <select name="status" class="splis-select">
-                    <option value="">All statuses</option>
-                    <option value="approved">Approved</option>
-                    <option value="draft">Draft</option>
-                    <option value="archived">Archived</option>
-                </select>
-            </div>
-            <div>
-                <label class="splis-label">Subject / Category</label>
-                <select name="category_id" class="splis-select">
-                    <option value="">All categories</option>
-                    @foreach ($categories as $cat)
-                        <option value="{{ $cat->id }}">{{ $cat->description }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div>
-                <label class="splis-label">Department</label>
-                <select name="department_id" class="splis-select">
-                    <option value="">All departments</option>
-                    @foreach ($departments as $dept)
-                        <option value="{{ $dept->id }}">{{ $dept->description }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div>
-                <label class="splis-label">Municipality</label>
-                <select name="municipality_id" class="splis-select">
-                    <option value="">All municipalities</option>
-                    @foreach ($municipalities as $mun)
-                        <option value="{{ $mun->id }}">{{ $mun->description }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="flex items-end">
-                <label class="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                    <input type="checkbox" name="has_pdf" value="1" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
-                    Has PDF only
-                </label>
-            </div>
         </div>
+
+        <details id="resolutions-advanced-filters" class="splis-filter-advanced">
+            <summary class="splis-filter-advanced-toggle">
+                <span>Advanced search</span>
+                <svg class="splis-filter-advanced-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+                </svg>
+            </summary>
+            <div class="splis-filter-advanced-panel">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <div>
+                        <label class="splis-label">Author / Sponsor</label>
+                        <input type="text" name="author" class="splis-input" placeholder="Sponsored by">
+                    </div>
+                    <div>
+                        <label class="splis-label">Committee</label>
+                        <input type="text" name="committee" class="splis-input" placeholder="Committee">
+                    </div>
+                    <div>
+                        <label class="splis-label">Keywords</label>
+                        <input type="text" name="keyword" class="splis-input" placeholder="Keywords">
+                    </div>
+                    <div>
+                        <label class="splis-label">Status</label>
+                        <select name="status" class="splis-select">
+                            <option value="">All statuses</option>
+                            <option value="approved">Approved</option>
+                            <option value="draft">Draft</option>
+                            <option value="archived">Archived</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="splis-label">Date from</label>
+                        <input type="date" name="date_from" class="splis-input">
+                    </div>
+                    <div>
+                        <label class="splis-label">Date to</label>
+                        <input type="date" name="date_to" class="splis-input">
+                    </div>
+                    <div>
+                        <label class="splis-label">Subject / Category</label>
+                        <select name="category_id" class="splis-select">
+                            <option value="">All categories</option>
+                            @foreach ($categories as $cat)
+                                <option value="{{ $cat->id }}">{{ $cat->description }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="splis-label">Department</label>
+                        <select name="department_id" class="splis-select">
+                            <option value="">All departments</option>
+                            @foreach ($departments as $dept)
+                                <option value="{{ $dept->id }}">{{ $dept->description }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="splis-label">Municipality</label>
+                        <select name="municipality_id" class="splis-select">
+                            <option value="">All municipalities</option>
+                            @foreach ($municipalities as $mun)
+                                <option value="{{ $mun->id }}">{{ $mun->description }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <label class="splis-filter-check">
+                            <input type="checkbox" name="has_pdf" value="1" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+                            Has PDF only
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </details>
+
         <div class="mt-4 flex gap-2">
             <button type="submit" class="splis-btn-primary">Search</button>
             <button type="reset" class="splis-btn-ghost">Clear filters</button>
