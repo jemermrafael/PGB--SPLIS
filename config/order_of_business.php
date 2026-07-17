@@ -2,8 +2,8 @@
 
 return [
     'session_kinds' => [
-        'regular' => 'Regular session',
-        'special' => 'Special session',
+        'regular' => 'Regular Session',
+        'special' => 'Special Session',
     ],
 
     'session_statuses' => [

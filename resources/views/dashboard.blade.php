@@ -6,9 +6,10 @@
 <div id="dashboard-search" class="splis-dashboard w-full" data-search-url="{{ route('dashboard.documents.search') }}">
     <div class="splis-dashboard-hero">
         <div class="splis-dashboard-hero-glow" aria-hidden="true"></div>
-        <div class="relative w-full">
+        <div class="splis-dashboard-hero-building" aria-hidden="true"></div>
+        <div class="splis-dashboard-hero-content">
             <p class="splis-dashboard-hero-eyebrow">Legislative archive</p>
-            <h1 class="splis-page-title text-white">Dashboard</h1>
+            <h1 class="splis-page-title text-white">Welcome, {{ auth()->user()->name }}</h1>
             <p class="splis-dashboard-hero-subtitle">Search Resolutions and Ordinances — {{ number_format($totalDocuments) }} documents in the archive ({{ number_format($totalResolutions) }} Resolutions · {{ number_format($totalOrdinances) }} Ordinances)</p>
         </div>
     </div>

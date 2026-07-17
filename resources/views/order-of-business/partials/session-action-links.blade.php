@@ -4,7 +4,7 @@
     $sessionDateOver = $session->isPastSessionDate();
 @endphp
 
-<div {{ $attributes->merge(['class' => 'flex flex-wrap items-center justify-end gap-2']) }}>
+<div {{ $attributes->merge(['class' => 'flex flex-nowrap items-center justify-end gap-2']) }}>
     @can('view', $session)
         <a href="{{ route('ob.sessions.show', $session) }}" class="splis-btn-secondary !px-2.5 !py-1.5 text-sm inline-flex items-center gap-1.5 whitespace-nowrap">
             <x-icon name="eye" class="h-4 w-4 shrink-0" />

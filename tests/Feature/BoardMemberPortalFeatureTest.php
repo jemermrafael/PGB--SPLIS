@@ -65,7 +65,7 @@ class BoardMemberPortalFeatureTest extends TestCase
             ->assertOk()
             ->assertSee('Today’s briefing')
             ->assertSee('Next Session')
-            ->assertSee('My items on next OB')
+            ->assertSee('My Agendas on next OB')
             ->assertSee('Agenda deadlines within')
             ->assertDontSee('>Your Committees</')
             ->assertDontSee('Session Calendar');

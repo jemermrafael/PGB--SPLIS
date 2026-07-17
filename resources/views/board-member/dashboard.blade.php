@@ -6,7 +6,8 @@
 <div class="splis-dashboard max-w-6xl">
     <div class="splis-dashboard-hero mb-8">
         <div class="splis-dashboard-hero-glow" aria-hidden="true"></div>
-        <div class="relative">
+        <div class="splis-dashboard-hero-building" aria-hidden="true"></div>
+        <div class="splis-dashboard-hero-content">
             <p class="splis-dashboard-hero-eyebrow">Board Member Portal</p>
             <h1 class="splis-page-title text-white">Welcome, Hon. {{ $user->name }}</h1>
             <p class="splis-dashboard-hero-subtitle">

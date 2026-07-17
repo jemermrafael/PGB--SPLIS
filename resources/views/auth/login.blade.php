@@ -14,7 +14,7 @@
                     <img src="{{ asset('images/bataan-seal.png') }}" alt="Province of Bataan official seal" class="mb-8 h-16 w-16 rounded-full object-cover ring-2 ring-white/20">
                     <h1 class="max-w-md text-4xl font-semibold leading-tight tracking-tight">PGB - SPLIS</h1>
                     <p class="mt-2 text-lg text-slate-300">Sangguniang Panlalawigan</p>
-                    <p class="mt-4 max-w-md text-base text-slate-400">Legislative Information System for ordinances, resolutions, and archival records.</p>
+                    <p class="mt-4 max-w-md text-base text-slate-400">Legislative Information System for Ordinances, Resolutions, and archival records.</p>
                 </div>
                 <p class="text-sm text-slate-400">Sangguniang Panlalawigan · Bataan</p>
             </div>

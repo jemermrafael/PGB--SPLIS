@@ -49,7 +49,7 @@
         </div>
 
         <div class="p-4 sm:p-5">
-            <h3 class="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">My items on next OB</h3>
+            <h3 class="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">My Agendas on next OB</h3>
             @if ($myItems->isNotEmpty())
                 <ul class="space-y-2 text-sm">
                     @foreach ($myItems->take(6) as $item)
