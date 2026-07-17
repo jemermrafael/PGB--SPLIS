@@ -94,6 +94,8 @@ class ReferenceMaterialController extends Controller
 
         return view('references.show', [
             'reference' => $reference,
+            'previousReference' => $reference->trashed() ? null : $reference->previousInList(),
+            'nextReference' => $reference->trashed() ? null : $reference->nextInList(),
         ]);
     }
 

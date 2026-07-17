@@ -144,6 +144,8 @@ class AgendaItemController extends Controller
             'outputLinkCandidates' => $agenda->needsOutputLink()
                 ? $linker->candidateOptions($agenda)
                 : collect(),
+            'previousAgenda' => $agenda->trashed() ? null : $agenda->previousInList(),
+            'nextAgenda' => $agenda->trashed() ? null : $agenda->nextInList(),
         ]);
     }
 

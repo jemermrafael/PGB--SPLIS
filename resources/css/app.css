@@ -287,10 +287,62 @@
 
     .splis-page {
         @apply mx-auto max-w-7xl px-6 py-8 md:px-8;
+        padding-bottom: 4.5rem;
     }
 
     .splis-page--full {
         @apply max-w-none px-4 py-6 sm:px-6 lg:px-8;
+        padding-bottom: 4.5rem;
+    }
+
+    .splis-opito-credit {
+        @apply pointer-events-none fixed bottom-3 right-3 z-40 flex items-center gap-1.5 rounded-lg bg-white/85 px-2 py-1.5 text-slate-500 shadow-sm ring-1 ring-slate-200/80 backdrop-blur-sm;
+    }
+
+    .splis-opito-credit-text {
+        @apply text-[10px] font-medium tracking-wide uppercase;
+    }
+
+    .splis-opito-credit-logo {
+        @apply h-7 w-7 object-contain;
+    }
+
+    html.dark .splis-opito-credit {
+        @apply bg-slate-900/85 text-slate-300 ring-slate-700/80;
+    }
+
+    .splis-term-switcher {
+        @apply flex items-center gap-1.5;
+    }
+
+    .splis-term-switcher-track {
+        @apply flex min-w-0 flex-1 flex-nowrap gap-2 overflow-x-auto scroll-smooth;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .splis-term-switcher-track::-webkit-scrollbar {
+        display: none;
+    }
+
+    .splis-term-switcher-chip {
+        @apply shrink-0 whitespace-nowrap;
+    }
+
+    .splis-term-switcher-arrow {
+        @apply inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white;
+    }
+
+    .splis-term-switcher.has-overflow:not(:has([data-term-switcher-prev][hidden])) .splis-term-switcher-track {
+        mask-image: linear-gradient(to left, #000 0%, #000 calc(100% - 1.5rem), transparent 100%);
+    }
+
+    .splis-term-switcher.has-overflow:not(:has([data-term-switcher-next][hidden])) .splis-term-switcher-track {
+        mask-image: linear-gradient(to right, #000 0%, #000 calc(100% - 1.5rem), transparent 100%);
+    }
+
+    .splis-term-switcher.has-overflow:not(:has([data-term-switcher-prev][hidden])):not(:has([data-term-switcher-next][hidden])) .splis-term-switcher-track {
+        mask-image: linear-gradient(to right, transparent 0%, #000 1.5rem, #000 calc(100% - 1.5rem), transparent 100%);
     }
 
     .splis-page-header {
@@ -917,6 +969,13 @@
     .splis-select,
     .splis-textarea {
         @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 shadow-sm transition placeholder:text-slate-400 focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/25;
+    }
+
+    .splis-select {
+        @apply appearance-none bg-no-repeat pr-10;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m19.5 8.25-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
+        background-position: right 0.875rem center;
+        background-size: 1rem;
     }
 
     .splis-table-wrap {
@@ -2210,6 +2269,10 @@
     html.dark .splis-select,
     html.dark .splis-textarea {
         @apply border-slate-600 bg-slate-800 text-slate-100;
+    }
+
+    html.dark .splis-select {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m19.5 8.25-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
     }
 
     html.dark .splis-table thead {

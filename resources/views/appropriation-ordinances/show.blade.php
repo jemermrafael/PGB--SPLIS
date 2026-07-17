@@ -56,6 +56,16 @@
         'embedTitle' => $appropriationOrdinance->displayNumber().' PDF',
     ])
 
+    @include('partials.detail-prev-next', [
+        'previous' => $previousAppropriationOrdinance ?? null,
+        'next' => $nextAppropriationOrdinance ?? null,
+        'previousUrl' => ($previousAppropriationOrdinance ?? null) ? route('appropriation-ordinances.show', $previousAppropriationOrdinance) : null,
+        'nextUrl' => ($nextAppropriationOrdinance ?? null) ? route('appropriation-ordinances.show', $nextAppropriationOrdinance) : null,
+        'previousLabel' => isset($previousAppropriationOrdinance) ? $previousAppropriationOrdinance->displayNumber().' · '.$previousAppropriationOrdinance->displaySeries() : null,
+        'nextLabel' => isset($nextAppropriationOrdinance) ? $nextAppropriationOrdinance->displayNumber().' · '.$nextAppropriationOrdinance->displaySeries() : null,
+        'label' => 'Appropriation ordinance navigation',
+    ])
+
     <div class="mt-6 flex flex-wrap gap-2">
         <a href="{{ route('appropriation-ordinances.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
             <x-icon name="arrow-left" class="h-4 w-4" />

@@ -34,6 +34,7 @@ import { initTableScrollHints } from './table-scroll-hint';
 import { initBoardMemberBulkDelete, initConfirmSubmitForms } from './board-members';
 import { initCommitteeMonitoring } from './committee-monitoring';
 import { initSessionGuests, initSessionAttendanceSelectAll } from './session-guests';
+import { initTermSwitchers } from './term-switcher';
 
 document.addEventListener('DOMContentLoaded', () => {
     initDropdowns();
@@ -70,4 +71,5 @@ document.addEventListener('DOMContentLoaded', () => {
     initCommitteeMonitoring();
     initSessionGuests();
     initSessionAttendanceSelectAll();
+    initTermSwitchers();
 });

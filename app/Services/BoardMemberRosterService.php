@@ -63,6 +63,19 @@ class BoardMemberRosterService
             ->first();
     }
 
+    /**
+     * Election terms where this person appears on the Board Member roster.
+     *
+     * @return \Illuminate\Support\Collection<int, CommitteeTerm>
+     */
+    public function termsFor(BoardMember $boardMember): Collection
+    {
+        return CommitteeTerm::query()
+            ->whereHas('boardMemberAssignments', fn (Builder $query) => $query->where('board_member_id', $boardMember->id))
+            ->ordered()
+            ->get();
+    }
+
     public function termForSeriesYear(int $seriesYear): CommitteeTerm
     {
         $term = CommitteeTerm::query()

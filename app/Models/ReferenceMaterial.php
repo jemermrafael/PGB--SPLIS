@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasActivityLogs;
+use App\Models\Concerns\NavigatesById;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class ReferenceMaterial extends Model
 {
     use HasActivityLogs;
+    use NavigatesById;
     use SoftDeletes;
 
     protected $fillable = [

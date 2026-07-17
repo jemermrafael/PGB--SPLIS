@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\OrdinanceBoardMemberRole;
 use App\Enums\OrdinancePublicationStatus;
+use App\Models\Concerns\NavigatesById;
 use App\Support\OrdinanceNumberParser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +15,7 @@ use Illuminate\Support\Collection;
 
 class Ordinance extends Model
 {
+    use NavigatesById;
     use SoftDeletes;
 
     protected $fillable = [

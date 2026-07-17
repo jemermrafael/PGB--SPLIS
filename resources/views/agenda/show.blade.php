@@ -385,5 +385,15 @@
         'splisActivityLogs' => $splisActivityLogs ?? collect(),
         'obPlacementCount' => $obPlacementCount ?? 0,
     ])
+
+    @include('partials.detail-prev-next', [
+        'previous' => $previousAgenda ?? null,
+        'next' => $nextAgenda ?? null,
+        'previousUrl' => ($previousAgenda ?? null) ? route('agenda.show', $previousAgenda) : null,
+        'nextUrl' => ($nextAgenda ?? null) ? route('agenda.show', $nextAgenda) : null,
+        'previousLabel' => isset($previousAgenda) ? $previousAgenda->displayLabel() : null,
+        'nextLabel' => isset($nextAgenda) ? $nextAgenda->displayLabel() : null,
+        'label' => 'Agenda navigation',
+    ])
 </div>
 @endsection

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\CommitteeMembershipRole;
+use App\Models\Concerns\NavigatesById;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Committee extends Model
 {
+    use NavigatesById;
     use SoftDeletes;
 
     protected $fillable = [

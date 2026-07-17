@@ -28,16 +28,11 @@
         </a>
     </div>
 
-    <div class="mb-6 flex flex-wrap gap-2">
-        @foreach ($terms as $term)
-            <a
-                href="{{ route('committees.index', ['term' => $term->id]) }}"
-                class="{{ $term->id === $selectedTerm->id ? 'splis-btn-primary' : 'splis-btn-secondary' }} text-sm"
-            >
-                {{ $term->label }}@if ($term->is_current) (current)@endif
-            </a>
-        @endforeach
-    </div>
+    @include('partials.term-switcher', [
+        'terms' => $terms,
+        'selectedTerm' => $selectedTerm,
+        'routeName' => 'committees.index',
+    ])
 
     <div class="splis-table-wrap">
         <table class="splis-table">

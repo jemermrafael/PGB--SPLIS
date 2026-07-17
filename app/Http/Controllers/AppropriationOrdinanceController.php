@@ -45,6 +45,8 @@ class AppropriationOrdinanceController extends Controller
 
         return view('appropriation-ordinances.show', [
             'appropriationOrdinance' => $appropriationOrdinance,
+            'previousAppropriationOrdinance' => $appropriationOrdinance->trashed() ? null : $appropriationOrdinance->previousInList(),
+            'nextAppropriationOrdinance' => $appropriationOrdinance->trashed() ? null : $appropriationOrdinance->nextInList(),
         ]);
     }
 

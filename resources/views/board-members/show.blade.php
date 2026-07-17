@@ -44,16 +44,12 @@
         </div>
     </div>
 
-    <div class="mb-6 flex flex-wrap gap-2">
-        @foreach ($terms as $term)
-            <a
-                href="{{ route('board-members.show', ['boardMember' => $boardMember, 'term' => $term->id]) }}"
-                class="{{ $term->id === $selectedTerm->id ? 'splis-btn-primary' : 'splis-btn-secondary' }} text-sm"
-            >
-                {{ $term->label }}@if ($term->is_current) (current)@endif
-            </a>
-        @endforeach
-    </div>
+    @include('partials.term-switcher', [
+        'terms' => $terms,
+        'selectedTerm' => $selectedTerm,
+        'routeName' => 'board-members.show',
+        'routeParams' => ['boardMember' => $boardMember],
+    ])
 
     <div class="mb-6 flex flex-wrap items-center gap-2">
         @if ($assignment)
@@ -63,7 +59,7 @@
                 <span class="splis-badge-unlinked">Inactive on roster</span>
             @endif
             @if ($district === 'Vice Governor')
-                <span class="splis-badge-linked">Presiding officer of the Sangguniang Panlalawigan</span>
+                <span class="splis-badge-linked">Presiding Officer of the Sangguniang Panlalawigan</span>
             @endif
         @else
             <span class="splis-badge-unlinked">Not on {{ $selectedTerm->label }} roster</span>
@@ -142,6 +138,16 @@
             @endforeach
         </div>
     @endif
+
+    @include('partials.detail-prev-next', [
+        'previous' => $previousBoardMember ?? null,
+        'next' => $nextBoardMember ?? null,
+        'previousUrl' => ($previousBoardMember ?? null) ? route('board-members.show', ['boardMember' => $previousBoardMember, 'term' => $selectedTerm->id]) : null,
+        'nextUrl' => ($nextBoardMember ?? null) ? route('board-members.show', ['boardMember' => $nextBoardMember, 'term' => $selectedTerm->id]) : null,
+        'previousLabel' => isset($previousBoardMember) ? $previousBoardMember->displayName() : null,
+        'nextLabel' => isset($nextBoardMember) ? $nextBoardMember->displayName() : null,
+        'label' => 'Board member navigation',
+    ])
 
     <div class="mt-6">
         <a href="{{ route('board-members.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2">

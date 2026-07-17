@@ -19,16 +19,11 @@
         <div class="splis-alert-error mb-6">This account is not linked to a Board Member profile yet. Please contact the SP office administrator.</div>
     @else
         @if ($terms->count() > 1)
-            <div class="mb-6 flex flex-wrap gap-2">
-                @foreach ($terms as $term)
-                    <a
-                        href="{{ route('board-member.committees.index', ['term' => $term->id]) }}"
-                        class="{{ $term->id === $selectedTerm->id ? 'splis-btn-primary' : 'splis-btn-secondary' }} text-sm"
-                    >
-                        {{ $term->label }}@if ($term->is_current) (current)@endif
-                    </a>
-                @endforeach
-            </div>
+            @include('partials.term-switcher', [
+                'terms' => $terms,
+                'selectedTerm' => $selectedTerm,
+                'routeName' => 'board-member.committees.index',
+            ])
         @endif
 
         <p class="mb-6 text-sm text-slate-500">{{ $totalAssignments }} committee assignment(s) in this term.</p>

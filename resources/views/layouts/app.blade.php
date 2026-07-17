@@ -384,6 +384,17 @@
                 @yield('content')
             </div>
         </main>
+
+        <div class="splis-opito-credit" aria-label="Developed by OPITO">
+            <span class="splis-opito-credit-text">Developed by OPITO</span>
+            <img
+                src="{{ asset('images/pito-logo.png') }}"
+                alt="OPITO"
+                class="splis-opito-credit-logo"
+                width="28"
+                height="28"
+            >
+        </div>
     </div>
 
     @if ($showNotifications)

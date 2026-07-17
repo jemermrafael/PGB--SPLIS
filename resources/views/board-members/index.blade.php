@@ -31,16 +31,11 @@
         </a>
     </div>
 
-    <div class="mb-6 flex flex-wrap gap-2">
-        @foreach ($terms as $term)
-            <a
-                href="{{ route('board-members.index', ['term' => $term->id]) }}"
-                class="{{ $term->id === $selectedTerm->id ? 'splis-btn-primary' : 'splis-btn-secondary' }} text-sm"
-            >
-                {{ $term->label }}@if ($term->is_current) (current)@endif
-            </a>
-        @endforeach
-    </div>
+    @include('partials.term-switcher', [
+        'terms' => $terms,
+        'selectedTerm' => $selectedTerm,
+        'routeName' => 'board-members.index',
+    ])
 
     @if ($canManage && $boardMembersByDistrict->isNotEmpty())
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">

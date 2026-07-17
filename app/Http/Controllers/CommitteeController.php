@@ -85,9 +85,11 @@ class CommitteeController extends Controller
             ->with('status', 'Committee created.');
     }
 
-    public function show(Request $request, Committee $committee): View
+    public function show(Request $request, Committee $committee): View|RedirectResponse
     {
         $this->authorize('view', $committee);
+
+        $requestedTermId = $request->integer('term') ?: null;
 
         $terms = CommitteeTerm::query()
             ->whereHas('memberships', fn ($query) => $query->where('committee_id', $committee->id))
@@ -95,16 +97,19 @@ class CommitteeController extends Controller
             ->get();
 
         if ($terms->isEmpty()) {
-            ['terms' => $terms, 'selectedTerm' => $selectedTerm] = CommitteeTermSelection::resolve(
-                $request->integer('term') ?: null,
-            );
+            ['terms' => $terms, 'selectedTerm' => $selectedTerm] = CommitteeTermSelection::resolve($requestedTermId);
         } else {
-            ['terms' => $allTerms, 'selectedTerm' => $selectedTerm] = CommitteeTermSelection::resolve(
-                $request->integer('term') ?: null,
-            );
+            ['selectedTerm' => $resolved] = CommitteeTermSelection::resolve($requestedTermId);
 
-            if (! $terms->contains('id', $selectedTerm->id)) {
-                $terms = $allTerms;
+            $selectedTerm = $terms->firstWhere('id', $resolved->id)
+                ?? $terms->firstWhere('is_current', true)
+                ?? $terms->first();
+
+            if ($requestedTermId && $selectedTerm->id !== $requestedTermId) {
+                return redirect()->route('committees.show', [
+                    'committee' => $committee,
+                    'term' => $selectedTerm->id,
+                ]);
             }
         }
 
@@ -120,6 +125,8 @@ class CommitteeController extends Controller
             'terms' => $terms,
             'selectedTerm' => $selectedTerm,
             'memberships' => $memberships,
+            'previousCommittee' => $committee->trashed() ? null : $committee->previousInList(),
+            'nextCommittee' => $committee->trashed() ? null : $committee->nextInList(),
         ]);
     }
 

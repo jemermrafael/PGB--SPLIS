@@ -141,10 +141,20 @@
         'embedTitle' => $ordinance->displayNumber().' PDF',
     ])
 
+    @include('partials.detail-prev-next', [
+        'previous' => $previousOrdinance ?? null,
+        'next' => $nextOrdinance ?? null,
+        'previousUrl' => ($previousOrdinance ?? null) ? route('ordinances.show', $previousOrdinance) : null,
+        'nextUrl' => ($nextOrdinance ?? null) ? route('ordinances.show', $nextOrdinance) : null,
+        'previousLabel' => isset($previousOrdinance) ? $previousOrdinance->displayNumber().' · '.$previousOrdinance->displaySeries() : null,
+        'nextLabel' => isset($nextOrdinance) ? $nextOrdinance->displayNumber().' · '.$nextOrdinance->displaySeries() : null,
+        'label' => 'Ordinance navigation',
+    ])
+
     <div class="mt-6 flex flex-wrap gap-2">
         <a href="{{ route('ordinances.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
             <x-icon name="arrow-left" class="h-4 w-4" />
-            Back to ordinances
+            Back to Ordinances
         </a>
         @can('delete', $ordinance)
             <form method="POST" action="{{ route('ordinances.destroy', $ordinance) }}" onsubmit="return confirm('Move this ordinance to trash?');">

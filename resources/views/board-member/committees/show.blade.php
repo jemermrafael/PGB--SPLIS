@@ -24,16 +24,12 @@
         <a href="{{ route('board-member.agenda.committee', $committee) }}" class="splis-btn-secondary">Search Agenda</a>
     </div>
 
-    <div class="mb-6 flex flex-wrap gap-2">
-        @foreach ($terms as $term)
-            <a
-                href="{{ route('board-member.committees.show', ['committee' => $committee, 'term' => $term->id]) }}"
-                class="{{ $term->id === $selectedTerm->id ? 'splis-btn-primary' : 'splis-btn-secondary' }} text-sm"
-            >
-                {{ $term->label }}@if ($term->is_current) (current)@endif
-            </a>
-        @endforeach
-    </div>
+    @include('partials.term-switcher', [
+        'terms' => $terms,
+        'selectedTerm' => $selectedTerm,
+        'routeName' => 'board-member.committees.show',
+        'routeParams' => ['committee' => $committee],
+    ])
 
     <div class="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div class="splis-card splis-card-body space-y-5">

@@ -46,6 +46,8 @@ class OrdinanceController extends Controller
 
         return view('ordinances.show', [
             'ordinance' => $ordinance,
+            'previousOrdinance' => $ordinance->trashed() ? null : $ordinance->previousInList(),
+            'nextOrdinance' => $ordinance->trashed() ? null : $ordinance->nextInList(),
         ]);
     }
 

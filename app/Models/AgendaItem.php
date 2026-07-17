@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasActivityLogs;
+use App\Models\Concerns\NavigatesById;
 use App\Support\AgendaDeadline;
 use App\Support\AgendaMeasureType;
 use Illuminate\Database\Eloquent\Builder;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class AgendaItem extends Model
 {
     use HasActivityLogs;
+    use NavigatesById;
     use SoftDeletes;
 
     public const OB_STAGE_UNASSIGNED = 'unassigned';

@@ -2,14 +2,8 @@
 
 @php
     $allowLegacy = $selectedTerm->is_current;
-    $chairName = optional($memberships->get('chair')?->first()?->boardMember)->displayName();
-    $viceChairName = optional($memberships->get('vice_chair')?->first()?->boardMember)->displayName();
-
-    if ($allowLegacy) {
-        $chairName = $chairName ?: ($committee->chair ?: null);
-        $viceChairName = $viceChairName ?: ($committee->vice_chair ?: null);
-    }
-
+    $chair = $memberships->get('chair')?->first()?->boardMember;
+    $viceChair = $memberships->get('vice_chair')?->first()?->boardMember;
     $memberRows = $memberships->get('member') ?? collect();
 @endphp
 
@@ -30,16 +24,13 @@
         @endcan
     </div>
 
-    <div class="mb-6 flex flex-wrap gap-2">
-        @foreach ($terms as $term)
-            <a
-                href="{{ route('committees.show', ['committee' => $committee, 'term' => $term->id]) }}"
-                class="{{ $term->id === $selectedTerm->id ? 'splis-btn-primary' : 'splis-btn-secondary' }} text-sm"
-            >
-                {{ $term->label }}
-            </a>
-        @endforeach
-    </div>
+    @include('partials.term-switcher', [
+        'terms' => $terms,
+        'selectedTerm' => $selectedTerm,
+        'routeName' => 'committees.show',
+        'routeParams' => ['committee' => $committee],
+        'showCurrentBadge' => false,
+    ])
 
     <div class="splis-card splis-card-body space-y-5">
         <div>
@@ -55,11 +46,23 @@
         <dl class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
                 <dt class="splis-label">Chair</dt>
-                <dd class="mt-1 text-slate-900 dark:text-slate-100">{{ $chairName ?: '—' }}</dd>
+                <dd class="mt-1 text-slate-900 dark:text-slate-100">
+                    @include('committees.partials.roster-member-link', [
+                        'boardMember' => $chair,
+                        'fallback' => $allowLegacy ? $committee->chair : null,
+                        'term' => $selectedTerm,
+                    ])
+                </dd>
             </div>
             <div>
                 <dt class="splis-label">Vice chair</dt>
-                <dd class="mt-1 text-slate-900 dark:text-slate-100">{{ $viceChairName ?: '—' }}</dd>
+                <dd class="mt-1 text-slate-900 dark:text-slate-100">
+                    @include('committees.partials.roster-member-link', [
+                        'boardMember' => $viceChair,
+                        'fallback' => $allowLegacy ? $committee->vice_chair : null,
+                        'term' => $selectedTerm,
+                    ])
+                </dd>
             </div>
             <div>
                 <dt class="splis-label">Secretary</dt>
@@ -79,7 +82,13 @@
                 @if ($memberRows->isNotEmpty())
                     <ul class="list-inside list-disc space-y-1 text-slate-900 dark:text-slate-100">
                         @foreach ($memberRows as $membership)
-                            <li>{{ $membership->boardMember?->displayName() }}</li>
+                            <li>
+                                @include('committees.partials.roster-member-link', [
+                                    'boardMember' => $membership->boardMember,
+                                    'fallback' => null,
+                                    'term' => $selectedTerm,
+                                ])
+                            </li>
                         @endforeach
                     </ul>
                 @elseif ($allowLegacy && $committee->members)
@@ -90,6 +99,16 @@
             </dd>
         </div>
     </div>
+
+    @include('partials.detail-prev-next', [
+        'previous' => $previousCommittee ?? null,
+        'next' => $nextCommittee ?? null,
+        'previousUrl' => ($previousCommittee ?? null) ? route('committees.show', ['committee' => $previousCommittee, 'term' => $selectedTerm->id]) : null,
+        'nextUrl' => ($nextCommittee ?? null) ? route('committees.show', ['committee' => $nextCommittee, 'term' => $selectedTerm->id]) : null,
+        'previousLabel' => isset($previousCommittee) ? $previousCommittee->name : null,
+        'nextLabel' => isset($nextCommittee) ? $nextCommittee->name : null,
+        'label' => 'Committee navigation',
+    ])
 
     <div class="mt-4">
         <a href="{{ route('committees.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2">

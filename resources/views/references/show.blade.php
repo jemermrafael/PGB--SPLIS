@@ -213,6 +213,16 @@
             </div>
         </div>
     </div>
+
+    @include('partials.detail-prev-next', [
+        'previous' => $previousReference ?? null,
+        'next' => $nextReference ?? null,
+        'previousUrl' => ($previousReference ?? null) ? route('references.show', $previousReference) : null,
+        'nextUrl' => ($nextReference ?? null) ? route('references.show', $nextReference) : null,
+        'previousLabel' => isset($previousReference) ? \Illuminate\Support\Str::limit($previousReference->title, 60) : null,
+        'nextLabel' => isset($nextReference) ? \Illuminate\Support\Str::limit($nextReference->title, 60) : null,
+        'label' => 'Reference material navigation',
+    ])
 </div>
 
 @if ($reference->hasFile() && $reference->isPdf())

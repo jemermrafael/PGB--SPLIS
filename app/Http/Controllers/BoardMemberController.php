@@ -36,13 +36,25 @@ class BoardMemberController extends Controller
         ]);
     }
 
-    public function show(Request $request, BoardMember $boardMember): View
+    public function show(Request $request, BoardMember $boardMember): View|RedirectResponse
     {
         $this->authorize('view', $boardMember);
 
-        ['terms' => $terms, 'selectedTerm' => $selectedTerm] = CommitteeTermSelection::resolve(
-            $request->integer('term') ?: null,
-        );
+        $requestedTermId = $request->integer('term') ?: null;
+
+        ['terms' => $allTerms, 'selectedTerm' => $selectedTerm] = CommitteeTermSelection::resolve($requestedTermId);
+
+        $memberTerms = $this->rosterService->termsFor($boardMember);
+        $terms = $memberTerms->isNotEmpty() ? $memberTerms : $allTerms;
+
+        if ($memberTerms->isNotEmpty() && ! $terms->contains('id', $selectedTerm->id)) {
+            $fallback = $terms->firstWhere('is_current', true) ?? $terms->first();
+
+            return redirect()->route('board-members.show', [
+                'boardMember' => $boardMember,
+                'term' => $fallback->id,
+            ]);
+        }
 
         $assignment = $this->rosterService->assignmentFor($boardMember, $selectedTerm);
         $profile = $this->profileService->build($boardMember, $selectedTerm);
@@ -54,6 +66,8 @@ class BoardMemberController extends Controller
             'assignment' => $assignment,
             'roles' => $profile['roles'],
             'otherTerms' => $profile['otherTerms'],
+            'previousBoardMember' => $boardMember->trashed() ? null : $boardMember->previousInList(),
+            'nextBoardMember' => $boardMember->trashed() ? null : $boardMember->nextInList(),
         ]);
     }
 

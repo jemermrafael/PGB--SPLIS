@@ -82,6 +82,12 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="m5 12 6-6" />
             @break
 
+        @case('arrow-right')
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="m13 6 6 6" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="m13 18 6-6" />
+            @break
+
         @case('layout-dashboard')
             <rect x="3" y="3" width="7" height="9" rx="1" />
             <rect x="14" y="3" width="7" height="5" rx="1" />
