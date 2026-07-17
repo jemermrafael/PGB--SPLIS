@@ -4,7 +4,7 @@
 ])
 
 <div {{ $attributes->class(['splis-page-header']) }}>
-    <div class="min-w-0">
+    <div @class(['min-w-0', 'w-full' => ! isset($actions)])>
         @isset($badges)
             <div class="mb-2 flex flex-wrap items-center gap-2">
                 {{ $badges }}

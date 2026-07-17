@@ -18,30 +18,32 @@
                 <span class="splis-badge">{{ $reference->statusLabel() }}</span>
             @endif
         </x-slot:badges>
-        <x-slot:actions>
-            @if ($reference->hasFile() && $reference->isPdf())
-                <button type="button" id="reference-view-file-btn" class="splis-btn-primary inline-flex items-center gap-2 text-nowrap">
-                    <x-icon name="eye" class="h-4 w-4" />
-                    View file
-                </button>
-            @endif
-            @if ($reference->hasFile())
-                <a href="{{ route('references.download', $reference) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-nowrap">
-                    <x-icon name="download" class="h-4 w-4" />
-                    Download
+        <x-slot:meta>
+            <div class="flex flex-wrap justify-end gap-2">
+                @if ($reference->hasFile() && $reference->isPdf())
+                    <button type="button" id="reference-view-file-btn" class="splis-btn-primary inline-flex items-center gap-2 text-nowrap">
+                        <x-icon name="eye" class="h-4 w-4" />
+                        View file
+                    </button>
+                @endif
+                @if ($reference->hasFile())
+                    <a href="{{ route('references.download', $reference) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-nowrap">
+                        <x-icon name="download" class="h-4 w-4" />
+                        Download
+                    </a>
+                @endif
+                @can('update', $reference)
+                    <a href="{{ route('references.edit', $reference) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-nowrap">
+                        <x-icon name="edit" class="h-4 w-4" />
+                        Edit
+                    </a>
+                @endcan
+                <a href="{{ route('references.index') }}" class="splis-btn-ghost inline-flex items-center gap-2 text-nowrap">
+                    <x-icon name="arrow-left" class="h-4 w-4" />
+                    Back to list
                 </a>
-            @endif
-            @can('update', $reference)
-                <a href="{{ route('references.edit', $reference) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-nowrap">
-                    <x-icon name="edit" class="h-4 w-4" />
-                    Edit
-                </a>
-            @endcan
-            <a href="{{ route('references.index') }}" class="splis-btn-ghost inline-flex items-center gap-2 text-nowrap">
-                <x-icon name="arrow-left" class="h-4 w-4" />
-                Back to list
-            </a>
-        </x-slot:actions>
+            </div>
+        </x-slot:meta>
     </x-page-header>
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
