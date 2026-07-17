@@ -217,7 +217,7 @@ export function initObMaker() {
                 <div>
                     <label class="splis-label">Kind</label>
                     <select class="splis-select splis-ob-block-field" data-field="kind" ${disabled}>
-                        <option value="urgent" ${c.kind === 'urgent' ? 'selected' : ''}>Urgent request</option>
+                        <option value="urgent" ${c.kind === 'urgent' ? 'selected' : ''}>Urgent Request</option>
                         <option value="regular" ${(c.kind ?? 'regular') === 'regular' ? 'selected' : ''}>Regular unassigned</option>
                     </select>
                 </div>

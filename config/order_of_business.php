@@ -23,7 +23,7 @@ return [
         'unfinished' => 'A. Unfinished business',
         'business_2nd' => '1. Measures for 2nd reading',
         'business_3rd' => '2. Measures for 3rd reading',
-        'unassigned_urgent' => '1. Urgent request/s',
+        'unassigned_urgent' => '1. Urgent Request/s',
         'unassigned_regular' => '2. Regular unassigned business',
     ],
 

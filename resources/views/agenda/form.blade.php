@@ -84,7 +84,7 @@
                             class="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
                             @checked(old('is_urgent_request', $agenda->is_urgent_request))
                         >
-                        <span>Urgent request</span>
+                        <span>Urgent Request</span>
                     </label>
                 </div>
             </div>

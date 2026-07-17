@@ -4,82 +4,80 @@
 
 @section('content')
 <div class="max-w-6xl">
-    <div class="splis-page-header !mb-6">
-        <div>
-            <div class="mb-2 flex flex-wrap items-center gap-2">
-                <span class="splis-agenda-status splis-agenda-status--{{ $agenda->status }}">{{ config('agenda.statuses.'.$agenda->status, $agenda->status) }}</span>
-                @if ($agenda->is_urgent_request)
-                    <span class="splis-badge-linked whitespace-nowrap">Urgent request</span>
-                @endif
-                @if ($finalObPlacements->isNotEmpty())
-                    @php
-                        $latestObPlacement = $finalObPlacements
-                            ->filter(fn ($placement) => $placement->legislativeSession?->session_date)
-                            ->sortByDesc(fn ($placement) => $placement->legislativeSession->session_date)
-                            ->first();
-                    @endphp
-                    @if ($latestObPlacement?->legislativeSession)
-                        <span class="splis-badge-linked whitespace-nowrap">
-                            Scheduled on {{ $latestObPlacement->legislativeSession->session_number ?: 'Order of Business' }} Order of Business {{ $latestObPlacement->legislativeSession->session_date?->format('M d, Y') }}
-                        </span>
-                    @endif
-                @endif
-                @if ($agenda->hasIncoming())
-                    <a href="{{ route('incoming.show', $agenda->incomingDocument) }}" class="splis-badge-linked">Incoming linked</a>
-                @endif
-                @if ($agenda->resolution)
-                    <a href="{{ route('resolutions.show', $agenda->resolution) }}" class="splis-badge-linked whitespace-nowrap">
-                        Published to Resolution No.: {{ $agenda->resolution->resolution_no }} · Series {{ $agenda->resolution->series }}
-                    </a>
-                @endif
-                @if ($agenda->ordinance)
-                    <a href="{{ route('ordinances.show', $agenda->ordinance) }}" class="splis-badge-linked whitespace-nowrap">
-                        Published to {{ $agenda->ordinance->displayNumber() }} · Series {{ $agenda->ordinance->series_year }}
-                    </a>
-                @endif
-                @if ($agenda->appropriationOrdinance)
-                    <a href="{{ route('appropriation-ordinances.show', $agenda->appropriationOrdinance) }}" class="splis-badge-linked whitespace-nowrap">Published to Appropriation Ordinance</a>
-                @endif
-                @if ($agenda->publishedTargetLabel() && ! $agenda->resolution && ! $agenda->ordinance && ! $agenda->appropriationOrdinance)
-                    <span class="splis-badge-linked">Published to {{ $agenda->publishedTargetLabel() }}</span>
-                @endif
-            </div>
-            <h1 class="splis-page-title">Agenda {{ $agenda->displayLabel() }}</h1>
-            <p class="splis-page-subtitle">
-                @if ($agenda->sender){{ $agenda->sender }} · @endif
-                Version {{ $agenda->current_version_no }}
-            </p>
-        </div>
-        <div class="flex flex-wrap gap-2">
-            @can('promote', $agenda)
-                @if (config('incoming.enabled', false))
-                <form method="POST" action="{{ route('agenda.promote-incoming', $agenda) }}">
-                    @csrf
-                    <button type="submit" class="splis-btn-primary inline-flex items-center gap-2">
-                        <x-icon name="inbox" class="h-4 w-4" />
-                        Create Incoming
-                    </button>
-                </form>
-                @endif
-            @endcan
-            @if ($agenda->request_pdf_url)
-                <a href="{{ $agenda->request_pdf_url }}" target="_blank" rel="noopener" class="splis-btn-secondary inline-flex items-center gap-2">
-                    <x-icon name="external-link" class="h-4 w-4" />
-                    Request PDF
+    @php
+        $agendaSubtitle = ($agenda->sender ? $agenda->sender.' · ' : '').'Version '.$agenda->current_version_no;
+        $latestObPlacement = $finalObPlacements
+            ->filter(fn ($placement) => $placement->legislativeSession?->session_date)
+            ->sortByDesc(fn ($placement) => $placement->legislativeSession->session_date)
+            ->first();
+    @endphp
+    <x-page-header
+        class="!mb-6"
+        :title="'Agenda '.$agenda->displayLabel()"
+        :subtitle="$agendaSubtitle"
+    >
+        <x-slot:badges>
+            <span class="splis-agenda-status splis-agenda-status--{{ $agenda->status }}">{{ config('agenda.statuses.'.$agenda->status, $agenda->status) }}</span>
+            @if ($agenda->is_urgent_request)
+                <span class="splis-badge-linked whitespace-nowrap">Urgent Request</span>
+            @endif
+            @if ($latestObPlacement?->legislativeSession)
+                <span class="splis-badge-linked whitespace-nowrap">
+                    Scheduled on {{ $latestObPlacement->legislativeSession->session_number ?: 'Order of Business' }} Order of Business {{ $latestObPlacement->legislativeSession->session_date?->format('M d, Y') }}
+                </span>
+            @endif
+            @if ($agenda->hasIncoming())
+                <a href="{{ route('incoming.show', $agenda->incomingDocument) }}" class="splis-badge-linked">Incoming linked</a>
+            @endif
+            @if ($agenda->resolution)
+                <a href="{{ route('resolutions.show', $agenda->resolution) }}" class="splis-badge-linked whitespace-nowrap">
+                    Published to Resolution No.: {{ $agenda->resolution->resolution_no }} · Series {{ $agenda->resolution->series }}
                 </a>
             @endif
-            @can('update', $agenda)
-                <a href="{{ route('agenda.edit', $agenda) }}" class="splis-btn-secondary inline-flex items-center gap-2">
-                    <x-icon name="edit" class="h-4 w-4" />
-                    Edit
+            @if ($agenda->ordinance)
+                <a href="{{ route('ordinances.show', $agenda->ordinance) }}" class="splis-badge-linked whitespace-nowrap">
+                    Published to {{ $agenda->ordinance->displayNumber() }} · Series {{ $agenda->ordinance->series_year }}
                 </a>
-            @endcan
-            <a href="{{ route('agenda.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
-                <x-icon name="arrow-left" class="h-4 w-4" />
-                Back to list
-            </a>
-        </div>
-    </div>
+            @endif
+            @if ($agenda->appropriationOrdinance)
+                <a href="{{ route('appropriation-ordinances.show', $agenda->appropriationOrdinance) }}" class="splis-badge-linked whitespace-nowrap">Published to Appropriation Ordinance</a>
+            @endif
+            @if ($agenda->publishedTargetLabel() && ! $agenda->resolution && ! $agenda->ordinance && ! $agenda->appropriationOrdinance)
+                <span class="splis-badge-linked">Published to {{ $agenda->publishedTargetLabel() }}</span>
+            @endif
+        </x-slot:badges>
+        <x-slot:meta>
+            <div class="flex flex-wrap justify-end gap-2">
+                @can('promote', $agenda)
+                    @if (config('incoming.enabled', false))
+                        <form method="POST" action="{{ route('agenda.promote-incoming', $agenda) }}">
+                            @csrf
+                            <button type="submit" class="splis-btn-primary inline-flex items-center gap-2 text-nowrap">
+                                <x-icon name="inbox" class="h-4 w-4" />
+                                Create Incoming
+                            </button>
+                        </form>
+                    @endif
+                @endcan
+                @if ($agenda->request_pdf_url)
+                    <a href="{{ $agenda->request_pdf_url }}" target="_blank" rel="noopener" class="splis-btn-secondary inline-flex items-center gap-2 text-nowrap">
+                        <x-icon name="external-link" class="h-4 w-4" />
+                        Request PDF
+                    </a>
+                @endif
+                @can('update', $agenda)
+                    <a href="{{ route('agenda.edit', $agenda) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-nowrap">
+                        <x-icon name="edit" class="h-4 w-4" />
+                        Edit
+                    </a>
+                @endcan
+                <a href="{{ route('agenda.index') }}" class="splis-btn-ghost inline-flex items-center gap-2 text-nowrap">
+                    <x-icon name="arrow-left" class="h-4 w-4" />
+                    Back to list
+                </a>
+            </div>
+        </x-slot:meta>
+    </x-page-header>
 
     @if ($errors->has('promote') || $errors->has('unlink') || $errors->has('version'))
         <div class="splis-alert-error mb-6">{{ $errors->first('promote') ?: $errors->first('unlink') ?: $errors->first('version') }}</div>

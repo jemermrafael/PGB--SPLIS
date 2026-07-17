@@ -9,7 +9,7 @@
             <div class="mb-2 flex flex-wrap items-center gap-2">
                 <span class="splis-agenda-status splis-agenda-status--{{ $agenda->status }}">{{ config('agenda.statuses.'.$agenda->status, $agenda->status) }}</span>
                 @if ($agenda->is_urgent_request)
-                    <span class="splis-badge-linked whitespace-nowrap">Urgent request</span>
+                    <span class="splis-badge-linked whitespace-nowrap">Urgent Request</span>
                 @endif
                 @if ($finalObPlacements->isNotEmpty())
                     @php

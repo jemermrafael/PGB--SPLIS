@@ -19,7 +19,7 @@ enum ObDocumentSection: string
             self::Unfinished => 'A. Unfinished business',
             self::SecondReading => '1. Measures for 2nd reading',
             self::ThirdReading => '2. Measures for 3rd reading',
-            self::Urgent => '1. Urgent request/s',
+            self::Urgent => '1. Urgent Request/s',
             self::RegularUnassigned => 'Regular unassigned business',
             self::Announcement => 'VII. Announcements / correspondence',
         };
