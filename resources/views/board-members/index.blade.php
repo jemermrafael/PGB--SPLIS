@@ -60,7 +60,7 @@
                 <input type="hidden" name="term" value="{{ $selectedTerm->id }}">
                 <button type="submit" data-board-member-bulk-delete class="splis-btn-danger inline-flex items-center gap-2 text-sm" disabled>
                     <x-icon name="trash" class="h-4 w-4" />
-                    Move selected to trash
+                    Delete
                 </button>
             </form>
         </div>

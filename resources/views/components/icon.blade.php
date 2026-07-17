@@ -168,6 +168,20 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 20a6 6 0 0 1 12 0" />
             @break
 
+        @case('maximize')
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4h4" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20 8V4h-4" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v4h4" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20 16v4h-4" />
+            @break
+
+        @case('minimize')
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 4H4v4" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16 4h4v4" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 20H4v-4" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16 20h4v-4" />
+            @break
+
         @default
             <circle cx="12" cy="12" r="9" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4" />

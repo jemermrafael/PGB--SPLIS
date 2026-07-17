@@ -218,16 +218,28 @@
 @if ($reference->hasFile() && $reference->isPdf())
     <div id="reference-pdf-modal" class="splis-modal" hidden>
         <div class="splis-modal-backdrop" data-reference-modal-close tabindex="-1" aria-hidden="true"></div>
-        <div class="splis-modal-panel !max-h-[92vh] !max-w-5xl" role="dialog" aria-modal="true" aria-labelledby="reference-pdf-modal-title">
+        <div class="splis-modal-panel !max-h-[92vh] !max-w-5xl" data-reference-pdf-panel role="dialog" aria-modal="true" aria-labelledby="reference-pdf-modal-title">
             <div class="splis-modal-header">
                 <h3 id="reference-pdf-modal-title" class="splis-modal-title">{{ $reference->original_filename ?: $reference->title }}</h3>
-                <button type="button" class="splis-modal-close" data-reference-modal-close aria-label="Close">×</button>
+                <div class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        id="reference-pdf-fullscreen"
+                        class="splis-btn-ghost inline-flex items-center gap-1.5 !px-2 !py-1 text-xs"
+                        aria-pressed="false"
+                    >
+                        <x-icon name="maximize" class="h-3.5 w-3.5" data-fullscreen-icon="enter" />
+                        <x-icon name="minimize" class="hidden h-3.5 w-3.5" data-fullscreen-icon="exit" />
+                        <span data-fullscreen-label>Fullscreen</span>
+                    </button>
+                    <button type="button" class="splis-modal-close" data-reference-modal-close aria-label="Close">×</button>
+                </div>
             </div>
             <div class="splis-modal-body !p-0">
                 <iframe
                     id="reference-pdf-frame"
                     title="Reference material PDF preview"
-                    class="block h-[75vh] w-full border-0 bg-slate-100 dark:bg-slate-900"
+                    class="splis-pdf-modal-frame block h-[75vh] w-full border-0 bg-slate-100 dark:bg-slate-900"
                     src="about:blank"
                     data-src="{{ route('references.view', $reference) }}"
                 ></iframe>
@@ -239,11 +251,31 @@
     <script>
         (function () {
             const modal = document.getElementById('reference-pdf-modal');
+            const panel = modal?.querySelector('[data-reference-pdf-panel]');
             const openBtn = document.getElementById('reference-view-file-btn');
             const frame = document.getElementById('reference-pdf-frame');
+            const fullscreenBtn = document.getElementById('reference-pdf-fullscreen');
 
-            if (! modal || ! openBtn || ! frame) {
+            if (! modal || ! panel || ! openBtn || ! frame) {
                 return;
+            }
+
+            function setFullscreen(enabled) {
+                modal.classList.toggle('is-fullscreen-active', enabled);
+                panel.classList.toggle('is-fullscreen', enabled);
+
+                if (fullscreenBtn) {
+                    fullscreenBtn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+                    const label = fullscreenBtn.querySelector('[data-fullscreen-label]');
+                    const enterIcon = fullscreenBtn.querySelector('[data-fullscreen-icon="enter"]');
+                    const exitIcon = fullscreenBtn.querySelector('[data-fullscreen-icon="exit"]');
+
+                    if (label) {
+                        label.textContent = enabled ? 'Exit fullscreen' : 'Fullscreen';
+                    }
+                    enterIcon?.classList.toggle('hidden', enabled);
+                    exitIcon?.classList.toggle('hidden', ! enabled);
+                }
             }
 
             function openModal() {
@@ -251,21 +283,30 @@
                     frame.setAttribute('src', frame.dataset.src);
                 }
 
+                setFullscreen(false);
                 modal.hidden = false;
                 document.body.classList.add('splis-modal-open');
             }
 
             function closeModal() {
+                setFullscreen(false);
                 modal.hidden = true;
                 document.body.classList.remove('splis-modal-open');
             }
 
             openBtn.addEventListener('click', openModal);
+            fullscreenBtn?.addEventListener('click', () => {
+                setFullscreen(! panel.classList.contains('is-fullscreen'));
+            });
             modal.querySelectorAll('[data-reference-modal-close]').forEach((el) => {
                 el.addEventListener('click', closeModal);
             });
             document.addEventListener('keydown', (event) => {
                 if (event.key === 'Escape' && ! modal.hidden) {
+                    if (panel.classList.contains('is-fullscreen')) {
+                        setFullscreen(false);
+                        return;
+                    }
                     closeModal();
                 }
             });
