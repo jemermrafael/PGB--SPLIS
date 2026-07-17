@@ -38,6 +38,46 @@ export function initConfirmSubmitForms() {
             form.requestSubmit();
         });
     });
+
+    document.querySelectorAll('button[data-confirm-submit], input[type="submit"][data-confirm-submit]').forEach((button) => {
+        if (!(button instanceof HTMLElement) || button.dataset.confirmSubmitBound === '1') {
+            return;
+        }
+
+        const form = button instanceof HTMLButtonElement || button instanceof HTMLInputElement
+            ? button.form
+            : null;
+
+        if (! form) {
+            return;
+        }
+
+        // Forms already bound above handle their own submit confirm.
+        if (form.hasAttribute('data-confirm-submit')) {
+            return;
+        }
+
+        button.dataset.confirmSubmitBound = '1';
+
+        button.addEventListener('click', async (event) => {
+            if (form.dataset.confirmAccepted === '1') {
+                delete form.dataset.confirmAccepted;
+
+                return;
+            }
+
+            event.preventDefault();
+
+            const confirmed = await showConfirmDialog(confirmOptionsFrom(button));
+
+            if (! confirmed) {
+                return;
+            }
+
+            form.dataset.confirmAccepted = '1';
+            form.requestSubmit(button);
+        });
+    });
 }
 
 export function initBoardMemberBulkDelete() {

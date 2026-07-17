@@ -157,7 +157,14 @@
             Back to Ordinances
         </a>
         @can('delete', $ordinance)
-            <form method="POST" action="{{ route('ordinances.destroy', $ordinance) }}" onsubmit="return confirm('Move this ordinance to trash?');">
+            <form
+                method="POST"
+                action="{{ route('ordinances.destroy', $ordinance) }}"
+                data-confirm-submit
+                data-confirm-title="Move ordinance to trash?"
+                data-confirm-message="Move this ordinance to trash? Superadmin can restore from Trash."
+                data-confirm-label="Delete"
+            >
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="splis-btn-danger inline-flex items-center gap-2">

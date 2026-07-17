@@ -23,7 +23,14 @@
             </a>
             <a href="{{ route('ob.sessions.show', $session) }}" class="splis-btn-secondary">Session</a>
             @can('delete', $session)
-                <form method="POST" action="{{ route('ob.sessions.destroy', $session) }}" onsubmit="return confirm('Delete this Order of Business session and its document? This cannot be undone.')">
+                <form
+                    method="POST"
+                    action="{{ route('ob.sessions.destroy', $session) }}"
+                    data-confirm-submit
+                    data-confirm-title="Delete Order of Business session?"
+                    data-confirm-message="Delete this Order of Business session and its document? This cannot be undone."
+                    data-confirm-label="Delete"
+                >
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="splis-btn-danger">Delete</button>

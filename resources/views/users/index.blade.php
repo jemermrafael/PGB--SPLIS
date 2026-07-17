@@ -49,7 +49,14 @@
                                     <a href="{{ route('users.edit', $user) }}" class="splis-btn-secondary text-sm">Edit</a>
                                 @endcan
                                 @can('delete', $user)
-                                    <form method="POST" action="{{ route('users.destroy', $user) }}" onsubmit="return confirm('Delete this user account?');">
+                                    <form
+                                        method="POST"
+                                        action="{{ route('users.destroy', $user) }}"
+                                        data-confirm-submit
+                                        data-confirm-title="Delete user account?"
+                                        data-confirm-message="Delete this user account? This cannot be undone."
+                                        data-confirm-label="Delete"
+                                    >
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="splis-btn-ghost text-sm text-red-600">Delete</button>

@@ -72,7 +72,14 @@
             Back to list
         </a>
         @can('delete', $appropriationOrdinance)
-            <form method="POST" action="{{ route('appropriation-ordinances.destroy', $appropriationOrdinance) }}" onsubmit="return confirm('Move this appropriation ordinance to trash?');">
+            <form
+                method="POST"
+                action="{{ route('appropriation-ordinances.destroy', $appropriationOrdinance) }}"
+                data-confirm-submit
+                data-confirm-title="Move appropriation ordinance to trash?"
+                data-confirm-message="Move this appropriation ordinance to trash? Superadmin can restore from Trash."
+                data-confirm-label="Delete"
+            >
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="splis-btn-danger inline-flex items-center gap-2">

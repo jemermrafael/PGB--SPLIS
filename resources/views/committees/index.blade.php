@@ -76,7 +76,14 @@
                                     </a>
                                 @endcan
                                 @can('delete', $committee)
-                                    <form method="POST" action="{{ route('committees.destroy', $committee) }}" onsubmit="return confirm('Move this committee to trash?');">
+                                    <form
+                                        method="POST"
+                                        action="{{ route('committees.destroy', $committee) }}"
+                                        data-confirm-submit
+                                        data-confirm-title="Move committee to trash?"
+                                        data-confirm-message="Move this committee to trash? Superadmin can restore from Trash."
+                                        data-confirm-label="Delete"
+                                    >
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="splis-btn-danger inline-flex items-center gap-2 text-sm">

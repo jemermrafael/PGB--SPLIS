@@ -319,7 +319,14 @@
 
     @can('delete', $session)
         <div class="mt-6 flex justify-end">
-            <form method="POST" action="{{ route('ob.sessions.destroy', $session) }}" onsubmit="return confirm('Move this Order of Business session to trash?')">
+            <form
+                method="POST"
+                action="{{ route('ob.sessions.destroy', $session) }}"
+                data-confirm-submit
+                data-confirm-title="Move Order of Business session to trash?"
+                data-confirm-message="Move this Order of Business session to trash? Superadmin can restore from Trash."
+                data-confirm-label="Delete"
+            >
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="splis-btn-danger">Delete</button>

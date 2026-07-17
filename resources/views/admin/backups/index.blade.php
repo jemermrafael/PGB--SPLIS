@@ -80,7 +80,10 @@
                                     method="POST"
                                     action="{{ route('admin.backups.restore') }}"
                                     class="inline-flex"
-                                    onsubmit="return confirm('Restore {{ $backup['filename'] }}?\n\nThis REPLACES the entire database. Type OK only if you are sure.');"
+                                    data-confirm-submit
+                                    data-confirm-title="Restore database backup?"
+                                    data-confirm-message="Restore {{ $backup['filename'] }}? This replaces the entire database."
+                                    data-confirm-label="Restore"
                                 >
                                     @csrf
                                     <input type="hidden" name="filename" value="{{ $backup['filename'] }}">

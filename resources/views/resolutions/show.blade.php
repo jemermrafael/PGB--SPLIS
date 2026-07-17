@@ -148,7 +148,15 @@
     @if ($resolution->trashed())
         <div class="mt-6 flex flex-wrap justify-end gap-2">
             @can('restore', $resolution)
-                <form method="POST" action="{{ route('resolutions.restore', $resolution) }}" onsubmit="return confirm('Restore this resolution?')">
+                <form
+                    method="POST"
+                    action="{{ route('resolutions.restore', $resolution) }}"
+                    data-confirm-submit
+                    data-confirm-title="Restore resolution?"
+                    data-confirm-message="Restore this resolution from trash?"
+                    data-confirm-label="Restore"
+                    data-confirm-danger="0"
+                >
                     @csrf
                     <button type="submit" class="splis-btn-secondary inline-flex items-center gap-2">
                         <x-icon name="check-circle" class="h-4 w-4" />
@@ -157,7 +165,14 @@
                 </form>
             @endcan
             @can('forceDelete', $resolution)
-                <form method="POST" action="{{ route('resolutions.force-destroy', $resolution) }}" onsubmit="return confirm('Permanently delete this resolution? This cannot be undone. The PDF file will not be deleted.')">
+                <form
+                    method="POST"
+                    action="{{ route('resolutions.force-destroy', $resolution) }}"
+                    data-confirm-submit
+                    data-confirm-title="Permanently delete resolution?"
+                    data-confirm-message="Permanently delete this resolution? This cannot be undone. The PDF file will not be deleted."
+                    data-confirm-label="Delete permanently"
+                >
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="splis-btn-danger inline-flex items-center gap-2">
@@ -170,7 +185,14 @@
     @else
         @can('delete', $resolution)
             <div class="mt-4 flex justify-end">
-                <form method="POST" action="{{ route('resolutions.destroy', $resolution) }}" onsubmit="return confirm('Move this resolution to trash?')">
+                <form
+                    method="POST"
+                    action="{{ route('resolutions.destroy', $resolution) }}"
+                    data-confirm-submit
+                    data-confirm-title="Move resolution to trash?"
+                    data-confirm-message="Move this resolution to trash? Superadmin can restore from Trash."
+                    data-confirm-label="Delete"
+                >
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="splis-btn-danger inline-flex items-center gap-2">

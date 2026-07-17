@@ -133,7 +133,15 @@
                     </div>
                     <div class="splis-card-body space-y-2">
                         @if ($reference->status !== 'archived')
-                            <form method="POST" action="{{ route('references.archive', $reference) }}" onsubmit="return confirm('Archive this reference material?')">
+                            <form
+                                method="POST"
+                                action="{{ route('references.archive', $reference) }}"
+                                data-confirm-submit
+                                data-confirm-title="Archive reference material?"
+                                data-confirm-message="Archive {{ $reference->title }}? It can be restored later from Lifecycle."
+                                data-confirm-label="Archive"
+                                data-confirm-danger="0"
+                            >
                                 @csrf
                                 <button type="submit" class="splis-btn-secondary inline-flex w-full items-center justify-center gap-2">
                                     <x-icon name="archive" class="h-4 w-4" />
@@ -141,7 +149,15 @@
                                 </button>
                             </form>
                         @else
-                            <form method="POST" action="{{ route('references.restore', $reference) }}" onsubmit="return confirm('Restore this reference material?')">
+                            <form
+                                method="POST"
+                                action="{{ route('references.restore', $reference) }}"
+                                data-confirm-submit
+                                data-confirm-title="Restore reference material?"
+                                data-confirm-message="Restore {{ $reference->title }} to active status?"
+                                data-confirm-label="Restore"
+                                data-confirm-danger="0"
+                            >
                                 @csrf
                                 <button type="submit" class="splis-btn-secondary inline-flex w-full items-center justify-center gap-2">
                                     <x-icon name="check-circle" class="h-4 w-4" />
@@ -150,7 +166,14 @@
                             </form>
                         @endif
                         @can('delete', $reference)
-                            <form method="POST" action="{{ route('references.destroy', $reference) }}" onsubmit="return confirm('Move this reference material to trash?')">
+                            <form
+                                method="POST"
+                                action="{{ route('references.destroy', $reference) }}"
+                                data-confirm-submit
+                                data-confirm-title="Move reference material to trash?"
+                                data-confirm-message="Move {{ $reference->title }} to trash? Superadmin can restore from Trash."
+                                data-confirm-label="Delete"
+                            >
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="splis-btn-danger inline-flex w-full items-center justify-center gap-2">

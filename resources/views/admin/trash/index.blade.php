@@ -36,11 +36,27 @@
             <x-icon name="check-circle" class="h-4 w-4" />
             Restore selected
         </button>
-        <button type="submit" class="splis-btn-danger text-sm inline-flex items-center gap-1.5" formaction="{{ route('admin.trash.bulk-force-destroy') }}" onclick="return confirm('Permanently delete selected items? This cannot be undone.');">
+        <button
+            type="submit"
+            class="splis-btn-danger text-sm inline-flex items-center gap-1.5"
+            formaction="{{ route('admin.trash.bulk-force-destroy') }}"
+            data-confirm-submit
+            data-confirm-title="Permanently delete selected items?"
+            data-confirm-message="Permanently delete selected items? This cannot be undone."
+            data-confirm-label="Delete forever"
+        >
             <x-icon name="trash" class="h-4 w-4" />
             Delete selected forever
         </button>
-        <button type="submit" class="splis-btn-ghost text-sm" formaction="{{ route('admin.trash.purge-older') }}" onclick="return confirm('Permanently delete all {{ strtolower($types[$type]['label']) }} in trash older than {{ $retentionDays }} days?');">Purge older than {{ $retentionDays }} days</button>
+        <button
+            type="submit"
+            class="splis-btn-ghost text-sm"
+            formaction="{{ route('admin.trash.purge-older') }}"
+            data-confirm-submit
+            data-confirm-title="Purge older trash?"
+            data-confirm-message="Permanently delete all {{ strtolower($types[$type]['label']) }} in trash older than {{ $retentionDays }} days?"
+            data-confirm-label="Purge"
+        >Purge older than {{ $retentionDays }} days</button>
     </form>
 
     <div class="splis-table-wrap">
@@ -82,7 +98,10 @@
                                 <form
                                     method="POST"
                                     action="{{ route('admin.trash.force-destroy', ['type' => $type, 'id' => $row['id']]) }}"
-                                    onsubmit="return confirm('Permanently delete this item? This cannot be undone.')"
+                                    data-confirm-submit
+                                    data-confirm-title="Permanently delete item?"
+                                    data-confirm-message="Permanently delete this item? This cannot be undone."
+                                    data-confirm-label="Delete forever"
                                 >
                                     @csrf
                                     @method('DELETE')

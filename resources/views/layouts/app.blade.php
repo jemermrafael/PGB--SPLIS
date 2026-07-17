@@ -401,9 +401,7 @@
         <div id="splis-toast-stack" class="splis-toast-stack" aria-live="polite" aria-atomic="true"></div>
     @endif
 
-    @if ($user?->isSuperadmin())
-        @include('partials.confirm-dialog')
-    @endif
+    @include('partials.confirm-dialog')
 
     @stack('scripts')
 </body>

@@ -93,7 +93,10 @@
                                     <form
                                         method="POST"
                                         action="{{ route('agenda.versions.destroy', [$agenda, $version]) }}"
-                                        onsubmit="return confirm('Delete version v{{ $version->version_no }}?{{ $version->version_no === $agenda->current_version_no ? ' The agenda will revert to the previous version.' : '' }}');"
+                                        data-confirm-submit
+                                        data-confirm-title="Delete agenda version?"
+                                        data-confirm-message="Delete version v{{ $version->version_no }}?{{ $version->version_no === $agenda->current_version_no ? ' The agenda will revert to the previous version.' : '' }}"
+                                        data-confirm-label="Delete"
                                     >
                                         @csrf
                                         @method('DELETE')

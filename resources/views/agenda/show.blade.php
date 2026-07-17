@@ -196,7 +196,14 @@
                                     </a>
                                 </div>
                                 @can('unlinkIncoming', $agenda)
-                                    <form method="POST" action="{{ route('agenda.unlink-incoming', $agenda) }}" onsubmit="return confirm('Remove the incoming link? Agenda-created incoming records will be deleted.');">
+                                    <form
+                                        method="POST"
+                                        action="{{ route('agenda.unlink-incoming', $agenda) }}"
+                                        data-confirm-submit
+                                        data-confirm-title="Unlink incoming document?"
+                                        data-confirm-message="Remove the incoming link? Agenda-created incoming records will be deleted."
+                                        data-confirm-label="Unlink"
+                                    >
                                         @csrf
                                         <button type="submit" class="splis-btn-ghost text-sm text-red-600 hover:text-red-700">Unlink</button>
                                     </form>
@@ -212,7 +219,14 @@
                                     </a>
                                 </div>
                                 @can('unlinkResolution', $agenda)
-                                    <form method="POST" action="{{ route('agenda.unlink-resolution', $agenda) }}" onsubmit="return confirm('Remove the resolution link from this agenda item?');">
+                                    <form
+                                        method="POST"
+                                        action="{{ route('agenda.unlink-resolution', $agenda) }}"
+                                        data-confirm-submit
+                                        data-confirm-title="Unlink resolution?"
+                                        data-confirm-message="Remove the resolution link from this agenda item?"
+                                        data-confirm-label="Unlink"
+                                    >
                                         @csrf
                                         <button type="submit" class="splis-btn-ghost text-sm text-red-600 hover:text-red-700">Unlink</button>
                                     </form>
