@@ -19,7 +19,7 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ $isEdit ? route('agenda.update', $agenda) : route('agenda.store') }}" class="space-y-6">
+    <form method="POST" action="{{ $isEdit ? route('agenda.update', $agenda) : route('agenda.store') }}" enctype="multipart/form-data" class="space-y-6">
         @csrf
         @if ($isEdit)
             @method('PUT')
@@ -39,8 +39,16 @@
                     @endif
                 </div>
                 <div>
-                    <label class="splis-label" for="request_pdf_url">Request PDF URL</label>
+                    <label class="splis-label" for="request_pdf">Request file (upload)</label>
+                    <input type="file" name="request_pdf" id="request_pdf" accept="application/pdf,image/jpeg,image/png,image/gif,image/webp,.pdf,.jpg,.jpeg,.png,.gif,.webp" class="splis-input">
+                    @if ($isEdit && $agenda->hasLocalPdfFor(App\Support\AgendaPdfSlot::REQUEST))
+                        <p class="mt-1 text-xs text-slate-500">Local file stored — uploading replaces it.</p>
+                    @endif
+                </div>
+                <div>
+                    <label class="splis-label" for="request_pdf_url">Request PDF URL (fallback)</label>
                     <input type="url" name="request_pdf_url" id="request_pdf_url" value="{{ old('request_pdf_url', $agenda->request_pdf_url) }}" class="splis-input" placeholder="Google Drive link">
+                    <p class="mt-1 text-xs text-slate-500">Used when no local file is present. Can be mirrored from the agenda page or Data Sync queue.</p>
                 </div>
                 <div>
                     <label class="splis-label" for="date_received">Date received</label>
@@ -152,7 +160,14 @@
                     'placeholder' => 'Search or type outcome…',
                 ])
                 <div class="md:col-span-2">
-                    <label class="splis-label" for="committee_report_url">Committee report link</label>
+                    <label class="splis-label" for="committee_report_pdf">Committee report file (upload)</label>
+                    <input type="file" name="committee_report_pdf" id="committee_report_pdf" accept="application/pdf,image/jpeg,image/png,image/gif,image/webp,.pdf,.jpg,.jpeg,.png,.gif,.webp" class="splis-input">
+                    @if ($isEdit && $agenda->hasLocalPdfFor(App\Support\AgendaPdfSlot::COMMITTEE_REPORT))
+                        <p class="mt-1 text-xs text-slate-500">Local file stored — uploading replaces it.</p>
+                    @endif
+                </div>
+                <div class="md:col-span-2">
+                    <label class="splis-label" for="committee_report_url">Committee report link (fallback)</label>
                     <input type="url" name="committee_report_url" id="committee_report_url" value="{{ old('committee_report_url', $agenda->committee_report_url) }}" class="splis-input">
                 </div>
             </div>
@@ -209,20 +224,41 @@
                     <p class="text-xs text-slate-500 dark:text-slate-400">Ordinance output will be published or linked in SPLIS ordinances when saved as Done.</p>
                 </div>
                 <div class="md:col-span-2" data-measure-panel="appropriation_ordinance">
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Appropriation ordinance output will be published or linked in SPLIS when saved as Done.</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Appropriation Ordinance output will be published or linked in SPLIS when saved as Done.</p>
                 </div>
                 <div data-resolution-only class="md:col-span-2 grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                        <label class="splis-label" for="journal_url">Journal of proceedings</label>
+                        <label class="splis-label" for="journal_pdf">Journal file (upload)</label>
+                        <input type="file" name="journal_pdf" id="journal_pdf" accept="application/pdf,image/jpeg,image/png,image/gif,image/webp,.pdf,.jpg,.jpeg,.png,.gif,.webp" class="splis-input">
+                        @if ($isEdit && $agenda->hasLocalPdfFor(App\Support\AgendaPdfSlot::JOURNAL))
+                            <p class="mt-1 text-xs text-slate-500">Local file stored.</p>
+                        @endif
+                    </div>
+                    <div>
+                        <label class="splis-label" for="minutes_pdf">Minutes file (upload)</label>
+                        <input type="file" name="minutes_pdf" id="minutes_pdf" accept="application/pdf,image/jpeg,image/png,image/gif,image/webp,.pdf,.jpg,.jpeg,.png,.gif,.webp" class="splis-input">
+                        @if ($isEdit && $agenda->hasLocalPdfFor(App\Support\AgendaPdfSlot::MINUTES))
+                            <p class="mt-1 text-xs text-slate-500">Local file stored.</p>
+                        @endif
+                    </div>
+                    <div>
+                        <label class="splis-label" for="journal_url">Journal of proceedings (fallback)</label>
                         <input type="url" name="journal_url" id="journal_url" value="{{ old('journal_url', $agenda->journal_url) }}" class="splis-input">
                     </div>
                     <div>
-                        <label class="splis-label" for="minutes_url">Minutes of session</label>
+                        <label class="splis-label" for="minutes_url">Minutes of session (fallback)</label>
                         <input type="url" name="minutes_url" id="minutes_url" value="{{ old('minutes_url', $agenda->minutes_url) }}" class="splis-input">
                     </div>
                 </div>
                 <div class="md:col-span-2">
-                    <label class="splis-label" for="reso_ord_ao_url">Output PDF URL (legacy GDrive)</label>
+                    <label class="splis-label" for="reso_ord_ao_pdf">Output file (upload)</label>
+                    <input type="file" name="reso_ord_ao_pdf" id="reso_ord_ao_pdf" accept="application/pdf,image/jpeg,image/png,image/gif,image/webp,.pdf,.jpg,.jpeg,.png,.gif,.webp" class="splis-input">
+                    @if ($isEdit && $agenda->hasLocalPdfFor(App\Support\AgendaPdfSlot::RESO_ORD_AO))
+                        <p class="mt-1 text-xs text-slate-500">Local file stored.</p>
+                    @endif
+                </div>
+                <div class="md:col-span-2">
+                    <label class="splis-label" for="reso_ord_ao_url">Output PDF URL (legacy GDrive fallback)</label>
                     <input type="url" name="reso_ord_ao_url" id="reso_ord_ao_url" value="{{ old('reso_ord_ao_url', $agenda->reso_ord_ao_url) }}" class="splis-input" placeholder="Optional when linked in SPLIS">
                 </div>
                 <div class="md:col-span-2">

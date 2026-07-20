@@ -11,8 +11,8 @@
 <div class="max-w-3xl">
     <div class="splis-page-header !mb-6">
         <div>
-            <h1 class="splis-page-title">{{ $isEdit ? 'Edit ordinance' : 'New ordinance' }}</h1>
-            <p class="splis-page-subtitle">Provincial ordinance record — enactment through publication and effectivity.</p>
+            <h1 class="splis-page-title">{{ $isEdit ? 'Edit Ordinance' : 'New Ordinance' }}</h1>
+            <p class="splis-page-subtitle">Provincial Ordinance record — enactment through publication and effectivity.</p>
         </div>
     </div>
 
@@ -120,7 +120,7 @@
         <div>
             <label class="splis-label" for="pdf_url">Ordinance PDF URL (fallback)</label>
             <input type="url" name="pdf_url" id="pdf_url" value="{{ old('pdf_url', $ordinance->pdf_url) }}" class="splis-input" placeholder="Google Drive link">
-            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Used when no local file is present. Can be mirrored to local storage from the ordinance page.</p>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Used when no local file is present. Can be mirrored to local storage from the Ordinance page.</p>
         </div>
 
         <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-800/50">
@@ -157,15 +157,35 @@
                     <textarea name="mov_bulletin" id="mov_bulletin" rows="2" class="splis-input">{{ old('mov_bulletin', $ordinance->mov_bulletin) }}</textarea>
                 </div>
                 <div class="md:col-span-2">
-                    <label class="splis-label" for="mov_bulletin_url">Bulletin PDF URL</label>
+                    <label class="splis-label" for="mov_bulletin_pdf">Bulletin file (upload)</label>
+                    <input type="file" name="mov_bulletin_pdf" id="mov_bulletin_pdf" accept="application/pdf,image/jpeg,image/png,image/gif,image/webp,.pdf,.jpg,.jpeg,.png,.gif,.webp" class="splis-input">
+                    @if ($isEdit && $ordinance->hasLocalPdfType(App\Support\OrdinancePdfType::BULLETIN))
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            Local file: <code>{{ $ordinance->mov_bulletin_pdf_path }}</code>
+                            — uploading replaces it.
+                        </p>
+                    @endif
+                </div>
+                <div class="md:col-span-2">
+                    <label class="splis-label" for="mov_bulletin_url">Bulletin file URL (fallback)</label>
                     <input type="url" name="mov_bulletin_url" id="mov_bulletin_url" value="{{ old('mov_bulletin_url', $ordinance->mov_bulletin_url) }}" class="splis-input" placeholder="Google Drive link">
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">PDF or image (e.g. photo of posted bulletin). Used when no uploaded or mirrored local file is present.</p>
                 </div>
                 <div>
                     <label class="splis-label" for="mov_certification">Certification</label>
                     <input type="text" name="mov_certification" id="mov_certification" value="{{ old('mov_certification', $ordinance->mov_certification) }}" class="splis-input">
                 </div>
                 <div>
-                    <label class="splis-label" for="mov_certification_url">Certification PDF URL</label>
+                    <label class="splis-label" for="mov_certification_pdf">Certification file (upload)</label>
+                    <input type="file" name="mov_certification_pdf" id="mov_certification_pdf" accept="application/pdf,image/jpeg,image/png,image/gif,image/webp,.pdf,.jpg,.jpeg,.png,.gif,.webp" class="splis-input">
+                    @if ($isEdit && $ordinance->hasLocalPdfType(App\Support\OrdinancePdfType::CERTIFICATION))
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            Local file: <code>{{ $ordinance->mov_certification_pdf_path }}</code>
+                        </p>
+                    @endif
+                </div>
+                <div class="md:col-span-2">
+                    <label class="splis-label" for="mov_certification_url">Certification file URL (fallback)</label>
                     <input type="url" name="mov_certification_url" id="mov_certification_url" value="{{ old('mov_certification_url', $ordinance->mov_certification_url) }}" class="splis-input" placeholder="Google Drive link">
                 </div>
                 <div>
@@ -173,7 +193,16 @@
                     <input type="text" name="mov_newspaper" id="mov_newspaper" value="{{ old('mov_newspaper', $ordinance->mov_newspaper) }}" class="splis-input">
                 </div>
                 <div>
-                    <label class="splis-label" for="mov_newspaper_url">Newspaper PDF URL</label>
+                    <label class="splis-label" for="mov_newspaper_pdf">Newspaper file (upload)</label>
+                    <input type="file" name="mov_newspaper_pdf" id="mov_newspaper_pdf" accept="application/pdf,image/jpeg,image/png,image/gif,image/webp,.pdf,.jpg,.jpeg,.png,.gif,.webp" class="splis-input">
+                    @if ($isEdit && $ordinance->hasLocalPdfType(App\Support\OrdinancePdfType::NEWSPAPER))
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            Local file: <code>{{ $ordinance->mov_newspaper_pdf_path }}</code>
+                        </p>
+                    @endif
+                </div>
+                <div class="md:col-span-2">
+                    <label class="splis-label" for="mov_newspaper_url">Newspaper file URL (fallback)</label>
                     <input type="url" name="mov_newspaper_url" id="mov_newspaper_url" value="{{ old('mov_newspaper_url', $ordinance->mov_newspaper_url) }}" class="splis-input" placeholder="Google Drive link">
                 </div>
             </div>

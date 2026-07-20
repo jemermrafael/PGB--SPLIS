@@ -22,6 +22,8 @@
                             @case('data_sync.sptrack_resolutions') Linked resolutions @break
                             @case('data_sync.agenda_csv') Agenda tracker @break
                             @case('data_sync.link_pdfs') PDF path backfill @break
+                            @case('data_sync.drive_mirror_rebuild') Drive mirror queue rebuild @break
+                            @case('data_sync.drive_mirror_process') Drive mirror queue process @break
                             @default {{ $log->action }}
                         @endswitch
                     </span>
@@ -82,6 +84,99 @@
             <button type="submit" class="splis-btn-primary">Sync agenda</button>
         </form>
     </div>
+</div>
+
+<p class="splis-admin-section-title">Drive PDF mirror queue</p>
+<p class="mb-4 text-sm text-slate-600 dark:text-slate-400">
+    Automatically download Google Drive links into private storage for ordinances, appropriation ordinances, and agenda items.
+    Rebuild scans all records with a URL but no local file; process downloads pending items.
+</p>
+
+<div class="mb-10 splis-card p-6">
+    <div class="mb-4 flex flex-wrap items-center gap-2">
+        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Mirror queue</h2>
+        <x-risk-badge level="maintenance" label="Maintenance" />
+    </div>
+
+    <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div class="rounded-lg border border-slate-200 px-4 py-3 dark:border-slate-700">
+            <p class="text-xs uppercase tracking-wide text-slate-500">Pending</p>
+            <p class="text-2xl font-semibold text-amber-600">{{ $driveMirrorStats['pending'] }}</p>
+        </div>
+        <div class="rounded-lg border border-slate-200 px-4 py-3 dark:border-slate-700">
+            <p class="text-xs uppercase tracking-wide text-slate-500">Processing</p>
+            <p class="text-2xl font-semibold text-slate-700 dark:text-slate-200">{{ $driveMirrorStats['processing'] }}</p>
+        </div>
+        <div class="rounded-lg border border-slate-200 px-4 py-3 dark:border-slate-700">
+            <p class="text-xs uppercase tracking-wide text-slate-500">Completed</p>
+            <p class="text-2xl font-semibold text-emerald-600">{{ $driveMirrorStats['completed'] }}</p>
+        </div>
+        <div class="rounded-lg border border-slate-200 px-4 py-3 dark:border-slate-700">
+            <p class="text-xs uppercase tracking-wide text-slate-500">Failed</p>
+            <p class="text-2xl font-semibold text-red-600">{{ $driveMirrorStats['failed'] }}</p>
+        </div>
+    </div>
+
+    <div class="mb-6 flex flex-wrap gap-3">
+        <form method="POST" action="{{ route('admin.data-sync.drive-mirror.rebuild') }}">
+            @csrf
+            <button type="submit" class="splis-btn-secondary">Rebuild queue</button>
+        </form>
+        <form method="POST" action="{{ route('admin.data-sync.drive-mirror.process') }}" class="flex flex-wrap items-center gap-2">
+            @csrf
+            <input type="hidden" name="limit" value="5">
+            <button type="submit" class="splis-btn-primary">Process next 5</button>
+        </form>
+        <form method="POST" action="{{ route('admin.data-sync.drive-mirror.process') }}">
+            @csrf
+            <input type="hidden" name="limit" value="20">
+            <button type="submit" class="splis-btn-secondary">Process next 20</button>
+        </form>
+    </div>
+
+    @if ($driveMirrorItems->isNotEmpty())
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead>
+                    <tr class="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500 dark:border-slate-700">
+                        <th class="px-3 py-2">Record</th>
+                        <th class="px-3 py-2">Document</th>
+                        <th class="px-3 py-2">Status</th>
+                        <th class="px-3 py-2">Attempts</th>
+                        <th class="px-3 py-2">Queued</th>
+                        <th class="px-3 py-2">Error</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($driveMirrorItems as $item)
+                        <tr class="border-b border-slate-100 dark:border-slate-800">
+                            <td class="px-3 py-2 font-medium text-slate-800 dark:text-slate-200">{{ $item->entityLabel() }}</td>
+                            <td class="px-3 py-2">{{ $item->documentLabel() }}</td>
+                            <td class="px-3 py-2">
+                                <span @class([
+                                    'rounded-full px-2 py-0.5 text-xs font-medium',
+                                    'bg-amber-100 text-amber-800' => $item->status === 'pending',
+                                    'bg-sky-100 text-sky-800' => $item->status === 'processing',
+                                    'bg-red-100 text-red-800' => $item->status === 'failed',
+                                ])>{{ ucfirst($item->status) }}</span>
+                            </td>
+                            <td class="px-3 py-2">{{ $item->attempts }}</td>
+                            <td class="px-3 py-2 text-slate-500">{{ $item->queued_at?->format('M j, g:i A') ?: '—' }}</td>
+                            <td class="px-3 py-2 text-xs text-red-600">{{ $item->error_message ?: '—' }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @else
+        <p class="text-sm text-slate-500">No pending or failed items. Rebuild the queue to scan for Drive URLs without local files.</p>
+    @endif
+
+    <details class="mt-4 text-xs text-slate-500">
+        <summary class="cursor-pointer">CLI</summary>
+        <code class="mt-1 block">php artisan pdf-mirror:process-queue --rebuild --limit=5</code>
+        <code class="mt-1 block">php artisan agenda:mirror-pdfs --limit=5</code>
+    </details>
 </div>
 
 <p class="splis-admin-section-title">Maintenance</p>

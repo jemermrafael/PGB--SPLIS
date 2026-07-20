@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Services\AgendaCsvImporter;
 use App\Services\DataSyncCsvStorage;
+use App\Services\DriveFileMirrorQueueService;
 use App\Services\ResolutionCsvImporter;
 use App\Services\ResolutionPdfLinkService;
 use App\Support\ActivityLogger;
@@ -16,7 +17,7 @@ use Illuminate\View\View;
 
 class DataSyncController extends Controller
 {
-    public function index(): View
+    public function index(DriveFileMirrorQueueService $driveMirrorQueue): View
     {
         $recentLogs = ActivityLog::query()
             ->whereIn('action', [
@@ -25,6 +26,8 @@ class DataSyncController extends Controller
                 'data_sync.sptrack_resolutions',
                 'data_sync.agenda_csv',
                 'data_sync.link_pdfs',
+                'data_sync.drive_mirror_rebuild',
+                'data_sync.drive_mirror_process',
             ])
             ->with('user')
             ->latest('created_at')
@@ -33,6 +36,8 @@ class DataSyncController extends Controller
 
         return view('admin.data-sync.index', [
             'recentLogs' => $recentLogs,
+            'driveMirrorStats' => $driveMirrorQueue->stats(),
+            'driveMirrorItems' => $driveMirrorQueue->listItems(50),
         ]);
     }
 
@@ -190,6 +195,50 @@ class DataSyncController extends Controller
             $prefix,
             $stats['updated'],
             $stats['skipped'],
+        ));
+    }
+
+    public function rebuildDriveMirrorQueue(DriveFileMirrorQueueService $queue): RedirectResponse
+    {
+        $stats = $queue->rebuildQueue();
+
+        ActivityLogger::log('data_sync.drive_mirror_rebuild', null, [
+            'stats' => $stats,
+        ]);
+
+        return back()->with('status', sprintf(
+            'Drive mirror queue rebuilt — %d enqueued/reset, %d marked completed, %d removed.',
+            $stats['enqueued'],
+            $stats['completed'],
+            $stats['removed'],
+        ));
+    }
+
+    public function processDriveMirrorQueue(
+        Request $request,
+        DriveFileMirrorQueueService $queue,
+    ): RedirectResponse {
+        $request->validate([
+            'limit' => ['nullable', 'integer', 'min:1', 'max:50'],
+        ]);
+
+        $limit = (int) ($request->input('limit', 5));
+        $result = $queue->processBatch($limit);
+
+        ActivityLogger::log('data_sync.drive_mirror_process', null, [
+            'limit' => $limit,
+            'result' => $result,
+        ]);
+
+        if ($result['processed'] === 0) {
+            return back()->with('status', 'No pending Drive mirror items in the queue.');
+        }
+
+        return back()->with('status', sprintf(
+            'Processed %d queue item(s) — %d succeeded, %d failed.',
+            $result['processed'],
+            $result['succeeded'],
+            $result['failed'],
         ));
     }
 

@@ -1,5 +1,5 @@
 @php
-    // Shared PDF viewer modal — opened by any [data-pdf-modal-open] trigger.
+    // Shared document viewer modal — opened by any [data-pdf-modal-open] trigger.
 @endphp
 <div id="splis-pdf-modal" class="splis-modal" hidden>
     <div class="splis-modal-backdrop" data-pdf-modal-close tabindex="-1" aria-hidden="true"></div>
@@ -33,10 +33,15 @@
         <div class="splis-modal-body !p-0">
             <iframe
                 id="splis-pdf-modal-frame"
-                title="PDF preview"
+                title="Document preview"
                 class="splis-pdf-modal-frame block h-[75vh] w-full border-0 bg-slate-100 dark:bg-slate-900"
                 src="about:blank"
             ></iframe>
+            <img
+                id="splis-pdf-modal-image"
+                alt=""
+                class="hidden max-h-[75vh] w-full bg-slate-100 object-contain dark:bg-slate-900"
+            >
         </div>
     </div>
 </div>

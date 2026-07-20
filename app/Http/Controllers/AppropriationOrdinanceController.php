@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AppropriationOrdinance;
 use App\Models\BoardMember;
 use App\Models\Ordinance;
+use App\Services\AppropriationOrdinancePdfService;
 use App\Support\TrashActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,6 +14,10 @@ use Illuminate\View\View;
 
 class AppropriationOrdinanceController extends Controller
 {
+    public function __construct(
+        protected AppropriationOrdinancePdfService $pdfService,
+    ) {}
+
     public function index(Request $request): View
     {
         $this->authorize('viewAny', AppropriationOrdinance::class);
@@ -69,10 +74,11 @@ class AppropriationOrdinanceController extends Controller
             $this->validated($request),
             ['created_by' => $request->user()->id],
         ));
+        $this->storeUploadedPdf($request, $appropriationOrdinance);
 
         return redirect()
             ->route('appropriation-ordinances.show', $appropriationOrdinance)
-            ->with('status', 'Appropriation ordinance created.');
+            ->with('status', 'Appropriation Ordinance created.');
     }
 
     public function edit(AppropriationOrdinance $appropriationOrdinance): View
@@ -89,10 +95,11 @@ class AppropriationOrdinanceController extends Controller
         $this->authorize('update', $appropriationOrdinance);
 
         $appropriationOrdinance->update($this->validated($request, $appropriationOrdinance));
+        $this->storeUploadedPdf($request, $appropriationOrdinance);
 
         return redirect()
             ->route('appropriation-ordinances.show', $appropriationOrdinance)
-            ->with('status', 'Appropriation ordinance updated.');
+            ->with('status', 'Appropriation Ordinance updated.');
     }
 
     public function destroy(AppropriationOrdinance $appropriationOrdinance): RedirectResponse
@@ -104,7 +111,7 @@ class AppropriationOrdinanceController extends Controller
 
         return redirect()
             ->route(auth()->user()?->isSuperadmin() ? 'admin.trash.index' : 'appropriation-ordinances.index', auth()->user()?->isSuperadmin() ? ['type' => 'appropriation-ordinances'] : [])
-            ->with('status', 'Appropriation ordinance moved to trash.');
+            ->with('status', 'Appropriation Ordinance moved to trash.');
     }
 
     /**
@@ -114,7 +121,7 @@ class AppropriationOrdinanceController extends Controller
     {
         $seriesYear = (int) $request->input('series_year');
 
-        return $request->validate([
+        $validated = $request->validate([
             'date_received' => ['nullable', 'date'],
             'subject' => ['required', 'string'],
             'ordinance_no' => [
@@ -130,6 +137,26 @@ class AppropriationOrdinanceController extends Controller
             'date_passed' => ['nullable', 'date'],
             'date_approved' => ['nullable', 'date'],
             'pdf_url' => ['nullable', 'string', 'max:500'],
+            'pdf' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp', 'max:51200'],
         ]);
+
+        unset($validated['pdf']);
+
+        return $validated;
+    }
+
+    protected function storeUploadedPdf(Request $request, AppropriationOrdinance $record): void
+    {
+        if (! $request->hasFile('pdf')) {
+            return;
+        }
+
+        $path = $this->pdfService->store(
+            $request->file('pdf'),
+            (int) $record->series_year,
+            (int) $record->ordinance_no,
+        );
+
+        $record->update(['pdf_path' => $path]);
     }
 }

@@ -16,12 +16,12 @@ const MEASURE_LABELS = {
         pdf: 'Ordinance PDF URL (legacy GDrive)',
     },
     appropriation_ordinance: {
-        number: 'Appropriation ordinance no.',
+        number: 'Appropriation Ordinance no.',
         series: 'Series year',
-        title: 'Appropriation ordinance subject',
+        title: 'Appropriation Ordinance subject',
         datePassed: 'Date passed',
         dateSigned: 'Date approved',
-        pdf: 'Appropriation ordinance PDF URL (legacy GDrive)',
+        pdf: 'Appropriation Ordinance PDF URL (legacy GDrive)',
     },
 };
 

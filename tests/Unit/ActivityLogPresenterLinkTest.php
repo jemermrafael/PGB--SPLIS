@@ -15,7 +15,7 @@ class ActivityLogPresenterLinkTest extends TestCase
     public function test_activity_log_links_are_relative_paths(): void
     {
         $reference = ReferenceMaterial::query()->create([
-            'title' => 'Sample ordinance reference',
+            'title' => 'Sample Ordinance reference',
             'document_type' => array_key_first(config('reference_materials.document_types', ['ordinance' => 'Ordinance'])),
             'status' => 'active',
         ]);

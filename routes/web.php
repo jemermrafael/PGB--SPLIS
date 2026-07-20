@@ -12,6 +12,8 @@ use App\Http\Controllers\MunicipalRequestController;
 use App\Http\Controllers\MunicipalRequestSearchController;
 use App\Http\Controllers\MyOrdinanceController;
 use App\Http\Controllers\AppropriationOrdinanceController;
+use App\Http\Controllers\AppropriationOrdinancePdfController;
+use App\Http\Controllers\AppropriationOrdinancePdfMirrorController;
 use App\Http\Controllers\BoardMemberOrdinanceReportController;
 use App\Http\Controllers\CommitteeController;
 use App\Http\Controllers\CommitteeMonitoringController;
@@ -21,6 +23,8 @@ use App\Http\Controllers\ObAgendaPoolController;
 use App\Http\Controllers\ObDocumentController;
 use App\Http\Controllers\AgendaDeadlinePreviewController;
 use App\Http\Controllers\AgendaItemController;
+use App\Http\Controllers\AgendaPdfController;
+use App\Http\Controllers\AgendaPdfMirrorController;
 use App\Http\Controllers\AgendaSearchController;
 use App\Http\Controllers\AdminAnalyticsController;
 use App\Http\Controllers\AdminAnalyticsMapController;
@@ -145,7 +149,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/ordinances/create', [OrdinanceController::class, 'create'])->name('ordinances.create');
     Route::post('/ordinances', [OrdinanceController::class, 'store'])->name('ordinances.store');
     Route::get('/ordinances/{ordinance}', [OrdinanceController::class, 'show'])->name('ordinances.show')->withTrashed();
-    Route::get('/ordinances/{ordinance}/pdf', OrdinancePdfController::class)->name('ordinances.pdf')->withTrashed();
+    Route::get('/ordinances/{ordinance}/pdf/{type?}', OrdinancePdfController::class)->name('ordinances.pdf')->withTrashed();
     Route::post('/ordinances/{ordinance}/mirror-pdf', OrdinancePdfMirrorController::class)->name('ordinances.mirror-pdf');
     Route::get('/ordinances/{ordinance}/edit', [OrdinanceController::class, 'edit'])->name('ordinances.edit');
     Route::put('/ordinances/{ordinance}', [OrdinanceController::class, 'update'])->name('ordinances.update');
@@ -155,6 +159,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/appropriation-ordinances/create', [AppropriationOrdinanceController::class, 'create'])->name('appropriation-ordinances.create');
     Route::post('/appropriation-ordinances', [AppropriationOrdinanceController::class, 'store'])->name('appropriation-ordinances.store');
     Route::get('/appropriation-ordinances/{appropriationOrdinance}', [AppropriationOrdinanceController::class, 'show'])->name('appropriation-ordinances.show')->withTrashed();
+    Route::get('/appropriation-ordinances/{appropriationOrdinance}/pdf', AppropriationOrdinancePdfController::class)->name('appropriation-ordinances.pdf')->withTrashed();
+    Route::post('/appropriation-ordinances/{appropriationOrdinance}/mirror-pdf', AppropriationOrdinancePdfMirrorController::class)->name('appropriation-ordinances.mirror-pdf');
     Route::get('/appropriation-ordinances/{appropriationOrdinance}/edit', [AppropriationOrdinanceController::class, 'edit'])->name('appropriation-ordinances.edit');
     Route::put('/appropriation-ordinances/{appropriationOrdinance}', [AppropriationOrdinanceController::class, 'update'])->name('appropriation-ordinances.update');
     Route::delete('/appropriation-ordinances/{appropriationOrdinance}', [AppropriationOrdinanceController::class, 'destroy'])->name('appropriation-ordinances.destroy');
@@ -164,6 +170,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/agenda/preview-deadline', AgendaDeadlinePreviewController::class)->name('agenda.preview-deadline');
     Route::get('/agenda/create', [AgendaItemController::class, 'create'])->name('agenda.create');
     Route::post('/agenda', [AgendaItemController::class, 'store'])->name('agenda.store');
+    Route::get('/agenda/{agenda}/file/{slot}', AgendaPdfController::class)->name('agenda.file')->withTrashed();
+    Route::post('/agenda/{agenda}/mirror-pdf', AgendaPdfMirrorController::class)->name('agenda.mirror-pdf');
     Route::get('/agenda/{agenda}', [AgendaItemController::class, 'show'])->name('agenda.show')->withTrashed();
     Route::get('/agenda/{agenda}/edit', [AgendaItemController::class, 'edit'])->name('agenda.edit');
     Route::put('/agenda/{agenda}', [AgendaItemController::class, 'update'])->name('agenda.update');
@@ -230,6 +238,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/data-sync/resolutions', [DataSyncController::class, 'syncResolutions'])->name('data-sync.resolutions');
         Route::post('/data-sync/agenda', [DataSyncController::class, 'syncAgenda'])->name('data-sync.agenda');
         Route::post('/data-sync/link-pdfs', [DataSyncController::class, 'linkPdfs'])->name('data-sync.link-pdfs');
+        Route::post('/data-sync/drive-mirror/rebuild', [DataSyncController::class, 'rebuildDriveMirrorQueue'])->name('data-sync.drive-mirror.rebuild');
+        Route::post('/data-sync/drive-mirror/process', [DataSyncController::class, 'processDriveMirrorQueue'])->name('data-sync.drive-mirror.process');
 
         Route::get('/backups', [DatabaseBackupController::class, 'index'])->name('backups.index');
         Route::post('/backups/settings', [DatabaseBackupController::class, 'updateSettings'])->name('backups.settings');

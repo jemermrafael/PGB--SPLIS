@@ -22,12 +22,12 @@
                     <x-icon name="edit" class="h-4 w-4" />
                     Edit
                 </a>
-                @if (filled($ordinance->pdf_url) && ! $ordinance->hasLocalPdf())
+                @if ($ordinance->missingPdfMirrorTypes() !== [])
                     <form method="POST" action="{{ route('ordinances.mirror-pdf', $ordinance) }}">
                         @csrf
                         <button type="submit" class="splis-btn-secondary inline-flex items-center gap-2">
                             <x-icon name="download" class="h-4 w-4" />
-                            Download PDF from Drive
+                            Download PDFs from Drive
                         </button>
                     </form>
                 @endif
@@ -87,11 +87,12 @@
                     @else
                         <p class="text-slate-500">—</p>
                     @endif
-                    @if ($ordinance->mov_bulletin_url)
+                    @if ($ordinance->movBulletinPdfPublicUrl())
                         @include('partials.pdf-modal-trigger', [
-                            'url' => $ordinance->mov_bulletin_url,
-                            'title' => 'Bulletin PDF — '.$ordinance->displayNumber(),
-                            'label' => 'Bulletin PDF',
+                            'url' => $ordinance->movBulletinPdfPublicUrl(),
+                            'viewer' => $ordinance->movBulletinViewerMode(),
+                            'title' => 'Bulletin — '.$ordinance->displayNumber(),
+                            'label' => 'View bulletin',
                         ])
                     @endif
                 </dd>
@@ -104,11 +105,12 @@
                     @else
                         <p class="text-slate-500">—</p>
                     @endif
-                    @if ($ordinance->mov_certification_url)
+                    @if ($ordinance->movCertificationPdfPublicUrl())
                         @include('partials.pdf-modal-trigger', [
-                            'url' => $ordinance->mov_certification_url,
-                            'title' => 'Certification PDF — '.$ordinance->displayNumber(),
-                            'label' => 'Certification PDF',
+                            'url' => $ordinance->movCertificationPdfPublicUrl(),
+                            'viewer' => $ordinance->movCertificationViewerMode(),
+                            'title' => 'Certification — '.$ordinance->displayNumber(),
+                            'label' => 'View certification',
                         ])
                     @endif
                 </dd>
@@ -121,11 +123,12 @@
                     @else
                         <p class="text-slate-500">—</p>
                     @endif
-                    @if ($ordinance->mov_newspaper_url)
+                    @if ($ordinance->movNewspaperPdfPublicUrl())
                         @include('partials.pdf-modal-trigger', [
-                            'url' => $ordinance->mov_newspaper_url,
-                            'title' => 'Newspaper PDF — '.$ordinance->displayNumber(),
-                            'label' => 'Newspaper PDF',
+                            'url' => $ordinance->movNewspaperPdfPublicUrl(),
+                            'viewer' => $ordinance->movNewspaperViewerMode(),
+                            'title' => 'Newspaper — '.$ordinance->displayNumber(),
+                            'label' => 'View newspaper',
                         ])
                     @endif
                 </dd>
@@ -150,6 +153,7 @@
 
     @include('partials.pdf-document-embed', [
         'pdfUrl' => $ordinance->pdfPublicUrl(),
+        'viewer' => $ordinance->pdfViewerMode() ?? 'embed',
         'embedTitle' => $ordinance->displayNumber().' PDF',
     ])
 
@@ -173,8 +177,8 @@
                 method="POST"
                 action="{{ route('ordinances.destroy', $ordinance) }}"
                 data-confirm-submit
-                data-confirm-title="Move ordinance to trash?"
-                data-confirm-message="Move this ordinance to trash? Superadmin can restore from Trash."
+                data-confirm-title="Move Ordinance to trash?"
+                data-confirm-message="Move this Ordinance to trash? Superadmin can restore from Trash."
                 data-confirm-label="Delete"
             >
                 @csrf

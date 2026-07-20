@@ -9,6 +9,7 @@ use App\Models\Ordinance;
 use App\Services\BoardMemberRosterService;
 use App\Services\OrdinanceBoardMemberService;
 use App\Services\OrdinancePdfService;
+use App\Support\OrdinancePdfType;
 use App\Support\TrashActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -68,7 +69,7 @@ class OrdinanceController extends Controller
 
         $data = $this->validatedOrdinance($request);
         $ordinance = Ordinance::create($data);
-        $this->storeUploadedPdf($request, $ordinance);
+        $this->storeUploadedPdfs($request, $ordinance);
         $this->syncBoardMembers($ordinance, $request);
 
         ActivityLog::record('ordinance.created', $ordinance, [
@@ -95,7 +96,7 @@ class OrdinanceController extends Controller
         $this->authorize('update', $ordinance);
 
         $ordinance->update($this->validatedOrdinance($request, $ordinance));
-        $this->storeUploadedPdf($request, $ordinance);
+        $this->storeUploadedPdfs($request, $ordinance);
         $this->syncBoardMembers($ordinance, $request);
 
         return redirect()
@@ -185,34 +186,48 @@ class OrdinanceController extends Controller
             'effectivity_date' => ['nullable', 'date'],
             'mov_bulletin' => ['nullable', 'string'],
             'mov_bulletin_url' => ['nullable', 'string', 'max:500'],
+            'mov_bulletin_pdf' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp', 'max:51200'],
             'mov_certification' => ['nullable', 'string', 'max:200'],
             'mov_certification_url' => ['nullable', 'string', 'max:500'],
+            'mov_certification_pdf' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp', 'max:51200'],
             'mov_newspaper' => ['nullable', 'string', 'max:200'],
             'mov_newspaper_url' => ['nullable', 'string', 'max:500'],
+            'mov_newspaper_pdf' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp', 'max:51200'],
             'implementing_bodies' => ['nullable', 'string'],
             'classification' => ['nullable', 'string', Rule::in($classifications)],
             'mandate_ppa' => ['nullable', 'string', 'max:100'],
             'remarks' => ['nullable', 'string'],
         ]);
 
-        unset($validated['pdf']);
+        unset(
+            $validated['pdf'],
+            $validated['mov_bulletin_pdf'],
+            $validated['mov_certification_pdf'],
+            $validated['mov_newspaper_pdf'],
+        );
 
         return $validated;
     }
 
-    protected function storeUploadedPdf(Request $request, Ordinance $ordinance): void
+    protected function storeUploadedPdfs(Request $request, Ordinance $ordinance): void
     {
-        if (! $request->hasFile('pdf')) {
-            return;
+        foreach (OrdinancePdfType::all() as $type) {
+            $field = OrdinancePdfType::config($type)['upload'];
+
+            if (! $request->hasFile($field)) {
+                continue;
+            }
+
+            $path = $this->ordinancePdfService->store(
+                $request->file($field),
+                (int) $ordinance->series_year,
+                (int) $ordinance->ordinance_no,
+                $type,
+            );
+
+            $pathColumn = OrdinancePdfType::config($type)['path'];
+            $ordinance->update([$pathColumn => $path]);
         }
-
-        $path = $this->ordinancePdfService->store(
-            $request->file('pdf'),
-            (int) $ordinance->series_year,
-            (int) $ordinance->ordinance_no,
-        );
-
-        $ordinance->update(['pdf_path' => $path]);
     }
 
     protected function syncBoardMembers(Ordinance $ordinance, Request $request): void

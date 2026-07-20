@@ -14,7 +14,7 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ $isEdit ? route('appropriation-ordinances.update', $appropriationOrdinance) : route('appropriation-ordinances.store') }}" class="splis-card splis-card-body space-y-5">
+    <form method="POST" action="{{ $isEdit ? route('appropriation-ordinances.update', $appropriationOrdinance) : route('appropriation-ordinances.store') }}" enctype="multipart/form-data" class="splis-card splis-card-body space-y-5">
         @csrf
         @if ($isEdit)
             @method('PUT')
@@ -52,8 +52,20 @@
         </div>
 
         <div>
-            <label class="splis-label" for="pdf_url">PDF URL</label>
-            <input type="url" name="pdf_url" id="pdf_url" value="{{ old('pdf_url', $appropriationOrdinance->pdf_url) }}" class="splis-input" placeholder="https://">
+            <label class="splis-label" for="pdf">File (upload)</label>
+            <input type="file" name="pdf" id="pdf" accept="application/pdf,image/jpeg,image/png,image/gif,image/webp,.pdf,.jpg,.jpeg,.png,.gif,.webp" class="splis-input">
+            @if ($isEdit && $appropriationOrdinance->hasLocalPdf())
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Local file: <code>{{ $appropriationOrdinance->pdf_path }}</code>
+                    — uploading replaces it.
+                </p>
+            @endif
+        </div>
+
+        <div>
+            <label class="splis-label" for="pdf_url">File URL (fallback)</label>
+            <input type="url" name="pdf_url" id="pdf_url" value="{{ old('pdf_url', $appropriationOrdinance->pdf_url) }}" class="splis-input" placeholder="Google Drive link">
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">PDF or image. Used when no uploaded or mirrored local file is present.</p>
         </div>
 
         <div class="flex gap-2 pt-2">

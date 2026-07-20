@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\Ordinance;
+use App\Support\MediaType;
+use App\Support\OrdinancePdfType;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
@@ -10,20 +12,18 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OrdinancePdfService
 {
-    public function storageRelativePath(int $seriesYear, int $ordinanceNo): string
+    public function storageRelativePath(int $seriesYear, int $ordinanceNo, string $type = OrdinancePdfType::MAIN, string $extension = 'pdf'): string
     {
-        return 'ordinances/'.$seriesYear.'/'.$this->filename($ordinanceNo);
+        $suffix = OrdinancePdfType::config($type)['suffix'];
+
+        return 'ordinances/'.$seriesYear.'/'.$this->filename($ordinanceNo, $suffix, $extension);
     }
 
-    public function filename(int $ordinanceNo): string
+    public function filename(int $ordinanceNo, string $suffix = '', string $extension = 'pdf'): string
     {
-        return str_pad((string) $ordinanceNo, 2, '0', STR_PAD_LEFT).'.pdf';
+        return str_pad((string) $ordinanceNo, 2, '0', STR_PAD_LEFT).$suffix.'.'.ltrim($extension, '.');
     }
 
-    /**
-     * Resolve an absolute path under storage/app/private (local disk).
-     * Falls back to legacy storage/app/ordinances for files mirrored before the private move.
-     */
     public function absolutePath(?string $relativePath): ?string
     {
         if (! filled($relativePath)) {
@@ -41,84 +41,168 @@ class OrdinancePdfService
         return File::isFile($legacy) ? $legacy : null;
     }
 
-    public function existsFor(Ordinance $ordinance): bool
+    public function pathFor(Ordinance $ordinance, string $type = OrdinancePdfType::MAIN): ?string
     {
-        return $this->absolutePath($ordinance->pdf_path) !== null;
+        $column = OrdinancePdfType::config($type)['path'];
+        $relative = $ordinance->{$column};
+
+        return filled($relative) ? $this->absolutePath($relative) : null;
     }
 
-    public function hasLinkedPdf(Ordinance $ordinance): bool
+    public function existsFor(Ordinance $ordinance, string $type = OrdinancePdfType::MAIN): bool
     {
-        return filled($ordinance->pdf_path) || filled($ordinance->pdf_url);
+        return $this->pathFor($ordinance, $type) !== null;
+    }
+
+    public function hasLinkedPdf(Ordinance $ordinance, string $type = OrdinancePdfType::MAIN): bool
+    {
+        $config = OrdinancePdfType::config($type);
+
+        return filled($ordinance->{$config['path']}) || filled($ordinance->{$config['url']});
     }
 
     /**
-     * Prefer local file stream URL; fall back to external pdf_url.
+     * Prefer local file stream URL; fall back to external URL.
      */
-    public function publicUrl(Ordinance $ordinance): ?string
+    public function publicUrl(Ordinance $ordinance, string $type = OrdinancePdfType::MAIN): ?string
     {
-        if ($this->existsFor($ordinance)) {
-            return route('ordinances.pdf', $ordinance);
+        if ($this->existsFor($ordinance, $type)) {
+            return route('ordinances.pdf', [
+                'ordinance' => $ordinance,
+                'type' => $type === OrdinancePdfType::MAIN ? null : $type,
+            ]);
         }
 
-        $url = trim((string) ($ordinance->pdf_url ?? ''));
+        $urlColumn = OrdinancePdfType::config($type)['url'];
+        $url = trim((string) ($ordinance->{$urlColumn} ?? ''));
 
         return $url !== '' ? $url : null;
     }
 
-    public function store(UploadedFile $file, int $seriesYear, int $ordinanceNo): string
+    /**
+     * Viewer mode for the shared modal: image, pdf, or drive embed fallback.
+     */
+    public function viewerMode(Ordinance $ordinance, string $type = OrdinancePdfType::MAIN): ?string
     {
-        $relative = $this->storageRelativePath($seriesYear, $ordinanceNo);
+        $path = $this->pathFor($ordinance, $type);
 
-        Storage::disk('local')->makeDirectory(dirname($relative));
-        Storage::disk('local')->putFileAs(
-            dirname($relative),
-            $file,
-            basename($relative),
+        if ($path !== null) {
+            $media = MediaType::fromPath($path);
+
+            return $media !== null && MediaType::isImageMime($media['mime']) ? 'image' : 'pdf';
+        }
+
+        $urlColumn = OrdinancePdfType::config($type)['url'];
+        $url = trim((string) ($ordinance->{$urlColumn} ?? ''));
+
+        return $url !== '' ? 'embed' : null;
+    }
+
+    public function store(UploadedFile $file, int $seriesYear, int $ordinanceNo, string $type = OrdinancePdfType::MAIN): string
+    {
+        $media = MediaType::fromUploadedMime(
+            (string) $file->getMimeType(),
+            $file->getClientOriginalExtension(),
         );
 
-        $this->deleteLegacyCopy($relative);
-
-        return $relative;
+        return $this->storeBytes(
+            (string) file_get_contents($file->getRealPath()),
+            $seriesYear,
+            $ordinanceNo,
+            $type,
+            $media['extension'],
+        );
     }
 
     /**
-     * Write raw PDF bytes to private storage (storage/app/private/…).
+     * Write file bytes to private storage (storage/app/private/…).
      */
-    public function storeBytes(string $contents, int $seriesYear, int $ordinanceNo): string
-    {
-        $relative = $this->storageRelativePath($seriesYear, $ordinanceNo);
+    public function storeBytes(
+        string $contents,
+        int $seriesYear,
+        int $ordinanceNo,
+        string $type = OrdinancePdfType::MAIN,
+        string $extension = 'pdf',
+    ): string {
+        $relative = $this->storageRelativePath($seriesYear, $ordinanceNo, $type, $extension);
 
         Storage::disk('local')->makeDirectory(dirname($relative));
         Storage::disk('local')->put($relative, $contents);
 
         $this->deleteLegacyCopy($relative);
+        $this->deleteSiblingVariants($seriesYear, $ordinanceNo, $type, $extension);
 
         return $relative;
     }
 
-    public function stream(Ordinance $ordinance): StreamedResponse
+    public function stream(Ordinance $ordinance, string $type = OrdinancePdfType::MAIN): StreamedResponse
     {
-        $path = $this->absolutePath($ordinance->pdf_path);
+        $path = $this->pathFor($ordinance, $type);
 
-        abort_if($path === null, 404, 'PDF not found.');
+        abort_if($path === null, 404, 'File not found.');
+
+        $media = MediaType::fromPath($path);
+        abort_if($media === null, 404, 'Unsupported file type.');
+
+        $filename = basename($path);
 
         return response()->stream(function () use ($path) {
             readfile($path);
         }, 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="'.$this->filename((int) $ordinance->ordinance_no).'"',
+            'Content-Type' => $media['mime'],
+            'Content-Disposition' => 'inline; filename="'.$filename.'"',
         ]);
     }
 
     /**
-     * Remove a leftover file from the old storage/app/ordinances location.
+     * @return list<string>
      */
+    public function missingMirrorTypes(Ordinance $ordinance): array
+    {
+        $missing = [];
+
+        foreach (OrdinancePdfType::all() as $type) {
+            $config = OrdinancePdfType::config($type);
+            $hasUrl = filled($ordinance->{$config['url']});
+            $hasLocal = $this->existsFor($ordinance, $type);
+
+            if ($hasUrl && ! $hasLocal) {
+                $missing[] = $type;
+            }
+        }
+
+        return $missing;
+    }
+
     protected function deleteLegacyCopy(string $relative): void
     {
         $legacy = storage_path('app'.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relative));
 
         if (File::isFile($legacy)) {
             File::delete($legacy);
+        }
+    }
+
+    /**
+     * Remove prior extension variants when replacing e.g. bulletin.pdf with bulletin.jpg.
+     */
+    protected function deleteSiblingVariants(int $seriesYear, int $ordinanceNo, string $type, string $keepExtension): void
+    {
+        $suffix = OrdinancePdfType::config($type)['suffix'];
+        $extensions = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+        foreach ($extensions as $extension) {
+            if ($extension === $keepExtension) {
+                continue;
+            }
+
+            $relative = $this->storageRelativePath($seriesYear, $ordinanceNo, $type, $extension);
+
+            if (Storage::disk('local')->exists($relative)) {
+                Storage::disk('local')->delete($relative);
+            }
+
+            $this->deleteLegacyCopy($relative);
         }
     }
 }

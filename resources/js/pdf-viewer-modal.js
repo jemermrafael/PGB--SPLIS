@@ -3,6 +3,7 @@ import { pdfEmbedUrl } from './pdf-embed-url';
 let modal;
 let panel;
 let frame;
+let image;
 let titleEl;
 let openTab;
 let fullscreenBtn;
@@ -32,18 +33,41 @@ function setFullscreen(enabled) {
     exitIcon?.classList.toggle('hidden', ! enabled);
 }
 
-export function openPdfModal({ src = '', url = '', title = 'Document' } = {}) {
-    if (! modal || ! panel || ! frame || ! titleEl || ! openTab) {
+function showViewer(viewer, src) {
+    if (! frame || ! image) {
+        return;
+    }
+
+    if (viewer === 'image') {
+        frame.classList.add('hidden');
+        frame.setAttribute('src', 'about:blank');
+        image.classList.remove('hidden');
+        image.src = src;
+        image.alt = titleEl?.textContent || 'Document image';
+        return;
+    }
+
+    image.classList.add('hidden');
+    image.removeAttribute('src');
+    frame.classList.remove('hidden');
+    frame.setAttribute('src', src || 'about:blank');
+}
+
+export function openPdfModal({ src = '', url = '', title = 'Document', viewer = 'embed' } = {}) {
+    if (! modal || ! panel || ! frame || ! image || ! titleEl || ! openTab) {
         return;
     }
 
     const openUrl = String(url || src || '').trim();
-    const embedSrc = String(src || pdfEmbedUrl(openUrl) || '').trim();
+    const viewerMode = viewer || 'embed';
+    const embedSrc = viewerMode === 'embed'
+        ? String(src || pdfEmbedUrl(openUrl) || '').trim()
+        : String(src || openUrl || '').trim();
 
     titleEl.textContent = title || 'Document';
     openTab.href = openUrl || '#';
     openTab.hidden = ! openUrl;
-    frame.setAttribute('src', embedSrc || 'about:blank');
+    showViewer(viewerMode, embedSrc || 'about:blank');
 
     setFullscreen(false);
     modal.hidden = false;
@@ -51,7 +75,7 @@ export function openPdfModal({ src = '', url = '', title = 'Document' } = {}) {
 }
 
 export function closePdfModal() {
-    if (! modal || ! panel || ! frame) {
+    if (! modal || ! panel || ! frame || ! image) {
         return;
     }
 
@@ -59,17 +83,21 @@ export function closePdfModal() {
     modal.hidden = true;
     document.body.classList.remove('splis-modal-open');
     frame.setAttribute('src', 'about:blank');
+    frame.classList.remove('hidden');
+    image.classList.add('hidden');
+    image.removeAttribute('src');
 }
 
 export function initPdfViewerModal() {
     modal = document.getElementById('splis-pdf-modal');
     panel = modal?.querySelector('[data-pdf-modal-panel]');
     frame = document.getElementById('splis-pdf-modal-frame');
+    image = document.getElementById('splis-pdf-modal-image');
     titleEl = document.getElementById('splis-pdf-modal-title');
     openTab = document.getElementById('splis-pdf-modal-open-tab');
     fullscreenBtn = document.getElementById('splis-pdf-modal-fullscreen');
 
-    if (! modal || ! panel || ! frame || ! titleEl || ! openTab || bound) {
+    if (! modal || ! panel || ! frame || ! image || ! titleEl || ! openTab || bound) {
         return;
     }
 
@@ -84,10 +112,11 @@ export function initPdfViewerModal() {
         event.preventDefault();
 
         const url = trigger.dataset.pdfUrl || trigger.getAttribute('href') || '';
-        const src = trigger.dataset.pdfSrc || pdfEmbedUrl(url);
+        const viewer = trigger.dataset.pdfViewer || 'embed';
+        const src = trigger.dataset.pdfSrc || (viewer === 'embed' ? pdfEmbedUrl(url) : url);
         const title = trigger.dataset.pdfTitle || 'Document';
 
-        openPdfModal({ src, url, title });
+        openPdfModal({ src, url, title, viewer });
     });
 
     fullscreenBtn?.addEventListener('click', () => {

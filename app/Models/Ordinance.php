@@ -32,10 +32,13 @@ class Ordinance extends Model
         'effectivity_date',
         'mov_bulletin',
         'mov_bulletin_url',
+        'mov_bulletin_pdf_path',
         'mov_certification',
         'mov_certification_url',
+        'mov_certification_pdf_path',
         'mov_newspaper',
         'mov_newspaper_url',
+        'mov_newspaper_pdf_path',
         'implementing_bodies',
         'classification',
         'mandate_ppa',
@@ -251,12 +254,60 @@ class Ordinance extends Model
 
     public function hasLocalPdf(): bool
     {
-        return app(\App\Services\OrdinancePdfService::class)->existsFor($this);
+        return $this->hasLocalPdfType(\App\Support\OrdinancePdfType::MAIN);
+    }
+
+    public function hasLocalPdfType(string $type): bool
+    {
+        return app(\App\Services\OrdinancePdfService::class)->existsFor($this, $type);
     }
 
     public function pdfPublicUrl(): ?string
     {
         return app(\App\Services\OrdinancePdfService::class)->publicUrl($this);
+    }
+
+    public function pdfViewerMode(): ?string
+    {
+        return app(\App\Services\OrdinancePdfService::class)->viewerMode($this);
+    }
+
+    public function movBulletinPdfPublicUrl(): ?string
+    {
+        return app(\App\Services\OrdinancePdfService::class)->publicUrl($this, \App\Support\OrdinancePdfType::BULLETIN);
+    }
+
+    public function movBulletinViewerMode(): ?string
+    {
+        return app(\App\Services\OrdinancePdfService::class)->viewerMode($this, \App\Support\OrdinancePdfType::BULLETIN);
+    }
+
+    public function movCertificationPdfPublicUrl(): ?string
+    {
+        return app(\App\Services\OrdinancePdfService::class)->publicUrl($this, \App\Support\OrdinancePdfType::CERTIFICATION);
+    }
+
+    public function movCertificationViewerMode(): ?string
+    {
+        return app(\App\Services\OrdinancePdfService::class)->viewerMode($this, \App\Support\OrdinancePdfType::CERTIFICATION);
+    }
+
+    public function movNewspaperPdfPublicUrl(): ?string
+    {
+        return app(\App\Services\OrdinancePdfService::class)->publicUrl($this, \App\Support\OrdinancePdfType::NEWSPAPER);
+    }
+
+    public function movNewspaperViewerMode(): ?string
+    {
+        return app(\App\Services\OrdinancePdfService::class)->viewerMode($this, \App\Support\OrdinancePdfType::NEWSPAPER);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function missingPdfMirrorTypes(): array
+    {
+        return app(\App\Services\OrdinancePdfService::class)->missingMirrorTypes($this);
     }
 
     protected static function booted(): void

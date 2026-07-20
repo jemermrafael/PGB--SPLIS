@@ -12,6 +12,7 @@ use App\Services\AgendaLifecycleService;
 use App\Services\AgendaLinkService;
 use App\Services\AgendaOutputLinker;
 use App\Services\AgendaOutputPublisher;
+use App\Services\AgendaPdfService;
 use App\Services\AgendaVersionService;
 use App\Services\BoardMemberNotifier;
 use App\Services\MunicipalNotifier;
@@ -19,6 +20,7 @@ use App\Services\ObDocumentService;
 use App\Support\ActivityLogger;
 use App\Support\AgendaFieldOptions;
 use App\Support\AgendaMeasureType;
+use App\Support\AgendaPdfSlot;
 use App\Support\TrashActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,6 +29,9 @@ use Illuminate\View\View;
 
 class AgendaItemController extends Controller
 {
+    public function __construct(
+        protected AgendaPdfService $agendaPdfService,
+    ) {}
     public function index(AgendaItemRepository $repository): View
     {
         $this->authorize('viewAny', AgendaItem::class);
@@ -60,6 +65,8 @@ class AgendaItemController extends Controller
             $this->validated($request),
             ['created_by' => $request->user()->id],
         ));
+
+        $this->storeUploadedPdfs($request, $agenda);
 
         $versions->recordInitialVersion($agenda, $request->user()->id);
 
@@ -175,6 +182,7 @@ class AgendaItemController extends Controller
         $wasPublished = $agenda->isPublished();
 
         $agenda->update($this->validated($request));
+        $this->storeUploadedPdfs($request, $agenda);
         $changedFields = array_keys($agenda->getChanges());
         $agenda->refresh();
 
@@ -432,6 +440,7 @@ class AgendaItemController extends Controller
         $data = $request->validate([
             'tracking_no' => ['nullable', 'string', 'max:20'],
             'request_pdf_url' => ['nullable', 'string', 'max:500'],
+            'request_pdf' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp', 'max:51200'],
             'date_received' => ['nullable', 'date'],
             'time_received' => ['nullable', 'date_format:H:i'],
             'prescribed_days' => ['nullable', 'integer', 'in:0,30,60,90'],
@@ -445,6 +454,7 @@ class AgendaItemController extends Controller
             'committee_meeting_minutes' => ['nullable', 'string', 'max:200'],
             'outcome' => ['nullable', 'string', 'max:80'],
             'committee_report_url' => ['nullable', 'string', 'max:500'],
+            'committee_report_pdf' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp', 'max:51200'],
             'date_passed' => ['nullable', 'date'],
             'date_signed_by_gov' => ['nullable', 'date'],
             'reso_ord_ao_no' => ['nullable', 'string', 'max:50'],
@@ -455,9 +465,12 @@ class AgendaItemController extends Controller
                 Rule::in(AgendaMeasureType::options()),
             ],
             'reso_ord_ao_url' => ['nullable', 'string', 'max:500'],
+            'reso_ord_ao_pdf' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp', 'max:51200'],
             'resolution_title' => ['nullable', 'string', 'max:5000'],
             'journal_url' => ['nullable', 'string', 'max:500'],
+            'journal_pdf' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp', 'max:51200'],
             'minutes_url' => ['nullable', 'string', 'max:500'],
+            'minutes_pdf' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp', 'max:51200'],
             'remarks' => ['nullable', 'string', 'max:5000'],
         ]);
 
@@ -467,6 +480,34 @@ class AgendaItemController extends Controller
 
         $data['is_urgent_request'] = $request->boolean('is_urgent_request');
 
+        unset(
+            $data['request_pdf'],
+            $data['committee_report_pdf'],
+            $data['reso_ord_ao_pdf'],
+            $data['journal_pdf'],
+            $data['minutes_pdf'],
+        );
+
         return $data;
+    }
+
+    protected function storeUploadedPdfs(Request $request, AgendaItem $agenda): void
+    {
+        foreach (AgendaPdfSlot::all() as $slot) {
+            $field = AgendaPdfSlot::config($slot)['upload'];
+
+            if (! $request->hasFile($field)) {
+                continue;
+            }
+
+            $path = $this->agendaPdfService->store(
+                $request->file($field),
+                $agenda,
+                $slot,
+            );
+
+            $pathColumn = AgendaPdfSlot::config($slot)['path'];
+            $agenda->update([$pathColumn => $path]);
+        }
     }
 }

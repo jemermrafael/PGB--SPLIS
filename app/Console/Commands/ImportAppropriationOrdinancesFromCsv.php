@@ -51,7 +51,7 @@ class ImportAppropriationOrdinancesFromCsv extends Command
         );
 
         if (! $dryRun) {
-            $this->info('Appropriation ordinance import complete.');
+            $this->info('Appropriation Ordinance import complete.');
         }
 
         return self::SUCCESS;

@@ -15,6 +15,15 @@
                     <x-icon name="edit" class="h-4 w-4" />
                     Edit
                 </a>
+                @if ($appropriationOrdinance->needsPdfMirror())
+                    <form method="POST" action="{{ route('appropriation-ordinances.mirror-pdf', $appropriationOrdinance) }}">
+                        @csrf
+                        <button type="submit" class="splis-btn-secondary inline-flex items-center gap-2">
+                            <x-icon name="download" class="h-4 w-4" />
+                            Download file from Drive
+                        </button>
+                    </form>
+                @endif
             @endcan
             <a href="{{ route('appropriation-ordinances.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
                 <x-icon name="arrow-left" class="h-4 w-4" />
@@ -52,7 +61,8 @@
     </div>
 
     @include('partials.pdf-document-embed', [
-        'pdfUrl' => $appropriationOrdinance->pdf_url,
+        'pdfUrl' => $appropriationOrdinance->pdfPublicUrl(),
+        'viewer' => $appropriationOrdinance->pdfViewerMode(),
         'embedTitle' => $appropriationOrdinance->displayNumber().' PDF',
     ])
 
@@ -63,7 +73,7 @@
         'nextUrl' => ($nextAppropriationOrdinance ?? null) ? route('appropriation-ordinances.show', $nextAppropriationOrdinance) : null,
         'previousLabel' => isset($previousAppropriationOrdinance) ? $previousAppropriationOrdinance->displayNumber().' · '.$previousAppropriationOrdinance->displaySeries() : null,
         'nextLabel' => isset($nextAppropriationOrdinance) ? $nextAppropriationOrdinance->displayNumber().' · '.$nextAppropriationOrdinance->displaySeries() : null,
-        'label' => 'Appropriation ordinance navigation',
+        'label' => 'Appropriation Ordinance navigation',
     ])
 
     <div class="mt-6 flex flex-wrap gap-2">
@@ -76,8 +86,8 @@
                 method="POST"
                 action="{{ route('appropriation-ordinances.destroy', $appropriationOrdinance) }}"
                 data-confirm-submit
-                data-confirm-title="Move appropriation ordinance to trash?"
-                data-confirm-message="Move this appropriation ordinance to trash? Superadmin can restore from Trash."
+                data-confirm-title="Move Appropriation Ordinance to trash?"
+                data-confirm-message="Move this Appropriation Ordinance to trash? Superadmin can restore from Trash."
                 data-confirm-label="Delete"
             >
                 @csrf

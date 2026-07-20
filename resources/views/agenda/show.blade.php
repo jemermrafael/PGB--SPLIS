@@ -3,6 +3,9 @@
 @section('title', $agenda->displayLabel().' — Agenda — '.config('app.name'))
 
 @section('content')
+@php
+    use App\Support\AgendaPdfSlot;
+@endphp
 <div class="max-w-6xl">
     @php
         $agendaSubtitle = ($agenda->sender ? $agenda->sender.' · ' : '').'Version '.$agenda->current_version_no;
@@ -59,14 +62,26 @@
                         </form>
                     @endif
                 @endcan
-                @if ($agenda->request_pdf_url)
+                @if ($agenda->pdfPublicUrlFor(AgendaPdfSlot::REQUEST))
                     @include('partials.pdf-modal-trigger', [
-                        'url' => $agenda->request_pdf_url,
+                        'url' => $agenda->pdfPublicUrlFor(AgendaPdfSlot::REQUEST),
+                        'viewer' => $agenda->pdfViewerModeFor(AgendaPdfSlot::REQUEST),
                         'title' => 'Request PDF — '.$agenda->displayLabel(),
                         'label' => 'Request PDF',
                         'class' => 'splis-btn-secondary inline-flex items-center gap-2 text-nowrap',
                     ])
                 @endif
+                @can('update', $agenda)
+                    @if ($agenda->missingPdfMirrorSlots() !== [])
+                        <form method="POST" action="{{ route('agenda.mirror-pdf', $agenda) }}">
+                            @csrf
+                            <button type="submit" class="splis-btn-secondary inline-flex items-center gap-2 text-nowrap">
+                                <x-icon name="download" class="h-4 w-4" />
+                                Download from Drive
+                            </button>
+                        </form>
+                    @endif
+                @endcan
                 @can('update', $agenda)
                     <a href="{{ route('agenda.edit', $agenda) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-nowrap">
                         <x-icon name="edit" class="h-4 w-4" />
@@ -367,39 +382,43 @@
                 </div>
             </aside>
 
-            @if ($agenda->committee_report_url || $agenda->reso_ord_ao_url || $agenda->journal_url || $agenda->minutes_url || $agenda->isPublished())
+            @if ($agenda->pdfPublicUrlFor(AgendaPdfSlot::COMMITTEE_REPORT) || $agenda->pdfPublicUrlFor(AgendaPdfSlot::RESO_ORD_AO) || $agenda->pdfPublicUrlFor(AgendaPdfSlot::JOURNAL) || $agenda->pdfPublicUrlFor(AgendaPdfSlot::MINUTES) || $agenda->isPublished())
                 <div class="splis-card">
                     <div class="splis-card-header">
                         <h2 class="splis-card-title">Documents</h2>
                     </div>
                     <div class="splis-card-body flex flex-col gap-2">
-                        @if ($agenda->committee_report_url)
+                        @if ($agenda->pdfPublicUrlFor(AgendaPdfSlot::COMMITTEE_REPORT))
                             @include('partials.pdf-modal-trigger', [
-                                'url' => $agenda->committee_report_url,
+                                'url' => $agenda->pdfPublicUrlFor(AgendaPdfSlot::COMMITTEE_REPORT),
+                                'viewer' => $agenda->pdfViewerModeFor(AgendaPdfSlot::COMMITTEE_REPORT),
                                 'title' => 'Committee Report — '.$agenda->displayLabel(),
                                 'label' => 'Committee Report',
                             ])
                         @endif
                         @if ($agenda->isPublished() && $agenda->publishedTargetRoute())
                             <a href="{{ $agenda->publishedTargetRoute() }}" class="splis-btn-secondary text-sm">{{ $agenda->splisOutputButtonLabel() }}</a>
-                        @elseif ($agenda->reso_ord_ao_url)
+                        @elseif ($agenda->pdfPublicUrlFor(AgendaPdfSlot::RESO_ORD_AO))
                             @include('partials.pdf-modal-trigger', [
-                                'url' => $agenda->reso_ord_ao_url,
+                                'url' => $agenda->pdfPublicUrlFor(AgendaPdfSlot::RESO_ORD_AO),
+                                'viewer' => $agenda->pdfViewerModeFor(AgendaPdfSlot::RESO_ORD_AO),
                                 'title' => $agenda->legacyOutputPdfButtonLabel().' — '.$agenda->displayLabel(),
                                 'label' => $agenda->legacyOutputPdfButtonLabel(),
                             ])
                         @endif
-                        @if ($agenda->journal_url)
+                        @if ($agenda->pdfPublicUrlFor(AgendaPdfSlot::JOURNAL))
                             @include('partials.pdf-modal-trigger', [
-                                'url' => $agenda->journal_url,
+                                'url' => $agenda->pdfPublicUrlFor(AgendaPdfSlot::JOURNAL),
+                                'viewer' => $agenda->pdfViewerModeFor(AgendaPdfSlot::JOURNAL),
                                 'title' => 'Journal of Proceedings — '.$agenda->displayLabel(),
                                 'label' => 'Journal of Proceedings',
                                 'class' => 'splis-btn-secondary text-sm inline-flex items-center justify-center gap-2',
                             ])
                         @endif
-                        @if ($agenda->minutes_url)
+                        @if ($agenda->pdfPublicUrlFor(AgendaPdfSlot::MINUTES))
                             @include('partials.pdf-modal-trigger', [
-                                'url' => $agenda->minutes_url,
+                                'url' => $agenda->pdfPublicUrlFor(AgendaPdfSlot::MINUTES),
+                                'viewer' => $agenda->pdfViewerModeFor(AgendaPdfSlot::MINUTES),
                                 'title' => 'Minutes of Session — '.$agenda->displayLabel(),
                                 'label' => 'Minutes of Session',
                                 'class' => 'splis-btn-secondary text-sm inline-flex items-center justify-center gap-2',

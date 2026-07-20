@@ -1,7 +1,9 @@
 @php
     $url = trim((string) ($url ?? ''));
-    $src = $src ?? \App\Support\PdfEmbedUrl::forIframe($url);
-    $title = $title ?? 'PDF Document';
+    $viewer = $viewer ?? 'embed';
+    $embedUrl = \App\Support\PdfEmbedUrl::forIframe($url);
+    $src = $src ?? ($viewer === 'embed' ? $embedUrl : $url);
+    $title = $title ?? 'Document';
     $label = $label ?? 'View PDF';
     $class = $class ?? 'splis-btn-secondary inline-flex items-center gap-2 text-sm';
     $icon = $icon ?? 'eye';
@@ -12,6 +14,7 @@
         type="button"
         class="{{ $class }}"
         data-pdf-modal-open
+        data-pdf-viewer="{{ $viewer }}"
         data-pdf-src="{{ $src }}"
         data-pdf-url="{{ $url }}"
         data-pdf-title="{{ $title }}"

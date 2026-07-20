@@ -38,6 +38,7 @@ class AgendaItem extends Model
         'current_version_no',
         'tracking_no',
         'request_pdf_url',
+        'request_pdf_path',
         'date_received',
         'time_received',
         'prescribed_days',
@@ -53,19 +54,23 @@ class AgendaItem extends Model
         'committee_meeting_minutes',
         'outcome',
         'committee_report_url',
+        'committee_report_pdf_path',
         'date_passed',
         'date_signed_by_gov',
         'reso_ord_ao_no',
         'reso_ord_ao_series',
         'reso_ord_ao_type',
         'reso_ord_ao_url',
+        'reso_ord_ao_pdf_path',
         'resolution_id',
         'ordinance_id',
         'appropriation_ordinance_id',
         'published_at',
         'resolution_title',
         'journal_url',
+        'journal_pdf_path',
         'minutes_url',
+        'minutes_pdf_path',
         'remarks',
         'incoming_document_id',
         'created_by',
@@ -329,11 +334,36 @@ class AgendaItem extends Model
 
     public function hasAnyPdf(): bool
     {
-        return filled($this->request_pdf_url)
-            || filled($this->committee_report_url)
-            || filled($this->reso_ord_ao_url)
-            || filled($this->journal_url)
-            || filled($this->minutes_url);
+        foreach (\App\Support\AgendaPdfSlot::all() as $slot) {
+            if ($this->pdfPublicUrlFor($slot) !== null) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function pdfPublicUrlFor(string $slot): ?string
+    {
+        return app(\App\Services\AgendaPdfService::class)->publicUrl($this, $slot);
+    }
+
+    public function pdfViewerModeFor(string $slot): ?string
+    {
+        return app(\App\Services\AgendaPdfService::class)->viewerMode($this, $slot);
+    }
+
+    public function hasLocalPdfFor(string $slot): bool
+    {
+        return app(\App\Services\AgendaPdfService::class)->existsFor($this, $slot);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function missingPdfMirrorSlots(): array
+    {
+        return app(\App\Services\AgendaPdfService::class)->missingMirrorSlots($this);
     }
 
     public function outputPdfUrl(): ?string

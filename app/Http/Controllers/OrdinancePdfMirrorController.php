@@ -13,16 +13,29 @@ class OrdinancePdfMirrorController extends Controller
     {
         $this->authorize('update', $ordinance);
 
-        $result = $mirror->mirror($ordinance, overwrite: false);
+        $result = $mirror->mirrorAllFor($ordinance, overwrite: false);
 
-        if ($result['ok'] && ! str_contains($result['message'], 'skipped')) {
+        if ($result['mirrored'] > 0) {
             ActivityLog::record('ordinance.pdf_mirrored', $ordinance, [
-                'pdf_path' => $result['path'] ?? null,
+                'mirrored' => $result['mirrored'],
+                'messages' => $result['messages'],
             ]);
+        }
+
+        if ($result['mirrored'] > 0 && $result['failed'] === 0) {
+            $message = $result['mirrored'] === 1
+                ? ($result['messages'][0] ?? 'PDF mirrored.')
+                : $result['mirrored'].' PDF(s) mirrored from Drive.';
+        } elseif ($result['mirrored'] > 0) {
+            $message = $result['mirrored'].' PDF(s) mirrored. '.$result['failed'].' failed.';
+        } elseif ($result['failed'] > 0) {
+            $message = implode(' ', $result['messages']);
+        } else {
+            $message = 'All linked PDFs are already stored locally.';
         }
 
         return redirect()
             ->route('ordinances.show', $ordinance)
-            ->with($result['ok'] ? 'status' : 'error', $result['message']);
+            ->with($result['failed'] > 0 && $result['mirrored'] === 0 ? 'error' : 'status', $message);
     }
 }

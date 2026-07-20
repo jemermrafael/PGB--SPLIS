@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\MediaType;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -15,10 +16,22 @@ class GoogleDrivePdfDownloader
      */
     public function download(string $url): string
     {
+        return $this->downloadFile($url)['contents'];
+    }
+
+    /**
+     * Download a PDF or image from Google Drive / direct URL.
+     *
+     * @return array{contents: string, mime: string, extension: string}
+     *
+     * @throws RuntimeException
+     */
+    public function downloadFile(string $url): array
+    {
         $url = trim($url);
 
         if ($url === '') {
-            throw new RuntimeException('PDF URL is empty.');
+            throw new RuntimeException('File URL is empty.');
         }
 
         $fileId = $this->extractFileId($url);
@@ -47,7 +60,10 @@ class GoogleDrivePdfDownloader
         return null;
     }
 
-    protected function downloadDriveFile(string $fileId): string
+    /**
+     * @return array{contents: string, mime: string, extension: string}
+     */
+    protected function downloadDriveFile(string $fileId): array
     {
         $client = $this->httpClient();
         $exportUrl = 'https://drive.google.com/uc?export=download&id='.rawurlencode($fileId);
@@ -59,15 +75,20 @@ class GoogleDrivePdfDownloader
         }
 
         $body = $response->body();
+        $detected = MediaType::fromBytes($body, $response->header('Content-Type'));
 
-        if ($this->looksLikePdf($body, $response->header('Content-Type'))) {
-            return $body;
+        if ($detected !== null) {
+            return [
+                'contents' => $body,
+                'mime' => $detected['mime'],
+                'extension' => $detected['extension'],
+            ];
         }
 
         $confirm = $this->extractConfirmToken($body);
 
         if ($confirm === null) {
-            throw new RuntimeException('Could not download PDF from Google Drive (file may be private or blocked).');
+            throw new RuntimeException('Could not download file from Google Drive (file may be private or blocked).');
         }
 
         $confirmedUrl = 'https://drive.google.com/uc?export=download&confirm='.rawurlencode($confirm)
@@ -77,35 +98,47 @@ class GoogleDrivePdfDownloader
             'Cookie' => $this->cookieHeaderFromResponse($response),
         ])->get($confirmedUrl);
 
-
         if (! $confirmed->successful()) {
             throw new RuntimeException('Google Drive confirmed download failed (HTTP '.$confirmed->status().').');
         }
 
-        $pdf = $confirmed->body();
+        $fileBody = $confirmed->body();
+        $detected = MediaType::fromBytes($fileBody, $confirmed->header('Content-Type'));
 
-        if (! $this->looksLikePdf($pdf, $confirmed->header('Content-Type'))) {
-            throw new RuntimeException('Google Drive response was not a PDF (check sharing settings).');
+        if ($detected === null) {
+            throw new RuntimeException('Google Drive response was not a supported PDF or image file.');
         }
 
-        return $pdf;
+        return [
+            'contents' => $fileBody,
+            'mime' => $detected['mime'],
+            'extension' => $detected['extension'],
+        ];
     }
 
-    protected function downloadDirect(string $url): string
+    /**
+     * @return array{contents: string, mime: string, extension: string}
+     */
+    protected function downloadDirect(string $url): array
     {
         $response = $this->httpClient()->get($url);
 
         if (! $response->successful()) {
-            throw new RuntimeException('PDF download failed (HTTP '.$response->status().').');
+            throw new RuntimeException('File download failed (HTTP '.$response->status().').');
         }
 
         $body = $response->body();
+        $detected = MediaType::fromBytes($body, $response->header('Content-Type'));
 
-        if (! $this->looksLikePdf($body, $response->header('Content-Type'))) {
-            throw new RuntimeException('Downloaded content is not a PDF.');
+        if ($detected === null) {
+            throw new RuntimeException('Downloaded content is not a supported PDF or image file.');
         }
 
-        return $body;
+        return [
+            'contents' => $body,
+            'mime' => $detected['mime'],
+            'extension' => $detected['extension'],
+        ];
     }
 
     protected function httpClient(): PendingRequest
@@ -118,17 +151,6 @@ class GoogleDrivePdfDownloader
             ->withOptions([
                 'allow_redirects' => true,
             ]);
-    }
-
-    protected function looksLikePdf(string $body, ?string $contentType): bool
-    {
-        if (str_starts_with($body, '%PDF')) {
-            return true;
-        }
-
-        $type = strtolower((string) $contentType);
-
-        return str_contains($type, 'application/pdf') && strlen($body) > 100;
     }
 
     protected function extractConfirmToken(string $html): ?string
@@ -152,9 +174,6 @@ class GoogleDrivePdfDownloader
         return null;
     }
 
-    /**
-     * Pass through Set-Cookie values from the virus-scan interstitial when present.
-     */
     protected function cookieHeaderFromResponse(\Illuminate\Http\Client\Response $response): string
     {
         $raw = $response->header('Set-Cookie');

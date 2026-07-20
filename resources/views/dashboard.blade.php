@@ -58,7 +58,7 @@
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div>
                 <label class="splis-label">Number</label>
-                <input type="text" name="number" class="splis-input" placeholder="Resolution no. or ordinance no.">
+                <input type="text" name="number" class="splis-input" placeholder="Resolution No. or Ordinance No.">
             </div>
             <div class="md:col-span-2">
                 <label class="splis-label">Title</label>

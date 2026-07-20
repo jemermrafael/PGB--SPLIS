@@ -22,6 +22,7 @@ class AppropriationOrdinance extends Model
         'date_passed',
         'date_approved',
         'pdf_url',
+        'pdf_path',
         'agenda_item_id',
         'created_by',
     ];
@@ -104,5 +105,25 @@ class AppropriationOrdinance extends Model
             app(\App\Services\AgendaPublishedOutputService::class)
                 ->clearFromDeletedAppropriationOrdinance($appropriationOrdinance);
         });
+    }
+
+    public function hasLocalPdf(): bool
+    {
+        return app(\App\Services\AppropriationOrdinancePdfService::class)->existsFor($this);
+    }
+
+    public function pdfPublicUrl(): ?string
+    {
+        return app(\App\Services\AppropriationOrdinancePdfService::class)->publicUrl($this);
+    }
+
+    public function pdfViewerMode(): ?string
+    {
+        return app(\App\Services\AppropriationOrdinancePdfService::class)->viewerMode($this);
+    }
+
+    public function needsPdfMirror(): bool
+    {
+        return app(\App\Services\AppropriationOrdinancePdfService::class)->needsMirror($this);
     }
 }
