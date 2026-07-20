@@ -12,7 +12,7 @@
         @can('create', App\Models\Ordinance::class)
             <a href="{{ route('ordinances.create') }}" class="splis-btn-primary inline-flex items-center gap-2">
                 <x-icon name="plus" class="h-4 w-4" stroke-width="2" />
-                Add ordinance
+                Add Ordinance
             </a>
         @endcan
     </div>

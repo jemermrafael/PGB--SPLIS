@@ -7,6 +7,7 @@ use App\Models\ActivityLog;
 use App\Services\AgendaCsvImporter;
 use App\Services\DataSyncCsvStorage;
 use App\Services\DriveFileMirrorQueueService;
+use App\Services\OrdinanceCsvImporter;
 use App\Services\ResolutionCsvImporter;
 use App\Services\ResolutionPdfLinkService;
 use App\Support\ActivityLogger;
@@ -25,6 +26,7 @@ class DataSyncController extends Controller
                 'data_sync.sptrack_incoming',
                 'data_sync.sptrack_resolutions',
                 'data_sync.agenda_csv',
+                'data_sync.ordinances_csv',
                 'data_sync.link_pdfs',
                 'data_sync.drive_mirror_rebuild',
                 'data_sync.drive_mirror_process',
@@ -38,6 +40,7 @@ class DataSyncController extends Controller
             'recentLogs' => $recentLogs,
             'driveMirrorStats' => $driveMirrorQueue->stats(),
             'driveMirrorItems' => $driveMirrorQueue->listItems(50),
+            'driveMirrorFailedItems' => $driveMirrorQueue->failedItems(50),
         ]);
     }
 
@@ -157,6 +160,53 @@ class DataSyncController extends Controller
             ($stats['urgent'] ?? 0) > 0
                 ? sprintf(', %d urgent without tracking no.', $stats['urgent'])
                 : '',
+        ));
+    }
+
+    public function syncOrdinances(
+        Request $request,
+        OrdinanceCsvImporter $importer,
+        DataSyncCsvStorage $uploads,
+    ): RedirectResponse {
+        $request->validate([
+            'ordinances_csv' => ['required', 'file', 'mimes:csv,txt', 'max:51200'],
+            'dry_run' => ['nullable', 'boolean'],
+            'series_year' => ['nullable', 'integer', 'min:1900', 'max:2100'],
+        ]);
+
+        $dryRun = $request->boolean('dry_run');
+        $uploadedPath = $this->storeUpload($request->file('ordinances_csv'), $uploads);
+
+        try {
+            $stats = $importer->sync(
+                dryRun: $dryRun,
+                csvFilePath: $uploadedPath,
+                seriesYear: $request->filled('series_year') ? (int) $request->input('series_year') : null,
+            );
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage());
+        } finally {
+            $uploads->delete($uploadedPath);
+        }
+
+        if (! $dryRun) {
+            ActivityLogger::log('data_sync.ordinances_csv', null, [
+                'uploaded' => true,
+                'csv_file' => basename((string) $stats['csv_file']),
+                'stats' => $stats,
+            ]);
+        }
+
+        $prefix = $dryRun ? '[Dry run] ' : '';
+
+        return back()->with('status', sprintf(
+            '%sOrdinances synced from %s — %d processed (%d created, %d updated, %d skipped).',
+            $prefix,
+            basename((string) $stats['csv_file']),
+            $stats['processed'],
+            $stats['created'],
+            $stats['updated'],
+            $stats['skipped'],
         ));
     }
 

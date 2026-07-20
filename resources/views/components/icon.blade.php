@@ -71,6 +71,10 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 3h6l1 4H8l1-4Z" />
             @break
 
+        @case('folder')
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+            @break
+
         @case('bell')
             <path stroke-linecap="round" stroke-linejoin="round" d="M10 18a2 2 0 1 0 4 0" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M5.26 15.29h13.48a1 1 0 0 0 .86-1.51A2 2 0 0 1 19.33 13A6.67 6.67 0 0 0 18 9a6 6 0 1 0-12 0a6.67 6.67 0 0 0-1.33 4c0 .28-.1.55-.27.78a1 1 0 0 0 .86 1.51" />

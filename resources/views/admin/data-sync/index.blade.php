@@ -21,6 +21,7 @@
                             @case('data_sync.sptrack_incoming') Sptrack incoming @break
                             @case('data_sync.sptrack_resolutions') Linked resolutions @break
                             @case('data_sync.agenda_csv') Agenda tracker @break
+                            @case('data_sync.ordinances_csv') Ordinances @break
                             @case('data_sync.link_pdfs') PDF path backfill @break
                             @case('data_sync.drive_mirror_rebuild') Drive mirror queue rebuild @break
                             @case('data_sync.drive_mirror_process') Drive mirror queue process @break
@@ -84,6 +85,41 @@
             <button type="submit" class="splis-btn-primary">Sync agenda</button>
         </form>
     </div>
+
+    <div class="splis-card p-6 xl:col-span-2">
+        <div class="mb-3 flex flex-wrap items-center gap-2">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Ordinances</h2>
+            <x-risk-badge level="safe" label="Safe sync" />
+        </div>
+        <p class="mb-4 text-sm text-slate-600 dark:text-slate-400">
+            Imports or updates ordinances from <code class="text-xs">Ordinances-*.csv</code> (e.g. <code class="text-xs">Ordinances-001.csv</code>).
+            Columns: <code class="text-xs">ORD NO.</code>, <code class="text-xs">GDrive</code>, <code class="text-xs">Publish Status</code>, subject, dates, MOV bulletin/certification/newspaper links.
+            Matches by ordinance number and series year.
+        </p>
+        <form method="POST" action="{{ route('admin.data-sync.ordinances') }}" enctype="multipart/form-data" class="space-y-4">
+            @csrf
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                    <label for="ordinances_csv" class="splis-label">Upload ordinances CSV</label>
+                    <input type="file" name="ordinances_csv" id="ordinances_csv" accept=".csv,text/csv" required class="splis-input mt-1 block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-700">
+                </div>
+                <div>
+                    <label for="ordinances_series_year" class="splis-label">Series year (optional)</label>
+                    <input type="number" name="series_year" id="ordinances_series_year" min="1900" max="2100" value="{{ config('ordinances.default_series_year') }}" class="splis-input mt-1 block w-full">
+                    <p class="mt-1 text-xs text-slate-500">Leave as default unless importing a different series.</p>
+                </div>
+            </div>
+            <label class="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="dry_run" value="1" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+                Dry run
+            </label>
+            <button type="submit" class="splis-btn-primary">Sync ordinances</button>
+        </form>
+        <details class="mt-3 text-xs text-slate-500">
+            <summary class="cursor-pointer">CLI</summary>
+            <code class="mt-1 block">php artisan splis:import-ordinances-csv --path=oldsp/Ordinances-001.csv</code>
+        </details>
+    </div>
 </div>
 
 <p class="splis-admin-section-title">Drive PDF mirror queue</p>
@@ -144,7 +180,6 @@
                         <th class="px-3 py-2">Status</th>
                         <th class="px-3 py-2">Attempts</th>
                         <th class="px-3 py-2">Queued</th>
-                        <th class="px-3 py-2">Error</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -157,20 +192,59 @@
                                     'rounded-full px-2 py-0.5 text-xs font-medium',
                                     'bg-amber-100 text-amber-800' => $item->status === 'pending',
                                     'bg-sky-100 text-sky-800' => $item->status === 'processing',
-                                    'bg-red-100 text-red-800' => $item->status === 'failed',
                                 ])>{{ ucfirst($item->status) }}</span>
                             </td>
                             <td class="px-3 py-2">{{ $item->attempts }}</td>
                             <td class="px-3 py-2 text-slate-500">{{ $item->queued_at?->format('M j, g:i A') ?: '—' }}</td>
-                            <td class="px-3 py-2 text-xs text-red-600">{{ $item->error_message ?: '—' }}</td>
                         </tr>
                     @endforeach
                 </tbody>
             </table>
         </div>
     @else
-        <p class="text-sm text-slate-500">No pending or failed items. Rebuild the queue to scan for Drive URLs without local files.</p>
+        <p class="text-sm text-slate-500">No pending or processing items. Rebuild the queue to scan for Drive URLs without local files.</p>
     @endif
+
+    <div class="mt-8">
+        <div class="mb-3 flex flex-wrap items-center gap-2">
+            <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">Failed items</h3>
+            <span class="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">{{ $driveMirrorStats['failed'] }}</span>
+        </div>
+
+        @if ($driveMirrorFailedItems->isNotEmpty())
+            <div class="space-y-3">
+                @foreach ($driveMirrorFailedItems as $item)
+                    <div class="rounded-xl border border-red-200 bg-red-50/60 p-4 dark:border-red-900/60 dark:bg-red-950/20">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <p class="font-medium text-slate-900 dark:text-slate-100">{{ $item->entityLabel() }} — {{ $item->documentLabel() }}</p>
+                                <p class="mt-1 text-xs text-slate-500">
+                                    Attempts: {{ $item->attempts }}
+                                    · Last tried: {{ $item->completed_at?->format('M j, Y g:i A') ?: ($item->queued_at?->format('M j, Y g:i A') ?: '—') }}
+                                </p>
+                            </div>
+                            <span class="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">Failed</span>
+                        </div>
+
+                        <div class="mt-3 grid gap-3">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Error</p>
+                                <p class="mt-1 whitespace-pre-wrap break-words text-sm text-red-700 dark:text-red-300">{{ $item->error_message ?: 'Unknown error.' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Source URL</p>
+                                <a href="{{ $item->source_url }}" target="_blank" rel="noopener" class="mt-1 block break-all text-sm text-brand-700 underline dark:text-brand-300">
+                                    {{ $item->source_url }}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <p class="text-sm text-slate-500">No failed items right now.</p>
+        @endif
+    </div>
 
     <details class="mt-4 text-xs text-slate-500">
         <summary class="cursor-pointer">CLI</summary>

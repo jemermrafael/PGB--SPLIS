@@ -49,10 +49,22 @@ class DriveFileMirrorQueueService
             ->whereIn('status', [
                 DriveFileMirrorQueue::STATUS_PENDING,
                 DriveFileMirrorQueue::STATUS_PROCESSING,
-                DriveFileMirrorQueue::STATUS_FAILED,
             ])
-            ->orderByRaw("CASE status WHEN 'processing' THEN 0 WHEN 'pending' THEN 1 ELSE 2 END")
+            ->orderByRaw("CASE status WHEN 'processing' THEN 0 ELSE 1 END")
             ->orderBy('id')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * @return Collection<int, DriveFileMirrorQueue>
+     */
+    public function failedItems(int $limit = 50): Collection
+    {
+        return DriveFileMirrorQueue::query()
+            ->where('status', DriveFileMirrorQueue::STATUS_FAILED)
+            ->orderByDesc('completed_at')
+            ->orderByDesc('id')
             ->limit($limit)
             ->get();
     }

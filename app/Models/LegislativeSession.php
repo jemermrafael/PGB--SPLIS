@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Services\SessionPdfService;
+use App\Support\SessionPdfSlot;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,11 +26,16 @@ class LegislativeSession extends Model
         'notes',
         'guests',
         'pdf_summary_committee_reports',
+        'pdf_summary_committee_reports_path',
         'pdf_committee_reports',
         'pdf_draft_journal',
+        'pdf_draft_journal_path',
         'pdf_draft_minutes',
+        'pdf_draft_minutes_path',
         'pdf_final_journal',
+        'pdf_final_journal_path',
         'pdf_final_minutes',
+        'pdf_final_minutes_path',
         'created_by',
     ];
 
@@ -77,6 +84,27 @@ class LegislativeSession extends Model
     public function attendances(): HasMany
     {
         return $this->hasMany(SessionAttendance::class, 'legislative_session_id');
+    }
+
+    public function committeeReportFiles(): HasMany
+    {
+        return $this->hasMany(LegislativeSessionCommitteeReportFile::class)
+            ->orderBy('sort_order')
+            ->orderBy('id');
+    }
+
+    public function hasLocalCommitteeReportFiles(): bool
+    {
+        return $this->relationLoaded('committeeReportFiles')
+            ? $this->committeeReportFiles->contains(fn (LegislativeSessionCommitteeReportFile $file) => $file->existsLocally())
+            : $this->committeeReportFiles()->whereNotNull('stored_path')->exists();
+    }
+
+    public function committeeReportsDriveUrl(): ?string
+    {
+        $url = trim((string) ($this->pdf_committee_reports ?? ''));
+
+        return $url !== '' ? $url : null;
     }
 
     protected static function booted(): void
@@ -139,16 +167,25 @@ class LegislativeSession extends Model
     }
 
     /**
-     * @return list<array{field: string, label: string, url: ?string}>
+     * @return list<array{field: string, label: string, url: ?string, viewer: ?string, kind: string, mirrored: bool}>
      */
     public function sessionPdfLinkRows(): array
     {
-        return collect(config('order_of_business.session_pdf_links', []))
-            ->map(fn (string $label, string $field) => [
-                'field' => $field,
-                'label' => $label,
-                'url' => filled($this->{$field}) ? $this->{$field} : null,
-            ])
+        $pdfs = app(SessionPdfService::class);
+
+        return collect(SessionPdfSlot::all())
+            ->map(function (string $slot) use ($pdfs): array {
+                $config = SessionPdfSlot::config($slot);
+
+                return [
+                    'field' => $config['field'],
+                    'label' => $config['label'],
+                    'url' => $pdfs->publicUrl($this, $slot),
+                    'viewer' => $pdfs->viewerMode($this, $slot),
+                    'kind' => $config['kind'],
+                    'mirrored' => SessionPdfSlot::isMirrorable($slot) && $pdfs->existsFor($this, $slot),
+                ];
+            })
             ->values()
             ->all();
     }
@@ -161,7 +198,30 @@ class LegislativeSession extends Model
             }
         }
 
+        if ($this->hasLocalCommitteeReportFiles()) {
+            return true;
+        }
+
+        foreach (SessionPdfSlot::mirrorable() as $slot) {
+            if (app(SessionPdfService::class)->existsFor($this, $slot)) {
+                return true;
+            }
+        }
+
         return false;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function missingMirrorSessionPdfSlots(): array
+    {
+        return app(SessionPdfService::class)->missingMirrorSlots($this);
+    }
+
+    public function sessionPdfPublicUrl(string $slot): ?string
+    {
+        return app(SessionPdfService::class)->publicUrl($this, $slot);
     }
 
     /**

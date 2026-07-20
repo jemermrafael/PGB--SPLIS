@@ -9,12 +9,19 @@ use App\Services\AgendaLifecycleService;
 use App\Services\BoardMemberNotifier;
 use App\Services\ObDocumentTemplateService;
 use App\Services\ObSectionThreeSyncService;
+use App\Services\SessionCommitteeReportFileService;
+use App\Services\SessionPdfService;
+use App\Support\SessionPdfSlot;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class LegislativeSessionController extends Controller
 {
+    public function __construct(
+        protected SessionPdfService $sessionPdfService,
+        protected SessionCommitteeReportFileService $committeeReportFileService,
+    ) {}
     public function index(): View
     {
         $this->authorize('viewAny', LegislativeSession::class);
@@ -80,6 +87,7 @@ class LegislativeSessionController extends Controller
             'obDocument.blocks.agendaItem',
             'priorSession',
             'creator',
+            'committeeReportFiles',
         ]);
 
         return view('order-of-business.sessions.show', [
@@ -91,6 +99,8 @@ class LegislativeSessionController extends Controller
     {
         $this->authorize('update', $legislativeSession);
 
+        $legislativeSession->load('committeeReportFiles');
+
         return view('order-of-business.sessions.form', $this->formData($legislativeSession));
     }
 
@@ -100,7 +110,21 @@ class LegislativeSessionController extends Controller
 
         $priorSessionChanged = (int) $request->input('prior_session_id') !== (int) $legislativeSession->prior_session_id;
 
-        $legislativeSession->update($this->validated($request));
+        $validated = $this->validated($request);
+
+        unset(
+            $validated['pdf_summary_committee_reports_file'],
+            $validated['pdf_draft_journal_file'],
+            $validated['pdf_draft_minutes_file'],
+            $validated['pdf_final_journal_file'],
+            $validated['pdf_final_minutes_file'],
+            $validated['committee_report_files'],
+        );
+
+        $legislativeSession->update($validated);
+
+        $this->storeUploadedPdfs($request, $legislativeSession);
+        $this->storeUploadedCommitteeReportFiles($request, $legislativeSession, $request->user()?->id);
 
         if ($priorSessionChanged) {
             $sectionThreeSync->syncForSession($legislativeSession->fresh(['priorSession', 'obDocument.blocks']), force: true);
@@ -169,6 +193,49 @@ class LegislativeSessionController extends Controller
             $rules[$field] = ['nullable', 'string', 'max:500'];
         }
 
+        foreach (SessionPdfSlot::mirrorable() as $slot) {
+            $upload = SessionPdfSlot::config($slot)['upload'];
+            $rules[$upload] = ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp', 'max:51200'];
+        }
+
+        $rules['committee_report_files'] = ['nullable', 'array'];
+        $rules['committee_report_files.*'] = ['file', 'mimes:pdf,jpg,jpeg,png,gif,webp', 'max:51200'];
+
         return $request->validate($rules);
+    }
+
+    protected function storeUploadedPdfs(Request $request, LegislativeSession $session): void
+    {
+        foreach (SessionPdfSlot::mirrorable() as $slot) {
+            $field = SessionPdfSlot::config($slot)['upload'];
+
+            if (! $request->hasFile($field)) {
+                continue;
+            }
+
+            $path = $this->sessionPdfService->store(
+                $request->file($field),
+                $session,
+                $slot,
+            );
+
+            $pathColumn = SessionPdfSlot::config($slot)['path'];
+            $session->update([$pathColumn => $path]);
+        }
+    }
+
+    protected function storeUploadedCommitteeReportFiles(Request $request, LegislativeSession $session, ?int $userId): void
+    {
+        if (! $request->hasFile('committee_report_files')) {
+            return;
+        }
+
+        foreach ($request->file('committee_report_files') as $uploadedFile) {
+            if ($uploadedFile === null) {
+                continue;
+            }
+
+            $this->committeeReportFileService->store($uploadedFile, $session, $userId);
+        }
     }
 }

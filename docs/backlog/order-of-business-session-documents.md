@@ -47,4 +47,4 @@ Legacy SP Tracker Google Sheets tracked six session-level artifacts under Order 
 
 - `LegislativeSession` + `ObDocument` / OB Maker — structured Order of Business (implemented)
 - `LegislativeSession.prior_session_id` — intended for “approval of minutes of previous session” (OB section III)
-- Agenda tracker — per-item `committee_report_url`, `journal_url`, `minutes_url` (legacy row-per-agenda pattern)
+- Agenda Tracker — per-item `committee_report_url`, `journal_url`, `minutes_url` (legacy row-per-agenda pattern)

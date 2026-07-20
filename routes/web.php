@@ -49,6 +49,10 @@ use App\Http\Controllers\ReferenceMaterialController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\BoardMemberController;
 use App\Http\Controllers\SessionAttendanceController;
+use App\Http\Controllers\SessionCommitteeReportFileController;
+use App\Http\Controllers\SessionCommitteeReportFileDeleteController;
+use App\Http\Controllers\SessionPdfController;
+use App\Http\Controllers\SessionPdfMirrorController;
 use App\Http\Controllers\UserNotificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -213,6 +217,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [LegislativeSessionController::class, 'index'])->name('sessions.index');
         Route::get('/create', [LegislativeSessionController::class, 'create'])->name('sessions.create');
         Route::post('/', [LegislativeSessionController::class, 'store'])->name('sessions.store');
+        Route::get('/{legislativeSession}/pdf/{slot}', SessionPdfController::class)->name('sessions.pdf')->withTrashed();
+        Route::post('/{legislativeSession}/mirror-pdfs', SessionPdfMirrorController::class)->name('sessions.mirror-pdfs');
+        Route::get('/{legislativeSession}/committee-reports/{file}', SessionCommitteeReportFileController::class)->name('sessions.committee-report-file')->withTrashed();
+        Route::delete('/{legislativeSession}/committee-reports/{file}', SessionCommitteeReportFileDeleteController::class)->name('sessions.committee-report-file.destroy');
         Route::get('/{legislativeSession}/document/maker', [ObDocumentController::class, 'maker'])->name('document.maker');
         Route::get('/{legislativeSession}/document/print', [ObDocumentController::class, 'print'])->name('document.print');
         Route::put('/{legislativeSession}/document', [ObDocumentController::class, 'update'])->name('document.update');
@@ -237,6 +245,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/data-sync', [DataSyncController::class, 'index'])->name('data-sync.index');
         Route::post('/data-sync/resolutions', [DataSyncController::class, 'syncResolutions'])->name('data-sync.resolutions');
         Route::post('/data-sync/agenda', [DataSyncController::class, 'syncAgenda'])->name('data-sync.agenda');
+        Route::post('/data-sync/ordinances', [DataSyncController::class, 'syncOrdinances'])->name('data-sync.ordinances');
         Route::post('/data-sync/link-pdfs', [DataSyncController::class, 'linkPdfs'])->name('data-sync.link-pdfs');
         Route::post('/data-sync/drive-mirror/rebuild', [DataSyncController::class, 'rebuildDriveMirrorQueue'])->name('data-sync.drive-mirror.rebuild');
         Route::post('/data-sync/drive-mirror/process', [DataSyncController::class, 'processDriveMirrorQueue'])->name('data-sync.drive-mirror.process');

@@ -127,6 +127,9 @@
 
     @php
         $sessionPdfRows = $session->sessionPdfLinkRows();
+        $committeeReportFiles = $session->committeeReportFiles->filter(fn ($file) => $file->existsLocally());
+        $committeeReportsDriveUrl = $session->committeeReportsDriveUrl();
+        $hasCommitteeReportsFolder = $committeeReportFiles->isNotEmpty() || filled($committeeReportsDriveUrl);
     @endphp
 
     <div class="splis-card mb-6">
@@ -136,7 +139,7 @@
                 <p class="splis-card-subtitle">Committee Reports, Journal, and Minutes</p>
             </div>
             @can('update', $session)
-                <a href="{{ route('ob.sessions.edit', $session) }}" class="splis-link text-sm whitespace-nowrap">Edit links</a>
+                <a href="{{ route('ob.sessions.edit', $session) }}" class="splis-link text-sm whitespace-nowrap">Edit Documents</a>
             @endcan
         </div>
         <div class="splis-card-body">
@@ -144,21 +147,49 @@
                 @foreach ($sessionPdfRows as $link)
                     <li class="flex items-center justify-between gap-4 rounded-lg border border-slate-100 px-3 py-2.5 dark:border-slate-800">
                         <span class="min-w-0 truncate text-sm font-medium text-slate-700 dark:text-slate-300">{{ $link['label'] }}</span>
-                        @if ($link['url'])
+                        @if ($link['kind'] === 'folder')
+                            @if ($hasCommitteeReportsFolder)
+                                <button
+                                    type="button"
+                                    class="splis-btn-secondary inline-flex shrink-0 items-center gap-2 text-sm"
+                                    data-folder-modal-open
+                                    data-folder-modal-target="#committee-reports-folder-modal"
+                                >
+                                    <x-icon name="folder" class="h-4 w-4" />
+                                    @if ($committeeReportFiles->isNotEmpty())
+                                        View folder ({{ $committeeReportFiles->count() }})
+                                    @else
+                                        View folder
+                                    @endif
+                                </button>
+                            @else
+                                <span class="shrink-0 text-sm text-slate-400">No files</span>
+                            @endif
+                        @elseif ($link['url'])
                             @include('partials.pdf-modal-trigger', [
                                 'url' => $link['url'],
+                                'viewer' => $link['viewer'],
                                 'title' => $link['label'],
                                 'label' => 'View file',
                                 'class' => 'splis-btn-secondary inline-flex shrink-0 items-center gap-2 text-sm',
                             ])
                         @else
-                            <span class="shrink-0 text-sm text-slate-400">No link</span>
+                            <span class="shrink-0 text-sm text-slate-400">No file</span>
                         @endif
                     </li>
                 @endforeach
             </ul>
         </div>
     </div>
+
+    @if ($hasCommitteeReportsFolder)
+        @include('partials.document-folder-modal', [
+            'modalId' => 'committee-reports-folder-modal',
+            'title' => 'Committee Reports',
+            'files' => $committeeReportFiles,
+            'driveUrl' => $committeeReportsDriveUrl,
+        ])
+    @endif
 
     @if ($session->obDocument && $session->obDocument->blocks->isNotEmpty())
         <div class="splis-card overflow-hidden">

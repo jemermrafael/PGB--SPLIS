@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\LegislativeSession;
+use App\Services\SessionPdfService;
 
 class ObSectionThreeGenerator
 {
@@ -37,20 +38,24 @@ class ObSectionThreeGenerator
 
     public function journalUrlFromSession(LegislativeSession $session): ?string
     {
-        if (filled($session->pdf_final_journal)) {
-            return $session->pdf_final_journal;
+        $pdfs = app(SessionPdfService::class);
+
+        if ($pdfs->publicUrl($session, SessionPdfSlot::FINAL_JOURNAL)) {
+            return $pdfs->publicUrl($session, SessionPdfSlot::FINAL_JOURNAL);
         }
 
-        return filled($session->pdf_draft_journal) ? $session->pdf_draft_journal : null;
+        return $pdfs->publicUrl($session, SessionPdfSlot::DRAFT_JOURNAL);
     }
 
     public function minutesUrlFromSession(LegislativeSession $session): ?string
     {
-        if (filled($session->pdf_final_minutes)) {
-            return $session->pdf_final_minutes;
+        $pdfs = app(SessionPdfService::class);
+
+        if ($pdfs->publicUrl($session, SessionPdfSlot::FINAL_MINUTES)) {
+            return $pdfs->publicUrl($session, SessionPdfSlot::FINAL_MINUTES);
         }
 
-        return filled($session->pdf_draft_minutes) ? $session->pdf_draft_minutes : null;
+        return $pdfs->publicUrl($session, SessionPdfSlot::DRAFT_MINUTES);
     }
 
     /**

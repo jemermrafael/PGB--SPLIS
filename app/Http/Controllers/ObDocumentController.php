@@ -11,6 +11,7 @@ use App\Services\ObAgendaPoolService;
 use App\Services\ObDocumentService;
 use App\Services\ObPrintRenderer;
 use App\Services\ObSectionThreeSyncService;
+use App\Services\SessionPdfService;
 use App\Support\CommitteeOptions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -291,15 +292,18 @@ class ObDocumentController extends Controller
     protected function sectionThreeConfig(LegislativeSession $session): array
     {
         $prior = $session->priorSession;
+        $pdfs = app(SessionPdfService::class);
 
         return [
             'prior_session_title' => $prior?->displayTitle(),
-            'journal_url' => filled($prior?->pdf_final_journal)
-                ? $prior->pdf_final_journal
-                : $prior?->pdf_draft_journal,
-            'minutes_url' => filled($prior?->pdf_final_minutes)
-                ? $prior->pdf_final_minutes
-                : $prior?->pdf_draft_minutes,
+            'journal_url' => $prior
+                ? ($pdfs->publicUrl($prior, \App\Support\SessionPdfSlot::FINAL_JOURNAL)
+                    ?: $pdfs->publicUrl($prior, \App\Support\SessionPdfSlot::DRAFT_JOURNAL))
+                : null,
+            'minutes_url' => $prior
+                ? ($pdfs->publicUrl($prior, \App\Support\SessionPdfSlot::FINAL_MINUTES)
+                    ?: $pdfs->publicUrl($prior, \App\Support\SessionPdfSlot::DRAFT_MINUTES))
+                : null,
         ];
     }
 }
