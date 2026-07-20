@@ -5,7 +5,7 @@
 @section('content')
     <x-page-header
         title="Data Sync"
-        subtitle="Refresh SPLIS from oldsp CSV exports and sptrack. Prefer dry run first on live data."
+        subtitle="Refresh SPLIS from uploaded CSV files. Prefer dry run first on live data."
     />
 
 @if ($recentLogs->isNotEmpty())
@@ -35,35 +35,8 @@
     </div>
 @endif
 
-<details class="mb-8 splis-card open:shadow-sm">
-    <summary class="cursor-pointer list-none px-6 py-4 font-semibold text-slate-900 dark:text-slate-100 [&::-webkit-details-marker]:hidden">
-        <span class="flex items-center justify-between gap-3">
-            <span>Server fallback paths</span>
-            <span class="text-xs font-medium uppercase tracking-wide text-slate-400">Advanced</span>
-        </span>
-    </summary>
-    <div class="grid grid-cols-1 gap-4 border-t border-slate-100 px-6 py-5 text-sm text-slate-600 dark:border-slate-800 dark:text-slate-400 lg:grid-cols-3">
-        <div>
-            <p class="font-medium text-slate-900 dark:text-slate-100">Resolution CSV</p>
-            <p class="mt-1"><code class="text-xs">{{ $csvDirectory }}</code></p>
-            <p class="mt-2">Newest export: <strong>{{ $spCsvFile ?? 'No SP_*.csv found' }}</strong></p>
-        </div>
-        <div>
-            <p class="font-medium text-slate-900 dark:text-slate-100">Sptrack source</p>
-            <p class="mt-1">{{ $sptrackSource }}</p>
-            <p class="mt-2">CSV on server: {{ $sptrackCsvExists ? 'available' : 'not found' }}</p>
-        </div>
-        <div>
-            <p class="font-medium text-slate-900 dark:text-slate-100">Agenda CSV</p>
-            <p class="mt-1"><code class="text-xs">{{ $agendaCsvPath }}</code></p>
-            <p class="mt-2">Data file: <strong>{{ $agendaCsvExists ? basename($agendaCsvPath) : 'not found' }}</strong></p>
-            <p class="mt-1">PDF links: <strong>{{ $agendaLinksExists ? basename($agendaLinksPath) : 'embedded in agenda CSV' }}</strong></p>
-        </div>
-    </div>
-</details>
-
 <p class="splis-admin-section-title">Routine syncs</p>
-<p class="mb-4 text-sm text-slate-600 dark:text-slate-400">Safe to run regularly. Use dry run to preview counts before applying.</p>
+<p class="mb-4 text-sm text-slate-600 dark:text-slate-400">Upload a CSV for each sync. Use dry run to preview counts before applying.</p>
 
 <div class="mb-10 grid grid-cols-1 gap-6 xl:grid-cols-2">
     <div class="splis-card p-6">
@@ -78,86 +51,13 @@
             @csrf
             <div>
                 <label for="sp_csv" class="splis-label">Upload SP export CSV</label>
-                <input type="file" name="sp_csv" id="sp_csv" accept=".csv,text/csv" class="splis-input mt-1 block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-700">
-                <p class="mt-1 text-xs text-slate-500">Optional — leave empty to use the newest server export.</p>
+                <input type="file" name="sp_csv" id="sp_csv" accept=".csv,text/csv" required class="splis-input mt-1 block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-700">
             </div>
-            <label class="flex items-center gap-2 text-sm">
-                <input type="checkbox" name="include_lookups" value="1" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
-                Also refresh lookup tables from server folder
-            </label>
             <label class="flex items-center gap-2 text-sm">
                 <input type="checkbox" name="dry_run" value="1" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
                 Dry run (preview counts only)
             </label>
             <button type="submit" class="splis-btn-primary">Sync final resolutions</button>
-        </form>
-        <details class="mt-3 text-xs text-slate-500">
-            <summary class="cursor-pointer">CLI</summary>
-            <code class="mt-1 block">php artisan splis:import-from-csv</code>
-        </details>
-    </div>
-
-    <div class="splis-card p-6">
-        <div class="mb-3 flex flex-wrap items-center gap-2">
-            <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Incoming (sptrack)</h2>
-            <x-risk-badge level="safe" label="Safe sync" />
-        </div>
-        <p class="mb-4 text-sm text-slate-600 dark:text-slate-400">
-            Creates new incoming documents and updates fields on existing rows matched by sptrack File ID. Link status and resolution links are preserved.
-        </p>
-        <form method="POST" action="{{ route('admin.data-sync.incoming') }}" enctype="multipart/form-data" class="space-y-4">
-            @csrf
-            <div>
-                <label for="incoming-sptrack-csv" class="splis-label">Upload sptrack CSV</label>
-                <input type="file" name="sptrack_csv" id="incoming-sptrack-csv" accept=".csv,text/csv" class="splis-input mt-1 block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-700">
-            </div>
-            <div>
-                <label for="incoming-source" class="splis-label">Source (when no upload)</label>
-                <select name="source" id="incoming-source" class="splis-input mt-1">
-                    <option value="auto">Auto (CSV if present, else database)</option>
-                    <option value="database">MySQL sptrack</option>
-                    <option value="csv">CSV on server</option>
-                </select>
-            </div>
-            <label class="flex items-center gap-2 text-sm">
-                <input type="checkbox" name="dry_run" value="1" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
-                Dry run
-            </label>
-            <button type="submit" class="splis-btn-primary">Sync sptrack incoming</button>
-        </form>
-        <details class="mt-3 text-xs text-slate-500">
-            <summary class="cursor-pointer">CLI</summary>
-            <code class="mt-1 block">php artisan splis:import-incoming-from-sptrack</code>
-        </details>
-    </div>
-
-    <div class="splis-card p-6">
-        <div class="mb-3 flex flex-wrap items-center gap-2">
-            <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Linked resolutions</h2>
-            <x-risk-badge level="safe" label="Safe sync" />
-        </div>
-        <p class="mb-4 text-sm text-slate-600 dark:text-slate-400">
-            Updates final resolutions already linked via <code class="text-xs">legacy_file_id</code> with SP-side sptrack fields.
-        </p>
-        <form method="POST" action="{{ route('admin.data-sync.sptrack-resolutions') }}" enctype="multipart/form-data" class="space-y-4">
-            @csrf
-            <div>
-                <label for="resolution-sptrack-csv" class="splis-label">Upload sptrack CSV</label>
-                <input type="file" name="sptrack_csv" id="resolution-sptrack-csv" accept=".csv,text/csv" class="splis-input mt-1 block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-700">
-            </div>
-            <div>
-                <label for="resolution-source" class="splis-label">Source (when no upload)</label>
-                <select name="source" id="resolution-source" class="splis-input mt-1">
-                    <option value="auto">Auto (CSV if present, else database)</option>
-                    <option value="database">MySQL sptrack</option>
-                    <option value="csv">CSV on server</option>
-                </select>
-            </div>
-            <label class="flex items-center gap-2 text-sm">
-                <input type="checkbox" name="dry_run" value="1" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
-                Dry run
-            </label>
-            <button type="submit" class="splis-btn-primary">Sync linked resolutions</button>
         </form>
     </div>
 
@@ -173,11 +73,7 @@
             @csrf
             <div>
                 <label for="agenda_csv" class="splis-label">Upload agenda CSV</label>
-                <input type="file" name="agenda_csv" id="agenda_csv" accept=".csv,text/csv" class="splis-input mt-1 block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-700">
-            </div>
-            <div>
-                <label for="agenda_links_csv" class="splis-label">Upload PDF links CSV</label>
-                <input type="file" name="agenda_links_csv" id="agenda_links_csv" accept=".csv,text/csv" class="splis-input mt-1 block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-700">
+                <input type="file" name="agenda_csv" id="agenda_csv" accept=".csv,text/csv" required class="splis-input mt-1 block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-700">
             </div>
             <label class="flex items-center gap-2 text-sm">
                 <input type="checkbox" name="dry_run" value="1" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
@@ -185,10 +81,6 @@
             </label>
             <button type="submit" class="splis-btn-primary">Sync agenda</button>
         </form>
-        <details class="mt-3 text-xs text-slate-500">
-            <summary class="cursor-pointer">CLI</summary>
-            <code class="mt-1 block">php artisan splis:import-agenda-from-csv</code>
-        </details>
     </div>
 </div>
 

@@ -23,16 +23,19 @@ class AgendaCsvImporter
      *     urgent: int
      * }
      */
-    public function sync(?string $csvPath = null, ?string $linksPath = null, bool $dryRun = false): array
-    {
+    public function sync(
+        ?string $csvPath = null,
+        ?string $linksPath = null,
+        bool $dryRun = false,
+        bool $allowConfiguredLinksFallback = true,
+    ): array {
         $csvPath = $csvPath ?: config('agenda.csv_path');
-        $linksPath = $linksPath ?: config('agenda.csv_links_path');
 
         if (! is_file($csvPath)) {
             throw new \RuntimeException('Agenda CSV not found: '.$csvPath);
         }
 
-        $links = $this->loadLinksMap($this->resolveLinksPath($csvPath, $linksPath));
+        $links = $this->loadLinksMap($this->resolveLinksPath($csvPath, $linksPath, $allowConfiguredLinksFallback));
         $imported = 0;
         $updated = 0;
         $skipped = 0;
@@ -209,8 +212,12 @@ class AgendaCsvImporter
             && $this->parseDate($this->cell($row, ['Date Received', 'date_received'])) !== null;
     }
 
-    protected function resolveLinksPath(string $csvPath, ?string $linksPath): ?string
+    protected function resolveLinksPath(string $csvPath, ?string $linksPath, bool $allowConfiguredFallback = true): ?string
     {
+        if ($linksPath === null && ! $allowConfiguredFallback) {
+            return null;
+        }
+
         $linksPath = $linksPath ?: config('agenda.csv_links_path');
 
         if (! is_file((string) $linksPath)) {

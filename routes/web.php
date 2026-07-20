@@ -224,8 +224,6 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:superadmin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/data-sync', [DataSyncController::class, 'index'])->name('data-sync.index');
         Route::post('/data-sync/resolutions', [DataSyncController::class, 'syncResolutions'])->name('data-sync.resolutions');
-        Route::post('/data-sync/incoming', [DataSyncController::class, 'syncIncoming'])->name('data-sync.incoming');
-        Route::post('/data-sync/sptrack-resolutions', [DataSyncController::class, 'syncSptrackResolutions'])->name('data-sync.sptrack-resolutions');
         Route::post('/data-sync/agenda', [DataSyncController::class, 'syncAgenda'])->name('data-sync.agenda');
         Route::post('/data-sync/link-pdfs', [DataSyncController::class, 'linkPdfs'])->name('data-sync.link-pdfs');
 
