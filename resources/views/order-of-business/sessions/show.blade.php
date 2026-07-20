@@ -127,7 +127,6 @@
 
     @php
         $sessionPdfRows = $session->sessionPdfLinkRows();
-        $sessionPdfEmbeddable = collect($sessionPdfRows)->filter(fn (array $link) => filled($link['url']));
     @endphp
 
     <div class="splis-card mb-6">
@@ -146,17 +145,12 @@
                     <li class="flex items-center justify-between gap-4 rounded-lg border border-slate-100 px-3 py-2.5 dark:border-slate-800">
                         <span class="min-w-0 truncate text-sm font-medium text-slate-700 dark:text-slate-300">{{ $link['label'] }}</span>
                         @if ($link['url'])
-                            <button
-                                type="button"
-                                class="splis-btn-secondary inline-flex shrink-0 items-center gap-2 text-sm"
-                                data-session-pdf-open
-                                data-pdf-src="{{ \App\Support\PdfEmbedUrl::forIframe($link['url']) }}"
-                                data-pdf-title="{{ $link['label'] }}"
-                                data-pdf-url="{{ $link['url'] }}"
-                            >
-                                <x-icon name="eye" class="h-4 w-4" />
-                                View file
-                            </button>
+                            @include('partials.pdf-modal-trigger', [
+                                'url' => $link['url'],
+                                'title' => $link['label'],
+                                'label' => 'View file',
+                                'class' => 'splis-btn-secondary inline-flex shrink-0 items-center gap-2 text-sm',
+                            ])
                         @else
                             <span class="shrink-0 text-sm text-slate-400">No link</span>
                         @endif
@@ -165,126 +159,6 @@
             </ul>
         </div>
     </div>
-
-    @if ($sessionPdfEmbeddable->isNotEmpty())
-        <div id="session-pdf-modal" class="splis-modal" hidden>
-            <div class="splis-modal-backdrop" data-session-pdf-close tabindex="-1" aria-hidden="true"></div>
-            <div class="splis-modal-panel !max-h-[92vh] !max-w-5xl" data-session-pdf-panel role="dialog" aria-modal="true" aria-labelledby="session-pdf-modal-title">
-                <div class="splis-modal-header">
-                    <h3 id="session-pdf-modal-title" class="splis-modal-title">Session document</h3>
-                    <div class="flex items-center gap-2">
-                        <a
-                            id="session-pdf-open-tab"
-                            href="#"
-                            target="_blank"
-                            rel="noopener"
-                            class="splis-btn-ghost inline-flex items-center gap-1.5 !px-2 !py-1 text-xs"
-                        >
-                            <x-icon name="external-link" class="h-3.5 w-3.5" />
-                            Open in new tab
-                        </a>
-                        <button
-                            type="button"
-                            id="session-pdf-fullscreen"
-                            class="splis-btn-ghost inline-flex items-center gap-1.5 !px-2 !py-1 text-xs"
-                            aria-pressed="false"
-                        >
-                            <x-icon name="maximize" class="h-3.5 w-3.5" data-fullscreen-icon="enter" />
-                            <x-icon name="minimize" class="hidden h-3.5 w-3.5" data-fullscreen-icon="exit" />
-                            <span data-fullscreen-label>Fullscreen</span>
-                        </button>
-                        <button type="button" class="splis-modal-close" data-session-pdf-close aria-label="Close">×</button>
-                    </div>
-                </div>
-                <div class="splis-modal-body !p-0">
-                    <iframe
-                        id="session-pdf-frame"
-                        title="Session document PDF preview"
-                        class="splis-pdf-modal-frame block h-[75vh] w-full border-0 bg-slate-100 dark:bg-slate-900"
-                        src="about:blank"
-                    ></iframe>
-                </div>
-            </div>
-        </div>
-
-        @push('scripts')
-        <script>
-            (function () {
-                const modal = document.getElementById('session-pdf-modal');
-                const panel = modal?.querySelector('[data-session-pdf-panel]');
-                const frame = document.getElementById('session-pdf-frame');
-                const title = document.getElementById('session-pdf-modal-title');
-                const openTab = document.getElementById('session-pdf-open-tab');
-                const fullscreenBtn = document.getElementById('session-pdf-fullscreen');
-                const triggers = document.querySelectorAll('[data-session-pdf-open]');
-
-                if (! modal || ! panel || ! frame || ! title || ! openTab || triggers.length === 0) {
-                    return;
-                }
-
-                function setFullscreen(enabled) {
-                    modal.classList.toggle('is-fullscreen-active', enabled);
-                    panel.classList.toggle('is-fullscreen', enabled);
-
-                    if (fullscreenBtn) {
-                        fullscreenBtn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
-                        const label = fullscreenBtn.querySelector('[data-fullscreen-label]');
-                        const enterIcon = fullscreenBtn.querySelector('[data-fullscreen-icon="enter"]');
-                        const exitIcon = fullscreenBtn.querySelector('[data-fullscreen-icon="exit"]');
-
-                        if (label) {
-                            label.textContent = enabled ? 'Exit fullscreen' : 'Fullscreen';
-                        }
-                        enterIcon?.classList.toggle('hidden', enabled);
-                        exitIcon?.classList.toggle('hidden', ! enabled);
-                    }
-                }
-
-                function openModal(trigger) {
-                    const src = trigger.dataset.pdfSrc || '';
-                    const label = trigger.dataset.pdfTitle || 'Session document';
-                    const url = trigger.dataset.pdfUrl || src;
-
-                    title.textContent = label;
-                    openTab.href = url;
-                    frame.setAttribute('src', src);
-                    setFullscreen(false);
-                    modal.hidden = false;
-                    document.body.classList.add('splis-modal-open');
-                }
-
-                function closeModal() {
-                    setFullscreen(false);
-                    modal.hidden = true;
-                    document.body.classList.remove('splis-modal-open');
-                    frame.setAttribute('src', 'about:blank');
-                }
-
-                triggers.forEach((trigger) => {
-                    trigger.addEventListener('click', () => openModal(trigger));
-                });
-
-                fullscreenBtn?.addEventListener('click', () => {
-                    setFullscreen(! panel.classList.contains('is-fullscreen'));
-                });
-
-                modal.querySelectorAll('[data-session-pdf-close]').forEach((el) => {
-                    el.addEventListener('click', closeModal);
-                });
-
-                document.addEventListener('keydown', (event) => {
-                    if (event.key === 'Escape' && ! modal.hidden) {
-                        if (panel.classList.contains('is-fullscreen')) {
-                            setFullscreen(false);
-                            return;
-                        }
-                        closeModal();
-                    }
-                });
-            })();
-        </script>
-        @endpush
-    @endif
 
     @if ($session->obDocument && $session->obDocument->blocks->isNotEmpty())
         <div class="splis-card overflow-hidden">

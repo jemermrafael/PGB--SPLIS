@@ -108,29 +108,10 @@
     </div>
 
     @if ($pdfUrl)
-        <div class="splis-card mt-6">
-            <div class="splis-card-header flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <h2 class="splis-card-title">PDF Document</h2>
-                <a href="{{ $pdfUrl }}" target="_blank" rel="noopener" class="splis-btn-secondary text-sm inline-flex items-center gap-2">
-                    <x-icon name="external-link" class="h-4 w-4" />
-                    Open PDF in new tab
-                </a>
-            </div>
-            @if ($hasLocalPdf ?? false)
-                <div class="p-4 sm:p-6">
-                    <iframe
-                        src="{{ $pdfUrl }}"
-                        width="100%"
-                        class="splis-pdf-embed w-full rounded-xl border border-slate-200 bg-slate-50"
-                        title="Resolution {{ $resolution->resolution_no }} PDF"
-                    ></iframe>
-                </div>
-            @else
-                <div class="p-4 text-sm text-slate-600 dark:text-slate-400 sm:p-6">
-                    PDF is available via external link. Use <strong>Open PDF in new tab</strong> to view it.
-                </div>
-            @endif
-        </div>
+        @include('partials.pdf-document-embed', [
+            'pdfUrl' => $pdfUrl,
+            'embedTitle' => 'Resolution '.$resolution->resolution_no.' PDF',
+        ])
     @endif
 
     @if (! $resolution->trashed())

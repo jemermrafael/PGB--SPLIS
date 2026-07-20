@@ -35,8 +35,10 @@ import { initBoardMemberBulkDelete, initConfirmSubmitForms } from './board-membe
 import { initCommitteeMonitoring } from './committee-monitoring';
 import { initSessionGuests, initSessionAttendanceSelectAll } from './session-guests';
 import { initTermSwitchers } from './term-switcher';
+import { initPdfViewerModal } from './pdf-viewer-modal';
 
 document.addEventListener('DOMContentLoaded', () => {
+    initPdfViewerModal();
     initDropdowns();
     initHeaderNav();
     initAccessibility();

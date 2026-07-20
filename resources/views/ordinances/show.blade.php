@@ -22,6 +22,15 @@
                     <x-icon name="edit" class="h-4 w-4" />
                     Edit
                 </a>
+                @if (filled($ordinance->pdf_url) && ! $ordinance->hasLocalPdf())
+                    <form method="POST" action="{{ route('ordinances.mirror-pdf', $ordinance) }}">
+                        @csrf
+                        <button type="submit" class="splis-btn-secondary inline-flex items-center gap-2">
+                            <x-icon name="download" class="h-4 w-4" />
+                            Download PDF from Drive
+                        </button>
+                    </form>
+                @endif
             @endcan
         </div>
     </div>
@@ -79,10 +88,11 @@
                         <p class="text-slate-500">—</p>
                     @endif
                     @if ($ordinance->mov_bulletin_url)
-                        <a href="{{ $ordinance->mov_bulletin_url }}" target="_blank" rel="noopener" class="splis-btn-secondary inline-flex items-center gap-2 text-sm">
-                            <x-icon name="external-link" class="h-4 w-4" />
-                            Bulletin PDF
-                        </a>
+                        @include('partials.pdf-modal-trigger', [
+                            'url' => $ordinance->mov_bulletin_url,
+                            'title' => 'Bulletin PDF — '.$ordinance->displayNumber(),
+                            'label' => 'Bulletin PDF',
+                        ])
                     @endif
                 </dd>
             </div>
@@ -95,10 +105,11 @@
                         <p class="text-slate-500">—</p>
                     @endif
                     @if ($ordinance->mov_certification_url)
-                        <a href="{{ $ordinance->mov_certification_url }}" target="_blank" rel="noopener" class="splis-btn-secondary inline-flex items-center gap-2 text-sm">
-                            <x-icon name="external-link" class="h-4 w-4" />
-                            Certification PDF
-                        </a>
+                        @include('partials.pdf-modal-trigger', [
+                            'url' => $ordinance->mov_certification_url,
+                            'title' => 'Certification PDF — '.$ordinance->displayNumber(),
+                            'label' => 'Certification PDF',
+                        ])
                     @endif
                 </dd>
             </div>
@@ -111,10 +122,11 @@
                         <p class="text-slate-500">—</p>
                     @endif
                     @if ($ordinance->mov_newspaper_url)
-                        <a href="{{ $ordinance->mov_newspaper_url }}" target="_blank" rel="noopener" class="splis-btn-secondary inline-flex items-center gap-2 text-sm">
-                            <x-icon name="external-link" class="h-4 w-4" />
-                            Newspaper PDF
-                        </a>
+                        @include('partials.pdf-modal-trigger', [
+                            'url' => $ordinance->mov_newspaper_url,
+                            'title' => 'Newspaper PDF — '.$ordinance->displayNumber(),
+                            'label' => 'Newspaper PDF',
+                        ])
                     @endif
                 </dd>
             </div>
@@ -137,7 +149,7 @@
     </div>
 
     @include('partials.pdf-document-embed', [
-        'pdfUrl' => $ordinance->pdf_url,
+        'pdfUrl' => $ordinance->pdfPublicUrl(),
         'embedTitle' => $ordinance->displayNumber().' PDF',
     ])
 

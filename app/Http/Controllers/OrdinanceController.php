@@ -8,6 +8,7 @@ use App\Models\ActivityLog;
 use App\Models\Ordinance;
 use App\Services\BoardMemberRosterService;
 use App\Services\OrdinanceBoardMemberService;
+use App\Services\OrdinancePdfService;
 use App\Support\TrashActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ class OrdinanceController extends Controller
     public function __construct(
         protected BoardMemberRosterService $boardMemberRosterService,
         protected OrdinanceBoardMemberService $ordinanceBoardMemberService,
+        protected OrdinancePdfService $ordinancePdfService,
     ) {}
 
     public function index(): View
@@ -64,7 +66,9 @@ class OrdinanceController extends Controller
     {
         $this->authorize('create', Ordinance::class);
 
-        $ordinance = Ordinance::create($this->validatedOrdinance($request));
+        $data = $this->validatedOrdinance($request);
+        $ordinance = Ordinance::create($data);
+        $this->storeUploadedPdf($request, $ordinance);
         $this->syncBoardMembers($ordinance, $request);
 
         ActivityLog::record('ordinance.created', $ordinance, [
@@ -91,6 +95,7 @@ class OrdinanceController extends Controller
         $this->authorize('update', $ordinance);
 
         $ordinance->update($this->validatedOrdinance($request, $ordinance));
+        $this->storeUploadedPdf($request, $ordinance);
         $this->syncBoardMembers($ordinance, $request);
 
         return redirect()
@@ -158,7 +163,7 @@ class OrdinanceController extends Controller
         $classifications = config('ordinances.classifications', []);
         $seriesYear = (int) $request->input('series_year');
 
-        return $request->validate([
+        $validated = $request->validate([
             'ordinance_no' => [
                 'required',
                 'integer',
@@ -172,6 +177,7 @@ class OrdinanceController extends Controller
             'subject' => ['nullable', 'string'],
             'publication_status' => ['nullable', 'string', Rule::in(array_column(OrdinancePublicationStatus::cases(), 'value'))],
             'pdf_url' => ['nullable', 'string', 'max:500'],
+            'pdf' => ['nullable', 'file', 'mimes:pdf', 'max:51200'],
             'date_enacted' => ['nullable', 'date'],
             'date_approved' => ['nullable', 'date'],
             'date_posted' => ['nullable', 'date'],
@@ -188,6 +194,25 @@ class OrdinanceController extends Controller
             'mandate_ppa' => ['nullable', 'string', 'max:100'],
             'remarks' => ['nullable', 'string'],
         ]);
+
+        unset($validated['pdf']);
+
+        return $validated;
+    }
+
+    protected function storeUploadedPdf(Request $request, Ordinance $ordinance): void
+    {
+        if (! $request->hasFile('pdf')) {
+            return;
+        }
+
+        $path = $this->ordinancePdfService->store(
+            $request->file('pdf'),
+            (int) $ordinance->series_year,
+            (int) $ordinance->ordinance_no,
+        );
+
+        $ordinance->update(['pdf_path' => $path]);
     }
 
     protected function syncBoardMembers(Ordinance $ordinance, Request $request): void

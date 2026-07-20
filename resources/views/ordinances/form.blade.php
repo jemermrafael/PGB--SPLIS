@@ -16,7 +16,7 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ $isEdit ? route('ordinances.update', $ordinance) : route('ordinances.store') }}" class="splis-card splis-card-body space-y-6">
+    <form method="POST" action="{{ $isEdit ? route('ordinances.update', $ordinance) : route('ordinances.store') }}" enctype="multipart/form-data" class="splis-card splis-card-body space-y-6">
         @csrf
         @if ($isEdit)
             @method('PUT')
@@ -107,8 +107,20 @@
         </div>
 
         <div>
-            <label class="splis-label" for="pdf_url">Ordinance PDF URL</label>
+            <label class="splis-label" for="pdf">Ordinance PDF (upload)</label>
+            <input type="file" name="pdf" id="pdf" accept="application/pdf,.pdf" class="splis-input">
+            @if ($isEdit && $ordinance->hasLocalPdf())
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Local file: <code>{{ $ordinance->pdf_path }}</code>
+                    — uploading replaces it.
+                </p>
+            @endif
+        </div>
+
+        <div>
+            <label class="splis-label" for="pdf_url">Ordinance PDF URL (fallback)</label>
             <input type="url" name="pdf_url" id="pdf_url" value="{{ old('pdf_url', $ordinance->pdf_url) }}" class="splis-input" placeholder="Google Drive link">
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Used when no local file is present. Can be mirrored to local storage from the ordinance page.</p>
         </div>
 
         <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-800/50">

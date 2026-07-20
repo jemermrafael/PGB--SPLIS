@@ -78,7 +78,12 @@
                                 </p>
                             @endif
                             @if ($version->snapshotValue('request_pdf_url'))
-                                <a href="{{ $version->snapshotValue('request_pdf_url') }}" target="_blank" rel="noopener" class="splis-link text-xs">Request PDF</a>
+                                @include('partials.pdf-modal-trigger', [
+                                    'url' => $version->snapshotValue('request_pdf_url'),
+                                    'title' => 'Request PDF — version '.$version->version_no,
+                                    'label' => 'Request PDF',
+                                    'class' => 'splis-link inline-flex items-center gap-1 text-xs',
+                                ])
                             @endif
                         </td>
                         <td class="hidden md:table-cell whitespace-nowrap">{{ $version->changeReasonLabel() }}</td>

@@ -402,6 +402,7 @@
     @endif
 
     @include('partials.confirm-dialog')
+    @include('partials.pdf-viewer-modal')
 
     @stack('scripts')
 </body>

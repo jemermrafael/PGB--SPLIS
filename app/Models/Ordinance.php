@@ -24,6 +24,7 @@ class Ordinance extends Model
         'subject',
         'publication_status',
         'pdf_url',
+        'pdf_path',
         'date_enacted',
         'date_approved',
         'date_posted',
@@ -246,6 +247,16 @@ class Ordinance extends Model
         return $this->publication_status
             ? asset($this->publication_status->iconPath())
             : null;
+    }
+
+    public function hasLocalPdf(): bool
+    {
+        return app(\App\Services\OrdinancePdfService::class)->existsFor($this);
+    }
+
+    public function pdfPublicUrl(): ?string
+    {
+        return app(\App\Services\OrdinancePdfService::class)->publicUrl($this);
     }
 
     protected static function booted(): void

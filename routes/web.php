@@ -35,6 +35,8 @@ use App\Http\Controllers\IncomingDocumentController;
 use App\Http\Controllers\IncomingKeywordController;
 use App\Http\Controllers\IncomingSearchController;
 use App\Http\Controllers\OrdinanceController;
+use App\Http\Controllers\OrdinancePdfController;
+use App\Http\Controllers\OrdinancePdfMirrorController;
 use App\Http\Controllers\OrdinanceSearchController;
 use App\Http\Controllers\ResolutionController;
 use App\Http\Controllers\ResolutionPdfController;
@@ -143,6 +145,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/ordinances/create', [OrdinanceController::class, 'create'])->name('ordinances.create');
     Route::post('/ordinances', [OrdinanceController::class, 'store'])->name('ordinances.store');
     Route::get('/ordinances/{ordinance}', [OrdinanceController::class, 'show'])->name('ordinances.show')->withTrashed();
+    Route::get('/ordinances/{ordinance}/pdf', OrdinancePdfController::class)->name('ordinances.pdf')->withTrashed();
+    Route::post('/ordinances/{ordinance}/mirror-pdf', OrdinancePdfMirrorController::class)->name('ordinances.mirror-pdf');
     Route::get('/ordinances/{ordinance}/edit', [OrdinanceController::class, 'edit'])->name('ordinances.edit');
     Route::put('/ordinances/{ordinance}', [OrdinanceController::class, 'update'])->name('ordinances.update');
     Route::delete('/ordinances/{ordinance}', [OrdinanceController::class, 'destroy'])->name('ordinances.destroy');

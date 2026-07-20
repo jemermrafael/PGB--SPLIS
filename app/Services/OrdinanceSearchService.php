@@ -122,7 +122,13 @@ class OrdinanceSearchService
         }
 
         if (! empty($filters['has_pdf'])) {
-            $query->whereNotNull('pdf_url')->where('pdf_url', '!=', '');
+            $query->where(function (Builder $query): void {
+                $query->where(function (Builder $q): void {
+                    $q->whereNotNull('pdf_path')->where('pdf_path', '!=', '');
+                })->orWhere(function (Builder $q): void {
+                    $q->whereNotNull('pdf_url')->where('pdf_url', '!=', '');
+                });
+            });
         }
 
         $publicationStatus = trim((string) ($filters['publication_status'] ?? ''));
@@ -158,6 +164,8 @@ class OrdinanceSearchService
      */
     public function toArray(Ordinance $ordinance): array
     {
+        $pdfUrl = $ordinance->pdfPublicUrl();
+
         return [
             'id' => $ordinance->id,
             'number' => $ordinance->displayNumber(),
@@ -165,8 +173,8 @@ class OrdinanceSearchService
             'series_label' => $ordinance->displaySeries(),
             'title' => $ordinance->subject ?? '',
             'url' => route('ordinances.show', $ordinance),
-            'has_pdf' => filled($ordinance->pdf_url),
-            'pdf_url' => $ordinance->pdf_url,
+            'has_pdf' => filled($pdfUrl),
+            'pdf_url' => $pdfUrl,
             'date' => $ordinance->date_enacted?->toDateString(),
             'date_approved' => $ordinance->date_approved?->toDateString(),
             'effectivity_date' => $ordinance->effectivity_date?->toDateString(),
@@ -192,6 +200,8 @@ class OrdinanceSearchService
      */
     public function toDashboardArray(Ordinance $ordinance): array
     {
+        $pdfUrl = $ordinance->pdfPublicUrl();
+
         return [
             'id' => $ordinance->id,
             'number' => $ordinance->displayNumber(),
@@ -209,9 +219,9 @@ class OrdinanceSearchService
             'document_type' => DocumentType::ORDINANCE,
             'document_type_label' => DocumentType::label(DocumentType::ORDINANCE),
             'document_type_badge_class' => DocumentType::badgeClass(DocumentType::ORDINANCE),
-            'has_pdf' => filled($ordinance->pdf_url),
+            'has_pdf' => filled($pdfUrl),
             'url' => route('ordinances.show', $ordinance),
-            'pdf_url' => $ordinance->pdf_url,
+            'pdf_url' => $pdfUrl,
             'publication_status' => $ordinance->publication_status?->value,
             'publication_status_label' => $ordinance->publicationStatusLabel(),
             'publication_status_badge_class' => $ordinance->publicationStatusBadgeClass(),

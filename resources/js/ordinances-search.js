@@ -2,6 +2,7 @@ import { renderAjaxPagination } from './pagination';
 import { applyKeywordFromQuery } from './search-query';
 import { bindTitleTooltips, renderTruncatedTitle, truncateWords } from './title-tooltip';
 import { preferredDocView } from './doc-view';
+import { pdfModalTriggerAttrs } from './pdf-embed-url';
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -35,7 +36,7 @@ function renderTitleCell(title) {
 function renderPdfCell(doc) {
     return `<td class="text-center">
         ${doc.has_pdf
-            ? `<a href="${escapeHtml(doc.pdf_url)}" target="_blank" rel="noopener noreferrer" class="splis-doc-pdf-icon" title="View PDF" aria-label="View PDF">${pdfListIcon}</a>`
+            ? `<a ${pdfModalTriggerAttrs(doc.pdf_url, `${doc.number || 'Ordinance'} PDF`)} class="splis-doc-pdf-icon" title="View PDF" aria-label="View PDF">${pdfListIcon}</a>`
             : '<span class="text-slate-300">—</span>'}
     </td>`;
 }
@@ -99,7 +100,7 @@ function renderGridItem(doc) {
             <div class="mt-auto flex items-center justify-between gap-2 border-t border-slate-100 pt-3 dark:border-slate-700">
                 <span class="text-xs text-slate-500">${escapeHtml(doc.series_label)}</span>
                 ${doc.has_pdf
-                    ? `<a href="${escapeHtml(doc.pdf_url)}" target="_blank" class="splis-doc-list-link text-xs font-semibold">View PDF</a>`
+                    ? `<a ${pdfModalTriggerAttrs(doc.pdf_url, `${doc.number || 'Ordinance'} PDF`)} class="splis-doc-list-link text-xs font-semibold">View PDF</a>`
                     : '<span class="text-xs text-slate-400">No PDF</span>'}
             </div>
         </article>

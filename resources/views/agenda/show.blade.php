@@ -60,17 +60,12 @@
                     @endif
                 @endcan
                 @if ($agenda->request_pdf_url)
-                    <button
-                        type="button"
-                        class="splis-btn-secondary inline-flex items-center gap-2 text-nowrap"
-                        data-agenda-pdf-open
-                        data-pdf-src="{{ \App\Support\PdfEmbedUrl::forIframe($agenda->request_pdf_url) }}"
-                        data-pdf-title="Request PDF — {{ $agenda->displayLabel() }}"
-                        data-pdf-url="{{ $agenda->request_pdf_url }}"
-                    >
-                        <x-icon name="eye" class="h-4 w-4" />
-                        Request PDF
-                    </button>
+                    @include('partials.pdf-modal-trigger', [
+                        'url' => $agenda->request_pdf_url,
+                        'title' => 'Request PDF — '.$agenda->displayLabel(),
+                        'label' => 'Request PDF',
+                        'class' => 'splis-btn-secondary inline-flex items-center gap-2 text-nowrap',
+                    ])
                 @endif
                 @can('update', $agenda)
                     <a href="{{ route('agenda.edit', $agenda) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-nowrap">
@@ -379,38 +374,36 @@
                     </div>
                     <div class="splis-card-body flex flex-col gap-2">
                         @if ($agenda->committee_report_url)
-                            <a href="{{ $agenda->committee_report_url }}" target="_blank" rel="noopener" class="splis-btn-secondary text-sm">Committee Report</a>
+                            @include('partials.pdf-modal-trigger', [
+                                'url' => $agenda->committee_report_url,
+                                'title' => 'Committee Report — '.$agenda->displayLabel(),
+                                'label' => 'Committee Report',
+                            ])
                         @endif
                         @if ($agenda->isPublished() && $agenda->publishedTargetRoute())
                             <a href="{{ $agenda->publishedTargetRoute() }}" class="splis-btn-secondary text-sm">{{ $agenda->splisOutputButtonLabel() }}</a>
                         @elseif ($agenda->reso_ord_ao_url)
-                            <a href="{{ $agenda->reso_ord_ao_url }}" target="_blank" rel="noopener" class="splis-btn-secondary text-sm">{{ $agenda->legacyOutputPdfButtonLabel() }}</a>
+                            @include('partials.pdf-modal-trigger', [
+                                'url' => $agenda->reso_ord_ao_url,
+                                'title' => $agenda->legacyOutputPdfButtonLabel().' — '.$agenda->displayLabel(),
+                                'label' => $agenda->legacyOutputPdfButtonLabel(),
+                            ])
                         @endif
                         @if ($agenda->journal_url)
-                            <button
-                                type="button"
-                                class="splis-btn-secondary text-sm inline-flex items-center justify-center gap-2"
-                                data-agenda-pdf-open
-                                data-pdf-src="{{ \App\Support\PdfEmbedUrl::forIframe($agenda->journal_url) }}"
-                                data-pdf-title="Journal of Proceedings — {{ $agenda->displayLabel() }}"
-                                data-pdf-url="{{ $agenda->journal_url }}"
-                            >
-                                <x-icon name="eye" class="h-4 w-4" />
-                                Journal of Proceedings
-                            </button>
+                            @include('partials.pdf-modal-trigger', [
+                                'url' => $agenda->journal_url,
+                                'title' => 'Journal of Proceedings — '.$agenda->displayLabel(),
+                                'label' => 'Journal of Proceedings',
+                                'class' => 'splis-btn-secondary text-sm inline-flex items-center justify-center gap-2',
+                            ])
                         @endif
                         @if ($agenda->minutes_url)
-                            <button
-                                type="button"
-                                class="splis-btn-secondary text-sm inline-flex items-center justify-center gap-2"
-                                data-agenda-pdf-open
-                                data-pdf-src="{{ \App\Support\PdfEmbedUrl::forIframe($agenda->minutes_url) }}"
-                                data-pdf-title="Minutes of Session — {{ $agenda->displayLabel() }}"
-                                data-pdf-url="{{ $agenda->minutes_url }}"
-                            >
-                                <x-icon name="eye" class="h-4 w-4" />
-                                Minutes of Session
-                            </button>
+                            @include('partials.pdf-modal-trigger', [
+                                'url' => $agenda->minutes_url,
+                                'title' => 'Minutes of Session — '.$agenda->displayLabel(),
+                                'label' => 'Minutes of Session',
+                                'class' => 'splis-btn-secondary text-sm inline-flex items-center justify-center gap-2',
+                            ])
                         @endif
                     </div>
                 </div>
@@ -435,130 +428,4 @@
         'label' => 'Agenda navigation',
     ])
 </div>
-
-@php
-    $agendaPdfTriggers = collect([
-        $agenda->request_pdf_url,
-        $agenda->journal_url,
-        $agenda->minutes_url,
-    ])->filter()->isNotEmpty();
-@endphp
-
-@if ($agendaPdfTriggers)
-    <div id="agenda-pdf-modal" class="splis-modal" hidden>
-        <div class="splis-modal-backdrop" data-agenda-pdf-close tabindex="-1" aria-hidden="true"></div>
-        <div class="splis-modal-panel !max-h-[92vh] !max-w-5xl" data-agenda-pdf-panel role="dialog" aria-modal="true" aria-labelledby="agenda-pdf-modal-title">
-            <div class="splis-modal-header">
-                <h3 id="agenda-pdf-modal-title" class="splis-modal-title">Document</h3>
-                <div class="flex items-center gap-2">
-                    <a
-                        id="agenda-pdf-open-tab"
-                        href="#"
-                        target="_blank"
-                        rel="noopener"
-                        class="splis-btn-ghost inline-flex items-center gap-1.5 !px-2 !py-1 text-xs"
-                    >
-                        <x-icon name="external-link" class="h-3.5 w-3.5" />
-                        Open in new tab
-                    </a>
-                    <button
-                        type="button"
-                        id="agenda-pdf-fullscreen"
-                        class="splis-btn-ghost inline-flex items-center gap-1.5 !px-2 !py-1 text-xs"
-                        aria-pressed="false"
-                    >
-                        <x-icon name="maximize" class="h-3.5 w-3.5" data-fullscreen-icon="enter" />
-                        <x-icon name="minimize" class="hidden h-3.5 w-3.5" data-fullscreen-icon="exit" />
-                        <span data-fullscreen-label>Fullscreen</span>
-                    </button>
-                    <button type="button" class="splis-modal-close" data-agenda-pdf-close aria-label="Close">×</button>
-                </div>
-            </div>
-            <div class="splis-modal-body !p-0">
-                <iframe
-                    id="agenda-pdf-frame"
-                    title="Agenda document PDF preview"
-                    class="splis-pdf-modal-frame block h-[75vh] w-full border-0 bg-slate-100 dark:bg-slate-900"
-                    src="about:blank"
-                ></iframe>
-            </div>
-        </div>
-    </div>
-
-    @push('scripts')
-    <script>
-        (function () {
-            const modal = document.getElementById('agenda-pdf-modal');
-            const panel = modal?.querySelector('[data-agenda-pdf-panel]');
-            const frame = document.getElementById('agenda-pdf-frame');
-            const title = document.getElementById('agenda-pdf-modal-title');
-            const openTab = document.getElementById('agenda-pdf-open-tab');
-            const fullscreenBtn = document.getElementById('agenda-pdf-fullscreen');
-            const triggers = document.querySelectorAll('[data-agenda-pdf-open]');
-
-            if (! modal || ! panel || ! frame || ! title || ! openTab || triggers.length === 0) {
-                return;
-            }
-
-            function setFullscreen(enabled) {
-                modal.classList.toggle('is-fullscreen-active', enabled);
-                panel.classList.toggle('is-fullscreen', enabled);
-
-                if (fullscreenBtn) {
-                    fullscreenBtn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
-                    const label = fullscreenBtn.querySelector('[data-fullscreen-label]');
-                    const enterIcon = fullscreenBtn.querySelector('[data-fullscreen-icon="enter"]');
-                    const exitIcon = fullscreenBtn.querySelector('[data-fullscreen-icon="exit"]');
-
-                    if (label) {
-                        label.textContent = enabled ? 'Exit fullscreen' : 'Fullscreen';
-                    }
-                    enterIcon?.classList.toggle('hidden', enabled);
-                    exitIcon?.classList.toggle('hidden', ! enabled);
-                }
-            }
-
-            function openModal(trigger) {
-                const src = trigger.dataset.pdfSrc || '';
-                const pdfUrl = trigger.dataset.pdfUrl || src;
-                const pdfTitle = trigger.dataset.pdfTitle || 'Document';
-
-                title.textContent = pdfTitle;
-                openTab.href = pdfUrl || '#';
-                frame.setAttribute('src', src || 'about:blank');
-
-                setFullscreen(false);
-                modal.hidden = false;
-                document.body.classList.add('splis-modal-open');
-            }
-
-            function closeModal() {
-                setFullscreen(false);
-                modal.hidden = true;
-                document.body.classList.remove('splis-modal-open');
-                frame.setAttribute('src', 'about:blank');
-            }
-
-            triggers.forEach((trigger) => {
-                trigger.addEventListener('click', () => openModal(trigger));
-            });
-            fullscreenBtn?.addEventListener('click', () => {
-                setFullscreen(! panel.classList.contains('is-fullscreen'));
-            });
-            modal.querySelectorAll('[data-agenda-pdf-close]').forEach((el) => {
-                el.addEventListener('click', closeModal);
-            });
-            document.addEventListener('keydown', (event) => {
-                if (event.key === 'Escape' && ! modal.hidden) {
-                    if (panel.classList.contains('is-fullscreen')) {
-                        setFullscreen(false);
-                        return;
-                    }
-                    closeModal();
-                }
-            });
-        })();
-    </script>
-    @endpush
-@endif
 @endsection

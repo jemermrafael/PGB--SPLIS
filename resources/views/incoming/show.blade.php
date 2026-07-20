@@ -146,10 +146,18 @@
                     </div>
                     <div class="splis-card-body flex flex-wrap gap-3">
                         @if ($incoming->mun_pdf_url)
-                            <a href="{{ $incoming->mun_pdf_url }}" target="_blank" rel="noopener" class="splis-btn-secondary text-sm">Municipal PDF</a>
+                            @include('partials.pdf-modal-trigger', [
+                                'url' => $incoming->mun_pdf_url,
+                                'title' => 'Municipal PDF — '.$incoming->displayLabel(),
+                                'label' => 'Municipal PDF',
+                            ])
                         @endif
                         @if ($incoming->sp_pdf_url)
-                            <a href="{{ $incoming->sp_pdf_url }}" target="_blank" rel="noopener" class="splis-btn-secondary text-sm">SP PDF</a>
+                            @include('partials.pdf-modal-trigger', [
+                                'url' => $incoming->sp_pdf_url,
+                                'title' => 'SP PDF — '.$incoming->displayLabel(),
+                                'label' => 'SP PDF',
+                            ])
                         @endif
                     </div>
                 </div>
