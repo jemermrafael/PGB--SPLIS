@@ -54,7 +54,7 @@
             @if ($appropriationOrdinance->agenda_item_id)
                 <div>
                     <dt class="splis-label">Source agenda</dt>
-                    <dd class="mt-1"><a href="{{ route('agenda.show', $appropriationOrdinance->agenda_item_id) }}" class="splis-link">View agenda item</a></dd>
+                    <dd class="mt-1"><a href="{{ route('agenda.show', $appropriationOrdinance->agenda_item_id) }}" class="splis-link">View Agenda item</a></dd>
                 </div>
             @endif
         </dl>

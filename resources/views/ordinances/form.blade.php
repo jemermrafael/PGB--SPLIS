@@ -62,8 +62,8 @@
                     <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Optional — {{ $rosterTerm->label }} roster.</p>
                 </div>
                 <div class="splis-attribution-toggle" role="group" aria-label="Attribution type">
-                    <button type="button" class="splis-attribution-toggle-btn" data-attribution-mode="combined" aria-pressed="false">Authored &amp; sponsored</button>
-                    <button type="button" class="splis-attribution-toggle-btn" data-attribution-mode="separate" aria-pressed="false">Author / sponsor</button>
+                    <button type="button" class="splis-attribution-toggle-btn" data-attribution-mode="combined" aria-pressed="false">Authored &amp; Sponsored</button>
+                    <button type="button" class="splis-attribution-toggle-btn" data-attribution-mode="separate" aria-pressed="false">Author / Sponsor</button>
                 </div>
             </div>
 

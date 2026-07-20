@@ -92,7 +92,7 @@
                             'url' => $ordinance->movBulletinPdfPublicUrl(),
                             'viewer' => $ordinance->movBulletinViewerMode(),
                             'title' => 'Bulletin — '.$ordinance->displayNumber(),
-                            'label' => 'View bulletin',
+                            'label' => 'View Bulletin',
                         ])
                     @endif
                 </dd>
@@ -110,7 +110,7 @@
                             'url' => $ordinance->movCertificationPdfPublicUrl(),
                             'viewer' => $ordinance->movCertificationViewerMode(),
                             'title' => 'Certification — '.$ordinance->displayNumber(),
-                            'label' => 'View certification',
+                            'label' => 'View Certification',
                         ])
                     @endif
                 </dd>
@@ -128,7 +128,7 @@
                             'url' => $ordinance->movNewspaperPdfPublicUrl(),
                             'viewer' => $ordinance->movNewspaperViewerMode(),
                             'title' => 'Newspaper — '.$ordinance->displayNumber(),
-                            'label' => 'View newspaper',
+                            'label' => 'View Newspaper',
                         ])
                     @endif
                 </dd>
