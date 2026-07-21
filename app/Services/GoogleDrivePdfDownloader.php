@@ -34,6 +34,12 @@ class GoogleDrivePdfDownloader
             throw new RuntimeException('File URL is empty.');
         }
 
+        $docsExport = $this->docsEditorExport($url);
+
+        if ($docsExport !== null) {
+            return $this->downloadGoogleDocExport($docsExport['url'], $docsExport['extension']);
+        }
+
         $fileId = $this->extractFileId($url);
 
         if ($fileId !== null) {
@@ -58,6 +64,72 @@ class GoogleDrivePdfDownloader
         }
 
         return null;
+    }
+
+    /**
+     * Detect a Google Docs/Sheets/Slides editor URL and build its export URL.
+     * Handles both native Google files and uploaded Office files (rtpof=true).
+     *
+     * @return array{url: string, extension: string}|null
+     */
+    protected function docsEditorExport(string $url): ?array
+    {
+        if (! preg_match('~docs\.google\.com/(document|spreadsheets|presentation)/d/([^/?#]+)~i', $url, $matches)) {
+            return null;
+        }
+
+        $kind = strtolower($matches[1]);
+        $id = $matches[2];
+
+        [$format, $extension] = match ($kind) {
+            'spreadsheets' => ['xlsx', 'xlsx'],
+            'presentation' => ['pptx', 'pptx'],
+            default => ['docx', 'docx'],
+        };
+
+        return [
+            'url' => 'https://docs.google.com/'.$kind.'/d/'.rawurlencode($id).'/export?format='.$format,
+            'extension' => $extension,
+        ];
+    }
+
+    /**
+     * @return array{contents: string, mime: string, extension: string}
+     */
+    protected function downloadGoogleDocExport(string $exportUrl, string $fallbackExtension): array
+    {
+        $response = $this->httpClient()->get($exportUrl);
+
+        if (! $response->successful()) {
+            throw new RuntimeException('Google Docs export failed (HTTP '.$response->status().'). The document may be private.');
+        }
+
+        $body = $response->body();
+        $detected = MediaType::fromBytes($body, $response->header('Content-Type'));
+
+        if ($detected !== null) {
+            return [
+                'contents' => $body,
+                'mime' => $detected['mime'],
+                'extension' => $detected['extension'],
+            ];
+        }
+
+        // Office documents are ZIP-based; magic bytes may not resolve to a MIME.
+        // Trust the export format when the payload is a valid ZIP (PK header).
+        if (str_starts_with($body, "PK\x03\x04") || str_starts_with($body, "PK\x05\x06")) {
+            return [
+                'contents' => $body,
+                'mime' => match ($fallbackExtension) {
+                    'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                    default => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                },
+                'extension' => $fallbackExtension,
+            ];
+        }
+
+        throw new RuntimeException('Google Docs export did not return a supported file (the document may be private or shared without access).');
     }
 
     /**
