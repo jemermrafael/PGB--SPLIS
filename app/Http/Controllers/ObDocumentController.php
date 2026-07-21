@@ -70,12 +70,14 @@ class ObDocumentController extends Controller
         ]);
     }
 
-    public function print(LegislativeSession $legislativeSession, ObPrintRenderer $renderer): View
+    public function print(LegislativeSession $legislativeSession, ObPrintRenderer $renderer, ObSectionThreeSyncService $sectionThreeSync): View
     {
         $document = $this->documentFor($legislativeSession);
         $this->authorize('view', $document);
 
         $legislativeSession->load(['priorSession', 'obDocument.blocks']);
+        $sectionThreeSync->syncForSession($legislativeSession);
+        $document->refresh();
 
         $blocks = $document->blocks()->with('agendaItem')->orderBy('sort_order')->get();
 

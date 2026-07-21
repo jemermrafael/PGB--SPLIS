@@ -39,7 +39,7 @@ class ObSectionThreeSyncService
         if ($body !== null) {
             $currentBody = trim((string) ($content['body'] ?? ''));
 
-            if ($force || $currentBody === '') {
+            if ($force || $currentBody === '' || $this->sectionThreeBodyNeedsRefresh($currentBody, $session, $body)) {
                 $content['body'] = $body;
                 $updated = true;
             }
@@ -81,5 +81,29 @@ class ObSectionThreeSyncService
 
                 return ObRomanNumeral::normalize($block->content['numeral'] ?? '') === 'III';
             });
+    }
+
+    protected function sectionThreeBodyNeedsRefresh(string $currentBody, LegislativeSession $session, string $generatedBody): bool
+    {
+        if ($currentBody === $generatedBody) {
+            return false;
+        }
+
+        if (preg_match('/\bAT\s+AT\b/ui', $currentBody) === 1) {
+            return true;
+        }
+
+        $prior = $session->priorSession;
+        if ($prior?->session_date === null) {
+            return false;
+        }
+
+        $priorDate = strtoupper($prior->session_date->format('F j, Y'));
+
+        if (preg_match('/\bHELD ON ([A-Z]+ \d{1,2}, \d{4})\b/u', strtoupper($currentBody), $match) !== 1) {
+            return false;
+        }
+
+        return $match[1] !== $priorDate;
     }
 }
