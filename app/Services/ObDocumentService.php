@@ -493,6 +493,11 @@ class ObDocumentService
 
         if (! $wasFinal && $document->isFinal()) {
             $this->notifyLinkedAgendasForFinalDocument($document);
+            $session = $document->legislativeSession;
+
+            if ($session instanceof LegislativeSession) {
+                $this->boardMemberNotifier->notifySessionCreated($session);
+            }
         }
 
         return $document;

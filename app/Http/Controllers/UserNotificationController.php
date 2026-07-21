@@ -119,7 +119,8 @@ class UserNotificationController extends Controller
     {
         $query = UserNotification::query()
             ->withinRetention()
-            ->where('user_id', $user->id);
+            ->where('user_id', $user->id)
+            ->visibleToRecipient($user);
 
         if ($user->canAdmin()) {
             return $query->where('type', UserNotification::TYPE_ACTIVITY_LOG);

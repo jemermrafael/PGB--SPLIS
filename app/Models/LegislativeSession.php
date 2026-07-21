@@ -238,18 +238,51 @@ class LegislativeSession extends Model
     }
 
     /**
-     * Sessions Board Members may browse (session must be scheduled).
+     * Sessions Board Members may browse on the Order of Business pages.
      *
      * @param  Builder<self>  $query
      * @return Builder<self>
      */
     public function scopeVisibleToBoardMembers(Builder $query): Builder
     {
-        return $query->where('status', 'scheduled');
+        return $query
+            ->withFinalObDocument()
+            ->whereIn('status', ['scheduled', 'completed']);
+    }
+
+    /**
+     * Sessions that should surface as currently scheduled to Board Members.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeNotifiableToBoardMembers(Builder $query): Builder
+    {
+        return $query
+            ->withFinalObDocument()
+            ->where('status', 'scheduled');
     }
 
     public function isVisibleToBoardMembers(): bool
     {
-        return $this->status === 'scheduled';
+        return in_array($this->status, ['scheduled', 'completed'], true)
+            && $this->hasFinalObDocument();
+    }
+
+    public function isNotifiableToBoardMembers(): bool
+    {
+        return $this->status === 'scheduled'
+            && $this->hasFinalObDocument();
+    }
+
+    protected function hasFinalObDocument(): bool
+    {
+        if ($this->relationLoaded('obDocument')) {
+            return $this->obDocument?->isFinal() ?? false;
+        }
+
+        return $this->obDocument()
+            ->where('status', ObDocument::STATUS_FINAL)
+            ->exists();
     }
 }

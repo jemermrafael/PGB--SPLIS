@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -63,6 +64,27 @@ class UserNotification extends Model
     public function scopeWithinRetention($query)
     {
         return $query->where('created_at', '>=', now()->subDays(self::RETENTION_DAYS));
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeVisibleToRecipient(Builder $query, User $user): Builder
+    {
+        if (! $user->isBoardMember()) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $notification): void {
+            $notification
+                ->where('type', '!=', self::TYPE_SESSION_CREATED)
+                ->orWhere(function (Builder $sessionCreated): void {
+                    $sessionCreated
+                        ->where('type', self::TYPE_SESSION_CREATED)
+                        ->whereHas('legislativeSession', fn (Builder $session) => $session->notifiableToBoardMembers());
+                });
+        });
     }
 
     public static function pruneExpired(): int

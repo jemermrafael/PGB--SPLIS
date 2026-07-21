@@ -66,7 +66,7 @@ class BoardMemberBriefingService
     {
         return LegislativeSession::query()
             ->with(['obDocument.blocks.agendaItem'])
-            ->visibleToBoardMembers()
+            ->notifiableToBoardMembers()
             ->whereDate('session_date', '>=', now()->toDateString())
             ->orderBy('session_date')
             ->orderBy('session_time')

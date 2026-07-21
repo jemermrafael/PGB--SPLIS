@@ -11,7 +11,8 @@
         $controller = app(UserNotificationController::class);
         $query = UserNotification::query()
             ->withinRetention()
-            ->where('user_id', $authUser->id);
+            ->where('user_id', $authUser->id)
+            ->visibleToRecipient($authUser);
 
         if ($authUser->canAdmin()) {
             $query->where('type', UserNotification::TYPE_ACTIVITY_LOG);

@@ -121,6 +121,10 @@ class BoardMemberNotifier
 
     public function notifySessionCreated(LegislativeSession $session): void
     {
+        if (! $session->isNotifiableToBoardMembers()) {
+            return;
+        }
+
         $body = $session->displayTitle();
 
         foreach ($this->allBoardMemberUsers() as $user) {

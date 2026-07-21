@@ -310,7 +310,7 @@ class BoardMemberDashboardService
     {
         return LegislativeSession::query()
             ->with(['obDocument.blocks.agendaItem'])
-            ->visibleToBoardMembers()
+            ->notifiableToBoardMembers()
             ->where('session_date', '>=', now()->startOfMonth()->subMonths(1))
             ->orderBy('session_date')
             ->orderBy('session_time')
