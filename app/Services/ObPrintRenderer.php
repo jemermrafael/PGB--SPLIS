@@ -514,7 +514,8 @@ class ObPrintRenderer
 
             $text = mb_strtoupper((string) ($row['text'] ?? ''));
             $needsNone = str_contains($text, '2ND READING')
-                || str_contains($text, '3RD READING');
+                || str_contains($text, '3RD READING')
+                || str_contains($text, 'URGENT REQUEST');
 
             if (! $needsNone) {
                 continue;

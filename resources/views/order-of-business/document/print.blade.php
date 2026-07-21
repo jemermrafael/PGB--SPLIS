@@ -7,6 +7,13 @@
     @page {
         size: 8.5in 13in;
         margin: 0.6in 0.65in;
+
+        @bottom-right {
+            content: counter(page);
+            font-family: Arial, sans-serif;
+            font-size: 9pt;
+            color: #475569;
+        }
     }
 
     @media print {
@@ -21,6 +28,10 @@
 </style>
 @endpush
 
+@php
+    $isEmbeddedPreview = request()->boolean('embed');
+@endphp
+
 @section('content')
 <div class="ob-print-toolbar sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 print:hidden">
     <div>
@@ -28,17 +39,24 @@
         <p class="text-sm text-slate-600">{{ $session->displayTitle() }}</p>
     </div>
     <div class="flex gap-2">
-        @can('update', $document)
-            <a href="{{ route('ob.document.maker', $session) }}" class="splis-btn-secondary inline-flex items-center gap-2">
-                <x-icon name="arrow-left" class="h-4 w-4" />
-                Back to Maker
-            </a>
-        @else
-            <a href="{{ route('ob.sessions.show', $session) }}" class="splis-btn-secondary inline-flex items-center gap-2">
-                <x-icon name="arrow-left" class="h-4 w-4" />
-                Back
-            </a>
-        @endcan
+        @unless ($isEmbeddedPreview)
+            @can('update', $document)
+                <button
+                    type="button"
+                    class="splis-btn-secondary inline-flex items-center gap-2"
+                    data-ob-close-preview
+                    data-ob-maker-url="{{ route('ob.document.maker', $session) }}"
+                >
+                    <x-icon name="arrow-left" class="h-4 w-4" />
+                    Close Preview
+                </button>
+            @else
+                <a href="{{ route('ob.sessions.show', $session) }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                    <x-icon name="arrow-left" class="h-4 w-4" />
+                    Back
+                </a>
+            @endcan
+        @endunless
         <button type="button" class="splis-btn-primary inline-flex items-center gap-2" onclick="window.print()">
             <x-icon name="printer" class="h-4 w-4" />
             Print / Save as PDF
@@ -72,4 +90,27 @@
 
     @include('order-of-business.partials.print-segments', ['segments' => $segments])
 </article>
+
+@unless ($isEmbeddedPreview)
+<script>
+    (function () {
+        var closeBtn = document.querySelector('[data-ob-close-preview]');
+        if (! closeBtn) {
+            return;
+        }
+
+        closeBtn.addEventListener('click', function () {
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({ type: 'splis-close-document-modal' }, window.location.origin);
+                return;
+            }
+
+            window.close();
+            window.setTimeout(function () {
+                window.location.href = closeBtn.getAttribute('data-ob-maker-url') || '/';
+            }, 150);
+        });
+    })();
+</script>
+@endunless
 @endsection

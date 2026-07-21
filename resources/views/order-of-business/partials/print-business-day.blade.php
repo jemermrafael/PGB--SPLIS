@@ -3,7 +3,10 @@
         @foreach ($segment['rows'] as $row)
             @if (($row['kind'] ?? '') === 'subsection')
                 <tr>
-                    <td colspan="2" class="ob-print-subsection">{{ $row['text'] ?? '' }}</td>
+                    <td @class([
+                        'ob-print-subsection',
+                        'ob-print-subsection--major' => preg_match('/^[ABC]\.\s/u', trim($row['text'] ?? '')),
+                    ]) colspan="2">{{ $row['text'] ?? '' }}</td>
                 </tr>
             @elseif (($row['kind'] ?? '') === 'agenda')
                 <tr>

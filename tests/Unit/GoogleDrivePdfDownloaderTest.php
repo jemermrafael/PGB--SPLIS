@@ -50,4 +50,30 @@ class GoogleDrivePdfDownloaderTest extends TestCase
         $this->assertSame('pdf', $result['extension']);
         $this->assertSame('application/pdf', $result['mime']);
     }
+
+    public function test_list_folder_files_parses_embedded_folder_view(): void
+    {
+        $html = <<<'HTML'
+            <html><body>
+                <a href="https://drive.google.com/file/d/fileAaa111/view?usp=drive_web">Report One.pdf</a>
+                <a href="https://drive.google.com/file/d/fileBbb222/view?usp=drive_web">Report Two.pdf</a>
+                <a href="https://docs.google.com/document/d/docCcc333/edit">Notes Doc</a>
+            </body></html>
+        HTML;
+
+        Http::fake([
+            'drive.google.com/embeddedfolderview*' => Http::response($html, 200),
+        ]);
+
+        $files = app(GoogleDrivePdfDownloader::class)->listFolderFiles(
+            'https://drive.google.com/drive/folders/folderXyz999?usp=sharing',
+        );
+
+        $this->assertCount(3, $files);
+        $this->assertSame('fileAaa111', $files[0]['id']);
+        $this->assertSame('Report One.pdf', $files[0]['name']);
+        $this->assertSame('file', $files[0]['kind']);
+        $this->assertSame('docCcc333', $files[2]['id']);
+        $this->assertSame('document', $files[2]['kind']);
+    }
 }

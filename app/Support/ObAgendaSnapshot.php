@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\AgendaItem;
+use App\Models\BoardMember;
 
 class ObAgendaSnapshot
 {
@@ -266,6 +267,7 @@ class ObAgendaSnapshot
             'date_received' => $item->date_received?->format('F j, Y') ?? '',
             'prescription' => self::prescriptionLabel($item),
             'title' => (string) ($item->title ?? ''),
+            'sender' => (string) ($item->sender ?? ''),
             'referral_note' => self::referralNote($item),
         ], $extra);
     }
@@ -348,9 +350,8 @@ class ObAgendaSnapshot
 
         $note = 'To be referred to '.$committeeLabel;
         if ($chair !== '') {
-            $note .= ",\nChaired by: ".$chair;
+            $note .= ',Chaired by: '.$chair;
         }
-        $note .= ' ';
 
         return '('.$note.')';
     }
@@ -399,6 +400,18 @@ class ObAgendaSnapshot
             return $content;
         }
 
+        $title = (string) ($item?->title ?? $content['title'] ?? '');
+        $sender = (string) ($item?->sender ?? $content['sender'] ?? '');
+        $formatted = self::formatRegularUnassignedTitle($title, $sender);
+        $content['title'] = $formatted['title'];
+        $content['sender'] = $sender;
+
+        if ($formatted['filer_note'] !== '') {
+            $content['filer_note'] = $formatted['filer_note'];
+        } else {
+            unset($content['filer_note']);
+        }
+
         $referral = self::unassignedRegularReferralSource($content, $item);
         if ($referral === null || trim($referral) === '') {
             return $content;
@@ -410,6 +423,78 @@ class ObAgendaSnapshot
         }
 
         return $content;
+    }
+
+    /**
+     * Separate inconsistent "Filed By" text from a title and normalize it for print.
+     *
+     * @return array{title:string,filer_note:string}
+     */
+    public static function formatRegularUnassignedTitle(string $title, ?string $sender): array
+    {
+        $title = trim($title);
+        $filer = '';
+
+        if (preg_match('/\s*\(?\s*Filed\s+By\s*:\s*(.+?)\s*\)?\s*$/isu', $title, $matches)) {
+            $filer = self::cleanFilerName($matches[1]);
+            $title = trim(mb_substr($title, 0, mb_strlen($title) - mb_strlen($matches[0])));
+        }
+
+        $title = preg_replace_callback(
+            '/(\bentitled\s*)"([^"]+)"/iu',
+            fn (array $matches): string => $matches[1].'“'.trim($matches[2]).'”',
+            $title,
+        ) ?? $title;
+
+        if ($filer === '') {
+            $filer = self::filerFromSender($sender);
+        }
+
+        return [
+            'title' => trim($title),
+            'filer_note' => $filer !== '' ? '(Filed By: '.$filer.')' : '',
+        ];
+    }
+
+    protected static function cleanFilerName(string $filer): string
+    {
+        return trim($filer, " \t\n\r\0\x0B().");
+    }
+
+    protected static function filerFromSender(?string $sender): string
+    {
+        $sender = trim((string) $sender);
+
+        if ($sender === '') {
+            return '';
+        }
+
+        if (preg_match('/^VG\s+Cris$/iu', $sender)) {
+            return 'Vice Governor Ma. Cristina M. Garcia';
+        }
+
+        if (! preg_match('/^BM\s+(.+)$/iu', $sender, $matches)) {
+            return '';
+        }
+
+        $names = preg_split('/\s*(?:&|\band\b)\s*/iu', trim($matches[1])) ?: [];
+
+        return collect($names)
+            ->map(function (string $name): string {
+                $name = trim($name);
+                if ($name === '') {
+                    return '';
+                }
+
+                $member = BoardMember::query()
+                    ->where('name', 'like', '%'.$name.'%')
+                    ->orderByDesc('is_active')
+                    ->first();
+
+                return $member?->orderOfBusinessName() ?: 'Board Member '.$name;
+            })
+            ->filter()
+            ->implode(' and ');
     }
 
     public static function prescriptionLabel(AgendaItem $item): string

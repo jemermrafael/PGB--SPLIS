@@ -20,13 +20,14 @@ class GoogleDrivePdfDownloader
     }
 
     /**
-     * Download a PDF or image from Google Drive / direct URL.
+     * Download a PDF, image, or Word file from Google Drive / direct URL.
      *
+     * @param  ?string  $forceFormat  Optional Docs export format override (e.g. "pdf").
      * @return array{contents: string, mime: string, extension: string}
      *
      * @throws RuntimeException
      */
-    public function downloadFile(string $url): array
+    public function downloadFile(string $url, ?string $forceFormat = null): array
     {
         $url = trim($url);
 
@@ -34,7 +35,7 @@ class GoogleDrivePdfDownloader
             throw new RuntimeException('File URL is empty.');
         }
 
-        $docsExport = $this->docsEditorExport($url);
+        $docsExport = $this->docsEditorExport($url, $forceFormat);
 
         if ($docsExport !== null) {
             return $this->downloadGoogleDocExport($docsExport['url'], $docsExport['extension']);
@@ -66,13 +67,122 @@ class GoogleDrivePdfDownloader
         return null;
     }
 
+    public function extractFolderId(string $url): ?string
+    {
+        if (preg_match('~drive\.google\.com/drive/(?:u/\d+/)?folders/([^/?#]+)~i', $url, $matches)) {
+            return $matches[1];
+        }
+
+        if (preg_match('~drive\.google\.com/embeddedfolderview\?(?:.*&)?id=([^&]+)~i', $url, $matches)) {
+            return rawurldecode($matches[1]);
+        }
+
+        return null;
+    }
+
+    /**
+     * List files inside a publicly shared Google Drive folder.
+     *
+     * @return list<array{id: string, name: string, url: string, kind: string}>
+     *
+     * @throws RuntimeException
+     */
+    public function listFolderFiles(string $folderUrl): array
+    {
+        $folderId = $this->extractFolderId($folderUrl);
+
+        if ($folderId === null) {
+            throw new RuntimeException('Not a Google Drive folder URL.');
+        }
+
+        $response = $this->httpClient()->get(
+            'https://drive.google.com/embeddedfolderview?id='.rawurlencode($folderId).'#list'
+        );
+
+        if (! $response->successful()) {
+            throw new RuntimeException('Could not open Google Drive folder (HTTP '.$response->status().'). The folder may be private.');
+        }
+
+        $html = $response->body();
+        $files = [];
+        $seen = [];
+
+        // Regular Drive files: /file/d/{id}/...
+        if (preg_match_all(
+            '#href="(https://drive\.google\.com/file/d/([^/"?]+)/[^"]*)"[^>]*>(.*?)</a>#is',
+            $html,
+            $matches,
+            PREG_SET_ORDER
+        )) {
+            foreach ($matches as $match) {
+                $id = html_entity_decode($match[2], ENT_QUOTES | ENT_HTML5);
+                if (isset($seen[$id])) {
+                    continue;
+                }
+                $seen[$id] = true;
+                $name = trim(html_entity_decode(strip_tags($match[3]), ENT_QUOTES | ENT_HTML5));
+                $files[] = [
+                    'id' => $id,
+                    'name' => $name !== '' ? $name : $id,
+                    'url' => 'https://drive.google.com/file/d/'.$id.'/view',
+                    'kind' => 'file',
+                ];
+            }
+        }
+
+        // Native Google Docs / Sheets / Slides linked from the folder view.
+        if (preg_match_all(
+            '#href="(https://docs\.google\.com/(document|spreadsheets|presentation)/d/([^/"?]+)/[^"]*)"[^>]*>(.*?)</a>#is',
+            $html,
+            $matches,
+            PREG_SET_ORDER
+        )) {
+            foreach ($matches as $match) {
+                $id = html_entity_decode($match[3], ENT_QUOTES | ENT_HTML5);
+                if (isset($seen[$id])) {
+                    continue;
+                }
+                $seen[$id] = true;
+                $name = trim(html_entity_decode(strip_tags($match[4]), ENT_QUOTES | ENT_HTML5));
+                $files[] = [
+                    'id' => $id,
+                    'name' => $name !== '' ? $name : $id,
+                    'url' => 'https://docs.google.com/'.$match[2].'/d/'.$id.'/edit',
+                    'kind' => strtolower($match[2]),
+                ];
+            }
+        }
+
+        // Fallback: data-id attributes when anchor text parsing fails.
+        if ($files === [] && preg_match_all('/data-id="([^"]+)"/', $html, $idMatches)) {
+            foreach (array_unique($idMatches[1]) as $id) {
+                if ($id === $folderId || isset($seen[$id])) {
+                    continue;
+                }
+                $seen[$id] = true;
+                $files[] = [
+                    'id' => $id,
+                    'name' => $id,
+                    'url' => 'https://drive.google.com/file/d/'.$id.'/view',
+                    'kind' => 'file',
+                ];
+            }
+        }
+
+        if ($files === []) {
+            throw new RuntimeException('No files found in the Google Drive folder (empty, private, or unsupported listing).');
+        }
+
+        return array_values($files);
+    }
+
     /**
      * Detect a Google Docs/Sheets/Slides editor URL and build its export URL.
      * Handles both native Google files and uploaded Office files (rtpof=true).
      *
      * @return array{url: string, extension: string}|null
      */
-    protected function docsEditorExport(string $url): ?array
+    protected function docsEditorExport(string $url, ?string $forceFormat = null): ?array
     {
         if (! preg_match('~docs\.google\.com/(document|spreadsheets|presentation)/d/([^/?#]+)~i', $url, $matches)) {
             return null;
@@ -80,12 +190,17 @@ class GoogleDrivePdfDownloader
 
         $kind = strtolower($matches[1]);
         $id = $matches[2];
+        $forceFormat = $forceFormat !== null ? strtolower($forceFormat) : null;
 
-        [$format, $extension] = match ($kind) {
-            'spreadsheets' => ['xlsx', 'xlsx'],
-            'presentation' => ['pptx', 'pptx'],
-            default => ['docx', 'docx'],
-        };
+        if ($forceFormat === 'pdf') {
+            [$format, $extension] = ['pdf', 'pdf'];
+        } else {
+            [$format, $extension] = match ($kind) {
+                'spreadsheets' => ['xlsx', 'xlsx'],
+                'presentation' => ['pptx', 'pptx'],
+                default => ['docx', 'docx'],
+            };
+        }
 
         return [
             'url' => 'https://docs.google.com/'.$kind.'/d/'.rawurlencode($id).'/export?format='.$format,

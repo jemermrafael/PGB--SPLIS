@@ -139,4 +139,14 @@ export function initPdfViewerModal() {
 
         closePdfModal();
     });
+
+    window.addEventListener('message', (event) => {
+        if (event.origin !== window.location.origin) {
+            return;
+        }
+
+        if (event.data?.type === 'splis-close-document-modal' && ! modal.hidden) {
+            closePdfModal();
+        }
+    });
 }

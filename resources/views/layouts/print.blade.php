@@ -9,5 +9,6 @@
 </head>
 <body class="ob-print-shell min-h-screen bg-white text-slate-900">
     @yield('content')
+    @stack('scripts')
 </body>
 </html>

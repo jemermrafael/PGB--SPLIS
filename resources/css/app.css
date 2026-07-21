@@ -2525,11 +2525,11 @@
     }
 
     .ob-print-header-date {
-        @apply mt-4 text-base text-slate-800;
+        @apply mt-4 text-base font-bold uppercase text-red-700 underline;
     }
 
     .ob-print-header-meta {
-        @apply mt-2 text-base text-slate-700;
+        @apply mt-2 text-base font-bold uppercase text-red-700 underline;
     }
 
     .ob-print-logo {
@@ -2616,10 +2616,19 @@
         width: 20%;
     }
 
+    .ob-print-table--committee .ob-print-committee-name,
+    .ob-print-table--committee .ob-print-chair {
+        @apply font-bold;
+    }
+
     .ob-print-subsection {
         @apply bg-slate-100 text-center font-bold uppercase;
         padding-top: 0.6em;
         padding-bottom: 0.6em;
+    }
+
+    .ob-print-subsection--major {
+        @apply text-red-700;
     }
 
     .ob-print-committee-header {
@@ -2629,25 +2638,49 @@
     }
 
     .ob-print-committee-header .ob-print-committee-name {
-        @apply uppercase;
+        @apply uppercase font-bold not-italic text-black underline;
     }
 
     .ob-print-committee-chair {
-        @apply mt-1 text-sm font-normal;
+        @apply mt-1 text-sm font-bold not-italic text-black;
         text-transform: none;
     }
 
     .ob-print-committee-name {
-        @apply font-medium break-words whitespace-normal;
+        @apply font-medium italic break-words whitespace-normal;
     }
 
     .ob-print-chair {
-        @apply mt-1 text-sm;
+        @apply mt-1 text-sm italic text-red-700;
+    }
+
+    .ob-print-filer-note {
+        @apply mt-2 font-bold;
+    }
+
+    .ob-print-referral-note {
+        @apply mt-2 text-red-700;
+    }
+
+    .ob-print-referral-note--referred {
+        @apply text-black;
     }
 
     .ob-print-unfinished-meta {
         width: 20%;
         @apply text-sm;
+    }
+
+    .ob-print-table td.ob-print-unfinished-meta {
+        @apply text-center font-bold;
+    }
+
+    .ob-print-agenda-number {
+        @apply text-base font-bold;
+    }
+
+    .ob-print-section-three-highlight {
+        @apply text-red-700;
     }
 
     .ob-print-meta-break {

@@ -90,10 +90,10 @@
                         <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">Session Documents</h2>
                         <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Upload files locally or keep a Google Drive link as fallback. Local files are used first on the session page. Draft Journal and Draft Minutes accept PDF or Word (.docx).</p>
                     </div>
-                    @if ($session->missingMirrorSessionPdfSlots() !== [])
+                    @if ($session->missingMirrorSessionPdfSlots() !== [] || filled($session->pdf_committee_reports))
                         <button type="submit" form="mirror-session-pdfs-form" class="splis-btn-secondary inline-flex items-center gap-2 whitespace-nowrap">
                             <x-icon name="download" class="h-4 w-4" />
-                            Download linked PDFs
+                            Download linked files
                         </button>
                     @endif
                 </div>
@@ -101,8 +101,22 @@
                     @foreach ($session->sessionPdfLinkRows() as $link)
                         @if ($link['kind'] === 'folder')
                             <div class="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
-                                <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $link['label'] }}</h3>
-                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Upload one or more committee report PDFs. They are stored locally in a folder for this session.</p>
+                                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                    <div>
+                                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $link['label'] }}</h3>
+                                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Upload one or more committee report PDFs, or download everything from the Google Drive folder link below.</p>
+                                    </div>
+                                    @if (filled($session->pdf_committee_reports))
+                                        <button
+                                            type="submit"
+                                            form="mirror-committee-reports-form"
+                                            class="splis-btn-secondary inline-flex items-center gap-2 whitespace-nowrap text-sm"
+                                        >
+                                            <x-icon name="download" class="h-4 w-4" />
+                                            Download folder from Drive
+                                        </button>
+                                    @endif
+                                </div>
 
                                 <div class="mt-4 space-y-4">
                                     <div>
@@ -135,21 +149,14 @@
                                                                 'label' => 'View',
                                                                 'class' => 'splis-btn-secondary inline-flex items-center gap-1.5 text-xs',
                                                             ])
-                                                            <form
-                                                                method="POST"
-                                                                action="{{ route('ob.sessions.committee-report-file.destroy', [$session, $file]) }}"
-                                                                data-confirm-submit
-                                                                data-confirm-title="Remove this file?"
-                                                                data-confirm-message="This removes the local copy only. The Google Drive folder link is not affected."
-                                                                data-confirm-label="Remove"
+                                                            <button
+                                                                type="submit"
+                                                                form="remove-committee-report-file-{{ $file->id }}"
+                                                                class="splis-btn-ghost inline-flex items-center gap-1.5 !px-2 !py-1 text-xs text-red-600 dark:text-red-400"
                                                             >
-                                                                @csrf
-                                                                @method('DELETE')
-                                                                <button type="submit" class="splis-btn-ghost inline-flex items-center gap-1.5 !px-2 !py-1 text-xs text-red-600 dark:text-red-400">
-                                                                    <x-icon name="trash" class="h-3.5 w-3.5" />
-                                                                    Remove
-                                                                </button>
-                                                            </form>
+                                                                <x-icon name="trash" class="h-3.5 w-3.5" />
+                                                                Remove
+                                                            </button>
                                                         </div>
                                                     </li>
                                                 @endforeach
@@ -167,7 +174,7 @@
                                             class="splis-input"
                                             placeholder="https://drive.google.com/drive/folders/..."
                                         >
-                                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Optional external folder when reports are not uploaded here.</p>
+                                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Folder must be shared so anyone with the link can view. Save the link first, then use Download folder from Drive.</p>
                                     </div>
                                 </div>
                             </div>
@@ -196,9 +203,19 @@
                                             </p>
                                         @endif
                                         @if ($link['mirrored'])
-                                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                                Local file: <code>{{ $session->{$pathColumn} }}</code> — uploading replaces it.
-                                            </p>
+                                            <div class="mt-2 flex flex-wrap items-center gap-2">
+                                                <p class="text-xs text-slate-500 dark:text-slate-400">
+                                                    Local file: <code>{{ $session->{$pathColumn} }}</code> — uploading replaces it.
+                                                </p>
+                                                <button
+                                                    type="submit"
+                                                    form="remove-session-pdf-{{ $link['field'] }}"
+                                                    class="splis-btn-ghost inline-flex items-center gap-1.5 !px-2 !py-1 text-xs text-red-600 dark:text-red-400"
+                                                >
+                                                    <x-icon name="trash" class="h-3.5 w-3.5" />
+                                                    Remove file
+                                                </button>
+                                            </div>
                                         @endif
                                     </div>
                                     <div>
@@ -242,11 +259,46 @@
     </form>
 
     @if ($isEdit)
-        @if ($session->missingMirrorSessionPdfSlots() !== [])
+        @if ($session->missingMirrorSessionPdfSlots() !== [] || filled($session->pdf_committee_reports))
             <form id="mirror-session-pdfs-form" method="POST" action="{{ route('ob.sessions.mirror-pdfs', $session) }}">
                 @csrf
             </form>
         @endif
+        @if (filled($session->pdf_committee_reports))
+            <form id="mirror-committee-reports-form" method="POST" action="{{ route('ob.sessions.committee-reports.mirror', $session) }}">
+                @csrf
+            </form>
+        @endif
+        @foreach ($session->committeeReportFiles as $file)
+            <form
+                id="remove-committee-report-file-{{ $file->id }}"
+                method="POST"
+                action="{{ route('ob.sessions.committee-report-file.destroy', [$session, $file]) }}"
+                data-confirm-submit
+                data-confirm-title="Remove this file?"
+                data-confirm-message="This removes the local copy only. The Google Drive folder link is not affected."
+                data-confirm-label="Remove"
+            >
+                @csrf
+                @method('DELETE')
+            </form>
+        @endforeach
+        @foreach ($session->sessionPdfLinkRows() as $link)
+            @if ($link['kind'] !== 'folder' && $link['mirrored'])
+                <form
+                    id="remove-session-pdf-{{ $link['field'] }}"
+                    method="POST"
+                    action="{{ route('ob.sessions.pdf.destroy', [$session, $link['field']]) }}"
+                    data-confirm-submit
+                    data-confirm-title="Remove local file?"
+                    data-confirm-message="This removes the locally stored {{ $link['label'] }} file only. The URL fallback is not affected."
+                    data-confirm-label="Remove"
+                >
+                    @csrf
+                    @method('DELETE')
+                </form>
+            @endif
+        @endforeach
         @can('delete', $session)
             <div class="mt-6 flex justify-end">
                 <form

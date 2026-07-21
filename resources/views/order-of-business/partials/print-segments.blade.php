@@ -6,16 +6,16 @@
                     <tr>
                         <td class="ob-print-roman">{{ \App\Support\ObRomanNumeral::display($segment['numeral'] ?? '') }}</td>
                         <td class="ob-print-roman-label">
-                            @if (filled($segment['title'] ?? null))
-                                {{ $segment['title'] }}
-                            @elseif (filled($segment['body_html'] ?? null))
+                            @if (filled($segment['body_html'] ?? null))
                                 {!! nl2br($segment['body_html']) !!}
+                            @elseif (filled($segment['title'] ?? null))
+                                {{ $segment['title'] }}
                             @else
                                 {!! nl2br(e($segment['body'] ?? '')) !!}
                             @endif
                         </td>
                     </tr>
-                    @if (filled($segment['title'] ?? null) && filled($segment['body'] ?? null))
+                    @if (blank($segment['body_html'] ?? null) && filled($segment['title'] ?? null) && filled($segment['body'] ?? null))
                         <tr>
                             <td></td>
                             <td>{!! nl2br(e($segment['body'])) !!}</td>
@@ -52,7 +52,10 @@
             <table class="ob-print-table ob-print-table--section">
                 <tbody>
                     <tr>
-                        <td colspan="2" class="ob-print-subsection">{{ $segment['text'] }}</td>
+                        <td @class([
+                            'ob-print-subsection',
+                            'ob-print-subsection--major' => preg_match('/^[ABC]\.\s/u', trim($segment['text'] ?? '')),
+                        ]) colspan="2">{{ $segment['text'] }}</td>
                     </tr>
                 </tbody>
             </table>

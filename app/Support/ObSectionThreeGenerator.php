@@ -17,17 +17,9 @@ class ObSectionThreeGenerator
             return null;
         }
 
-        $sessionLabel = strtoupper(trim((string) ($prior->session_number ?: '')));
-
-        if ($sessionLabel === '') {
-            $sessionLabel = strtoupper($prior->sessionKindLabel()).' SESSION';
-        }
-
-        $date = $prior->session_date
-            ? strtoupper($prior->session_date->format('F j, Y'))
-            : '';
-
-        $venue = strtoupper(trim((string) ($prior->venue ?: self::DEFAULT_VENUE)));
+        $sessionLabel = $this->sessionLabel($prior);
+        $date = $this->sessionDate($prior);
+        $venue = $this->sessionVenue($prior);
 
         if ($date === '') {
             return "READING AND APPROVAL OF THE JOURNAL OF PROCEEDINGS & MINUTES OF THE {$sessionLabel} AT {$venue}";
@@ -92,6 +84,7 @@ class ObSectionThreeGenerator
     public function linkedBodyHtml(LegislativeSession $session, ?string $body = null, array $blockContent = []): ?string
     {
         $body = strtoupper(trim((string) ($body ?? $this->bodyForSession($session) ?? '')));
+        $body = preg_replace('/\bAT\s+AT\b/u', 'AT', $body) ?? $body;
 
         if ($body === '') {
             return null;
@@ -120,6 +113,62 @@ class ObSectionThreeGenerator
             ) ?? $html;
         }
 
+        $prior = $session->priorSession;
+        $highlights = [];
+
+        if ($prior !== null) {
+            $highlights = array_filter([
+                $this->sessionLabel($prior),
+                $this->sessionDate($prior),
+                $this->sessionVenue($prior),
+            ]);
+        }
+
+        if (preg_match('/\bHELD ON ([A-Z]+ \d{1,2}, \d{4})\b/u', $body, $dateMatch) === 1) {
+            $highlights[] = $dateMatch[1];
+        }
+
+        foreach (array_unique($highlights) as $highlight) {
+            $escaped = e($highlight);
+
+            if ($escaped === '' || ! str_contains($html, $escaped)) {
+                continue;
+            }
+
+            if (str_contains($html, '<span class="ob-print-section-three-highlight">'.$escaped.'</span>')) {
+                continue;
+            }
+
+            $html = str_replace(
+                $escaped,
+                '<span class="ob-print-section-three-highlight">'.$escaped.'</span>',
+                $html,
+            );
+        }
+
         return $html;
+    }
+
+    private function sessionLabel(LegislativeSession $session): string
+    {
+        $label = strtoupper(trim((string) ($session->session_number ?: '')));
+
+        return $label !== ''
+            ? $label
+            : strtoupper($session->sessionKindLabel()).' SESSION';
+    }
+
+    private function sessionDate(LegislativeSession $session): string
+    {
+        return $session->session_date
+            ? strtoupper($session->session_date->format('F j, Y'))
+            : '';
+    }
+
+    private function sessionVenue(LegislativeSession $session): string
+    {
+        $venue = strtoupper(trim((string) ($session->venue ?: self::DEFAULT_VENUE)));
+
+        return preg_replace('/^AT\s+/u', '', $venue) ?? $venue;
     }
 }

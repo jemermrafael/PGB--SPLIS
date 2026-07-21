@@ -177,6 +177,45 @@ class SessionPdfService
         return $missing;
     }
 
+    /**
+     * Delete the locally stored file for a slot and clear its path column.
+     */
+    public function deleteLocal(LegislativeSession $session, string $slot): bool
+    {
+        if (! SessionPdfSlot::isMirrorable($slot)) {
+            return false;
+        }
+
+        $column = SessionPdfSlot::config($slot)['path'];
+
+        if ($column === null) {
+            return false;
+        }
+
+        $stored = $session->{$column};
+
+        if (filled($stored) && Storage::disk('local')->exists($stored)) {
+            Storage::disk('local')->delete($stored);
+        }
+
+        // Remove any leftover sibling variants (e.g. previous extension).
+        foreach (['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'doc', 'docx'] as $extension) {
+            $relative = $this->storageRelativePath((int) $session->id, $slot, $extension);
+
+            if (Storage::disk('local')->exists($relative)) {
+                Storage::disk('local')->delete($relative);
+            }
+        }
+
+        if (! filled($stored)) {
+            return false;
+        }
+
+        $session->update([$column => null]);
+
+        return true;
+    }
+
     protected function deleteSiblingVariants(int $sessionId, string $slot, string $keepExtension): void
     {
         foreach (['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'doc', 'docx'] as $extension) {

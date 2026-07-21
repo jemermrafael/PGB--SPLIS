@@ -73,24 +73,75 @@ class SessionCommitteeReportFileService
         );
 
         $originalName = trim((string) $uploadedFile->getClientOriginalName());
-        $baseName = pathinfo($originalName, PATHINFO_FILENAME);
+
+        return $this->storeBytes(
+            (string) file_get_contents($uploadedFile->getRealPath()),
+            $session,
+            $originalName !== '' ? $originalName : null,
+            $media['extension'],
+            $media['mime'],
+            $userId,
+            $uploadedFile->getSize() ?: null,
+        );
+    }
+
+    /**
+     * @param  ?int  $fileSize
+     */
+    public function storeBytes(
+        string $contents,
+        LegislativeSession $session,
+        ?string $originalFilename,
+        string $extension = 'pdf',
+        ?string $mimeType = null,
+        ?int $userId = null,
+        ?int $fileSize = null,
+    ): LegislativeSessionCommitteeReportFile {
+        $extension = ltrim(strtolower($extension), '.');
+        $originalName = trim((string) $originalFilename);
+        $baseName = pathinfo($originalName !== '' ? $originalName : 'committee-report', PATHINFO_FILENAME);
         $safeBase = Str::slug($baseName) !== '' ? Str::slug($baseName) : 'committee-report';
-        $storedName = $safeBase.'-'.Str::lower(Str::random(8)).'.'.$media['extension'];
+        $storedName = $safeBase.'-'.Str::lower(Str::random(8)).'.'.$extension;
         $relative = $this->storageDirectory((int) $session->id).'/'.$storedName;
 
         Storage::disk('local')->makeDirectory(dirname($relative));
-        Storage::disk('local')->put($relative, (string) file_get_contents($uploadedFile->getRealPath()));
+        Storage::disk('local')->put($relative, $contents);
 
         $nextSort = (int) $session->committeeReportFiles()->max('sort_order') + 1;
+
+        if ($originalName !== '' && ! str_contains(strtolower($originalName), '.'.$extension)) {
+            $originalName .= '.'.$extension;
+        }
 
         return $session->committeeReportFiles()->create([
             'original_filename' => $originalName !== '' ? $originalName : $storedName,
             'stored_path' => $relative,
-            'mime_type' => $media['mime'],
-            'file_size' => $uploadedFile->getSize(),
+            'mime_type' => $mimeType ?: match ($extension) {
+                'jpg', 'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'gif' => 'image/gif',
+                'webp' => 'image/webp',
+                'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'doc' => 'application/msword',
+                default => 'application/pdf',
+            },
+            'file_size' => $fileSize ?? strlen($contents),
             'sort_order' => $nextSort,
             'created_by' => $userId,
         ]);
+    }
+
+    public function hasFileNamed(LegislativeSession $session, string $originalFilename): bool
+    {
+        $needle = strtolower(trim($originalFilename));
+
+        if ($needle === '') {
+            return false;
+        }
+
+        return $session->committeeReportFiles()
+            ->get()
+            ->contains(fn (LegislativeSessionCommitteeReportFile $file) => strtolower($file->original_filename) === $needle);
     }
 
     public function delete(LegislativeSessionCommitteeReportFile $file): void
