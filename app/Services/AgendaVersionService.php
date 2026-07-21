@@ -14,6 +14,7 @@ class AgendaVersionService
     public const VERSIONED_FIELDS = [
         'tracking_no',
         'request_pdf_url',
+        'request_pdf_path',
         'date_received',
         'time_received',
         'prescribed_days',
@@ -46,7 +47,8 @@ class AgendaVersionService
     {
         return [
             'tracking_no' => 'Tracking No.',
-            'request_pdf_url' => 'Request PDF',
+            'request_pdf_url' => 'Request PDF URL',
+            'request_pdf_path' => 'Request PDF (local)',
             'date_received' => 'Date Received',
             'time_received' => 'Time Received',
             'prescribed_days' => 'Prescribed Days',
@@ -105,11 +107,77 @@ class AgendaVersionService
             return \Illuminate\Support\Carbon::parse($value)->format('M j, Y');
         }
 
+        if ($field === 'request_pdf_path') {
+            return basename((string) $value);
+        }
+
         if (str_ends_with($field, '_url')) {
             return (string) $value;
         }
 
         return (string) $value;
+    }
+
+    /**
+     * Create v1 snapshots for agenda items that have no version rows yet.
+     *
+     * @return int Number of versions created
+     */
+    public function backfillMissingInitialVersions(): int
+    {
+        $created = 0;
+
+        AgendaItem::query()
+            ->withTrashed()
+            ->whereDoesntHave('versions')
+            ->orderBy('id')
+            ->chunkById(100, function ($items) use (&$created): void {
+                foreach ($items as $agenda) {
+                    $this->recordInitialVersion($agenda, $agenda->created_by);
+                    $created++;
+                }
+            });
+
+        return $created;
+    }
+
+    /**
+     * Ensure the current version snapshot still points at the live request PDF
+     * before a replacement upload, so older versions keep a viewable file.
+     */
+    public function preserveRequestPdfInCurrentVersion(AgendaItem $agenda, ?int $userId = null): void
+    {
+        if ($agenda->versions()->doesntExist()) {
+            $this->recordInitialVersion($agenda, $userId);
+
+            return;
+        }
+
+        /** @var AgendaItemVersion|null $current */
+        $current = $agenda->versions()->where('version_no', $agenda->current_version_no)->first()
+            ?? $agenda->versions()->orderByDesc('version_no')->first();
+
+        if ($current === null) {
+            return;
+        }
+
+        $snapshot = $current->snapshot ?? [];
+        $changed = false;
+
+        foreach (['request_pdf_path', 'request_pdf_url'] as $field) {
+            $live = $agenda->getAttribute($field);
+
+            if (! filled($snapshot[$field] ?? null) && filled($live)) {
+                $snapshot[$field] = $live instanceof \DateTimeInterface
+                    ? $live->format('Y-m-d')
+                    : $live;
+                $changed = true;
+            }
+        }
+
+        if ($changed) {
+            $current->forceFill(['snapshot' => $snapshot])->save();
+        }
     }
 
     /**
@@ -315,7 +383,7 @@ class AgendaVersionService
             return 'output';
         }
 
-        $sessionFields = ['title', 'request_pdf_url', 'journal_url', 'minutes_url'];
+        $sessionFields = ['title', 'request_pdf_url', 'request_pdf_path', 'journal_url', 'minutes_url'];
         if ($this->anyFieldChanged($before, $after, $sessionFields)) {
             return 'session';
         }

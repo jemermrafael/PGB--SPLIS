@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Services\AgendaPdfService;
+use App\Support\AgendaPdfSlot;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -41,6 +43,28 @@ class AgendaItemVersion extends Model
     public function snapshotValue(string $key, mixed $default = null): mixed
     {
         return $this->snapshot[$key] ?? $default;
+    }
+
+    public function snapshotRequestPdfUrl(?AgendaItem $agenda = null): ?string
+    {
+        $agenda ??= $this->agendaItem;
+        $path = $this->snapshotValue('request_pdf_path');
+
+        if (is_string($path) && $path !== '' && $agenda !== null) {
+            $absolute = app(AgendaPdfService::class)->absolutePath($path);
+
+            if ($absolute !== null) {
+                return route('agenda.versions.file', [
+                    'agenda' => $agenda,
+                    'version' => $this,
+                    'slot' => AgendaPdfSlot::REQUEST,
+                ]);
+            }
+        }
+
+        $url = $this->snapshotValue('request_pdf_url');
+
+        return is_string($url) && $url !== '' ? $url : null;
     }
 
     public function snapshotTitle(): ?string

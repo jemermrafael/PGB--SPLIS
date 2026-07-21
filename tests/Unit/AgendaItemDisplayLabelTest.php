@@ -85,4 +85,35 @@ class AgendaItemDisplayLabelTest extends TestCase
 
         $this->assertSame('ordinance', $agenda->effectiveMeasureType());
     }
+
+    public function test_provincial_output_number_uses_type_specific_label_and_series_format(): void
+    {
+        $agenda = new AgendaItem([
+            'reso_ord_ao_type' => 'resolution',
+            'reso_ord_ao_no' => '301',
+            'reso_ord_ao_series' => 2026,
+        ]);
+
+        $this->assertSame('Resolution No.:', $agenda->provincialOutputNumberFieldLabel());
+        $this->assertSame('2026-301', $agenda->provincialOutputNumberDisplay());
+    }
+
+    public function test_provincial_output_number_label_for_ordinance_and_ao(): void
+    {
+        $ordinance = new AgendaItem([
+            'reso_ord_ao_type' => 'ordinance',
+            'reso_ord_ao_no' => '12',
+            'reso_ord_ao_series' => 2026,
+        ]);
+        $ao = new AgendaItem([
+            'reso_ord_ao_type' => 'appropriation_ordinance',
+            'reso_ord_ao_no' => '5',
+            'reso_ord_ao_series' => 2026,
+        ]);
+
+        $this->assertSame('Ordinance No.:', $ordinance->provincialOutputNumberFieldLabel());
+        $this->assertSame('2026-12', $ordinance->provincialOutputNumberDisplay());
+        $this->assertSame('AO No.:', $ao->provincialOutputNumberFieldLabel());
+        $this->assertSame('2026-5', $ao->provincialOutputNumberDisplay());
+    }
 }

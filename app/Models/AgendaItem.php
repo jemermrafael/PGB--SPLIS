@@ -228,6 +228,62 @@ class AgendaItem extends Model
         return trim($this->reso_ord_ao_no);
     }
 
+    /**
+     * Type-specific field label for the Provincial Output number row.
+     */
+    public function provincialOutputNumberFieldLabel(): string
+    {
+        return match ($this->effectiveMeasureType()) {
+            AgendaMeasureType::RESOLUTION => 'Resolution No.:',
+            AgendaMeasureType::ORDINANCE => 'Ordinance No.:',
+            AgendaMeasureType::APPROPRIATION_ORDINANCE => 'AO No.:',
+            default => 'Reso./Ord./AO No.',
+        };
+    }
+
+    /**
+     * Display number for Provincial Output, preferring linked SPLIS documents.
+     * Resolutions use series-number style (e.g. 2026-301).
+     */
+    public function provincialOutputNumberDisplay(): ?string
+    {
+        if ($this->resolution_id && $this->resolution && filled($this->resolution->resolution_no)) {
+            return trim((string) $this->resolution->resolution_no);
+        }
+
+        if ($this->ordinance_id && $this->ordinance) {
+            $no = str_pad((string) $this->ordinance->ordinance_no, 2, '0', STR_PAD_LEFT);
+
+            return $this->ordinance->series_year
+                ? $this->ordinance->series_year.'-'.$no
+                : $no;
+        }
+
+        if ($this->appropriation_ordinance_id && $this->appropriationOrdinance) {
+            $no = str_pad((string) $this->appropriationOrdinance->ordinance_no, 2, '0', STR_PAD_LEFT);
+
+            return $this->appropriationOrdinance->series_year
+                ? $this->appropriationOrdinance->series_year.'-'.$no
+                : $no;
+        }
+
+        if (! filled($this->reso_ord_ao_no)) {
+            return null;
+        }
+
+        $no = trim((string) $this->reso_ord_ao_no);
+
+        if (str_contains($no, '-')) {
+            return $no;
+        }
+
+        if ($this->reso_ord_ao_series) {
+            return $this->reso_ord_ao_series.'-'.$no;
+        }
+
+        return $no;
+    }
+
     public function measureTypeLabel(): string
     {
         return AgendaMeasureType::label($this->effectiveMeasureType());

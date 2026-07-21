@@ -30,7 +30,7 @@
 <div class="splis-card mt-6">
     <div class="splis-card-header flex flex-wrap items-center justify-between gap-3">
         <div>
-            <h2 class="splis-card-title">Version history</h2>
+            <h2 class="splis-card-title">Version History</h2>
             <p class="splis-card-subtitle">Current version: v{{ $agenda->current_version_no }}</p>
         </div>
         @if ($sortedVersions->count() >= 2)
@@ -77,9 +77,10 @@
                                     @endif
                                 </p>
                             @endif
-                            @if ($version->snapshotValue('request_pdf_url'))
+                            @php $versionRequestPdfUrl = $version->snapshotRequestPdfUrl($agenda); @endphp
+                            @if ($versionRequestPdfUrl)
                                 @include('partials.pdf-modal-trigger', [
-                                    'url' => $version->snapshotValue('request_pdf_url'),
+                                    'url' => $versionRequestPdfUrl,
                                     'title' => 'Request PDF — version '.$version->version_no,
                                     'label' => 'Request PDF',
                                     'class' => 'splis-link inline-flex items-center gap-1 text-xs',

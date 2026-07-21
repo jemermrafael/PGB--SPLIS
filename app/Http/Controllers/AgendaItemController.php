@@ -181,6 +181,10 @@ class AgendaItemController extends Controller
 
         $wasPublished = $agenda->isPublished();
 
+        if ($request->hasFile('request_pdf')) {
+            $versions->preserveRequestPdfInCurrentVersion($agenda, $request->user()->id);
+        }
+
         $agenda->update($this->validated($request));
         $this->storeUploadedPdfs($request, $agenda);
         $changedFields = array_keys($agenda->getChanges());
@@ -500,11 +504,9 @@ class AgendaItemController extends Controller
                 continue;
             }
 
-            $path = $this->agendaPdfService->store(
-                $request->file($field),
-                $agenda,
-                $slot,
-            );
+            $path = $slot === AgendaPdfSlot::REQUEST
+                ? $this->agendaPdfService->storeVersioned($request->file($field), $agenda, $slot)
+                : $this->agendaPdfService->store($request->file($field), $agenda, $slot);
 
             $pathColumn = AgendaPdfSlot::config($slot)['path'];
             $agenda->update([$pathColumn => $path]);

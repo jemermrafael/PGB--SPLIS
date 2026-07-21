@@ -8,7 +8,10 @@
 @endphp
 <div class="max-w-6xl">
     @php
-        $agendaSubtitle = ($agenda->sender ? $agenda->sender.' · ' : '').'Version '.$agenda->current_version_no;
+        $agendaSubtitle = $agenda->sender ?: null;
+        if ($agenda->versions->isNotEmpty()) {
+            $agendaSubtitle = ($agendaSubtitle ? $agendaSubtitle.' · ' : '').'Version '.$agenda->current_version_no;
+        }
         $latestObPlacement = $finalObPlacements
             ->filter(fn ($placement) => $placement->legislativeSession?->session_date)
             ->sortByDesc(fn ($placement) => $placement->legislativeSession->session_date)
@@ -165,22 +168,21 @@
                     @foreach ([
                         'Date Passed' => $agenda->date_passed?->format('M d, Y'),
                         'Date Signed by Gov.' => $agenda->date_signed_by_gov?->format('M d, Y'),
-                        'Reso./Ord./AO No.' => null,
+                        'provincial_output_no' => null,
                         'Measure Type' => $agenda->effectiveMeasureType()
                             ? $agenda->measureTypeLabel()
                             : (($agenda->reso_ord_ao_no || $agenda->reso_ord_ao_url) ? 'Not specified (legacy)' : null),
                         'Resolution Title' => $agenda->resolution_title,
                         'Remarks' => $agenda->remarks,
                     ] as $label => $value)
-                        @if ($label === 'Reso./Ord./AO No.' && $agenda->resoDisplayLabel())
+                        @if ($label === 'provincial_output_no' && $agenda->provincialOutputNumberDisplay())
                             <div class="splis-detail-row">
-                                <dt class="splis-detail-label">{{ $label }}</dt>
+                                <dt class="splis-detail-label">{{ $agenda->provincialOutputNumberFieldLabel() }}</dt>
                                 <dd class="splis-detail-value">
                                     @if ($agenda->publishedTargetRoute())
-                                        <a href="{{ $agenda->publishedTargetRoute() }}" class="splis-link font-medium">{{ $agenda->resoDisplayLabel() }}</a>
-                                        <span class="ml-2 text-xs text-slate-500">({{ $agenda->publishedTargetLabel() }})</span>
+                                        <a href="{{ $agenda->publishedTargetRoute() }}" class="splis-link font-medium">{{ $agenda->provincialOutputNumberDisplay() }}</a>
                                     @else
-                                        {{ $agenda->resoDisplayLabel() }}
+                                        {{ $agenda->provincialOutputNumberDisplay() }}
                                     @endif
                                 </dd>
                             </div>
@@ -228,9 +230,9 @@
                         @if ($agenda->resolution)
                             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
-                                    <p class="splis-detail-label">Resolution</p>
+                                    <p class="splis-detail-label">Published to:</p>
                                     <a href="{{ route('resolutions.show', $agenda->resolution) }}" class="font-medium text-brand-700 hover:underline dark:text-brand-200">
-                                        {{ $agenda->resolution->resolution_no }} / {{ $agenda->resolution->series }}
+                                        Resolution {{ $agenda->resolution->resolution_no }}
                                     </a>
                                 </div>
                                 @can('unlinkResolution', $agenda)

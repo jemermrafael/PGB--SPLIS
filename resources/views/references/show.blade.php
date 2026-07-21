@@ -197,7 +197,7 @@
 
     <div class="mt-6 splis-card">
         <div class="splis-card-header">
-            <h2 class="splis-card-title">Version history</h2>
+            <h2 class="splis-card-title">Version History</h2>
         </div>
         <div class="splis-card-body">
             <div class="splis-table-wrap" data-drag-scroll>

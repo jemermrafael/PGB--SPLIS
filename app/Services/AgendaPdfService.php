@@ -87,6 +87,34 @@ class AgendaPdfService
         );
     }
 
+    /**
+     * Store a request PDF under a unique path so previous version files remain on disk.
+     */
+    public function storeVersioned(UploadedFile $file, AgendaItem $agenda, string $slot): string
+    {
+        $media = MediaType::fromUploadedMime(
+            (string) $file->getMimeType(),
+            $file->getClientOriginalExtension(),
+        );
+
+        $filename = AgendaPdfSlot::config($slot)['filename'];
+        $relative = sprintf(
+            'agenda/%d/%s/%s.%s',
+            $agenda->id,
+            $filename,
+            strtolower((string) \Illuminate\Support\Str::ulid()),
+            $media['extension'],
+        );
+
+        Storage::disk('local')->makeDirectory(dirname($relative));
+        Storage::disk('local')->put(
+            $relative,
+            (string) file_get_contents($file->getRealPath()),
+        );
+
+        return $relative;
+    }
+
     public function storeBytes(string $contents, AgendaItem $agenda, string $slot, string $extension = 'pdf'): string
     {
         $relative = $this->storageRelativePath((int) $agenda->id, $slot, $extension);
@@ -106,6 +134,20 @@ class AgendaPdfService
 
         abort_if($path === null, 404, 'File not found.');
 
+        return $this->streamAbsolute($path);
+    }
+
+    public function streamRelative(string $relativePath): StreamedResponse
+    {
+        $path = $this->absolutePath($relativePath);
+
+        abort_if($path === null, 404, 'File not found.');
+
+        return $this->streamAbsolute($path);
+    }
+
+    protected function streamAbsolute(string $path): StreamedResponse
+    {
         $media = MediaType::fromPath($path);
         abort_if($media === null, 404, 'Unsupported file type.');
 

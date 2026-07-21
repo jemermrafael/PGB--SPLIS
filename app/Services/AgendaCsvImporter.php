@@ -10,6 +10,7 @@ class AgendaCsvImporter
 {
     public function __construct(
         protected CsvExportReader $csv,
+        protected AgendaVersionService $versions,
     ) {}
 
     /**
@@ -80,7 +81,17 @@ class AgendaCsvImporter
                         // Older exports often blank PDF columns; keep existing Drive links.
                         $updatePayload = $this->preserveExistingUrls($existing, $updatePayload);
 
+                        $before = collect(AgendaVersionService::VERSIONED_FIELDS)
+                            ->mapWithKeys(fn (string $field) => [$field => $existing->getAttribute($field)])
+                            ->all();
+
+                        if ($existing->versions()->doesntExist()) {
+                            $this->versions->recordInitialVersion($existing, $existing->created_by);
+                        }
+
                         $existing->update($updatePayload);
+                        $existing->refresh();
+                        $this->versions->recordVersionIfChanged($existing, $before, $existing->created_by);
                     }
                     $updated++;
                 } else {
@@ -91,7 +102,8 @@ class AgendaCsvImporter
                             $createPayload['tracking_no'] = $trackingNo;
                         }
 
-                        AgendaItem::create($createPayload);
+                        $created = AgendaItem::create($createPayload);
+                        $this->versions->recordInitialVersion($created, $created->created_by);
                     }
                     $imported++;
                 }

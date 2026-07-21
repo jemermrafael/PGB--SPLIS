@@ -24,6 +24,7 @@ use App\Http\Controllers\ObDocumentController;
 use App\Http\Controllers\AgendaDeadlinePreviewController;
 use App\Http\Controllers\AgendaItemController;
 use App\Http\Controllers\AgendaPdfController;
+use App\Http\Controllers\AgendaVersionPdfController;
 use App\Http\Controllers\AgendaPdfMirrorController;
 use App\Http\Controllers\AgendaSearchController;
 use App\Http\Controllers\AdminAnalyticsController;
@@ -175,6 +176,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/agenda/create', [AgendaItemController::class, 'create'])->name('agenda.create');
     Route::post('/agenda', [AgendaItemController::class, 'store'])->name('agenda.store');
     Route::get('/agenda/{agenda}/file/{slot}', AgendaPdfController::class)->name('agenda.file')->withTrashed();
+    Route::get('/agenda/{agenda}/versions/{version}/file/{slot}', AgendaVersionPdfController::class)->name('agenda.versions.file')->withTrashed();
     Route::post('/agenda/{agenda}/mirror-pdf', AgendaPdfMirrorController::class)->name('agenda.mirror-pdf');
     Route::get('/agenda/{agenda}', [AgendaItemController::class, 'show'])->name('agenda.show')->withTrashed();
     Route::get('/agenda/{agenda}/edit', [AgendaItemController::class, 'edit'])->name('agenda.edit');

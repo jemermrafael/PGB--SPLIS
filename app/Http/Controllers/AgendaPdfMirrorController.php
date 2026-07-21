@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ActivityLog;
 use App\Models\AgendaItem;
 use App\Services\AgendaPdfMirrorService;
 use Illuminate\Http\RedirectResponse;
@@ -14,13 +13,6 @@ class AgendaPdfMirrorController extends Controller
         $this->authorize('update', $agenda);
 
         $result = $mirror->mirrorAllFor($agenda, overwrite: false);
-
-        if ($result['mirrored'] > 0) {
-            ActivityLog::record('agenda.pdf_mirrored', $agenda, [
-                'mirrored' => $result['mirrored'],
-                'messages' => $result['messages'],
-            ]);
-        }
 
         if ($result['mirrored'] > 0 && $result['failed'] === 0) {
             $message = $result['mirrored'] === 1
