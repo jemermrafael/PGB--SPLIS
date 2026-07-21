@@ -15,6 +15,7 @@ use App\Support\ObBlockDefaults;
 use App\Support\ObCommitteeFormatter;
 use App\Support\ObRomanNumeral;
 use App\Support\ObSectionPlacement;
+use App\Support\ObTitleMarkup;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -110,6 +111,19 @@ class ObDocumentService
     public function updateBlock(ObBlock $block, array $content): ObBlock
     {
         $regroupUnfinished = false;
+
+        if (array_key_exists('title_html', $content)) {
+            $titleHtml = ObTitleMarkup::forTitle(
+                is_string($content['title_html']) ? $content['title_html'] : null,
+                is_string($content['title'] ?? null) ? $content['title'] : null,
+            );
+
+            if ($titleHtml === null) {
+                unset($content['title_html']);
+            } else {
+                $content['title_html'] = $titleHtml;
+            }
+        }
 
         if ($block->type === ObBlockType::UnfinishedAgenda) {
             $regroupUnfinished = $this->unfinishedCommitteeKey($block->content ?? [])

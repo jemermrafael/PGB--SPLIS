@@ -19,12 +19,12 @@ return [
     ],
 
     'agenda_sections' => [
-        'committee_reports' => 'IV. Committee reports',
-        'unfinished' => 'A. Unfinished business',
-        'business_2nd' => '1. Measures for 2nd reading',
-        'business_3rd' => '2. Measures for 3rd reading',
+        'committee_reports' => 'IV. Committee Reports',
+        'unfinished' => 'A. Unfinished Business',
+        'business_2nd' => '1. Measures for 2nd Reading',
+        'business_3rd' => '2. Measures for 3rd Reading',
         'unassigned_urgent' => '1. Urgent Request/s',
-        'unassigned_regular' => '2. Regular unassigned business',
+        'unassigned_regular' => '2. Regular Unassigned Business',
     ],
 
     'session_pdf_links' => [

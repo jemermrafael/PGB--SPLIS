@@ -8,6 +8,169 @@ function escapeHtml(value) {
         .replace(/"/g, '&quot;');
 }
 
+function sanitizeRichTitleHtml(html) {
+    const template = document.createElement('template');
+    template.innerHTML = String(html ?? '');
+
+    function sanitizeNode(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            return escapeHtml(node.textContent ?? '');
+        }
+
+        if (node.nodeType !== Node.ELEMENT_NODE) {
+            return '';
+        }
+
+        const tag = node.tagName.toLowerCase();
+        const children = [...node.childNodes].map(sanitizeNode).join('');
+
+        if (tag === 'strong' || tag === 'b') {
+            return `<strong>${children}</strong>`;
+        }
+
+        if (tag === 'mark') {
+            return `<mark>${children}</mark>`;
+        }
+
+        if ((tag === 'span' || tag === 'font') && elementIsHighlight(node)) {
+            return `<mark>${children}</mark>`;
+        }
+
+        if (tag === 'br') {
+            return '<br>';
+        }
+
+        if (tag === 'div' || tag === 'p') {
+            return `${children}<br>`;
+        }
+
+        return children;
+    }
+
+    return [...template.content.childNodes]
+        .map(sanitizeNode)
+        .join('')
+        .replace(/(?:<br>){3,}/g, '<br><br>')
+        .replace(/^(?:<br>)+|(?:<br>)+$/g, '');
+}
+
+function richTitlePlainText(html) {
+    const template = document.createElement('template');
+    template.innerHTML = sanitizeRichTitleHtml(html).replace(/<br>/g, '\n');
+
+    return (template.content.textContent ?? '').replace(/\u00a0/g, ' ').trim();
+}
+
+function richTitleHtmlForContent(content) {
+    const title = String(content.title ?? '');
+    const formatted = sanitizeRichTitleHtml(content.title_html ?? '');
+
+    if (formatted && richTitlePlainText(formatted).replace(/\s+/g, ' ') === title.trim().replace(/\s+/g, ' ')) {
+        return formatted;
+    }
+
+    return escapeHtml(title).replace(/\r?\n/g, '<br>');
+}
+
+function elementIsHighlight(node) {
+    if (!node || node.nodeType !== Node.ELEMENT_NODE) {
+        return false;
+    }
+
+    if (node.nodeName === 'MARK') {
+        return true;
+    }
+
+    const background = node.style?.backgroundColor ?? '';
+
+    return background !== ''
+        && background !== 'transparent'
+        && background !== 'rgba(0, 0, 0, 0)';
+}
+
+function selectionHasHighlight(editor) {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+        return false;
+    }
+
+    let node = selection.getRangeAt(0).commonAncestorContainer;
+    if (node.nodeType === Node.TEXT_NODE) {
+        node = node.parentNode;
+    }
+
+    while (node && node !== editor) {
+        if (elementIsHighlight(node)) {
+            return true;
+        }
+        node = node.parentNode;
+    }
+
+    return false;
+}
+
+function removeHighlightFromSelection(editor) {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+        return;
+    }
+
+    const range = selection.getRangeAt(0);
+    const highlights = [...editor.querySelectorAll('mark, span, font')]
+        .filter((el) => elementIsHighlight(el) && (range.intersectsNode(el) || el.contains(range.commonAncestorContainer)));
+
+    highlights.forEach((el) => {
+        if (el.nodeName === 'MARK' || el.nodeName === 'FONT') {
+            const parent = el.parentNode;
+            while (el.firstChild) {
+                parent.insertBefore(el.firstChild, el);
+            }
+            parent.removeChild(el);
+        } else {
+            el.style.backgroundColor = '';
+            if (el.getAttribute('style')?.trim() === '') {
+                el.removeAttribute('style');
+            }
+        }
+    });
+
+    editor.normalize();
+}
+
+function renderRichTitleEditor(content, disabled) {
+    return `
+        <div class="splis-ob-rich-title-wrap">
+            <div class="splis-ob-rich-title-toolbar" role="toolbar" aria-label="Title formatting">
+                <button
+                    type="button"
+                    class="splis-ob-rich-title-button"
+                    data-ob-rich-command="bold"
+                    title="Bold selected text"
+                    aria-label="Bold selected text"
+                    ${disabled}
+                ><strong>B</strong></button>
+                <button
+                    type="button"
+                    class="splis-ob-rich-title-button splis-ob-rich-title-button--highlight"
+                    data-ob-rich-command="hiliteColor"
+                    data-ob-rich-value="#fef08a"
+                    title="Highlight selected text"
+                    aria-label="Highlight selected text"
+                    ${disabled}
+                ><strong>H</strong></button>
+            </div>
+            <div
+                class="splis-ob-rich-title"
+                contenteditable="${disabled ? 'false' : 'true'}"
+                role="textbox"
+                aria-multiline="true"
+                data-rich-title
+            >${richTitleHtmlForContent(content)}</div>
+            <p class="mt-1 text-xs text-slate-500">Select words, then click B for bold or H to highlight.</p>
+        </div>
+    `;
+}
+
 function debounce(fn, ms) {
     let timer;
     return (...args) => {
@@ -251,7 +414,7 @@ export function initObMaker() {
                 </div>
                 <div class="md:col-span-2">
                     <label class="splis-label">Title</label>
-                    <textarea class="splis-textarea splis-ob-block-field" data-field="title" rows="4" ${disabled}>${escapeHtml(c.title ?? '')}</textarea>
+                    ${renderRichTitleEditor(c, disabled)}
                 </div>
                 <div class="md:col-span-2">
                     <label class="splis-label">Referral note</label>
@@ -528,7 +691,7 @@ export function initObMaker() {
                         </div>
                         <div class="md:col-span-2">
                             <label class="splis-label">Title</label>
-                            <textarea class="splis-textarea splis-ob-block-field" data-field="title" rows="3" ${disabled}>${escapeHtml(c.title ?? '')}</textarea>
+                            ${renderRichTitleEditor(c, disabled)}
                         </div>
                         <div class="md:col-span-2">
                             <label class="splis-label">Referral note</label>
@@ -619,6 +782,12 @@ export function initObMaker() {
                 [...rowEl.querySelectorAll('.splis-ob-table-cell')].map((input) => input.value),
             );
             return content;
+        }
+
+        const richTitle = blockEl.querySelector('[data-rich-title]');
+        if (richTitle) {
+            content.title_html = sanitizeRichTitleHtml(richTitle.innerHTML);
+            content.title = richTitlePlainText(content.title_html);
         }
 
         blockEl.querySelectorAll('.splis-ob-block-field').forEach((field) => {
@@ -1148,8 +1317,42 @@ export function initObMaker() {
         }
     }, 500);
 
+    root.addEventListener('mousedown', (event) => {
+        if (event.target.closest('[data-ob-rich-command]')) {
+            event.preventDefault();
+        }
+    });
+
     root.addEventListener('click', (event) => {
         const target = event.target;
+
+        const richCommand = target.closest('[data-ob-rich-command]');
+        if (richCommand) {
+            const editor = richCommand.closest('.splis-ob-rich-title-wrap')?.querySelector('[data-rich-title]');
+            if (!editor || editor.getAttribute('contenteditable') !== 'true') {
+                return;
+            }
+
+            editor.focus();
+
+            if (richCommand.dataset.obRichCommand === 'hiliteColor') {
+                if (selectionHasHighlight(editor)) {
+                    removeHighlightFromSelection(editor);
+                } else {
+                    document.execCommand('styleWithCSS', false, true);
+                    document.execCommand('hiliteColor', false, richCommand.dataset.obRichValue ?? '#fef08a');
+                }
+            } else {
+                document.execCommand(
+                    richCommand.dataset.obRichCommand,
+                    false,
+                    richCommand.dataset.obRichValue ?? null,
+                );
+            }
+
+            editor.dispatchEvent(new Event('input', { bubbles: true }));
+            return;
+        }
 
         if (target.matches('[data-add-type]')) {
             addBlock(target.dataset.addType);
@@ -1247,6 +1450,16 @@ export function initObMaker() {
             syncBlockFromDom(Number(blockEl.dataset.blockId));
         }
     }, true);
+
+    root.addEventListener('paste', (event) => {
+        const editor = event.target.closest('[data-rich-title]');
+        if (!editor) {
+            return;
+        }
+
+        event.preventDefault();
+        document.execCommand('insertText', false, event.clipboardData?.getData('text/plain') ?? '');
+    });
 
     root.addEventListener('input', (event) => {
         const target = event.target;

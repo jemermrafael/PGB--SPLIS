@@ -146,6 +146,12 @@ class ObSectionThreeGenerator
             );
         }
 
+        $html = preg_replace(
+            '/(\d+)(ST|ND|RD|TH)\b/u',
+            '$1<sup class="ob-print-ordinal-suffix">$2</sup>',
+            $html,
+        ) ?? $html;
+
         return $html;
     }
 

@@ -1,6 +1,18 @@
 @if (filled($row['title'] ?? null) || filled($row['referral_note'] ?? null))
     @if (filled($row['title'] ?? null))
-        <p>{!! nl2br(e($row['title'])) !!}</p>
+        @php
+            $formattedTitle = \App\Support\ObTitleMarkup::forTitle(
+                is_string($row['title_html'] ?? null) ? $row['title_html'] : null,
+                (string) $row['title'],
+            );
+        @endphp
+        <p>
+            @if ($formattedTitle !== null)
+                {!! $formattedTitle !!}
+            @else
+                {!! nl2br(e($row['title'])) !!}
+            @endif
+        </p>
     @endif
     @if (filled($row['filer_note'] ?? null))
         <p class="ob-print-filer-note">{{ $row['filer_note'] }}</p>

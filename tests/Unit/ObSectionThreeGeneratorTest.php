@@ -13,7 +13,7 @@ class ObSectionThreeGeneratorTest extends TestCase
         $prior = new LegislativeSession([
             'session_number' => '26TH REGULAR SESSION',
             'session_date' => '2026-07-27',
-            'venue' => 'AT THE SESSION HALL, BALANGA CITY',
+            'venue' => 'AT THE SESSION HALL, 6TH FLR., BALANGA CITY',
         ]);
         $session = new LegislativeSession();
         $session->setRelation('priorSession', $prior);
@@ -21,7 +21,7 @@ class ObSectionThreeGeneratorTest extends TestCase
         $body = (new ObSectionThreeGenerator)->bodyForSession($session);
 
         $this->assertStringContainsString(
-            'HELD ON JULY 27, 2026 AT THE SESSION HALL, BALANGA CITY',
+            'HELD ON JULY 27, 2026 AT THE SESSION HALL, 6TH FLR., BALANGA CITY',
             $body,
         );
         $this->assertStringNotContainsString('AT AT', $body);
@@ -32,7 +32,7 @@ class ObSectionThreeGeneratorTest extends TestCase
         $prior = new LegislativeSession([
             'session_number' => '26TH REGULAR SESSION',
             'session_date' => '2026-07-27',
-            'venue' => 'AT THE SESSION HALL, BALANGA CITY',
+            'venue' => 'AT THE SESSION HALL, 6TH FLR., BALANGA CITY',
         ]);
         $session = new LegislativeSession();
         $session->setRelation('priorSession', $prior);
@@ -43,7 +43,7 @@ class ObSectionThreeGeneratorTest extends TestCase
         ]);
 
         $this->assertStringContainsString(
-            '<span class="ob-print-section-three-highlight">26TH REGULAR SESSION</span>',
+            '<span class="ob-print-section-three-highlight">26<sup class="ob-print-ordinal-suffix">TH</sup> REGULAR SESSION</span>',
             $html,
         );
         $this->assertStringContainsString(
@@ -51,7 +51,7 @@ class ObSectionThreeGeneratorTest extends TestCase
             $html,
         );
         $this->assertStringContainsString(
-            '<span class="ob-print-section-three-highlight">THE SESSION HALL, BALANGA CITY</span>',
+            '<span class="ob-print-section-three-highlight">THE SESSION HALL, 6<sup class="ob-print-ordinal-suffix">TH</sup> FLR., BALANGA CITY</span>',
             $html,
         );
     }

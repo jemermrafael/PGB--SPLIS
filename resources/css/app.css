@@ -2460,6 +2460,35 @@
         @apply p-3;
     }
 
+    .splis-ob-rich-title-wrap {
+        @apply overflow-hidden rounded-lg border border-slate-300 bg-white focus-within:border-brand-700 focus-within:ring-2 focus-within:ring-brand-700/20 dark:border-slate-600 dark:bg-slate-900;
+    }
+
+    .splis-ob-rich-title-toolbar {
+        @apply flex items-center border-b border-slate-200 bg-slate-50 px-2 py-1 dark:border-slate-700 dark:bg-slate-800;
+    }
+
+    .splis-ob-rich-title-button {
+        @apply flex h-8 w-8 items-center justify-center rounded text-sm text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-700;
+    }
+
+    .splis-ob-rich-title-button--highlight strong {
+        @apply rounded-sm bg-yellow-200 px-1 text-slate-900;
+    }
+
+    .splis-ob-rich-title {
+        @apply min-h-28 whitespace-pre-wrap px-3 py-2 text-justify text-sm text-slate-900 outline-none dark:text-slate-100;
+        text-justify: inter-word;
+    }
+
+    .splis-ob-rich-title mark {
+        @apply bg-yellow-200 text-inherit;
+    }
+
+    .splis-ob-rich-title-wrap > .text-xs {
+        @apply px-3 pb-2;
+    }
+
     body.splis-ob-dialog-open {
         @apply overflow-hidden;
     }
@@ -2572,7 +2601,8 @@
     }
 
     .ob-print-agenda-title {
-        @apply mt-1 text-sm font-medium;
+        @apply mt-1 text-justify text-sm font-medium;
+        text-justify: inter-word;
     }
 
     .ob-print-link {
@@ -2680,15 +2710,31 @@
     }
 
     .ob-print-section-three-highlight {
-        @apply text-red-700;
+        @apply text-red-700 underline;
+    }
+
+    .ob-print-ordinal-suffix {
+        position: relative;
+        top: -0.4em;
+        font-size: 0.7em;
+        line-height: 0;
+        vertical-align: baseline;
     }
 
     .ob-print-meta-break {
         @apply m-0 p-0 leading-4;
     }
 
-    .ob-print-unfinished-title {
-        @apply text-sm;
+    .ob-print-table td.ob-print-unfinished-title {
+        @apply text-justify text-sm;
+        text-justify: inter-word;
+    }
+
+    .ob-print-table td.ob-print-unfinished-title mark {
+        background-color: #fef08a;
+        color: inherit;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 
     .ob-print-roman {

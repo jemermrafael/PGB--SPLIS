@@ -103,7 +103,7 @@ class SessionPdfMirrorService
         try {
             $entries = $this->downloader->listFolderFiles($url);
         } catch (Throwable $e) {
-            Log::warning('Committee reports folder listing failed', [
+            Log::warning('Committee Reports folder listing failed', [
                 'session_id' => $session->id,
                 'url' => $url,
                 'error' => $e->getMessage(),

@@ -15,13 +15,13 @@ enum ObDocumentSection: string
     public function label(): string
     {
         return match ($this) {
-            self::CommitteeReport => 'IV. Committee reports',
-            self::Unfinished => 'A. Unfinished business',
-            self::SecondReading => '1. Measures for 2nd reading',
-            self::ThirdReading => '2. Measures for 3rd reading',
+            self::CommitteeReport => 'IV. Committee Reports',
+            self::Unfinished => 'A. Unfinished Business',
+            self::SecondReading => '1. Measures for 2nd Reading',
+            self::ThirdReading => '2. Measures for 3rd Reading',
             self::Urgent => '1. Urgent Request/s',
-            self::RegularUnassigned => 'Regular unassigned business',
-            self::Announcement => 'VII. Announcements / correspondence',
+            self::RegularUnassigned => 'Regular Unassigned Business',
+            self::Announcement => 'VII. Announcements / Correspondence',
         };
     }
 
