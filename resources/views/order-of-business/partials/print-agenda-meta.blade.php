@@ -12,7 +12,15 @@
     <p class="ob-print-meta-break" aria-hidden="true">&nbsp;</p>
     <p>Date of Receipt:</p>
     <p>{{ $row['date_received'] ?? '—' }}</p>
-    <p class="ob-print-meta-break" aria-hidden="true">&nbsp;</p>
-    <p>Prescription:</p>
-    <p>{{ $row['prescription'] ?? '—' }}</p>
+    @php
+        $prescription = trim((string) ($row['prescription'] ?? ''));
+        $showPrescription = $prescription !== ''
+            && $prescription !== '—'
+            && strcasecmp($prescription, 'No due date') !== 0;
+    @endphp
+    @if ($showPrescription)
+        <p class="ob-print-meta-break" aria-hidden="true">&nbsp;</p>
+        <p>Prescription:</p>
+        <p>{{ $prescription }}</p>
+    @endif
 @endif

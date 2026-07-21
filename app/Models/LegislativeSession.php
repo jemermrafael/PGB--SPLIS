@@ -110,6 +110,10 @@ class LegislativeSession extends Model
     protected static function booted(): void
     {
         static::deleting(function (self $session): void {
+            if (! $session->isForceDeleting()) {
+                return;
+            }
+
             $document = $session->obDocument()->with('blocks')->first();
             if (! $document) {
                 return;

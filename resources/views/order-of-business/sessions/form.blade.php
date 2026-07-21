@@ -249,7 +249,7 @@
         <div class="flex flex-wrap gap-2">
             <button type="submit" class="splis-btn-primary inline-flex items-center gap-2">
                 <x-icon :name="$isEdit ? 'edit' : 'plus'" class="h-4 w-4" :stroke-width="$isEdit ? '1.75' : '2'" />
-                {{ $isEdit ? 'Save changes' : 'Create session' }}
+                {{ $isEdit ? 'Save changes' : 'Create Session' }}
             </button>
             <a href="{{ $isEdit ? route('ob.sessions.show', $session) : route('ob.sessions.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
                 <x-icon name="arrow-left" class="h-4 w-4" />

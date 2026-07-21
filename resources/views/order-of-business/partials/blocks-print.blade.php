@@ -17,7 +17,7 @@
                 @if (filled($block->content['date_received'] ?? null))
                     <p class="ob-print-agenda-meta">Date of Receipt: {{ $block->content['date_received'] }}</p>
                 @endif
-                @if (filled($block->content['prescription'] ?? null))
+                @if (filled($block->content['prescription'] ?? null) && strcasecmp(trim((string) $block->content['prescription']), 'No due date') !== 0)
                     <p class="ob-print-agenda-meta">Prescription: {{ $block->content['prescription'] }}</p>
                 @endif
                 @if (filled($block->content['title'] ?? null))

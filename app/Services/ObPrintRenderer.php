@@ -99,7 +99,10 @@ class ObPrintRenderer
                         'items' => [],
                     ];
                 }
-                $buffer['items'][] = $this->enrichAgendaRowLinks($block, $content);
+                $buffer['items'][] = $this->enrichAgendaRowLinks(
+                    $block,
+                    ObAgendaSnapshot::enrichUnfinishedRow($content, $block->agendaItem),
+                );
 
                 continue;
             }

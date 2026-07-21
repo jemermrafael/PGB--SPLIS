@@ -73,4 +73,21 @@ class ObAgendaSnapshotFormattingTest extends TestCase
         $this->assertStringNotContainsString("\n", $note);
         $this->assertStringEndsWith(')', $note);
     }
+
+    public function test_unfinished_row_extracts_filed_by_like_regular_unassigned(): void
+    {
+        $formatted = ObAgendaSnapshot::enrichUnfinishedRow([
+            'title' => 'Municipal Ordinance No. 1, entitled "A SAMPLE ORDINANCE." (Filed by: Board Member Romano L. Del Rosario, MPA)',
+            'sender' => 'BM Del Rosario',
+        ]);
+
+        $this->assertSame(
+            'Municipal Ordinance No. 1, entitled “A SAMPLE ORDINANCE.”',
+            $formatted['title'],
+        );
+        $this->assertSame(
+            '(Filed By: Board Member Romano L. Del Rosario, MPA)',
+            $formatted['filer_note'],
+        );
+    }
 }

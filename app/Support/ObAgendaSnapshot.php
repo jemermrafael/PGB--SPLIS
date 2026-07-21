@@ -224,11 +224,11 @@ class ObAgendaSnapshot
             ? CommitteeLookup::findByName($item->committee_referred)
             : null;
 
-        return self::agendaItemRow($item, [
+        return self::enrichUnfinishedRow(self::agendaItemRow($item, [
             'committee_id' => $committee?->id,
             'committee_name' => ObCommitteeFormatter::resolvedLabel($committee?->id, $item->committee_referred),
             'needs_committee' => blank($item->committee_referred),
-        ]);
+        ]), $item);
     }
 
     /**
@@ -420,6 +420,28 @@ class ObAgendaSnapshot
         $note = self::unassignedRegularReferralNoteFromReferral($referral);
         if ($note !== '') {
             $content['referral_note'] = $note;
+        }
+
+        return $content;
+    }
+
+    /**
+     * @param  array<string, mixed>  $content
+     * @return array<string, mixed>
+     */
+    public static function enrichUnfinishedRow(array $content, ?AgendaItem $item = null): array
+    {
+        $title = (string) ($content['title'] ?? $item?->title ?? '');
+        $sender = (string) ($content['sender'] ?? $item?->sender ?? '');
+        $formatted = self::formatRegularUnassignedTitle($title, $sender);
+
+        $content['title'] = $formatted['title'];
+        $content['sender'] = $sender;
+
+        if ($formatted['filer_note'] !== '') {
+            $content['filer_note'] = $formatted['filer_note'];
+        } else {
+            unset($content['filer_note']);
         }
 
         return $content;
