@@ -340,7 +340,7 @@ class ObAgendaSnapshot
         }
 
         $committee = CommitteeLookup::findByName($referral);
-        $committeeLabel = ObCommitteeFormatter::resolvedReportLabel($committee?->id, $referral);
+        $committeeLabel = ObCommitteeFormatter::spCommitteeReportLabel($referral);
 
         if ($committeeLabel === '') {
             return '';
@@ -350,7 +350,7 @@ class ObAgendaSnapshot
 
         $note = 'To be referred to '.$committeeLabel;
         if ($chair !== '') {
-            $note .= ',Chaired by: '.$chair;
+            $note .= ",\nChaired by: ".$chair;
         }
 
         return '('.$note.')';

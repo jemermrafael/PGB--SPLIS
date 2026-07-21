@@ -91,6 +91,23 @@
                         Edit
                     </a>
                 @endcan
+                @can('delete', $agenda)
+                    <form
+                        method="POST"
+                        action="{{ route('agenda.destroy', $agenda) }}"
+                        data-confirm-submit
+                        data-confirm-title="Delete agenda item?"
+                        data-confirm-message="Move &quot;{{ $agenda->displayLabel() }}&quot; to trash? You can restore it later from Trash."
+                        data-confirm-label="Delete"
+                    >
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="splis-btn-danger inline-flex items-center gap-2 text-nowrap">
+                            <x-icon name="trash" class="h-4 w-4" />
+                            Delete
+                        </button>
+                    </form>
+                @endcan
                 <a href="{{ route('agenda.index') }}" class="splis-btn-ghost inline-flex items-center gap-2 text-nowrap">
                     <x-icon name="arrow-left" class="h-4 w-4" />
                     Back to list

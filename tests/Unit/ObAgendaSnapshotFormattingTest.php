@@ -74,6 +74,22 @@ class ObAgendaSnapshotFormattingTest extends TestCase
         $this->assertStringEndsWith(')', $note);
     }
 
+    public function test_regular_referral_matches_committee_across_ampersand_and_word_and_and_puts_chair_on_new_line(): void
+    {
+        \App\Models\Committee::query()->create([
+            'name' => 'SP Committee on Peace and Order and Public Safety',
+            'chair' => 'Board Member Romano L. Del Rosario, MPA',
+            'is_active' => true,
+        ]);
+
+        $note = ObAgendaSnapshot::unassignedRegularReferralNoteFromReferral('Peace and Order & Public Safety');
+
+        $this->assertSame(
+            "(To be referred to SP Committee on Peace and Order & Public Safety,\nChaired by: Board Member Romano L. Del Rosario, MPA)",
+            $note,
+        );
+    }
+
     public function test_unfinished_row_extracts_filed_by_like_regular_unassigned(): void
     {
         $formatted = ObAgendaSnapshot::enrichUnfinishedRow([

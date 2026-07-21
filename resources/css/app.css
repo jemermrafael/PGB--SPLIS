@@ -196,6 +196,12 @@
     }
 
     @media (max-width: 1023px) {
+        .splis-header-btn-icon {
+            width: 3.25rem;
+            height: 3.25rem;
+            padding: 0;
+        }
+
         .splis-header-navbar {
             @apply hidden;
         }

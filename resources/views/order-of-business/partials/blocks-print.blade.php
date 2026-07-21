@@ -24,7 +24,7 @@
                     <p class="ob-print-agenda-title">{{ $block->content['title'] }}</p>
                 @endif
                 @if (filled($block->content['referral_note'] ?? null))
-                    <p class="ob-print-agenda-meta">{{ $block->content['referral_note'] }}</p>
+                    <p class="ob-print-agenda-meta">{!! nl2br(e($block->content['referral_note'])) !!}</p>
                 @endif
             </div>
             @break

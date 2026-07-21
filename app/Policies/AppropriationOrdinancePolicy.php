@@ -30,6 +30,6 @@ class AppropriationOrdinancePolicy
 
     public function delete(User $user, AppropriationOrdinance $appropriationOrdinance): bool
     {
-        return $user->canAdmin();
+        return $user->canEncode();
     }
 }

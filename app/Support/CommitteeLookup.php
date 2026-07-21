@@ -270,11 +270,24 @@ class CommitteeLookup
 
     protected static function namesMatch(string $committeeName, string $referral): bool
     {
-        $left = mb_strtolower(trim($committeeName));
-        $right = mb_strtolower(self::normalizeReferralName($referral));
+        $left = self::comparableName($committeeName);
+        $right = self::comparableName(self::normalizeReferralName($referral));
 
         return $left === $right
             || str_contains($right, $left)
             || str_contains($left, $right);
+    }
+
+    /**
+     * Lowercase, treat "&" and "and" as equivalent, and collapse whitespace so
+     * referrals like "Peace and Order & Public Safety" match a committee stored
+     * as "Peace and Order and Public Safety".
+     */
+    protected static function comparableName(string $name): string
+    {
+        $name = mb_strtolower(trim($name));
+        $name = str_replace('&', ' and ', $name);
+
+        return trim((string) preg_replace('/\s+/', ' ', $name));
     }
 }
