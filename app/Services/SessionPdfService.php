@@ -82,7 +82,19 @@ class SessionPdfService
         if ($path !== null) {
             $media = MediaType::fromPath($path);
 
-            return $media !== null && MediaType::isImageMime($media['mime']) ? 'image' : 'pdf';
+            if ($media === null) {
+                return null;
+            }
+
+            if (MediaType::isImageMime($media['mime'])) {
+                return 'image';
+            }
+
+            if (MediaType::isOfficeMime($media['mime'])) {
+                return 'download';
+            }
+
+            return 'pdf';
         }
 
         $url = trim((string) ($session->{$config['field']} ?? ''));
@@ -96,6 +108,13 @@ class SessionPdfService
             (string) $file->getMimeType(),
             $file->getClientOriginalExtension(),
         );
+
+        if (
+            MediaType::isOfficeMime($media['mime'])
+            && ! SessionPdfSlot::acceptsOfficeDocuments($slot)
+        ) {
+            throw new \InvalidArgumentException('Word documents are only allowed for Draft Journal and Draft Minutes.');
+        }
 
         return $this->storeBytes(
             (string) file_get_contents($file->getRealPath()),
@@ -128,11 +147,13 @@ class SessionPdfService
         $media = MediaType::fromPath($path);
         abort_if($media === null, 404, 'Unsupported file type.');
 
+        $disposition = MediaType::isOfficeMime($media['mime']) ? 'attachment' : 'inline';
+
         return response()->stream(function () use ($path) {
             readfile($path);
         }, 200, [
             'Content-Type' => $media['mime'],
-            'Content-Disposition' => 'inline; filename="'.basename($path).'"',
+            'Content-Disposition' => $disposition.'; filename="'.basename($path).'"',
         ]);
     }
 
@@ -158,7 +179,7 @@ class SessionPdfService
 
     protected function deleteSiblingVariants(int $sessionId, string $slot, string $keepExtension): void
     {
-        foreach (['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp'] as $extension) {
+        foreach (['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'doc', 'docx'] as $extension) {
             if ($extension === $keepExtension) {
                 continue;
             }

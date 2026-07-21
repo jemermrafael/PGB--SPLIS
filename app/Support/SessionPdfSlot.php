@@ -56,7 +56,7 @@ final class SessionPdfSlot
     }
 
     /**
-     * @return array{field:string,path:?string,upload:?string,filename:?string,label:string,kind:string}
+     * @return array{field:string,path:?string,upload:?string,filename:?string,label:string,kind:string,accepts_office:bool}
      */
     public static function config(string $slot): array
     {
@@ -68,6 +68,7 @@ final class SessionPdfSlot
                 'filename' => 'summary-committee-reports',
                 'label' => 'Summary of Comm. Reports',
                 'kind' => 'file',
+                'accepts_office' => false,
             ],
             self::COMMITTEE_REPORTS_FOLDER => [
                 'field' => self::COMMITTEE_REPORTS_FOLDER,
@@ -76,6 +77,7 @@ final class SessionPdfSlot
                 'filename' => null,
                 'label' => 'Committee Reports',
                 'kind' => 'folder',
+                'accepts_office' => false,
             ],
             self::DRAFT_JOURNAL => [
                 'field' => self::DRAFT_JOURNAL,
@@ -84,6 +86,7 @@ final class SessionPdfSlot
                 'filename' => 'draft-journal',
                 'label' => 'Draft Journal',
                 'kind' => 'file',
+                'accepts_office' => true,
             ],
             self::DRAFT_MINUTES => [
                 'field' => self::DRAFT_MINUTES,
@@ -92,6 +95,7 @@ final class SessionPdfSlot
                 'filename' => 'draft-minutes',
                 'label' => 'Draft Minutes',
                 'kind' => 'file',
+                'accepts_office' => true,
             ],
             self::FINAL_JOURNAL => [
                 'field' => self::FINAL_JOURNAL,
@@ -100,6 +104,7 @@ final class SessionPdfSlot
                 'filename' => 'final-journal',
                 'label' => 'Final Journal',
                 'kind' => 'file',
+                'accepts_office' => false,
             ],
             self::FINAL_MINUTES => [
                 'field' => self::FINAL_MINUTES,
@@ -108,8 +113,32 @@ final class SessionPdfSlot
                 'filename' => 'final-minutes',
                 'label' => 'Final Minutes',
                 'kind' => 'file',
+                'accepts_office' => false,
             ],
             default => throw new \InvalidArgumentException('Unknown session PDF slot: '.$slot),
         };
+    }
+
+    public static function acceptsOfficeDocuments(string $slot): bool
+    {
+        return self::config($slot)['accepts_office'] === true;
+    }
+
+    public static function uploadMimes(string $slot): string
+    {
+        $base = 'pdf,jpg,jpeg,png,gif,webp';
+
+        return self::acceptsOfficeDocuments($slot) ? $base.',doc,docx' : $base;
+    }
+
+    public static function uploadAcceptAttribute(string $slot): string
+    {
+        $base = 'application/pdf,image/jpeg,image/png,image/gif,image/webp,.pdf,.jpg,.jpeg,.png,.gif,.webp';
+
+        if (! self::acceptsOfficeDocuments($slot)) {
+            return $base;
+        }
+
+        return $base.',application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.doc,.docx';
     }
 }

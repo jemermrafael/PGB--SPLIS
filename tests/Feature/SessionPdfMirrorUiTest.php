@@ -104,4 +104,50 @@ class SessionPdfMirrorUiTest extends TestCase
         $this->assertSame(2, $session->committeeReportFiles()->count());
         Storage::disk('local')->assertExists($session->pdf_draft_journal_path);
     }
+
+    public function test_update_stores_uploaded_draft_journal_docx(): void
+    {
+        Storage::fake('local');
+
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'is_active' => true]);
+
+        $session = LegislativeSession::create([
+            'session_date' => now()->addWeek(),
+            'session_kind' => 'regular',
+            'status' => 'draft',
+            'created_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->put(route('ob.sessions.update', $session), [
+                'session_date' => $session->session_date->format('Y-m-d'),
+                'session_kind' => 'regular',
+                'status' => 'draft',
+                'pdf_draft_journal_file' => UploadedFile::fake()->create(
+                    'draft-journal.docx',
+                    100,
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                ),
+                'pdf_draft_minutes_file' => UploadedFile::fake()->create(
+                    'draft-minutes.docx',
+                    100,
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                ),
+            ])
+            ->assertRedirect(route('ob.sessions.show', $session));
+
+        $session->refresh();
+
+        $this->assertNotNull($session->pdf_draft_journal_path);
+        $this->assertStringEndsWith('.docx', $session->pdf_draft_journal_path);
+        $this->assertNotNull($session->pdf_draft_minutes_path);
+        $this->assertStringEndsWith('.docx', $session->pdf_draft_minutes_path);
+        Storage::disk('local')->assertExists($session->pdf_draft_journal_path);
+        Storage::disk('local')->assertExists($session->pdf_draft_minutes_path);
+
+        $this->actingAs($admin)
+            ->get(route('ob.sessions.show', $session))
+            ->assertOk()
+            ->assertSee('Download', false);
+    }
 }

@@ -88,7 +88,7 @@
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                         <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">Session Documents</h2>
-                        <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Upload PDFs locally or keep a Google Drive link as fallback. Local files are used first on the session page.</p>
+                        <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Upload files locally or keep a Google Drive link as fallback. Local files are used first on the session page. Draft Journal and Draft Minutes accept PDF or Word (.docx).</p>
                     </div>
                     @if ($session->missingMirrorSessionPdfSlots() !== [])
                         <button type="submit" form="mirror-session-pdfs-form" class="splis-btn-secondary inline-flex items-center gap-2 whitespace-nowrap">
@@ -173,8 +173,10 @@
                             </div>
                         @else
                             @php
-                                $uploadField = App\Support\SessionPdfSlot::config($link['field'])['upload'];
-                                $pathColumn = App\Support\SessionPdfSlot::config($link['field'])['path'];
+                                $slotConfig = App\Support\SessionPdfSlot::config($link['field']);
+                                $uploadField = $slotConfig['upload'];
+                                $pathColumn = $slotConfig['path'];
+                                $acceptsOffice = $slotConfig['accepts_office'];
                             @endphp
                             <div class="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
                                 <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $link['label'] }}</h3>
@@ -185,9 +187,14 @@
                                             type="file"
                                             name="{{ $uploadField }}"
                                             id="{{ $uploadField }}"
-                                            accept="application/pdf,image/jpeg,image/png,image/gif,image/webp,.pdf,.jpg,.jpeg,.png,.gif,.webp"
+                                            accept="{{ App\Support\SessionPdfSlot::uploadAcceptAttribute($link['field']) }}"
                                             class="splis-input"
                                         >
+                                        @if ($acceptsOffice)
+                                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                                PDF or Word (.doc / .docx).
+                                            </p>
+                                        @endif
                                         @if ($link['mirrored'])
                                             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                                 Local file: <code>{{ $session->{$pathColumn} }}</code> — uploading replaces it.

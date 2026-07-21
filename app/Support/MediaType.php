@@ -51,6 +51,18 @@ final class MediaType
             return ['mime' => 'image/webp', 'extension' => 'webp'];
         }
 
+        if (str_contains($type, 'wordprocessingml.document') || str_contains($type, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')) {
+            return [
+                'mime' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'extension' => 'docx',
+            ];
+        }
+
+        if (str_contains($type, 'application/msword')) {
+            return ['mime' => 'application/msword', 'extension' => 'doc'];
+        }
+
+        // DOCX/DOC are ZIP-based; defer to extension/content-type callers when only magic is present.
         return null;
     }
 
@@ -78,6 +90,11 @@ final class MediaType
             'png' => ['mime' => 'image/png', 'extension' => 'png'],
             'gif' => ['mime' => 'image/gif', 'extension' => 'gif'],
             'webp' => ['mime' => 'image/webp', 'extension' => 'webp'],
+            'docx' => [
+                'mime' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'extension' => 'docx',
+            ],
+            'doc' => ['mime' => 'application/msword', 'extension' => 'doc'],
             default => null,
         };
     }
@@ -85,6 +102,20 @@ final class MediaType
     public static function isImageMime(string $mime): bool
     {
         return str_starts_with(strtolower($mime), 'image/');
+    }
+
+    public static function isOfficeMime(string $mime): bool
+    {
+        $mime = strtolower($mime);
+
+        return $mime === 'application/msword'
+            || $mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            || str_contains($mime, 'wordprocessingml');
+    }
+
+    public static function isPdfMime(string $mime): bool
+    {
+        return strtolower($mime) === 'application/pdf';
     }
 
     /**
@@ -97,6 +128,20 @@ final class MediaType
 
         if ($mime === 'application/pdf' || $originalExtension === 'pdf') {
             return ['mime' => 'application/pdf', 'extension' => 'pdf'];
+        }
+
+        if (
+            str_contains($mime, 'wordprocessingml.document')
+            || $originalExtension === 'docx'
+        ) {
+            return [
+                'mime' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'extension' => 'docx',
+            ];
+        }
+
+        if ($mime === 'application/msword' || $originalExtension === 'doc') {
+            return ['mime' => 'application/msword', 'extension' => 'doc'];
         }
 
         if ($mime === 'image/jpeg' || in_array($originalExtension, ['jpg', 'jpeg'], true)) {

@@ -166,13 +166,24 @@
                                 <span class="shrink-0 text-sm text-slate-400">No files</span>
                             @endif
                         @elseif ($link['url'])
-                            @include('partials.pdf-modal-trigger', [
-                                'url' => $link['url'],
-                                'viewer' => $link['viewer'],
-                                'title' => $link['label'],
-                                'label' => 'View file',
-                                'class' => 'splis-btn-secondary inline-flex shrink-0 items-center gap-2 text-sm',
-                            ])
+                            @if (($link['viewer'] ?? null) === 'download')
+                                <a
+                                    href="{{ $link['url'] }}"
+                                    class="splis-btn-secondary inline-flex shrink-0 items-center gap-2 text-sm"
+                                    download
+                                >
+                                    <x-icon name="download" class="h-4 w-4" />
+                                    Download
+                                </a>
+                            @else
+                                @include('partials.pdf-modal-trigger', [
+                                    'url' => $link['url'],
+                                    'viewer' => $link['viewer'],
+                                    'title' => $link['label'],
+                                    'label' => 'View file',
+                                    'class' => 'splis-btn-secondary inline-flex shrink-0 items-center gap-2 text-sm',
+                                ])
+                            @endif
                         @else
                             <span class="shrink-0 text-sm text-slate-400">No file</span>
                         @endif

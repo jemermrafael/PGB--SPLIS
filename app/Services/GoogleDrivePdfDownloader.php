@@ -106,7 +106,7 @@ class GoogleDrivePdfDownloader
         $detected = MediaType::fromBytes($fileBody, $confirmed->header('Content-Type'));
 
         if ($detected === null) {
-            throw new RuntimeException('Google Drive response was not a supported PDF or image file.');
+            throw new RuntimeException('Google Drive response was not a supported PDF, image, or Word file.');
         }
 
         return [
@@ -131,7 +131,7 @@ class GoogleDrivePdfDownloader
         $detected = MediaType::fromBytes($body, $response->header('Content-Type'));
 
         if ($detected === null) {
-            throw new RuntimeException('Downloaded content is not a supported PDF or image file.');
+            throw new RuntimeException('Downloaded content is not a supported PDF, image, or Word file.');
         }
 
         return [
