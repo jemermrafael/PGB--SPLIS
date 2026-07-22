@@ -242,6 +242,20 @@ export function initObMaker() {
 
     const blocksList = document.getElementById('ob-blocks-list');
     const blocksEmpty = document.getElementById('ob-blocks-empty');
+    const sectionNavEl = document.getElementById('ob-section-nav');
+    const sectionNavList = document.getElementById('ob-section-nav-list');
+    const sectionNavToggle = document.getElementById('ob-section-nav-toggle');
+    const sectionNavPanel = document.getElementById('ob-section-nav-panel');
+    const sectionNavExpandToggleBtn = document.getElementById('ob-section-nav-expand-toggle');
+    const sectionNavCloseBtn = document.getElementById('ob-section-nav-close');
+    const sectionNavDragHandle = document.getElementById('ob-section-nav-drag-handle');
+    const sectionNavResizeHandle = document.getElementById('ob-section-nav-resize');
+    let sectionNavObserver = null;
+    /** @type {Set<number>|null} null = expand every parent by default */
+    let sectionNavExpandedIds = null;
+    const SECTION_NAV_LAYOUT_KEY = 'splis-ob-section-nav-layout';
+    let sectionNavDragState = null;
+    let sectionNavResizeState = null;
     const saveStatus = document.getElementById('ob-save-status');
     const titleInput = document.getElementById('ob-doc-title');
     const statusSelect = document.getElementById('ob-doc-status');
@@ -742,6 +756,491 @@ export function initObMaker() {
         }
     }
 
+    function romanSectionNavLabel(c) {
+        const numeral = displayRomanNumeral(c.numeral);
+        const title = String(c.title ?? '').trim();
+        if (title) {
+            return `${numeral} ${title}`.trim();
+        }
+
+        const body = String(c.body ?? '').trim();
+        const firstLine = body.split(/\r?\n/)[0]?.trim() ?? '';
+        if (firstLine) {
+            return `${numeral} ${firstLine}`.trim();
+        }
+
+        return numeral || 'Section';
+    }
+
+    function subsectionNavLevel(text) {
+        const trimmed = String(text ?? '').trim();
+        if (/^\d+\./.test(trimmed)) {
+            return 2;
+        }
+        if (/^[A-Z]\./i.test(trimmed)) {
+            return 1;
+        }
+
+        return 1;
+    }
+
+    function agendaNosLabel(c) {
+        if (Array.isArray(c.agenda_nos) && c.agenda_nos.length > 0) {
+            return c.agenda_nos.map((no) => String(no).trim()).filter(Boolean).join(', ');
+        }
+
+        const no = c.agenda_no ?? c.session_agenda_no;
+        return no !== null && no !== undefined && String(no).trim() !== '' ? String(no).trim() : '';
+    }
+
+    function limitNavWords(text, maxWords = 10) {
+        return truncateWords(text, maxWords).display;
+    }
+
+    function formatAgendaNavLabel(nos, title = '') {
+        const number = String(nos ?? '')
+            .trim()
+            .replace(/^agenda\s+/i, '')
+            .replace(/\.$/, '');
+        const titleLimited = limitNavWords(String(title ?? '').trim(), 10);
+
+        if (number && titleLimited && titleLimited !== '—') {
+            return `Agenda ${number}. ${titleLimited}`;
+        }
+        if (number) {
+            return `Agenda ${number}`;
+        }
+        if (titleLimited && titleLimited !== '—') {
+            return /^agenda\b/i.test(titleLimited) ? titleLimited : `Agenda ${titleLimited}`;
+        }
+
+        return 'Agenda item';
+    }
+
+    function agendaItemNavLabel(block) {
+        const c = block.content ?? {};
+
+        switch (block.type) {
+            case 'committee_report': {
+                const row = c.row_no !== null && c.row_no !== undefined && c.row_no !== '' ? `${c.row_no}. ` : '';
+                const nos = agendaNosLabel(c);
+                const committee = String(c.committee_name ?? '').trim();
+                return `${row}${formatAgendaNavLabel(nos, committee)}`.trim();
+            }
+            case 'unfinished_committee':
+                return limitNavWords(String(c.committee_name ?? '').trim() || 'Committee', 10);
+            case 'unfinished_agenda':
+            case 'unassigned_agenda':
+            case 'reading_agenda':
+            case 'agenda_line': {
+                const nos = agendaNosLabel(c);
+                const title = String(c.title ?? '').trim();
+                const reading = block.type === 'reading_agenda' && c.reading ? `${c.reading} reading — ` : '';
+                return `${reading}${formatAgendaNavLabel(nos, title)}`.trim();
+            }
+            case 'announcement': {
+                const col2 = String(c.column_2 ?? c.title ?? '').trim();
+                const col1 = String(c.column_1 ?? c.date_received ?? '').trim();
+                if (col2 && col1) {
+                    return limitNavWords(`${col1} — ${col2}`, 10);
+                }
+                return limitNavWords(col2 || col1 || block.preview || 'Announcement', 10);
+            }
+            default:
+                return limitNavWords(String(block.preview ?? block.type_label ?? 'Item').trim(), 10);
+        }
+    }
+
+    function sectionNavEntries() {
+        const entries = [];
+        const agendaTypes = new Set([
+            'committee_report',
+            'unfinished_committee',
+            'unfinished_agenda',
+            'unassigned_agenda',
+            'reading_agenda',
+            'agenda_line',
+            'announcement',
+        ]);
+
+        for (const block of blocks) {
+            const c = block.content ?? {};
+
+            if (block.type === 'roman_section') {
+                entries.push({
+                    blockId: block.id,
+                    level: 0,
+                    kind: 'section',
+                    label: limitNavWords(romanSectionNavLabel(c), 10),
+                });
+                continue;
+            }
+
+            if (block.type === 'subsection_label') {
+                const label = String(c.text ?? '').trim();
+                if (label !== '') {
+                    entries.push({
+                        blockId: block.id,
+                        level: subsectionNavLevel(label),
+                        kind: 'subsection',
+                        label: limitNavWords(label, 10),
+                    });
+                }
+                continue;
+            }
+
+            if (block.type === 'adjournment') {
+                entries.push({
+                    blockId: block.id,
+                    level: 0,
+                    kind: 'section',
+                    label: limitNavWords(String(block.preview ?? 'VIII. ADJOURNMENT').trim() || 'VIII. ADJOURNMENT', 10),
+                });
+                continue;
+            }
+
+            if (block.type === 'unfinished_committee') {
+                entries.push({
+                    blockId: block.id,
+                    level: 2,
+                    kind: 'committee',
+                    label: agendaItemNavLabel(block),
+                });
+                continue;
+            }
+
+            if (agendaTypes.has(block.type)) {
+                entries.push({
+                    blockId: block.id,
+                    level: 3,
+                    kind: 'agenda',
+                    label: agendaItemNavLabel(block),
+                });
+            }
+        }
+
+        return entries;
+    }
+
+    function buildSectionNavTree(entries) {
+        const roots = [];
+        /** @type {Array<any>} */
+        const parentsByLevel = [];
+
+        for (const entry of entries) {
+            const node = { ...entry, children: [] };
+            const level = entry.level;
+
+            if (level === 0) {
+                roots.push(node);
+                parentsByLevel.length = 0;
+                parentsByLevel[0] = node;
+                continue;
+            }
+
+            let parent = null;
+            for (let parentLevel = level - 1; parentLevel >= 0; parentLevel -= 1) {
+                if (parentsByLevel[parentLevel]) {
+                    parent = parentsByLevel[parentLevel];
+                    break;
+                }
+            }
+
+            if (parent) {
+                parent.children.push(node);
+            } else {
+                roots.push(node);
+            }
+
+            parentsByLevel[level] = node;
+            parentsByLevel.length = level + 1;
+        }
+
+        return roots;
+    }
+
+    function flattenSectionNavTree(nodes, out = []) {
+        for (const node of nodes) {
+            out.push(node);
+            if (node.children?.length) {
+                flattenSectionNavTree(node.children, out);
+            }
+        }
+
+        return out;
+    }
+
+    function sectionNavParentIds(tree) {
+        return flattenSectionNavTree(tree)
+            .filter((node) => node.children.length > 0)
+            .map((node) => node.blockId);
+    }
+
+    function findSectionNavPath(nodes, blockId, path = []) {
+        const targetId = Number(blockId);
+        for (const node of nodes) {
+            const nextPath = [...path, Number(node.blockId)];
+            if (Number(node.blockId) === targetId) {
+                return nextPath;
+            }
+            if (node.children.length > 0) {
+                const found = findSectionNavPath(node.children, targetId, nextPath);
+                if (found) {
+                    return found;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    function isSectionNavExpanded(blockId) {
+        if (sectionNavExpandedIds === null) {
+            return true;
+        }
+
+        return sectionNavExpandedIds.has(Number(blockId));
+    }
+
+    function ensureSectionNavAncestorsExpanded(tree, blockId) {
+        const path = findSectionNavPath(tree, Number(blockId));
+        if (!path || path.length < 2) {
+            return false;
+        }
+
+        const parentIds = path.slice(0, -1).map(Number);
+        if (sectionNavExpandedIds === null) {
+            return false;
+        }
+
+        let changed = false;
+        parentIds.forEach((id) => {
+            if (!sectionNavExpandedIds.has(id)) {
+                sectionNavExpandedIds.add(id);
+                changed = true;
+            }
+        });
+
+        return changed;
+    }
+
+    function applySectionNavExpandedState(expanded) {
+        if (expanded) {
+            // null = every parent treated as expanded
+            sectionNavExpandedIds = null;
+        } else {
+            sectionNavExpandedIds = new Set();
+        }
+        renderSectionNav();
+        syncSectionNavExpandToggle();
+    }
+
+    function sectionNavParentsAreExpanded() {
+        if (sectionNavExpandedIds === null) {
+            return true;
+        }
+
+        const parentIds = sectionNavParentIds(buildSectionNavTree(sectionNavEntries())).map(Number);
+        if (parentIds.length === 0) {
+            return true;
+        }
+
+        return parentIds.every((id) => sectionNavExpandedIds.has(id));
+    }
+
+    function syncSectionNavExpandToggle() {
+        if (!sectionNavExpandToggleBtn) {
+            return;
+        }
+
+        const expanded = sectionNavParentsAreExpanded();
+        sectionNavExpandToggleBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        sectionNavExpandToggleBtn.title = expanded ? 'Collapse all' : 'Expand all';
+        sectionNavExpandToggleBtn.setAttribute(
+            'aria-label',
+            expanded ? 'Collapse all sections' : 'Expand all sections',
+        );
+        sectionNavExpandToggleBtn.classList.toggle('is-expanded', expanded);
+        sectionNavExpandToggleBtn.innerHTML = expanded
+            ? `
+                <svg class="splis-ob-section-nav-expand-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M14.77 12.79a.75.75 0 01-1.06-.02L10 8.832 6.29 12.77a.75.75 0 11-1.08-1.04l4.25-4.5a.75.75 0 011.08 0l4.25 4.5a.75.75 0 01-.02 1.06z" clip-rule="evenodd"/>
+                </svg>
+            `
+            : `
+                <svg class="splis-ob-section-nav-expand-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+                </svg>
+            `;
+    }
+
+    function teardownSectionNavObserver() {
+        sectionNavObserver?.disconnect();
+        sectionNavObserver = null;
+    }
+
+    function setActiveSectionNavLink(blockId) {
+        if (!sectionNavList) {
+            return;
+        }
+
+        sectionNavList.querySelectorAll('.splis-ob-section-nav-link').forEach((link) => {
+            link.classList.toggle('is-active', Number(link.dataset.blockId) === blockId);
+        });
+    }
+
+    function setupSectionNavObserver(entries, tree) {
+        teardownSectionNavObserver();
+
+        if (!sectionNavList || entries.length === 0) {
+            return;
+        }
+
+        const blockIds = new Set(entries.map((entry) => entry.blockId));
+        const visible = new Map();
+
+        sectionNavObserver = new IntersectionObserver(
+            (observed) => {
+                observed.forEach((record) => {
+                    const id = Number(record.target.dataset.blockId);
+                    if (!blockIds.has(id)) {
+                        return;
+                    }
+                    if (record.isIntersecting) {
+                        visible.set(id, record.intersectionRatio);
+                    } else {
+                        visible.delete(id);
+                    }
+                });
+
+                if (visible.size === 0) {
+                    return;
+                }
+
+                let bestId = null;
+                let bestRatio = -1;
+                visible.forEach((ratio, id) => {
+                    if (ratio > bestRatio) {
+                        bestRatio = ratio;
+                        bestId = id;
+                    }
+                });
+
+                if (bestId === null) {
+                    return;
+                }
+
+                if (ensureSectionNavAncestorsExpanded(tree, bestId)) {
+                    renderSectionNav();
+                    return;
+                }
+
+                setActiveSectionNavLink(bestId);
+            },
+            {
+                root: null,
+                rootMargin: '-20% 0px -55% 0px',
+                threshold: [0, 0.1, 0.25, 0.5, 0.75, 1],
+            },
+        );
+
+        entries.forEach((entry) => {
+            const el = document.getElementById(`ob-block-${entry.blockId}`);
+            if (el) {
+                sectionNavObserver.observe(el);
+            }
+        });
+    }
+
+    function scrollToObBlock(blockId) {
+        const el = document.getElementById(`ob-block-${blockId}`);
+        if (!el) {
+            return;
+        }
+
+        const offset = 112;
+        const top = el.getBoundingClientRect().top + window.scrollY - offset;
+        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    }
+
+    function sectionNavCaretHtml() {
+        return `
+            <svg class="splis-ob-section-nav-caret-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd"/>
+            </svg>
+        `;
+    }
+
+    function renderSectionNavNode(node) {
+        const hasChildren = node.children.length > 0;
+        const expanded = hasChildren && isSectionNavExpanded(node.blockId);
+        const shortLabel = limitNavWords(node.label, 10);
+        const caret = hasChildren
+            ? `
+                <button
+                    type="button"
+                    class="splis-ob-section-nav-caret"
+                    data-nav-toggle="${node.blockId}"
+                    aria-expanded="${expanded ? 'true' : 'false'}"
+                    aria-label="${expanded ? 'Collapse' : 'Expand'} ${escapeHtml(node.label)}"
+                >${sectionNavCaretHtml()}</button>
+            `
+            : '<span class="splis-ob-section-nav-caret-spacer" aria-hidden="true"></span>';
+
+        const children = hasChildren
+            ? `
+                <ul class="splis-ob-section-nav-children${expanded ? '' : ' is-collapsed'}">
+                    ${node.children.map((child) => renderSectionNavNode(child)).join('')}
+                </ul>
+            `
+            : '';
+
+        const kindClass = node.kind ? ` splis-ob-section-nav-item--${node.kind}` : '';
+
+        return `
+            <li class="splis-ob-section-nav-item splis-ob-section-nav-item--level-${node.level}${kindClass}${hasChildren ? ' has-children' : ''}${expanded ? ' is-expanded' : ''}">
+                <div class="splis-ob-section-nav-row">
+                    ${caret}
+                    <a
+                        href="#ob-block-${node.blockId}"
+                        class="splis-ob-section-nav-link"
+                        data-block-id="${node.blockId}"
+                        title="${escapeHtml(node.label)}"
+                    >${escapeHtml(shortLabel)}</a>
+                </div>
+                ${children}
+            </li>
+        `;
+    }
+
+    function renderSectionNav() {
+        if (!sectionNavEl || !sectionNavList) {
+            return;
+        }
+
+        const entries = sectionNavEntries();
+
+        if (entries.length === 0) {
+            sectionNavEl.classList.add('hidden');
+            sectionNavList.innerHTML = '';
+            teardownSectionNavObserver();
+            return;
+        }
+
+        const tree = buildSectionNavTree(entries);
+        const activeId = entries.some((entry) => entry.blockId === selectedBlockId)
+            ? selectedBlockId
+            : entries[0].blockId;
+        ensureSectionNavAncestorsExpanded(tree, activeId);
+
+        sectionNavEl.classList.remove('hidden');
+        sectionNavList.innerHTML = tree.map((node) => renderSectionNavNode(node)).join('');
+
+        setupSectionNavObserver(entries, tree);
+        setActiveSectionNavLink(activeId);
+        syncSectionNavExpandToggle();
+    }
+
     function renderBlocks() {
         if (!blocksList || !blocksEmpty) {
             return;
@@ -750,6 +1249,7 @@ export function initObMaker() {
         if (blocks.length === 0) {
             blocksList.innerHTML = '';
             blocksEmpty.classList.remove('hidden');
+            renderSectionNav();
             return;
         }
 
@@ -758,7 +1258,7 @@ export function initObMaker() {
             .map((block, index) => {
                 const selected = block.id === selectedBlockId ? ' is-selected' : '';
                 return `
-                    <article class="splis-ob-block${selected}" data-block-id="${block.id}">
+                    <article id="ob-block-${block.id}" class="splis-ob-block${selected}" data-block-id="${block.id}">
                         <div class="splis-ob-block-head">
                             <span class="splis-ob-block-order">${block.sort_order}</span>
                             <span class="splis-ob-block-type">${escapeHtml(block.type_label)}</span>
@@ -769,6 +1269,8 @@ export function initObMaker() {
                 `;
             })
             .join('');
+
+        renderSectionNav();
     }
 
     function collectBlockContent(blockEl, block) {
@@ -1529,6 +2031,339 @@ export function initObMaker() {
             selectedAgendaIds.clear();
         });
     }
+
+    if (sectionNavEl) {
+        sectionNavEl.addEventListener('click', (event) => {
+            const toggle = event.target.closest('[data-nav-toggle]');
+            if (toggle) {
+                event.preventDefault();
+                event.stopPropagation();
+                const blockId = Number(toggle.dataset.navToggle);
+                if (!Number.isFinite(blockId)) {
+                    return;
+                }
+
+                if (sectionNavExpandedIds === null) {
+                    sectionNavExpandedIds = new Set(
+                        sectionNavParentIds(buildSectionNavTree(sectionNavEntries())).map(Number),
+                    );
+                }
+
+                if (sectionNavExpandedIds.has(blockId)) {
+                    sectionNavExpandedIds.delete(blockId);
+                } else {
+                    sectionNavExpandedIds.add(blockId);
+                }
+
+                renderSectionNav();
+                return;
+            }
+
+            const link = event.target.closest('.splis-ob-section-nav-link');
+            if (!link) {
+                return;
+            }
+
+            event.preventDefault();
+            const blockId = Number(link.dataset.blockId);
+            if (!Number.isFinite(blockId)) {
+                return;
+            }
+
+            const tree = buildSectionNavTree(sectionNavEntries());
+            if (sectionNavExpandedIds === null) {
+                // keep default expanded
+            } else {
+                ensureSectionNavAncestorsExpanded(tree, blockId);
+            }
+
+            selectedBlockId = blockId;
+            renderBlocks();
+            requestAnimationFrame(() => {
+                scrollToObBlock(blockId);
+                setActiveSectionNavLink(blockId);
+            });
+        });
+    }
+
+    function openSectionNavPanel() {
+        if (!sectionNavEl) {
+            return;
+        }
+        sectionNavEl.classList.add('is-open');
+        sectionNavEl.classList.remove('is-closed');
+        sectionNavToggle?.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeSectionNavPanel() {
+        if (!sectionNavEl) {
+            return;
+        }
+        sectionNavEl.classList.remove('is-open');
+        sectionNavEl.classList.add('is-closed');
+        sectionNavToggle?.setAttribute('aria-expanded', 'false');
+    }
+
+    sectionNavExpandToggleBtn?.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        applySectionNavExpandedState(!sectionNavParentsAreExpanded());
+    });
+
+    sectionNavCloseBtn?.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        closeSectionNavPanel();
+    });
+
+    sectionNavToggle?.addEventListener('click', () => {
+        openSectionNavPanel();
+    });
+
+    function readSectionNavLayout() {
+        try {
+            const raw = localStorage.getItem(SECTION_NAV_LAYOUT_KEY);
+            if (!raw) {
+                return null;
+            }
+            const saved = JSON.parse(raw);
+            if (!saved || typeof saved !== 'object') {
+                return null;
+            }
+            return saved;
+        } catch {
+            return null;
+        }
+    }
+
+    function persistSectionNavLayout(partial) {
+        try {
+            const current = readSectionNavLayout() ?? {};
+            localStorage.setItem(SECTION_NAV_LAYOUT_KEY, JSON.stringify({ ...current, ...partial }));
+        } catch {
+            // ignore quota / private mode
+        }
+    }
+
+    function clampSectionNavPosition(left, top, width, height) {
+        const margin = 8;
+        const w = width ?? sectionNavPanel?.offsetWidth ?? sectionNavEl?.offsetWidth ?? 280;
+        const h = height ?? sectionNavPanel?.offsetHeight ?? sectionNavEl?.offsetHeight ?? 320;
+        const maxLeft = Math.max(margin, window.innerWidth - w - margin);
+        const maxTop = Math.max(margin, window.innerHeight - h - margin);
+
+        return {
+            left: Math.min(Math.max(margin, left), maxLeft),
+            top: Math.min(Math.max(margin, top), maxTop),
+        };
+    }
+
+    function clampSectionNavSize(width, height) {
+        const minW = 240;
+        const minH = 220;
+        const maxW = Math.max(minW, window.innerWidth - 16);
+        const maxH = Math.max(minH, window.innerHeight - 16);
+
+        return {
+            width: Math.min(Math.max(minW, width), maxW),
+            height: Math.min(Math.max(minH, height), maxH),
+        };
+    }
+
+    function applySectionNavPosition(left, top, persist = true) {
+        if (!sectionNavEl) {
+            return;
+        }
+
+        const size = {
+            width: sectionNavPanel?.offsetWidth || Number.parseFloat(sectionNavPanel?.style.width) || 280,
+            height: sectionNavPanel?.offsetHeight || Number.parseFloat(sectionNavPanel?.style.height) || 360,
+        };
+        const clamped = clampSectionNavPosition(left, top, size.width, size.height);
+        sectionNavEl.style.left = `${clamped.left}px`;
+        sectionNavEl.style.top = `${clamped.top}px`;
+        sectionNavEl.style.right = 'auto';
+        sectionNavEl.style.bottom = 'auto';
+        sectionNavEl.style.transform = 'none';
+        sectionNavEl.classList.add('is-repositioned');
+
+        if (persist) {
+            persistSectionNavLayout(clamped);
+        }
+    }
+
+    function applySectionNavSize(width, height, persist = true) {
+        if (!sectionNavPanel) {
+            return;
+        }
+
+        const clamped = clampSectionNavSize(width, height);
+        sectionNavPanel.style.width = `${clamped.width}px`;
+        sectionNavPanel.style.height = `${clamped.height}px`;
+        sectionNavPanel.style.maxHeight = 'none';
+        sectionNavEl?.classList.add('is-resized');
+
+        if (sectionNavEl?.classList.contains('is-repositioned')) {
+            const left = Number.parseFloat(sectionNavEl.style.left);
+            const top = Number.parseFloat(sectionNavEl.style.top);
+            if (Number.isFinite(left) && Number.isFinite(top)) {
+                applySectionNavPosition(left, top, false);
+            }
+        }
+
+        if (persist) {
+            persistSectionNavLayout(clamped);
+        }
+    }
+
+    function restoreSectionNavLayout() {
+        if (!sectionNavEl) {
+            return;
+        }
+
+        const saved = readSectionNavLayout();
+        if (!saved) {
+            return;
+        }
+
+        if (typeof saved.width === 'number' && typeof saved.height === 'number') {
+            applySectionNavSize(saved.width, saved.height, false);
+        }
+        if (typeof saved.left === 'number' && typeof saved.top === 'number') {
+            applySectionNavPosition(saved.left, saved.top, false);
+        }
+    }
+
+    function bindSectionNavDrag() {
+        if (!sectionNavEl || !sectionNavDragHandle) {
+            return;
+        }
+
+        const onPointerMove = (event) => {
+            if (!sectionNavDragState) {
+                return;
+            }
+
+            const left = event.clientX - sectionNavDragState.offsetX;
+            const top = event.clientY - sectionNavDragState.offsetY;
+            applySectionNavPosition(left, top, false);
+        };
+
+        const onPointerUp = (event) => {
+            if (!sectionNavDragState) {
+                return;
+            }
+
+            sectionNavEl.classList.remove('is-dragging');
+            sectionNavDragHandle.releasePointerCapture?.(sectionNavDragState.pointerId);
+            const left = event.clientX - sectionNavDragState.offsetX;
+            const top = event.clientY - sectionNavDragState.offsetY;
+            applySectionNavPosition(left, top, true);
+            sectionNavDragState = null;
+            window.removeEventListener('pointermove', onPointerMove);
+            window.removeEventListener('pointerup', onPointerUp);
+        };
+
+        sectionNavDragHandle.addEventListener('pointerdown', (event) => {
+            if (event.button !== 0) {
+                return;
+            }
+            if (event.target.closest('button, .splis-ob-section-nav-tool')) {
+                return;
+            }
+
+            event.preventDefault();
+            const rect = sectionNavEl.getBoundingClientRect();
+            sectionNavDragState = {
+                pointerId: event.pointerId,
+                offsetX: event.clientX - rect.left,
+                offsetY: event.clientY - rect.top,
+            };
+            sectionNavEl.classList.add('is-dragging');
+            sectionNavDragHandle.setPointerCapture?.(event.pointerId);
+            applySectionNavPosition(rect.left, rect.top, false);
+            window.addEventListener('pointermove', onPointerMove);
+            window.addEventListener('pointerup', onPointerUp);
+        });
+    }
+
+    function bindSectionNavResize() {
+        if (!sectionNavEl || !sectionNavPanel || !sectionNavResizeHandle) {
+            return;
+        }
+
+        const onPointerMove = (event) => {
+            if (!sectionNavResizeState) {
+                return;
+            }
+
+            const width = sectionNavResizeState.startWidth + (event.clientX - sectionNavResizeState.startX);
+            const height = sectionNavResizeState.startHeight + (event.clientY - sectionNavResizeState.startY);
+            applySectionNavSize(width, height, false);
+        };
+
+        const onPointerUp = (event) => {
+            if (!sectionNavResizeState) {
+                return;
+            }
+
+            sectionNavEl.classList.remove('is-resizing');
+            sectionNavResizeHandle.releasePointerCapture?.(sectionNavResizeState.pointerId);
+            const width = sectionNavResizeState.startWidth + (event.clientX - sectionNavResizeState.startX);
+            const height = sectionNavResizeState.startHeight + (event.clientY - sectionNavResizeState.startY);
+            applySectionNavSize(width, height, true);
+            sectionNavResizeState = null;
+            window.removeEventListener('pointermove', onPointerMove);
+            window.removeEventListener('pointerup', onPointerUp);
+        };
+
+        sectionNavResizeHandle.addEventListener('pointerdown', (event) => {
+            if (event.button !== 0) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+            const rect = sectionNavPanel.getBoundingClientRect();
+            sectionNavResizeState = {
+                pointerId: event.pointerId,
+                startX: event.clientX,
+                startY: event.clientY,
+                startWidth: rect.width,
+                startHeight: rect.height,
+            };
+            sectionNavEl.classList.add('is-resizing');
+            sectionNavResizeHandle.setPointerCapture?.(event.pointerId);
+            window.addEventListener('pointermove', onPointerMove);
+            window.addEventListener('pointerup', onPointerUp);
+        });
+    }
+
+    window.addEventListener('resize', () => {
+        if (!sectionNavEl) {
+            return;
+        }
+
+        if (sectionNavEl.classList.contains('is-resized') && sectionNavPanel) {
+            const width = Number.parseFloat(sectionNavPanel.style.width);
+            const height = Number.parseFloat(sectionNavPanel.style.height);
+            if (Number.isFinite(width) && Number.isFinite(height)) {
+                applySectionNavSize(width, height, true);
+            }
+        }
+
+        if (sectionNavEl.classList.contains('is-repositioned')) {
+            const left = Number.parseFloat(sectionNavEl.style.left);
+            const top = Number.parseFloat(sectionNavEl.style.top);
+            if (Number.isFinite(left) && Number.isFinite(top)) {
+                applySectionNavPosition(left, top, true);
+            }
+        }
+    });
+
+    bindSectionNavDrag();
+    bindSectionNavResize();
+    restoreSectionNavLayout();
 
     renderAddBlockButtons();
     renderBlocks();

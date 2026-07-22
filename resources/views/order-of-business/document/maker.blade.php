@@ -116,6 +116,48 @@
         </div>
     </div>
 
+    <nav id="ob-section-nav" class="splis-ob-section-nav hidden" aria-label="Document structure">
+        <button
+            type="button"
+            id="ob-section-nav-toggle"
+            class="splis-ob-section-nav-toggle"
+            aria-expanded="false"
+            aria-controls="ob-section-nav-panel"
+        >
+            Structure
+        </button>
+        <div id="ob-section-nav-panel" class="splis-ob-section-nav-panel">
+            <div class="splis-ob-section-nav-heading" id="ob-section-nav-drag-handle" title="Drag to move">
+                <button
+                    type="button"
+                    id="ob-section-nav-expand-toggle"
+                    class="splis-ob-section-nav-tool is-expanded"
+                    title="Collapse all"
+                    aria-expanded="true"
+                    aria-label="Collapse all sections"
+                >
+                    <svg class="splis-ob-section-nav-expand-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M14.77 12.79a.75.75 0 01-1.06-.02L10 8.832 6.29 12.77a.75.75 0 11-1.08-1.04l4.25-4.5a.75.75 0 011.08 0l4.25 4.5a.75.75 0 01-.02 1.06z" clip-rule="evenodd"/>
+                    </svg>
+                </button>
+                <p class="splis-ob-section-nav-heading-title">Structure</p>
+                <button
+                    type="button"
+                    id="ob-section-nav-close"
+                    class="splis-ob-section-nav-tool"
+                    title="Close"
+                    aria-label="Close structure panel"
+                >
+                    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"/>
+                    </svg>
+                </button>
+            </div>
+            <ul id="ob-section-nav-list" class="splis-ob-section-nav-list"></ul>
+            <div id="ob-section-nav-resize" class="splis-ob-section-nav-resize" title="Drag to resize" aria-hidden="true"></div>
+        </div>
+    </nav>
+
     <div id="ob-confirm-dialog" class="splis-ob-dialog" aria-hidden="true">
         <div class="splis-ob-dialog-backdrop" data-ob-confirm-cancel tabindex="-1"></div>
         <div class="splis-ob-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="ob-confirm-title">
