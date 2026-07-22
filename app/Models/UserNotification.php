@@ -78,10 +78,10 @@ class UserNotification extends Model
 
         return $query->where(function (Builder $notification): void {
             $notification
-                ->where('type', '!=', self::TYPE_SESSION_CREATED)
-                ->orWhere(function (Builder $sessionCreated): void {
-                    $sessionCreated
-                        ->where('type', self::TYPE_SESSION_CREATED)
+                ->whereNotIn('type', [self::TYPE_SESSION_CREATED, self::TYPE_OB_DOCUMENT_CREATED])
+                ->orWhere(function (Builder $sessionLinked): void {
+                    $sessionLinked
+                        ->whereIn('type', [self::TYPE_SESSION_CREATED, self::TYPE_OB_DOCUMENT_CREATED])
                         ->whereHas('legislativeSession', fn (Builder $session) => $session->notifiableToBoardMembers());
                 });
         });

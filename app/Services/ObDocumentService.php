@@ -497,6 +497,7 @@ class ObDocumentService
 
             if ($session instanceof LegislativeSession) {
                 $this->boardMemberNotifier->notifySessionCreated($session);
+                $this->boardMemberNotifier->notifyObDocumentCreated($session, $document);
             }
         }
 

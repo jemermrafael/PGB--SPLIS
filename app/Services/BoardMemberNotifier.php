@@ -145,6 +145,12 @@ class BoardMemberNotifier
 
     public function notifyObDocumentCreated(LegislativeSession $session, ObDocument $document): void
     {
+        $session->setRelation('obDocument', $document);
+
+        if (! $session->isNotifiableToBoardMembers()) {
+            return;
+        }
+
         foreach ($this->allBoardMemberUsers() as $user) {
             UserNotification::query()->firstOrCreate(
                 [

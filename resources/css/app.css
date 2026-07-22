@@ -89,6 +89,18 @@
         @apply flex shrink-0 flex-wrap items-center justify-end gap-1.5 overflow-visible sm:gap-3;
     }
 
+    .splis-header-actions .splis-a11y-wrap,
+    .splis-header-actions .splis-notify-wrap,
+    .splis-header-actions .splis-user-menu {
+        @apply flex items-center;
+    }
+
+    .splis-header-actions .splis-header-btn {
+        height: 2.5rem;
+        min-height: 2.5rem;
+        max-height: 2.5rem;
+    }
+
     .splis-header-date {
         @apply text-xs text-slate-300;
     }
@@ -98,21 +110,21 @@
     }
 
     .splis-header-btn {
-        @apply inline-flex items-center gap-2 rounded-md border border-white/25 bg-brand-800/50 px-3 py-2 text-sm font-medium text-white transition hover:bg-brand-800;
+        @apply box-border inline-flex h-10 min-h-10 items-center gap-2 rounded-md border border-white/25 bg-brand-800/50 px-3 text-sm font-medium leading-none text-white transition hover:bg-brand-800;
     }
 
     .splis-header-btn-icon {
-        @apply justify-center gap-0 p-2;
+        @apply h-10 w-10 shrink-0 justify-center gap-0 p-0;
     }
 
     #splis-a11y-trigger {
-        padding: 0 !important;
+        @apply p-0;
         border-radius: 100%;
     }
 
     #splis-a11y-trigger svg {
-        width: 36px;
-        height: 36px;
+        width: 1.5rem;
+        height: 1.5rem;
     }
 
     .splis-a11y-wrap {
@@ -132,7 +144,7 @@
     }
 
     .splis-user-menu-trigger {
-        @apply cursor-pointer;
+        @apply h-10 min-h-10 w-auto cursor-pointer gap-2 px-3;
     }
 
     .splis-user-menu-panel {
@@ -196,10 +208,19 @@
     }
 
     @media (max-width: 1023px) {
-        .splis-header-btn-icon {
-            width: 3.25rem;
+        .splis-header-actions .splis-header-btn {
             height: 3.25rem;
+            min-height: 3.25rem;
+            max-height: 3.25rem;
+        }
+
+        .splis-header-btn-icon,
+        .splis-user-menu-trigger {
+            width: 3.25rem;
+            min-height: 3.25rem;
             padding: 0;
+            justify-content: center;
+            gap: 0;
         }
 
         .splis-header-navbar {

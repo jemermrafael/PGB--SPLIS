@@ -97,7 +97,7 @@
                         @endif
 
                         <div class="splis-user-menu" data-dropdown>
-                            <button type="button" class="splis-header-btn splis-user-menu-trigger splis-header-btn-icon lg:px-3 lg:py-2" data-dropdown-trigger aria-expanded="false" aria-haspopup="true" aria-label="Account menu">
+                            <button type="button" class="splis-header-btn splis-user-menu-trigger" data-dropdown-trigger aria-expanded="false" aria-haspopup="true" aria-label="Account menu">
                                 <x-icon name="user-circle" class="h-5 w-5 lg:hidden" stroke-width="1.8" />
                                 <span class="hidden lg:inline">{{ auth()->user()->role->label() }}</span>
                                 <x-icon name="chevron-down" class="hidden h-4 w-4 opacity-70 lg:inline" stroke-width="2" />
