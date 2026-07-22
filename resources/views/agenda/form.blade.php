@@ -42,7 +42,10 @@
                     <label class="splis-label" for="request_pdf">Request file (upload)</label>
                     <input type="file" name="request_pdf" id="request_pdf" accept="application/pdf,image/jpeg,image/png,image/gif,image/webp,.pdf,.jpg,.jpeg,.png,.gif,.webp" class="splis-input">
                     @if ($isEdit && $agenda->hasLocalPdfFor(App\Support\AgendaPdfSlot::REQUEST))
-                        <p class="mt-1 text-xs text-slate-500">Local file stored — uploading replaces it.</p>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            Local file: <code>{{ $agenda->request_pdf_path }}</code>
+                            — uploading replaces it.
+                        </p>
                     @endif
                 </div>
                 <div>
@@ -163,7 +166,10 @@
                     <label class="splis-label" for="committee_report_pdf">Committee report file (upload)</label>
                     <input type="file" name="committee_report_pdf" id="committee_report_pdf" accept="application/pdf,image/jpeg,image/png,image/gif,image/webp,.pdf,.jpg,.jpeg,.png,.gif,.webp" class="splis-input">
                     @if ($isEdit && $agenda->hasLocalPdfFor(App\Support\AgendaPdfSlot::COMMITTEE_REPORT))
-                        <p class="mt-1 text-xs text-slate-500">Local file stored — uploading replaces it.</p>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            Local file: <code>{{ $agenda->committee_report_pdf_path }}</code>
+                            — uploading replaces it.
+                        </p>
                     @endif
                 </div>
                 <div class="md:col-span-2">
@@ -231,14 +237,20 @@
                         <label class="splis-label" for="journal_pdf">Journal file (upload)</label>
                         <input type="file" name="journal_pdf" id="journal_pdf" accept="application/pdf,image/jpeg,image/png,image/gif,image/webp,.pdf,.jpg,.jpeg,.png,.gif,.webp" class="splis-input">
                         @if ($isEdit && $agenda->hasLocalPdfFor(App\Support\AgendaPdfSlot::JOURNAL))
-                            <p class="mt-1 text-xs text-slate-500">Local file stored.</p>
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                Local file: <code>{{ $agenda->journal_pdf_path }}</code>
+                                — uploading replaces it.
+                            </p>
                         @endif
                     </div>
                     <div>
                         <label class="splis-label" for="minutes_pdf">Minutes file (upload)</label>
                         <input type="file" name="minutes_pdf" id="minutes_pdf" accept="application/pdf,image/jpeg,image/png,image/gif,image/webp,.pdf,.jpg,.jpeg,.png,.gif,.webp" class="splis-input">
                         @if ($isEdit && $agenda->hasLocalPdfFor(App\Support\AgendaPdfSlot::MINUTES))
-                            <p class="mt-1 text-xs text-slate-500">Local file stored.</p>
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                Local file: <code>{{ $agenda->minutes_pdf_path }}</code>
+                                — uploading replaces it.
+                            </p>
                         @endif
                     </div>
                     <div>
@@ -254,7 +266,10 @@
                     <label class="splis-label" for="reso_ord_ao_pdf">Output file (upload)</label>
                     <input type="file" name="reso_ord_ao_pdf" id="reso_ord_ao_pdf" accept="application/pdf,image/jpeg,image/png,image/gif,image/webp,.pdf,.jpg,.jpeg,.png,.gif,.webp" class="splis-input">
                     @if ($isEdit && $agenda->hasLocalPdfFor(App\Support\AgendaPdfSlot::RESO_ORD_AO))
-                        <p class="mt-1 text-xs text-slate-500">Local file stored.</p>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            Local file: <code>{{ $agenda->reso_ord_ao_pdf_path }}</code>
+                            — uploading replaces it.
+                        </p>
                     @endif
                 </div>
                 <div class="md:col-span-2">
