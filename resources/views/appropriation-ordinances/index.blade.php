@@ -3,7 +3,7 @@
 @section('title', 'Appropriation Ordinances — '.config('app.name'))
 
 @section('content')
-<div class="max-w-6xl">
+<div class="splis-archive-bg max-w-6xl">
     <div class="splis-page-header">
         <div>
             <h1 class="splis-page-title">Appropriation Ordinances</h1>

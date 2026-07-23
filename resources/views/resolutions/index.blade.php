@@ -3,7 +3,7 @@
 @section('title', 'Resolutions — '.config('app.name'))
 
 @section('content')
-<div id="resolutions-search" data-search-url="{{ route('resolutions.search') }}">
+<div id="resolutions-search" class="splis-archive-bg splis-resolutions-index" data-search-url="{{ route('resolutions.search') }}">
     <div class="splis-page-header">
         <div>
             <h1 class="splis-page-title">All Resolutions</h1>
