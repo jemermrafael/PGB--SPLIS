@@ -13,4 +13,10 @@ return [
         'Government',
         'Business',
     ],
+    'version_reasons' => [
+        'encoded' => 'Initial encoding',
+        'title' => 'Title update',
+        'pdf' => 'PDF update',
+        'general' => 'General update',
+    ],
 ];

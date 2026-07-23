@@ -41,7 +41,7 @@
             <label class="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
                 <input type="hidden" name="is_current" value="0">
                 <input type="checkbox" name="is_current" value="1" @checked(old('is_current', $term->is_current)) class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
-                Current term (used for new committee assignments and OB chair lookup)
+                Current term (used for new Committee Assignments and OB chair lookup)
             </label>
         </div>
 

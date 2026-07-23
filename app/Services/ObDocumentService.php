@@ -136,9 +136,14 @@ class ObDocumentService
 
         if ($block->type === ObBlockType::RomanSection) {
             $content = ObRomanNumeral::formatSectionContent($content);
+            $content = $this->normalizeAppearanceGuestsContent($content);
         }
 
         $block->update(['content' => $content]);
+
+        if ($block->type === ObBlockType::RomanSection) {
+            $this->syncSessionGuestsFromAppearanceBlock($block->obDocument ?? $block->load('obDocument')->obDocument, $content);
+        }
 
         if ($regroupUnfinished) {
             $this->regroupUnfinishedBusiness($block->obDocument);
@@ -899,4 +904,141 @@ class ObDocumentService
             default => 'unassigned_regular',
         };
     }
+
+    /**
+     * Keep empty guest rows in the editor so "Add guest" fields do not vanish after autosave.
+     *
+     * @param  array<string, mixed>  $content
+     * @return array<string, mixed>
+     */
+    protected function normalizeAppearanceGuestsContent(array $content): array
+    {
+        if (! $this->isAppearanceGuestsSection($content)) {
+            return $content;
+        }
+
+        $guests = collect($content['guests'] ?? [])
+            ->filter(fn ($guest) => is_array($guest))
+            ->map(fn (array $guest) => [
+                'name' => (string) ($guest['name'] ?? ''),
+            ])
+            ->values()
+            ->all();
+
+        $content['guests'] = $guests;
+
+        return $content;
+    }
+
+    /**
+     * @param  array<string, mixed>  $content
+     */
+    protected function isAppearanceGuestsSection(array $content): bool
+    {
+        $title = mb_strtoupper(trim((string) ($content['title'] ?? '')));
+        $numeral = ObRomanNumeral::normalize((string) ($content['numeral'] ?? ''));
+
+        return $numeral === 'II' && str_contains($title, 'APPEARANCE');
+    }
+
+    /**
+     * Push Section II guest names onto the session attendance guests list (preserving remarks / extras).
+     *
+     * @param  array<string, mixed>  $content
+     */
+    public function syncSessionGuestsFromAppearanceBlock(?ObDocument $document, array $content): void
+    {
+        if ($document === null || ! $this->isAppearanceGuestsSection($content)) {
+            return;
+        }
+
+        $document->loadMissing('legislativeSession');
+        $session = $document->legislativeSession;
+
+        if ($session === null) {
+            return;
+        }
+
+        $this->mergeAppearanceGuestsIntoSession($session, $content['guests'] ?? []);
+    }
+
+    /**
+     * Ensure attendance guests include names from OB Section II Appearance of Guest/s.
+     */
+    public function syncSessionGuestsFromDocument(LegislativeSession $session): void
+    {
+        $session->loadMissing('obDocument.blocks');
+        $document = $session->obDocument;
+
+        if ($document === null) {
+            return;
+        }
+
+        $block = $document->blocks
+            ->first(function (ObBlock $block): bool {
+                if ($block->type !== ObBlockType::RomanSection) {
+                    return false;
+                }
+
+                return $this->isAppearanceGuestsSection($block->content ?? []);
+            });
+
+        if ($block === null) {
+            return;
+        }
+
+        $this->mergeAppearanceGuestsIntoSession($session, $block->content['guests'] ?? []);
+    }
+
+    /**
+     * @param  list<mixed>  $appearanceGuests
+     */
+    protected function mergeAppearanceGuestsIntoSession(LegislativeSession $session, array $appearanceGuests): void
+    {
+        $existing = collect($session->guests ?? [])
+            ->filter(fn ($guest) => is_array($guest))
+            ->values();
+
+        $existingByName = $existing
+            ->filter(fn (array $guest) => filled($guest['name'] ?? null))
+            ->keyBy(fn (array $guest) => mb_strtolower(trim((string) $guest['name'])));
+
+        $fromOb = collect($appearanceGuests)
+            ->filter(fn ($guest) => is_array($guest))
+            ->map(fn (array $guest) => trim((string) ($guest['name'] ?? '')))
+            ->filter(fn (string $name) => $name !== '')
+            ->unique(fn (string $name) => mb_strtolower($name))
+            ->values()
+            ->map(function (string $name) use ($existingByName): array {
+                $prior = $existingByName->get(mb_strtolower($name));
+
+                return [
+                    'name' => $name,
+                    'remarks' => trim((string) ($prior['remarks'] ?? '')),
+                ];
+            });
+
+        $obNames = $fromOb
+            ->map(fn (array $guest) => mb_strtolower($guest['name']))
+            ->all();
+
+        $extras = $existing
+            ->filter(function (array $guest) use ($obNames): bool {
+                $name = trim((string) ($guest['name'] ?? ''));
+
+                return $name !== '' && ! in_array(mb_strtolower($name), $obNames, true);
+            })
+            ->map(fn (array $guest) => [
+                'name' => trim((string) ($guest['name'] ?? '')),
+                'remarks' => trim((string) ($guest['remarks'] ?? '')),
+            ])
+            ->values();
+
+        $merged = $fromOb->concat($extras)->values()->all();
+
+        $session->forceFill([
+            'guests' => $merged !== [] ? $merged : null,
+        ])->save();
+    }
 }
+

@@ -51,7 +51,21 @@ class BoardMemberOrdinanceReportController extends Controller
             ]);
         }
 
-        $paginator = $selectedMember->ordinances()
+        $role = $request->string('role')->toString();
+        $allowedRoles = [
+            \App\Enums\OrdinanceBoardMemberRole::Author->value,
+            \App\Enums\OrdinanceBoardMemberRole::Sponsor->value,
+            \App\Enums\OrdinanceBoardMemberRole::AuthoredSponsored->value,
+        ];
+
+        $paginator = Ordinance::query()
+            ->whereHas('boardMembers', function ($query) use ($selectedMember, $role, $allowedRoles): void {
+                $query->where('board_members.id', $selectedMember->id);
+
+                if (in_array($role, $allowedRoles, true)) {
+                    $query->where('ordinance_board_member.role', $role);
+                }
+            })
             ->ordered()
             ->when($request->filled('q'), fn ($query) => $query->search($request->string('q')->toString()))
             ->paginate(20);
@@ -92,16 +106,19 @@ class BoardMemberOrdinanceReportController extends Controller
     private function ordinancePayload(Ordinance $ordinance): array
     {
         $passed = $ordinance->date_enacted !== null;
+        $pdfUrl = $ordinance->pdfPublicUrl();
 
         return [
             'url' => route('ordinances.show', $ordinance),
             'number_label' => $ordinance->displayNumber(),
             'series_label' => $ordinance->displaySeries(),
-            'subject' => $ordinance->shortSubject(100),
+            'subject' => \Illuminate\Support\Str::limit($ordinance->listTitle(), 100, '…'),
             'date_enacted' => $ordinance->date_enacted?->toDateString(),
             'date_approved' => $ordinance->date_approved?->toDateString(),
             'status' => $passed ? 'passed' : 'not_passed',
             'status_label' => $passed ? 'Passed' : 'Not passed',
+            'has_pdf' => filled($pdfUrl),
+            'pdf_url' => $pdfUrl,
         ];
     }
 }

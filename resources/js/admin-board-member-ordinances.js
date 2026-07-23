@@ -1,4 +1,5 @@
 import { renderAjaxPagination } from './pagination';
+import { pdfModalTriggerAttrs } from './pdf-embed-url';
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -21,15 +22,26 @@ function formatDate(value) {
     return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+const pdfListIcon = `<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>`;
+
 function renderStatusBadge(status, label) {
     const badgeClass = status === 'passed' ? 'splis-badge-linked' : 'splis-badge';
 
     return `<span class="${badgeClass}">${escapeHtml(label)}</span>`;
 }
 
+function renderPdfCell(record) {
+    return `<td class="text-center">
+        ${record.has_pdf
+            ? `<a ${pdfModalTriggerAttrs(record.pdf_url, `${record.number_label || 'Ordinance'} PDF`)} class="splis-doc-pdf-icon" title="View PDF" aria-label="View PDF">${pdfListIcon}</a>`
+            : '<span class="text-slate-300">—</span>'}
+    </td>`;
+}
+
 function renderRow(record) {
     return `
         <tr>
+            ${renderPdfCell(record)}
             <td class="whitespace-nowrap">
                 <a href="${escapeHtml(record.url)}" class="splis-link font-semibold">${escapeHtml(record.number_label)}</a>
                 <p class="mt-0.5 text-xs font-normal text-slate-500 dark:text-slate-400">${escapeHtml(record.series_label || '')}</p>
@@ -177,7 +189,7 @@ export function initAdminBoardMemberOrdinancesSearch() {
         meta.textContent = `${Number(total || 0).toLocaleString()} Ordinance(s)`;
 
         if (items.length === 0) {
-            body.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-sm text-slate-500">No Authored Ordinances found for this Board Member.</td></tr>';
+            body.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-sm text-slate-500">No Authored Ordinances found for this Board Member.</td></tr>';
             pagination.innerHTML = '';
             return;
         }

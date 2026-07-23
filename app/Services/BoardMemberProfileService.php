@@ -6,6 +6,8 @@ use App\Enums\CommitteeMembershipRole;
 use App\Models\BoardMember;
 use App\Models\CommitteeMembership;
 use App\Models\CommitteeTerm;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Collection;
 
 class BoardMemberProfileService
@@ -50,6 +52,33 @@ class BoardMemberProfileService
             'roles' => $roles,
             'otherTerms' => $otherTerms,
         ];
+    }
+
+    public function updateContactAndPhoto(BoardMember $boardMember, ?string $mobileNumber, ?UploadedFile $photo): void
+    {
+        $boardMember->forceFill([
+            'mobile_number' => trim((string) $mobileNumber) ?: null,
+        ]);
+
+        if ($photo !== null) {
+            $extension = strtolower($photo->getClientOriginalExtension() ?: 'jpg');
+            if (! in_array($extension, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true)) {
+                $extension = 'jpg';
+            }
+
+            $directory = "board-members/{$boardMember->id}";
+            $path = "{$directory}/photo.{$extension}";
+
+            if ($boardMember->photo_path && Storage::disk('local')->exists($boardMember->photo_path)) {
+                Storage::disk('local')->delete($boardMember->photo_path);
+            }
+
+            Storage::disk('local')->makeDirectory($directory);
+            $photo->storeAs($directory, "photo.{$extension}", 'local');
+            $boardMember->photo_path = $path;
+        }
+
+        $boardMember->save();
     }
 
     /**

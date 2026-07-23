@@ -17,6 +17,7 @@ class AgendaLifecycleService
         'committee_referred',
         'date_of_referral',
         'committee_report_url',
+        'committee_report_pdf_path',
         'is_urgent_request',
         'status',
     ];
@@ -56,7 +57,7 @@ class AgendaLifecycleService
             return;
         }
 
-        if (in_array('committee_report_url', $changedFields, true) && filled($agenda->committee_report_url)) {
+        if ($this->committeeReportAttachmentChanged($changedFields) && $this->hasCommitteeReport($agenda)) {
             $agenda->forceFill(['ob_lifecycle_stage' => AgendaItem::OB_STAGE_COMMITTEE_REPORT])->saveQuietly();
             $this->handleCommitteeReportPlacement($agenda->fresh(), $userId);
 
@@ -221,12 +222,12 @@ class AgendaLifecycleService
             return null;
         }
 
-        if (! $this->agendaWasPlacedBefore($agenda, $session)) {
-            return $this->initialUnassignedSection($agenda);
+        if ($this->hasCommitteeReport($agenda)) {
+            return 'committee_reports';
         }
 
-        if (filled($agenda->committee_report_url)) {
-            return 'committee_reports';
+        if (! $this->agendaWasPlacedBefore($agenda, $session)) {
+            return $this->initialUnassignedSection($agenda);
         }
 
         return 'unfinished';
@@ -401,7 +402,8 @@ class AgendaLifecycleService
             return;
         }
 
-        $this->syncToNearestUpcomingSession($agenda, $userId);
+        // Force IV. Committee Reports even on first placement (resolveTargetSection already prefers it).
+        $this->syncAgendaToSession($agenda, $session, $userId);
     }
 
     protected function handleUrgentRequestPlacement(AgendaItem $agenda, ?int $userId = null): void
@@ -561,5 +563,19 @@ class AgendaLifecycleService
     protected function lifecycleFieldsChanged(array $changedFields): bool
     {
         return array_intersect($changedFields, self::LIFECYCLE_FIELDS) !== [];
+    }
+
+    /**
+     * @param  list<string>  $changedFields
+     */
+    protected function committeeReportAttachmentChanged(array $changedFields): bool
+    {
+        return in_array('committee_report_url', $changedFields, true)
+            || in_array('committee_report_pdf_path', $changedFields, true);
+    }
+
+    protected function hasCommitteeReport(AgendaItem $agenda): bool
+    {
+        return filled($agenda->committee_report_url) || filled($agenda->committee_report_pdf_path);
     }
 }

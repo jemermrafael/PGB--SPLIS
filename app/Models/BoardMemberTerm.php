@@ -11,6 +11,7 @@ class BoardMemberTerm extends Model
         'board_member_id',
         'committee_term_id',
         'district',
+        'ex_officio_title',
         'is_active',
         'sort_order',
     ];

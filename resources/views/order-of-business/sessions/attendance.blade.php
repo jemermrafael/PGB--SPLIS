@@ -25,12 +25,12 @@
         @csrf
         @method('PUT')
 
-        <p class="text-sm text-slate-600 dark:text-slate-400">Mark Vice Governor and Board Members present for this session.</p>
+        <p class="text-sm text-slate-600 dark:text-slate-400">Mark each member as Present (/), Absent (X), OB, or Excused (*).</p>
 
         <div class="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/50">
             <span class="text-xs text-slate-500" data-attendance-selected-count></span>
             <label class="flex items-center gap-2.5 text-sm font-medium text-slate-700 dark:text-slate-200">
-                <span>Select all</span>
+                <span>Mark all present</span>
                 <input
                     type="checkbox"
                     id="attendance-select-all"
@@ -45,33 +45,82 @@
                 @php
                     $district = $member->districtForTerm($termId ?? null) ?? $member->district ?? '';
                     $attendance = $attendances->get($member->id);
+                    $status = old('status.'.$member->id, $attendance?->status() ?? \App\Models\SessionAttendance::STATUS_ABSENT);
                 @endphp
-                <label class="flex items-center justify-between gap-4 py-3">
-                    <span>
+                <div class="flex flex-wrap items-center justify-between gap-4 py-3">
+                    <div>
                         <span class="font-medium text-slate-900 dark:text-slate-100">{{ $member->displayName() }}</span>
                         @if ($district)
                             <span class="ml-2 text-xs text-slate-500">{{ $district }}</span>
                         @endif
-                    </span>
-                    <span class="flex items-center gap-2 text-sm">
-                        <span class="text-slate-500">Present</span>
-                        <input type="hidden" name="presence[{{ $member->id }}]" value="0">
-                        <input
-                            type="checkbox"
-                            name="presence[{{ $member->id }}]"
-                            value="1"
-                            data-attendance-checkbox
-                            @checked(old('presence.'.$member->id, $attendance?->is_present))
-                            class="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
-                        >
-                    </span>
-                </label>
+                    </div>
+                    <div class="flex flex-wrap items-center justify-end gap-3 text-sm">
+                        <span class="flex items-center gap-2">
+                            <span class="text-slate-500 whitespace-nowrap">Remarks</span>
+                            <input
+                                type="text"
+                                name="remarks[{{ $member->id }}]"
+                                value="{{ old('remarks.'.$member->id, $attendance?->notes) }}"
+                                maxlength="500"
+                                class="splis-input w-40 max-w-full text-sm"
+                            >
+                        </span>
+                        <div class="splis-attendance-status" role="radiogroup" aria-label="Attendance for {{ $member->displayName() }}">
+                            <label class="splis-attendance-status-option">
+                                <input
+                                    type="radio"
+                                    name="status[{{ $member->id }}]"
+                                    value="present"
+                                    data-attendance-status
+                                    data-attendance-present
+                                    @checked($status === \App\Models\SessionAttendance::STATUS_PRESENT)
+                                >
+                                <span title="Present">/</span>
+                            </label>
+                            <label class="splis-attendance-status-option">
+                                <input
+                                    type="radio"
+                                    name="status[{{ $member->id }}]"
+                                    value="absent"
+                                    data-attendance-status
+                                    @checked($status === \App\Models\SessionAttendance::STATUS_ABSENT)
+                                >
+                                <span title="Absent">X</span>
+                            </label>
+                            <label class="splis-attendance-status-option">
+                                <input
+                                    type="radio"
+                                    name="status[{{ $member->id }}]"
+                                    value="ob"
+                                    data-attendance-status
+                                    @checked($status === \App\Models\SessionAttendance::STATUS_OB)
+                                >
+                                <span title="Official Business">OB</span>
+                            </label>
+                            <label class="splis-attendance-status-option">
+                                <input
+                                    type="radio"
+                                    name="status[{{ $member->id }}]"
+                                    value="excused"
+                                    data-attendance-status
+                                    @checked($status === \App\Models\SessionAttendance::STATUS_EXCUSED)
+                                >
+                                <span title="Excused">*</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
             @endforeach
         </div>
 
         <div id="session-guests" class="border-t border-slate-200 pt-4 dark:border-slate-700">
             <div class="mb-3 flex items-center justify-between gap-3">
-                <p class="splis-detail-label mb-0">Guests</p>
+                <div>
+                    <p class="splis-detail-label mb-0">Guests</p>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        Guests from OB Section II (Appearance of Guest/s) appear here after the board member list. You can add more guests below.
+                    </p>
+                </div>
                 <button type="button" class="splis-btn-secondary text-sm" data-guest-add>Add Guest</button>
             </div>
 
@@ -95,7 +144,6 @@
                                 name="guests[{{ $index }}][remarks]"
                                 class="splis-input"
                                 value="{{ $guest['remarks'] ?? '' }}"
-                                placeholder="Optional remarks"
                             >
                         </div>
                         <div class="flex items-end">
@@ -125,7 +173,7 @@
                     </div>
                     <div>
                         <label class="splis-label">Remarks</label>
-                        <input type="text" name="guests[__INDEX__][remarks]" class="splis-input" value="" placeholder="Optional remarks">
+                        <input type="text" name="guests[__INDEX__][remarks]" class="splis-input" value="">
                     </div>
                     <div class="flex items-end">
                         <button type="button" class="splis-btn-ghost text-sm text-red-600 hover:text-red-700" data-guest-remove>

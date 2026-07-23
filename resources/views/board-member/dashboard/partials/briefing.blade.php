@@ -5,6 +5,8 @@
     $deadlines = $briefing['deadline_agendas'] ?? collect();
     $deadlineDays = $briefing['deadline_days'] ?? $expiringSoonDays ?? 14;
     $deadlineCount = (int) ($briefing['deadline_count'] ?? $deadlines->count());
+    $incoming = $briefing['incoming_for_referral'] ?? collect();
+    $incomingCount = $incoming->count();
 @endphp
 
 <section class="splis-card mb-8 overflow-hidden border-brand-200 dark:border-brand-800">
@@ -70,7 +72,8 @@
     </div>
 
     <div class="border-t border-slate-200 dark:border-slate-700">
-        <details class="splis-accordion">
+        <div class="grid grid-cols-1 divide-y divide-slate-200 lg:grid-cols-2 lg:divide-x lg:divide-y-0 dark:divide-slate-700">
+            <details class="splis-accordion">
             <summary class="splis-accordion-summary !px-4 !py-3 sm:!px-5">
                 <div class="splis-accordion-summary-top">
                     <div>
@@ -134,5 +137,30 @@
                 @endif
             </div>
         </details>
+
+            <div class="p-4 sm:p-5">
+                <h3 class="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">Incoming (for referral)</h3>
+                <p class="mb-3 text-xs text-slate-500">Regular unassigned business on the next Order of Business session.</p>
+                @if ($incoming->isNotEmpty())
+                    <ul class="space-y-2 text-sm">
+                        @foreach ($incoming->take(8) as $agenda)
+                            <li>
+                                <a href="{{ route('agenda.show', $agenda) }}" class="splis-link font-medium">
+                                    {{ $agenda->displayLabel() }}
+                                </a>
+                                <span class="text-slate-600 dark:text-slate-300">
+                                    — {{ \Illuminate\Support\Str::limit($agenda->title ?: 'Untitled', 60) }}
+                                </span>
+                            </li>
+                        @endforeach
+                    </ul>
+                    @if ($incomingCount > 8)
+                        <p class="mt-2 text-xs text-slate-500">+ {{ $incomingCount - 8 }} more on next OB</p>
+                    @endif
+                @else
+                    <p class="text-sm text-slate-500">No regular unassigned items on the next session OB.</p>
+                @endif
+            </div>
+        </div>
     </div>
 </section>

@@ -10,6 +10,7 @@ class LegislativeSessionCommitteeReportFile extends Model
 {
     protected $fillable = [
         'legislative_session_id',
+        'board_member_committee_report_id',
         'original_filename',
         'stored_path',
         'mime_type',
@@ -21,6 +22,11 @@ class LegislativeSessionCommitteeReportFile extends Model
     public function session(): BelongsTo
     {
         return $this->belongsTo(LegislativeSession::class, 'legislative_session_id');
+    }
+
+    public function boardMemberCommitteeReport(): BelongsTo
+    {
+        return $this->belongsTo(BoardMemberCommitteeReport::class);
     }
 
     public function creator(): BelongsTo

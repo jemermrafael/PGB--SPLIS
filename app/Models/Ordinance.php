@@ -9,6 +9,7 @@ use App\Support\OrdinanceNumberParser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
@@ -21,6 +22,8 @@ class Ordinance extends Model
     protected $fillable = [
         'ordinance_no',
         'series_year',
+        'title',
+        'current_version_no',
         'subject',
         'publication_status',
         'pdf_url',
@@ -50,6 +53,7 @@ class Ordinance extends Model
         return [
             'ordinance_no' => 'integer',
             'series_year' => 'integer',
+            'current_version_no' => 'integer',
             'publication_status' => OrdinancePublicationStatus::class,
             'date_enacted' => 'date',
             'date_approved' => 'date',
@@ -72,6 +76,23 @@ class Ordinance extends Model
     public function publishedFromAgenda(): HasOne
     {
         return $this->hasOne(AgendaItem::class, 'ordinance_id')->withTrashed();
+    }
+
+    /**
+     * @return HasMany<OrdinanceVersion, $this>
+     */
+    public function versions(): HasMany
+    {
+        return $this->hasMany(OrdinanceVersion::class)->orderByDesc('version_no');
+    }
+
+    public function currentVersion(): ?OrdinanceVersion
+    {
+        if ($this->relationLoaded('versions')) {
+            return $this->versions->first();
+        }
+
+        return $this->versions()->orderByDesc('version_no')->first();
     }
 
     /**
@@ -115,12 +136,12 @@ class Ordinance extends Model
     public function boardMembersAttributionDisplay(): ?string
     {
         $parts = array_values(array_filter([
+            $this->labeledRoleDisplay(OrdinanceBoardMemberRole::AuthoredSponsored),
             $this->labeledRoleDisplay(OrdinanceBoardMemberRole::Author),
             $this->labeledRoleDisplay(OrdinanceBoardMemberRole::Sponsor),
-            $this->labeledRoleDisplay(OrdinanceBoardMemberRole::AuthoredSponsored),
         ]));
 
-        return $parts === [] ? null : implode(' · ', $parts);
+        return $parts === [] ? null : implode(' | ', $parts);
     }
 
     protected function roleMembersDisplay(OrdinanceBoardMemberRole $role): ?string
@@ -198,7 +219,8 @@ class Ordinance extends Model
         }
 
         return $query->where(function (Builder $query) use ($term): void {
-            $query->where('subject', 'like', "%{$term}%")
+            $query->where('title', 'like', "%{$term}%")
+                ->orWhere('subject', 'like', "%{$term}%")
                 ->orWhere('implementing_bodies', 'like', "%{$term}%")
                 ->orWhere('remarks', 'like', "%{$term}%");
         });
@@ -212,6 +234,31 @@ class Ordinance extends Model
     public function displaySeries(): string
     {
         return 'Series of '.($this->series_year ?: now()->year);
+    }
+
+    /**
+     * Page heading: "Ord. No. 25 - Short title" when title is set.
+     */
+    public function displayHeading(): string
+    {
+        $title = trim((string) ($this->title ?? ''));
+
+        if ($title === '') {
+            return $this->displayNumber();
+        }
+
+        return $this->displayNumber().' - '.$title;
+    }
+
+    public function listTitle(): string
+    {
+        $title = trim((string) ($this->title ?? ''));
+
+        if ($title !== '') {
+            return $title;
+        }
+
+        return trim((string) ($this->subject ?? ''));
     }
 
     public function shortSubject(int $length = 120): string

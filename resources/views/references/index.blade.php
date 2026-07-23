@@ -77,6 +77,9 @@
                     <p>{{ $material->reference_no ?: 'No reference no.' }}@if ($material->version_no) · v{{ $material->version_no }}@endif</p>
                     <p>{{ $material->issuing_office ?: 'No issuing office' }}</p>
                     <p>Issued {{ $material->date_issued?->format('M d, Y') ?: '—' }}</p>
+                    @if (filled($material->summary))
+                        <p class="mt-1">{{ \Illuminate\Support\Str::words($material->summary, 20, '…') }}</p>
+                    @endif
                 </div>
                 <div class="mt-3 flex items-center gap-3">
                     <a href="{{ route('references.show', $material) }}" class="splis-link text-sm">Open</a>
@@ -108,6 +111,7 @@
             <thead>
                 <tr>
                     <th>Title</th>
+                    <th class="min-w-[12rem] max-w-md">Summary</th>
                     <th class="hidden lg:table-cell">Type</th>
                     <th class="hidden xl:table-cell">Office</th>
                     <th class="hidden md:table-cell">Issued</th>
@@ -117,6 +121,14 @@
             </thead>
             <tbody>
                 @forelse ($materials as $material)
+                    @php
+                        $summaryFull = trim((string) ($material->summary ?? ''));
+                        $summaryWords = $summaryFull === '' ? [] : (preg_split('/\s+/', $summaryFull) ?: []);
+                        $summaryTruncated = count($summaryWords) > 20;
+                        $summaryDisplay = $summaryTruncated
+                            ? implode(' ', array_slice($summaryWords, 0, 20)).'…'
+                            : ($summaryFull !== '' ? $summaryFull : '—');
+                    @endphp
                     <tr>
                         <td>
                             <a href="{{ route('references.show', $material) }}" class="splis-table-title splis-table-title--list">{{ $material->title }}</a>
@@ -126,6 +138,13 @@
                                     · v{{ $material->version_no }}
                                 @endif
                             </p>
+                        </td>
+                        <td class="max-w-md text-sm text-slate-600 dark:text-slate-300">
+                            @if ($summaryTruncated)
+                                <span class="splis-title-tip" data-full-title="{{ e($summaryFull) }}" tabindex="0">{{ $summaryDisplay }}</span>
+                            @else
+                                {{ $summaryDisplay }}
+                            @endif
                         </td>
                         <td class="hidden lg:table-cell">{{ $material->documentTypeLabel() }}</td>
                         <td class="hidden xl:table-cell">{{ $material->issuing_office ?: '—' }}</td>
@@ -149,7 +168,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="py-10 text-center text-slate-500">No reference materials found.</td>
+                        <td colspan="7" class="py-10 text-center text-slate-500">No reference materials found.</td>
                     </tr>
                 @endforelse
             </tbody>

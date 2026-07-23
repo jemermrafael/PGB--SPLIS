@@ -165,11 +165,19 @@
                 <div class="md:col-span-2">
                     <label class="splis-label" for="committee_report_pdf">Committee report file (upload)</label>
                     <input type="file" name="committee_report_pdf" id="committee_report_pdf" accept="application/pdf,image/jpeg,image/png,image/gif,image/webp,.pdf,.jpg,.jpeg,.png,.gif,.webp" class="splis-input">
-                    @if ($isEdit && $agenda->hasLocalPdfFor(App\Support\AgendaPdfSlot::COMMITTEE_REPORT))
-                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            Local file: <code>{{ $agenda->committee_report_pdf_path }}</code>
-                            — uploading replaces it.
-                        </p>
+                    @if ($isEdit && $agenda->pdfPublicUrlFor(App\Support\AgendaPdfSlot::COMMITTEE_REPORT))
+                        <div class="mt-2 flex flex-wrap items-center gap-2">
+                            @include('partials.pdf-modal-trigger', [
+                                'url' => $agenda->pdfPublicUrlFor(App\Support\AgendaPdfSlot::COMMITTEE_REPORT),
+                                'viewer' => $agenda->pdfViewerModeFor(App\Support\AgendaPdfSlot::COMMITTEE_REPORT),
+                                'title' => 'Committee Report — '.$agenda->displayLabel(),
+                                'label' => 'View current file',
+                                'class' => 'splis-btn-secondary inline-flex items-center gap-2 text-sm',
+                            ])
+                            @if ($agenda->hasLocalPdfFor(App\Support\AgendaPdfSlot::COMMITTEE_REPORT))
+                                <span class="text-xs text-slate-500 dark:text-slate-400">Uploading replaces the current file.</span>
+                            @endif
+                        </div>
                     @endif
                 </div>
                 <div class="md:col-span-2">

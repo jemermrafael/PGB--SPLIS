@@ -8,6 +8,7 @@ use App\Support\OrdinancePdfType;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OrdinancePdfService
@@ -115,6 +116,33 @@ class OrdinancePdfService
     }
 
     /**
+     * Store under a unique path so previous version files remain on disk.
+     */
+    public function storeVersioned(UploadedFile $file, Ordinance $ordinance, string $type = OrdinancePdfType::MAIN): string
+    {
+        $media = MediaType::fromUploadedMime(
+            (string) $file->getMimeType(),
+            $file->getClientOriginalExtension(),
+        );
+
+        $relative = sprintf(
+            'ordinances/%d/%s/%s.%s',
+            $ordinance->id,
+            $type,
+            strtolower((string) Str::ulid()),
+            $media['extension'],
+        );
+
+        Storage::disk('local')->makeDirectory(dirname($relative));
+        Storage::disk('local')->put(
+            $relative,
+            (string) file_get_contents($file->getRealPath()),
+        );
+
+        return $relative;
+    }
+
+    /**
      * Write file bytes to private storage (storage/app/private/…).
      */
     public function storeBytes(
@@ -141,6 +169,20 @@ class OrdinancePdfService
 
         abort_if($path === null, 404, 'File not found.');
 
+        return $this->streamAbsolute($path);
+    }
+
+    public function streamRelative(string $relativePath): StreamedResponse
+    {
+        $path = $this->absolutePath($relativePath);
+
+        abort_if($path === null, 404, 'File not found.');
+
+        return $this->streamAbsolute($path);
+    }
+
+    protected function streamAbsolute(string $path): StreamedResponse
+    {
         $media = MediaType::fromPath($path);
         abort_if($media === null, 404, 'Unsupported file type.');
 

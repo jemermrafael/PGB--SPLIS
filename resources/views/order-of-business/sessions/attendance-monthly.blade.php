@@ -9,10 +9,28 @@
             <h1 class="splis-page-title">Monthly Attendance Report</h1>
             <p class="splis-page-subtitle">{{ \Carbon\Carbon::create($year, $month, 1)->format('F Y') }} · {{ $sessions->count() }} session(s)</p>
         </div>
-        <a href="{{ route('ob.sessions.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
-            <x-icon name="arrow-left" class="h-4 w-4" />
-            Back to Sessions
-        </a>
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ route('ob.sessions.attendance.monthly.maker', ['year' => $year, 'month' => $month]) }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="edit" class="h-4 w-4" />
+                Edit Signatories
+            </a>
+            <a
+                href="{{ route('ob.sessions.attendance.monthly.print', ['year' => $year, 'month' => $month]) }}"
+                data-pdf-modal-open
+                data-pdf-viewer="iframe"
+                data-pdf-src="{{ route('ob.sessions.attendance.monthly.print', ['year' => $year, 'month' => $month, 'embed' => 1]) }}"
+                data-pdf-url="{{ route('ob.sessions.attendance.monthly.print', ['year' => $year, 'month' => $month]) }}"
+                data-pdf-title="Monthly Attendance"
+                class="splis-btn-secondary inline-flex items-center gap-2"
+            >
+                <x-icon name="printer" class="h-4 w-4" />
+                Print
+            </a>
+            <a href="{{ route('ob.sessions.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="arrow-left" class="h-4 w-4" />
+                Back to Sessions
+            </a>
+        </div>
     </div>
 
     <form method="GET" class="splis-card splis-card-body mb-6 flex flex-wrap items-end gap-4">
@@ -53,6 +71,7 @@
                         <th class="whitespace-nowrap text-center">Present</th>
                         <th class="whitespace-nowrap text-center">Sessions</th>
                         <th class="whitespace-nowrap text-center">Rate</th>
+                        <th class="min-w-[8rem]">Remarks</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -70,10 +89,14 @@
                                     $presence = $row['sessions'][$session->id] ?? null;
                                 @endphp
                                 <td class="text-center">
-                                    @if ($presence === true)
-                                        <span class="splis-attendance-mark splis-attendance-mark--present" title="Present">✓</span>
-                                    @elseif ($presence === false)
-                                        <span class="splis-attendance-mark splis-attendance-mark--absent" title="Absent">—</span>
+                                    @if ($presence === \App\Models\SessionAttendance::STATUS_PRESENT)
+                                        <span class="splis-attendance-mark splis-attendance-mark--present" title="Present">/</span>
+                                    @elseif ($presence === \App\Models\SessionAttendance::STATUS_OB)
+                                        <span class="splis-attendance-mark splis-attendance-mark--ob" title="Official Business">OB</span>
+                                    @elseif ($presence === \App\Models\SessionAttendance::STATUS_EXCUSED)
+                                        <span class="splis-attendance-mark splis-attendance-mark--excused" title="Excused">*</span>
+                                    @elseif ($presence === \App\Models\SessionAttendance::STATUS_ABSENT)
+                                        <span class="splis-attendance-mark splis-attendance-mark--absent" title="Absent">X</span>
                                     @else
                                         <span class="splis-attendance-mark splis-attendance-mark--unset" title="Not recorded">·</span>
                                     @endif
@@ -82,6 +105,7 @@
                             <td class="text-center font-semibold tabular-nums">{{ $row['present'] }}</td>
                             <td class="text-center tabular-nums">{{ $row['total'] }}</td>
                             <td class="text-center tabular-nums">{{ $rate }}%</td>
+                            <td class="text-sm text-slate-600 dark:text-slate-400">{{ $row['remarks'] ?? '' }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -89,7 +113,7 @@
         </div>
 
         <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">
-            ✓ Present · — Absent · · Not recorded
+            / Present · X Absent · OB Official Business · * Excused · · Not recorded
         </p>
     @endif
 </div>

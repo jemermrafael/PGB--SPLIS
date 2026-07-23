@@ -232,7 +232,7 @@ class ObPrintRenderer
                     continue;
                 }
 
-                $segments[] = [
+                $segments[] = array_filter([
                     'type' => 'roman_section',
                     'numeral' => ObRomanNumeral::display($numeral),
                     'title' => $title,
@@ -244,7 +244,10 @@ class ObPrintRenderer
                             $block->content ?? [],
                         )
                         : null,
-                ];
+                    'guests' => $normalized === 'II' && str_contains(mb_strtoupper($title), 'APPEARANCE')
+                        ? $this->normalizedGuestNames($block->content['guests'] ?? [])
+                        : null,
+                ], fn ($value) => $value !== null && $value !== []);
 
                 continue;
             }
@@ -404,13 +407,26 @@ class ObPrintRenderer
      */
     protected function enrichCommitteeReportRowLinks(ObBlock $block, array $row): array
     {
-        $links = [];
+        $links = is_array($row['agenda_no_links'] ?? null) ? $row['agenda_no_links'] : [];
+        $items = $this->agendaItemsForBlock($block);
 
-        foreach ($this->agendaItemsForBlock($block) as $item) {
+        $paths = collect($items)
+            ->map(fn (AgendaItem $item) => (string) ($item->committee_report_pdf_path ?? ''))
+            ->filter(fn (string $path) => $path !== '')
+            ->unique()
+            ->values();
+
+        $canonicalUrl = null;
+        if ($paths->count() === 1 && $items !== []) {
+            $canonicalUrl = $items[0]->pdfPublicUrlFor(\App\Support\AgendaPdfSlot::COMMITTEE_REPORT);
+        }
+
+        foreach ($items as $item) {
             $no = ObAgendaSnapshot::agendaNo($item);
+            $url = $canonicalUrl ?: $item->pdfPublicUrlFor(\App\Support\AgendaPdfSlot::COMMITTEE_REPORT);
 
-            if (filled($item->committee_report_url)) {
-                $links[$no] = $item->committee_report_url;
+            if (filled($url)) {
+                $links[$no] = $url;
             }
         }
 
@@ -643,5 +659,18 @@ class ObPrintRenderer
             ],
             default => null,
         };
+    }
+
+    /**
+     * @param  array<int, array{name?: string|null}>  $guests
+     * @return array<int, string>
+     */
+    protected function normalizedGuestNames(array $guests): array
+    {
+        return collect($guests)
+            ->map(fn (array $guest) => trim((string) ($guest['name'] ?? '')))
+            ->filter()
+            ->values()
+            ->all();
     }
 }

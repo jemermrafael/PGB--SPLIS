@@ -19,6 +19,8 @@ class BoardMember extends Model
         'name',
         'honorific',
         'district',
+        'mobile_number',
+        'photo_path',
         'is_active',
     ];
 
@@ -55,6 +57,14 @@ class BoardMember extends Model
     public function sessionAttendances(): HasMany
     {
         return $this->hasMany(SessionAttendance::class);
+    }
+
+    /**
+     * @return HasMany<BoardMemberCommitteeReport, $this>
+     */
+    public function committeeReports(): HasMany
+    {
+        return $this->hasMany(BoardMemberCommitteeReport::class);
     }
 
     /**

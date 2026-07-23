@@ -171,6 +171,8 @@ class AgendaOutputPublisher
             'pdf_url' => $agenda->reso_ord_ao_url,
         ]);
 
+        app(OrdinanceVersionService::class)->recordInitialVersion($ordinance, $userId);
+
         $agenda->forceFill([
             'ordinance_id' => $ordinance->id,
             'published_at' => now(),

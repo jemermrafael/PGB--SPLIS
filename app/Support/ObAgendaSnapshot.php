@@ -141,6 +141,17 @@ class ObAgendaSnapshot
             $existing['agenda_no'] = $nos[0];
         }
 
+        $existingLinks = is_array($existing['agenda_no_links'] ?? null) ? $existing['agenda_no_links'] : [];
+        $incomingLinks = is_array($incoming['agenda_no_links'] ?? null) ? $incoming['agenda_no_links'] : [];
+        $mergedLinks = array_filter(
+            array_merge($existingLinks, $incomingLinks),
+            fn ($url) => filled($url),
+        );
+
+        if ($mergedLinks !== []) {
+            $existing['agenda_no_links'] = $mergedLinks;
+        }
+
         return $existing;
     }
 

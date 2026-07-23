@@ -12,6 +12,12 @@ function sanitizeRichTitleHtml(html) {
     const template = document.createElement('template');
     template.innerHTML = String(html ?? '');
 
+    function styleHasUnderline(node) {
+        const decoration = `${node.style?.textDecorationLine || ''} ${node.style?.textDecoration || ''}`.toLowerCase();
+
+        return decoration.includes('underline');
+    }
+
     function sanitizeNode(node) {
         if (node.nodeType === Node.TEXT_NODE) {
             return escapeHtml(node.textContent ?? '');
@@ -28,12 +34,8 @@ function sanitizeRichTitleHtml(html) {
             return `<strong>${children}</strong>`;
         }
 
-        if (tag === 'mark') {
-            return `<mark>${children}</mark>`;
-        }
-
-        if ((tag === 'span' || tag === 'font') && elementIsHighlight(node)) {
-            return `<mark>${children}</mark>`;
+        if (tag === 'u' || ((tag === 'span' || tag === 'font') && styleHasUnderline(node))) {
+            return children ? `<u>${children}</u>` : '';
         }
 
         if (tag === 'br') {
@@ -145,19 +147,18 @@ function renderRichTitleEditor(content, disabled) {
                     type="button"
                     class="splis-ob-rich-title-button"
                     data-ob-rich-command="bold"
-                    title="Bold selected text"
+                    title="Bold (Ctrl+B)"
                     aria-label="Bold selected text"
                     ${disabled}
                 ><strong>B</strong></button>
                 <button
                     type="button"
-                    class="splis-ob-rich-title-button splis-ob-rich-title-button--highlight"
-                    data-ob-rich-command="hiliteColor"
-                    data-ob-rich-value="#fef08a"
-                    title="Highlight selected text"
-                    aria-label="Highlight selected text"
+                    class="splis-ob-rich-title-button"
+                    data-ob-rich-command="underline"
+                    title="Underline (Ctrl+U)"
+                    aria-label="Underline selected text"
                     ${disabled}
-                ><strong>H</strong></button>
+                ><span class="underline">U</span></button>
             </div>
             <div
                 class="splis-ob-rich-title"
@@ -166,7 +167,7 @@ function renderRichTitleEditor(content, disabled) {
                 aria-multiline="true"
                 data-rich-title
             >${richTitleHtmlForContent(content)}</div>
-            <p class="mt-1 text-xs text-slate-500">Select words, then click B for bold or H to highlight.</p>
+            <p class="mt-1 text-xs text-slate-500">Select words, then use B / U or Ctrl+B / Ctrl+U.</p>
         </div>
     `;
 }
@@ -481,6 +482,36 @@ export function initObMaker() {
         return numeral === 'VII' || title.includes('ANNOUNCEMENTS');
     }
 
+    function isAppearanceGuestsSection(c) {
+        const title = String(c.title ?? '').trim().toUpperCase();
+        const numeral = normalizeRomanNumeral(c.numeral);
+
+        return (numeral === 'II' || numeral.startsWith('II.')) && title.includes('APPEARANCE');
+    }
+
+    function renderSectionGuestRows(c, blockId, disabled) {
+        const guests = Array.isArray(c.guests) ? c.guests : [];
+        const rows = guests
+            .map(
+                (guest, index) => `
+                <div class="flex items-center gap-2" data-ob-section-guest-row>
+                    <span class="w-6 shrink-0 text-xs text-slate-500">${index + 1}.</span>
+                    <input type="text" class="splis-input flex-1 splis-ob-section-guest-name" data-guest-index="${index}" value="${escapeHtml(guest?.name ?? '')}" ${disabled} placeholder="Guest name">
+                    <button type="button" class="splis-btn-ghost text-xs text-red-600 splis-ob-remove-section-guest" data-block-id="${blockId}" ${disabled ? 'disabled' : ''}>Remove</button>
+                </div>
+            `,
+            )
+            .join('');
+
+        return `
+            <div class="md:col-span-2 space-y-2" data-ob-section-guests data-block-id="${blockId}">
+                <p class="text-xs text-slate-500">Numbered guest names for Section II (stored on this section).</p>
+                <div class="space-y-2" data-ob-section-guest-list>${rows}</div>
+                <button type="button" class="splis-btn-secondary text-sm splis-ob-add-section-guest" data-block-id="${blockId}" ${disabled ? 'disabled' : ''}>Add guest</button>
+            </div>
+        `;
+    }
+
     function renderSectionMoveDropdown(block) {
         if (!canEdit || !block.can_move_section) {
             return '';
@@ -583,6 +614,17 @@ export function initObMaker() {
                     `
                         : '';
 
+                const guestActions =
+                    isAppearanceGuestsSection(c) && canEdit
+                        ? `
+                        <div class="md:col-span-2 border-t border-slate-200 pt-3 dark:border-slate-700">
+                            ${renderSectionGuestRows(c, block.id, disabled)}
+                        </div>
+                    `
+                        : isAppearanceGuestsSection(c)
+                          ? renderSectionGuestRows(c, block.id, disabled)
+                          : '';
+
 
                 return `
                     <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -594,6 +636,7 @@ export function initObMaker() {
                         ${bodyField}
                         ${sectionThreeLinkFields}
                         ${subLabelField}
+                        ${guestActions}
                         ${announcementActions}
                     </div>
                 `;
@@ -1310,6 +1353,11 @@ export function initObMaker() {
             }
         });
 
+        if (block.type === 'roman_section') {
+            const guestInputs = [...blockEl.querySelectorAll('.splis-ob-section-guest-name')];
+            content.guests = guestInputs.map((input) => ({ name: input.value }));
+        }
+
         return content;
     }
 
@@ -1838,12 +1886,8 @@ export function initObMaker() {
             editor.focus();
 
             if (richCommand.dataset.obRichCommand === 'hiliteColor') {
-                if (selectionHasHighlight(editor)) {
-                    removeHighlightFromSelection(editor);
-                } else {
-                    document.execCommand('styleWithCSS', false, true);
-                    document.execCommand('hiliteColor', false, richCommand.dataset.obRichValue ?? '#fef08a');
-                }
+                // Highlight formatting removed; keep branch for legacy toolbar markup.
+                document.execCommand('underline', false, null);
             } else {
                 document.execCommand(
                     richCommand.dataset.obRichCommand,
@@ -1863,6 +1907,44 @@ export function initObMaker() {
 
         if (target.matches('.splis-ob-add-announcement')) {
             addAnnouncementRow(Number(target.dataset.afterBlock));
+            return;
+        }
+
+        if (target.matches('.splis-ob-add-section-guest')) {
+            const blockId = Number(target.dataset.blockId);
+            syncBlockFromDom(blockId);
+            const block = blocks.find((item) => item.id === blockId);
+            if (!block) {
+                return;
+            }
+            const guests = Array.isArray(block.content?.guests) ? [...block.content.guests] : [];
+            guests.push({ name: '' });
+            block.content = { ...(block.content ?? {}), guests };
+            renderBlocks();
+            saveBlock(blockId);
+            return;
+        }
+
+        if (target.matches('.splis-ob-remove-section-guest')) {
+            const blockId = Number(target.dataset.blockId);
+            const row = target.closest('[data-ob-section-guest-row]');
+            const list = row?.parentElement;
+            if (!list) {
+                return;
+            }
+            syncBlockFromDom(blockId);
+            const block = blocks.find((item) => item.id === blockId);
+            if (!block) {
+                return;
+            }
+            const index = [...list.querySelectorAll('[data-ob-section-guest-row]')].indexOf(row);
+            const guests = Array.isArray(block.content?.guests) ? [...block.content.guests] : [];
+            if (index >= 0) {
+                guests.splice(index, 1);
+            }
+            block.content = { ...(block.content ?? {}), guests };
+            renderBlocks();
+            saveBlock(blockId);
             return;
         }
 
@@ -1963,6 +2045,31 @@ export function initObMaker() {
         document.execCommand('insertText', false, event.clipboardData?.getData('text/plain') ?? '');
     });
 
+    root.addEventListener('keydown', (event) => {
+        const editor = event.target.closest('[data-rich-title]');
+        if (!editor || editor.getAttribute('contenteditable') !== 'true') {
+            return;
+        }
+
+        if (!(event.ctrlKey || event.metaKey)) {
+            return;
+        }
+
+        const key = event.key.toLowerCase();
+        if (key === 'b') {
+            event.preventDefault();
+            document.execCommand('bold', false, null);
+            editor.dispatchEvent(new Event('input', { bubbles: true }));
+            return;
+        }
+
+        if (key === 'u') {
+            event.preventDefault();
+            document.execCommand('underline', false, null);
+            editor.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    });
+
     root.addEventListener('input', (event) => {
         const target = event.target;
         const blockEl = target.closest('[data-block-id]');
@@ -1989,6 +2096,15 @@ export function initObMaker() {
             }
             moveBlockToSection(blockId, section);
             target.value = '';
+            return;
+        }
+
+        if (target.matches('.splis-ob-section-guest-name')) {
+            const blockEl = target.closest('[data-block-id]');
+            const blockId = Number(blockEl?.dataset.blockId);
+            if (blockId) {
+                saveBlock(blockId);
+            }
             return;
         }
 

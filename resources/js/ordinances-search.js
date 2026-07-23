@@ -27,10 +27,15 @@ function formatDate(value) {
 
 const pdfListIcon = `<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>`;
 
-function renderTitleCell(title) {
-    const { display, full, truncated } = truncateWords(title);
+function renderTextCell(value, className = 'splis-table-title splis-table-title--list') {
+    const text = String(value ?? '').trim();
+    if (text === '') {
+        return `<td class="${className}"><span class="text-slate-400">—</span></td>`;
+    }
 
-    return `<td class="splis-table-title splis-table-title--list">${renderTruncatedTitle(display, full, truncated)}</td>`;
+    const { display, full, truncated } = truncateWords(text);
+
+    return `<td class="${className}">${renderTruncatedTitle(display, full, truncated)}</td>`;
 }
 
 function renderPdfCell(doc) {
@@ -68,18 +73,20 @@ function renderListItem(doc) {
         <tr>
             ${renderPdfCell(doc)}
             ${renderNumberCell(doc)}
-            ${renderTitleCell(doc.title)}
+            ${renderTextCell(doc.title)}
+            ${renderTextCell(doc.subject)}
             <td class="hidden lg:table-cell whitespace-nowrap">${formatDate(doc.date)}</td>
             <td class="hidden lg:table-cell whitespace-nowrap">${formatDate(doc.date_approved)}</td>
             <td class="hidden xl:table-cell whitespace-nowrap">${formatDate(doc.effectivity_date)}</td>
-            <td class="hidden xl:table-cell">${escapeHtml(doc.board_members_attribution || '—')}</td>
+            <td class="hidden xl:table-cell whitespace-nowrap">${escapeHtml(doc.board_members_attribution || '—')}</td>
             <td class="hidden sm:table-cell whitespace-nowrap">${renderPublicationStatusButton(doc, true)}</td>
         </tr>
     `;
 }
 
 function renderGridItem(doc) {
-    const { display, full, truncated } = truncateWords(doc.title);
+    const cardTitle = String(doc.title || doc.subject || '').trim();
+    const { display, full, truncated } = truncateWords(cardTitle);
 
     return `
         <article class="splis-doc-card flex flex-col gap-3">
@@ -95,7 +102,7 @@ function renderGridItem(doc) {
                 <div><dt>Enacted</dt><dd>${formatDate(doc.date)}</dd></div>
                 <div><dt>Approved</dt><dd>${formatDate(doc.date_approved)}</dd></div>
                 <div><dt>Effectivity</dt><dd>${formatDate(doc.effectivity_date)}</dd></div>
-                ${doc.board_members_attribution ? `<div class="col-span-2"><dt>Board Members</dt><dd>${escapeHtml(doc.board_members_attribution)}</dd></div>` : ''}
+                ${doc.board_members_attribution ? `<div class="col-span-2"><dt>Authored and Sponsored | Authored | Sponsored</dt><dd>${escapeHtml(doc.board_members_attribution)}</dd></div>` : ''}
             </dl>
             <div class="mt-auto flex items-center justify-between gap-2 border-t border-slate-100 pt-3 dark:border-slate-700">
                 <span class="text-xs text-slate-500">${escapeHtml(doc.series_label)}</span>
@@ -224,7 +231,7 @@ export function initOrdinancesSearch() {
         meta.textContent = `${Number(total || 0).toLocaleString()} Ordinance(s) found`;
 
         if (docs.length === 0) {
-            listBody.innerHTML = '<tr><td colspan="8" class="py-12 text-center text-slate-400">No ordinances match your filters.</td></tr>';
+            listBody.innerHTML = '<tr><td colspan="9" class="py-12 text-center text-slate-400">No ordinances match your filters.</td></tr>';
             grid.innerHTML = '<p class="col-span-full py-12 text-center text-slate-400">No ordinances match your filters.</p>';
             pagination.innerHTML = '';
             return;

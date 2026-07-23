@@ -128,7 +128,7 @@ class MyOrdinanceService
             'series_year' => $ordinance->series_year,
             'number_label' => $ordinance->displayNumber(),
             'series_label' => $ordinance->displaySeries(),
-            'subject' => $ordinance->subject,
+            'subject' => $ordinance->listTitle() ?: $ordinance->subject,
             'date_received' => null,
             'date_passed' => $ordinance->date_enacted,
             'date_approved' => $ordinance->date_approved,

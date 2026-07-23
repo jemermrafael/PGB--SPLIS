@@ -93,6 +93,28 @@ class AgendaLifecycleServiceTest extends TestCase
         $this->assertSame('committee_reports', $service->resolveTargetSection($agenda, $nextSession));
     }
 
+    public function test_resolve_target_section_uses_committee_reports_when_pdf_path_exists(): void
+    {
+        $service = new AgendaLifecycleService(
+            $this->createMock(\App\Services\ObDocumentService::class),
+        );
+
+        $agenda = new AgendaItem([
+            'committee_referred' => 'Tourism',
+            'committee_report_pdf_path' => 'agenda-pdfs/1/committee-report.pdf',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 0,
+        ]);
+
+        $session = new LegislativeSession([
+            'session_date' => now()->addWeek(),
+            'status' => 'scheduled',
+        ]);
+        $session->id = 2;
+
+        $this->assertSame('committee_reports', $service->resolveTargetSection($agenda, $session));
+    }
+
     public function test_prescribed_days_permit_rejects_lapsed_agenda(): void
     {
         $service = new AgendaLifecycleService(

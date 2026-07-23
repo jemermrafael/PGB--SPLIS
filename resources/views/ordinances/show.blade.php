@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', $ordinance->displayNumber().' — '.$ordinance->displaySeries().' — Ordinances — '.config('app.name'))
+@section('title', $ordinance->displayHeading().' — '.$ordinance->displaySeries().' — Ordinances — '.config('app.name'))
 
 @section('content')
 <div class="max-w-5xl">
@@ -13,7 +13,7 @@
                     </a>
                 </div>
             @endif
-            <h1 class="splis-page-title">{{ $ordinance->displayNumber() }}</h1>
+            <h1 class="splis-page-title">{{ $ordinance->displayHeading() }}</h1>
             <p class="splis-page-subtitle">{{ $ordinance->displaySeries() }}</p>
         </div>
         <div class="flex flex-wrap gap-2">
@@ -42,10 +42,14 @@
     @endif
 
     <div class="splis-card splis-card-body mb-6 space-y-6">
-        <div>
-            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Subject</p>
-            <p class="mt-1 whitespace-pre-wrap text-slate-900 dark:text-slate-100">{{ $ordinance->subject ?: '—' }}</p>
-        </div>
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Title</p>
+                <p class="mt-1 text-slate-900 dark:text-slate-100">{{ $ordinance->title ?: '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Subject</p>
+                <p class="mt-1 whitespace-pre-wrap text-slate-900 dark:text-slate-100">{{ $ordinance->subject ?: '—' }}</p>
+            </div>
 
         <dl class="grid grid-cols-1 gap-4 md:grid-cols-2">
             @include('ordinances.partials.board-member-attribution', ['ordinance' => $ordinance])
@@ -156,6 +160,8 @@
         'viewer' => $ordinance->pdfViewerMode() ?? 'embed',
         'embedTitle' => $ordinance->displayNumber().' PDF',
     ])
+
+    @include('ordinances.partials.version-history', ['ordinance' => $ordinance])
 
     @include('partials.detail-prev-next', [
         'previous' => $previousOrdinance ?? null,

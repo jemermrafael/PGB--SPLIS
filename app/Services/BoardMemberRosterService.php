@@ -33,17 +33,38 @@ class BoardMemberRosterService
     }
 
     /**
-     * @param  array{district?: string|null, is_active?: bool}  $data
+     * Active board members for a term, in the same order as /board-members
+     * (district config order → sort_order → assignment id).
+     *
+     * @return Collection<int, BoardMember>
+     */
+    public function orderedActiveMembers(CommitteeTerm $term): Collection
+    {
+        return $this->rosterGroupedByDistrict($term)
+            ->flatten(1)
+            ->filter(fn (BoardMemberTerm $assignment) => $assignment->is_active && $assignment->boardMember !== null)
+            ->map(fn (BoardMemberTerm $assignment) => $assignment->boardMember)
+            ->values();
+    }
+
+    /**
+     * @param  array{district?: string|null, ex_officio_title?: string|null, is_active?: bool}  $data
      */
     public function saveAssignment(BoardMember $boardMember, CommitteeTerm $term, array $data): BoardMemberTerm
     {
+        $district = $data['district'] ?? null;
+        $exOfficioTitle = $district === 'Ex Officio'
+            ? (trim((string) ($data['ex_officio_title'] ?? '')) ?: null)
+            : null;
+
         $assignment = BoardMemberTerm::query()->updateOrCreate(
             [
                 'board_member_id' => $boardMember->id,
                 'committee_term_id' => $term->id,
             ],
             [
-                'district' => $data['district'] ?? null,
+                'district' => $district,
+                'ex_officio_title' => $exOfficioTitle,
                 'is_active' => (bool) ($data['is_active'] ?? true),
             ],
         );

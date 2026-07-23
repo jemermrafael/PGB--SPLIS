@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BoardMember;
+use App\Models\CommitteeTerm;
 use App\Support\TrashActivity;
 use App\Services\BoardMemberProfileService;
 use App\Services\BoardMemberRosterService;
@@ -103,6 +104,7 @@ class BoardMemberController extends Controller
 
         $this->rosterService->saveAssignment($boardMember, $term, [
             'district' => $data['district'],
+            'ex_officio_title' => $data['ex_officio_title'] ?? null,
             'is_active' => $data['is_active'],
         ]);
 
@@ -143,6 +145,7 @@ class BoardMemberController extends Controller
 
         $this->rosterService->saveAssignment($boardMember, $term, [
             'district' => $data['district'],
+            'ex_officio_title' => $data['ex_officio_title'] ?? null,
             'is_active' => $data['is_active'],
         ]);
 
@@ -219,6 +222,7 @@ class BoardMemberController extends Controller
             'honorific' => ['nullable', 'string', 'max:50'],
             'committee_term_id' => ['required', 'integer', 'exists:committee_terms,id'],
             'district' => ['nullable', 'string', Rule::in($districts)],
+            'ex_officio_title' => ['nullable', 'string', 'max:150'],
             'is_active' => ['sometimes', 'boolean'],
         ]) + [
             'is_active' => $request->boolean('is_active'),

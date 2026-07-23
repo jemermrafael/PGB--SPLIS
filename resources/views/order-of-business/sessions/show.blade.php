@@ -147,7 +147,40 @@
                 @foreach ($sessionPdfRows as $link)
                     <li class="flex items-center justify-between gap-4 rounded-lg border border-slate-100 px-3 py-2.5 dark:border-slate-800">
                         <span class="min-w-0 truncate text-sm font-medium text-slate-700 dark:text-slate-300">{{ $link['label'] }}</span>
-                        @if ($link['kind'] === 'folder')
+                        @if ($link['field'] === 'pdf_summary_committee_reports')
+                            <span class="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                                @can('update', $session)
+                                    <a
+                                        href="{{ route('ob.sessions.committee-report-summary.maker', $session) }}"
+                                        class="splis-btn-secondary inline-flex items-center gap-2 text-sm"
+                                    >
+                                        <x-icon name="file-text" class="h-4 w-4" />
+                                        Open Maker
+                                    </a>
+                                @endcan
+                                <a
+                                    href="{{ route('ob.sessions.committee-report-summary.print', $session) }}"
+                                    data-pdf-modal-open
+                                    data-pdf-viewer="iframe"
+                                    data-pdf-src="{{ route('ob.sessions.committee-report-summary.print', $session) }}?embed=1"
+                                    data-pdf-url="{{ route('ob.sessions.committee-report-summary.print', $session) }}"
+                                    data-pdf-title="{{ $link['label'] }}"
+                                    class="splis-btn-secondary inline-flex items-center gap-2 text-sm"
+                                >
+                                    <x-icon name="printer" class="h-4 w-4" />
+                                    Preview
+                                </a>
+                                @if ($link['url'])
+                                    @include('partials.pdf-modal-trigger', [
+                                        'url' => $link['url'],
+                                        'viewer' => $link['viewer'],
+                                        'title' => $link['label'],
+                                        'label' => 'Uploaded file',
+                                        'class' => 'splis-btn-ghost inline-flex shrink-0 items-center gap-2 text-sm',
+                                    ])
+                                @endif
+                            </span>
+                        @elseif ($link['kind'] === 'folder')
                             @if ($hasCommitteeReportsFolder)
                                 <button
                                     type="button"

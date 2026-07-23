@@ -88,11 +88,12 @@
                     <tr>
                         <th class="w-12">PDF</th>
                         <th>Ord. No.</th>
+                        <th class="min-w-[10rem] max-w-xs">Title</th>
                         <th class="min-w-[12rem] max-w-md">Subject</th>
                         <th class="hidden lg:table-cell">Enacted</th>
                         <th class="hidden lg:table-cell">Approved</th>
                         <th class="hidden xl:table-cell">Effectivity</th>
-                        <th class="hidden xl:table-cell">Board Members</th>
+                        <th class="hidden xl:table-cell whitespace-nowrap">Authored and Sponsored | Authored | Sponsored</th>
                         <th class="hidden sm:table-cell">Publication</th>
                     </tr>
                 </thead>

@@ -212,7 +212,7 @@ class AgendaItem extends Model
 
     public function placeholderLabel(): string
     {
-        return $this->is_urgent_request ? 'Pending assignment' : 'Unnumbered';
+        return $this->is_urgent_request ? '---' : 'Unnumbered';
     }
 
     public function resoDisplayLabel(): ?string

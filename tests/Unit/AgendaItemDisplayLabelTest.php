@@ -22,7 +22,7 @@ class AgendaItemDisplayLabelTest extends TestCase
         $this->assertSame('304', $agenda->listNumberLabel());
     }
 
-    public function test_urgent_unnumbered_agenda_uses_pending_assignment_placeholder(): void
+    public function test_urgent_unnumbered_agenda_uses_dash_placeholder(): void
     {
         $agenda = AgendaItem::query()->create([
             'tracking_no' => null,
@@ -30,8 +30,8 @@ class AgendaItemDisplayLabelTest extends TestCase
             'status' => AgendaItem::STATUS_PENDING,
         ]);
 
-        $this->assertSame('Pending assignment', $agenda->displayLabel());
-        $this->assertSame('Pending assignment', $agenda->listNumberLabel());
+        $this->assertSame('---', $agenda->displayLabel());
+        $this->assertSame('---', $agenda->listNumberLabel());
     }
 
     public function test_unnumbered_non_urgent_agenda_uses_unnumbered_placeholder(): void

@@ -11,10 +11,36 @@
 @section('content')
 <div class="max-w-4xl">
     <div class="splis-page-header">
-        <div>
-            <p class="text-sm text-slate-500">{{ $district ?: 'Board Member' }}</p>
-            <h1 class="splis-page-title">{{ $boardMember->displayName() }}</h1>
-            <p class="splis-page-subtitle">Committee assignments for the selected election term.</p>
+        <div class="flex min-w-0 items-start gap-4">
+            @if ($boardMember->photo_path)
+                <button
+                    type="button"
+                    class="splis-bm-photo-thumb"
+                    style="width:130px;height:130px;padding:0;border:0;border-radius:0;overflow:hidden;flex-shrink:0;cursor:pointer;background:transparent"
+                    data-pdf-modal-open
+                    data-pdf-viewer="image"
+                    data-pdf-src="{{ route('board-members.photo', $boardMember) }}"
+                    data-pdf-url="{{ route('board-members.photo', $boardMember) }}"
+                    data-pdf-title="{{ $boardMember->displayName() }}"
+                    aria-label="View full profile photo"
+                >
+                    <img
+                        src="{{ route('board-members.photo', $boardMember) }}"
+                        alt="{{ $boardMember->displayName() }}"
+                        style="display:block;width:130px;height:130px;object-fit:cover;border-radius:0"
+                    >
+                </button>
+            @endif
+            <div class="min-w-0">
+                <p class="text-sm text-slate-500">
+                    {{ $district ?: 'Board Member' }}
+                    @if ($district === 'Ex Officio' && filled($assignment?->ex_officio_title))
+                        · {{ $assignment->ex_officio_title }}
+                    @endif
+                </p>
+                <h1 class="splis-page-title">{{ $boardMember->displayName() }}</h1>
+                <p class="splis-page-subtitle">Committee assignments for the selected election term.</p>
+            </div>
         </div>
         <div class="flex flex-wrap gap-2">
             @can('update', $boardMember)
@@ -93,7 +119,7 @@
                 ])
             </div>
         @else
-            <p class="text-sm text-slate-500">No committee assignments for {{ $selectedTerm->label }} yet. Assign this member from a committee roster.</p>
+            <p class="text-sm text-slate-500">No Committee Assignments for {{ $selectedTerm->label }} yet. Assign this member from a committee roster.</p>
         @endif
     </div>
 

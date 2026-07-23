@@ -11,7 +11,7 @@ class AdminAnalyticsMapController extends Controller
 {
     public function __invoke(Request $request, ExecutiveAnalyticsService $executive): JsonResponse
     {
-        abort_unless($request->user()?->canAdmin(), 403);
+        abort_unless($request->user()?->canAdmin() || $request->user()?->isBoardMember(), 403);
 
         $committee = null;
 

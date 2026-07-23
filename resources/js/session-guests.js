@@ -63,32 +63,37 @@ export function initSessionAttendanceSelectAll() {
         return;
     }
 
-    const checkboxes = () => Array.from(roster.querySelectorAll('[data-attendance-checkbox]'));
+    const presentRadios = () => Array.from(roster.querySelectorAll('[data-attendance-present]'));
 
     function syncSelectAllState() {
-        const boxes = checkboxes();
-        const checkedCount = boxes.filter((box) => box.checked).length;
+        const presents = presentRadios();
+        const checkedCount = presents.filter((radio) => radio.checked).length;
 
-        selectAll.checked = boxes.length > 0 && checkedCount === boxes.length;
-        selectAll.indeterminate = checkedCount > 0 && checkedCount < boxes.length;
+        selectAll.checked = presents.length > 0 && checkedCount === presents.length;
+        selectAll.indeterminate = checkedCount > 0 && checkedCount < presents.length;
 
         if (countEl) {
-            countEl.textContent = boxes.length === 0
+            countEl.textContent = presents.length === 0
                 ? ''
-                : `${checkedCount} of ${boxes.length} present`;
+                : `${checkedCount} of ${presents.length} present`;
         }
     }
 
     selectAll.addEventListener('change', () => {
-        const checked = selectAll.checked;
-        checkboxes().forEach((box) => {
-            box.checked = checked;
-        });
+        if (selectAll.checked) {
+            presentRadios().forEach((radio) => {
+                radio.checked = true;
+            });
+        } else {
+            roster.querySelectorAll('[data-attendance-status][value="absent"]').forEach((radio) => {
+                radio.checked = true;
+            });
+        }
         syncSelectAllState();
     });
 
     roster.addEventListener('change', (event) => {
-        if (event.target?.matches?.('[data-attendance-checkbox]')) {
+        if (event.target?.matches?.('[data-attendance-status]')) {
             syncSelectAllState();
         }
     });

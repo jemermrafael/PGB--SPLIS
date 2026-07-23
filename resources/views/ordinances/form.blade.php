@@ -47,6 +47,12 @@
         </div>
 
         <div>
+            <label class="splis-label" for="title">Title</label>
+            <input type="text" name="title" id="title" value="{{ old('title', $ordinance->title) }}" maxlength="500" class="splis-input" placeholder="Eminent Domain for Road Right-of-Way…">
+            <p class="mt-1.5 text-xs text-slate-400">Shown as “Ord. No. XX - Title” on the ordinance page.</p>
+        </div>
+
+        <div>
             <label class="splis-label" for="subject">Subject</label>
             <textarea name="subject" id="subject" rows="4" class="splis-input">{{ old('subject', $ordinance->subject) }}</textarea>
         </div>

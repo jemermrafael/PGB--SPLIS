@@ -100,7 +100,7 @@ function renderGridItem(doc) {
             </div>
             <p class="splis-doc-card-title">${renderTruncatedTitle(display, full, truncated)}</p>
             <dl class="splis-doc-card-meta">
-                <div><dt>Author</dt><dd>${escapeHtml(doc.author || '—')}</dd></div>
+                <div><dt>Sponsored</dt><dd>${escapeHtml(doc.author || '—')}</dd></div>
                 <div><dt>Date</dt><dd>${formatDate(doc.date)}</dd></div>
                 <div class="col-span-2"><dt>Committee</dt><dd>${escapeHtml(doc.committee || '—')}</dd></div>
             </dl>

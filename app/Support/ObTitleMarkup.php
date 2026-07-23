@@ -14,9 +14,39 @@ class ObTitleMarkup
 
         $html = preg_replace('/<(?:div|p)(?:\s[^>]*)?>/iu', '', $html) ?? $html;
         $html = preg_replace('/<\/(?:div|p)>/iu', '<br>', $html) ?? $html;
-        $html = strip_tags($html, '<strong><b><mark><br>');
+
+        // Chrome often wraps underline / highlight as styled <span> or <font>.
+        $html = preg_replace_callback(
+            '/<(?:span|font)\b([^>]*)>(.*?)<\/(?:span|font)>/ius',
+            static function (array $matches): string {
+                $attrs = strtolower($matches[1] ?? '');
+                $inner = $matches[2] ?? '';
+                $out = $inner;
+
+                if (
+                    str_contains($attrs, 'text-decoration')
+                    && str_contains($attrs, 'underline')
+                ) {
+                    $out = '<u>'.$out.'</u>';
+                }
+
+                if (
+                    (str_contains($attrs, 'background-color') || str_contains($attrs, 'background:'))
+                    && ! str_contains($attrs, 'transparent')
+                ) {
+                    $out = '<mark>'.$out.'</mark>';
+                }
+
+                return $out;
+            },
+            $html,
+        ) ?? $html;
+
+        $html = strip_tags($html, '<strong><b><u><mark><br>');
         $html = preg_replace('/<(?:strong|b)(?:\s[^>]*)?>/iu', '<strong>', $html) ?? $html;
         $html = preg_replace('/<\/(?:strong|b)>/iu', '</strong>', $html) ?? $html;
+        $html = preg_replace('/<u(?:\s[^>]*)?>/iu', '<u>', $html) ?? $html;
+        $html = preg_replace('/<\/u>/iu', '</u>', $html) ?? $html;
         $html = preg_replace('/<mark(?:\s[^>]*)?>/iu', '<mark>', $html) ?? $html;
         $html = preg_replace('/<br(?:\s[^>]*)?\/?>/iu', '<br>', $html) ?? $html;
         $html = preg_replace('/(?:<br>){3,}/iu', '<br><br>', $html) ?? $html;

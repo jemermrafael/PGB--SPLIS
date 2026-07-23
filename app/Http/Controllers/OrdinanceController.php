@@ -6,9 +6,11 @@ use App\Enums\OrdinanceBoardMemberRole;
 use App\Enums\OrdinancePublicationStatus;
 use App\Models\ActivityLog;
 use App\Models\Ordinance;
+use App\Models\OrdinanceVersion;
 use App\Services\BoardMemberRosterService;
 use App\Services\OrdinanceBoardMemberService;
 use App\Services\OrdinancePdfService;
+use App\Services\OrdinanceVersionService;
 use App\Support\OrdinancePdfType;
 use App\Support\TrashActivity;
 use Illuminate\Http\RedirectResponse;
@@ -22,6 +24,7 @@ class OrdinanceController extends Controller
         protected BoardMemberRosterService $boardMemberRosterService,
         protected OrdinanceBoardMemberService $ordinanceBoardMemberService,
         protected OrdinancePdfService $ordinancePdfService,
+        protected OrdinanceVersionService $ordinanceVersionService,
     ) {}
 
     public function index(): View
@@ -45,7 +48,7 @@ class OrdinanceController extends Controller
     {
         $this->authorize('view', $ordinance);
 
-        $ordinance->load(['boardMembers', 'publishedFromAgenda']);
+        $ordinance->load(['boardMembers', 'publishedFromAgenda', 'versions.creator']);
 
         return view('ordinances.show', [
             'ordinance' => $ordinance,
@@ -71,6 +74,7 @@ class OrdinanceController extends Controller
         $ordinance = Ordinance::create($data);
         $this->storeUploadedPdfs($request, $ordinance);
         $this->syncBoardMembers($ordinance, $request);
+        $this->ordinanceVersionService->recordInitialVersion($ordinance, $request->user()->id);
 
         ActivityLog::record('ordinance.created', $ordinance, [
             'ordinance_no' => $ordinance->ordinance_no,
@@ -95,13 +99,46 @@ class OrdinanceController extends Controller
     {
         $this->authorize('update', $ordinance);
 
+        $before = collect(OrdinanceVersionService::VERSIONED_FIELDS)
+            ->mapWithKeys(fn (string $field) => [$field => $ordinance->getAttribute($field)])
+            ->all();
+
+        $hasPdfUpload = collect($this->ordinanceVersionService->pdfUploadFields())
+            ->contains(fn (string $field) => $request->hasFile($field));
+
+        if ($hasPdfUpload) {
+            $this->ordinanceVersionService->preservePdfsInCurrentVersion($ordinance, $request->user()->id);
+        }
+
         $ordinance->update($this->validatedOrdinance($request, $ordinance));
         $this->storeUploadedPdfs($request, $ordinance);
         $this->syncBoardMembers($ordinance, $request);
+        $ordinance->refresh();
+
+        $this->ordinanceVersionService->recordVersionIfChanged($ordinance, $before, $request->user()->id);
 
         return redirect()
             ->route('ordinances.show', $ordinance)
             ->with('status', 'Ordinance updated.');
+    }
+
+    public function destroyVersion(
+        Ordinance $ordinance,
+        OrdinanceVersion $version,
+    ): RedirectResponse {
+        abort_unless($version->ordinance_id === $ordinance->id, 404);
+
+        $this->authorize('delete', $version);
+
+        try {
+            $this->ordinanceVersionService->deleteVersion($version);
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['version' => $e->getMessage()]);
+        }
+
+        return redirect()
+            ->route('ordinances.show', $ordinance)
+            ->with('status', 'Version v'.$version->version_no.' deleted.');
     }
 
     public function destroy(Ordinance $ordinance): RedirectResponse
@@ -175,6 +212,7 @@ class OrdinanceController extends Controller
                     ->ignore($ordinance?->id),
             ],
             'series_year' => ['required', 'integer', 'min:1900', 'max:2100'],
+            'title' => ['nullable', 'string', 'max:500'],
             'subject' => ['nullable', 'string'],
             'publication_status' => ['nullable', 'string', Rule::in(array_column(OrdinancePublicationStatus::cases(), 'value'))],
             'pdf_url' => ['nullable', 'string', 'max:500'],
@@ -218,10 +256,9 @@ class OrdinanceController extends Controller
                 continue;
             }
 
-            $path = $this->ordinancePdfService->store(
+            $path = $this->ordinancePdfService->storeVersioned(
                 $request->file($field),
-                (int) $ordinance->series_year,
-                (int) $ordinance->ordinance_no,
+                $ordinance,
                 $type,
             );
 

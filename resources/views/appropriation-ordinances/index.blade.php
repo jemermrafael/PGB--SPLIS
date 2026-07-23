@@ -43,6 +43,7 @@
         <table class="splis-table">
             <thead>
                 <tr>
+                    <th class="w-12">PDF</th>
                     <th>Appro. Ord. No.</th>
                     <th>Title</th>
                     <th>Date received</th>
@@ -52,7 +53,27 @@
             </thead>
             <tbody>
                 @forelse ($records as $record)
+                    @php $pdfUrl = $record->pdfPublicUrl(); @endphp
                     <tr>
+                        <td class="text-center">
+                            @if ($pdfUrl)
+                                <a
+                                    href="{{ $pdfUrl }}"
+                                    data-pdf-modal-open
+                                    data-pdf-viewer="{{ $record->pdfViewerMode() ?? 'iframe' }}"
+                                    data-pdf-src="{{ $pdfUrl }}{{ str_contains($pdfUrl, '?') ? '&' : '?' }}embed=1"
+                                    data-pdf-url="{{ $pdfUrl }}"
+                                    data-pdf-title="{{ $record->displayNumber() }} PDF"
+                                    class="splis-doc-pdf-icon"
+                                    title="View PDF"
+                                    aria-label="View PDF"
+                                >
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+                                </a>
+                            @else
+                                <span class="text-slate-300">—</span>
+                            @endif
+                        </td>
                         <td class="whitespace-nowrap">
                             <a href="{{ route('appropriation-ordinances.show', $record) }}" class="splis-link font-semibold">{{ $record->displayNumber() }}</a>
                             <p class="mt-0.5 text-xs font-normal text-slate-500 dark:text-slate-400">{{ $record->displaySeries() }}</p>
@@ -64,7 +85,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="py-8 text-center text-sm text-slate-500">No appropriation ordinances found.</td>
+                        <td colspan="6" class="py-8 text-center text-sm text-slate-500">No appropriation ordinances found.</td>
                     </tr>
                 @endforelse
             </tbody>

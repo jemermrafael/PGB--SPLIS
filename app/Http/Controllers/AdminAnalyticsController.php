@@ -11,7 +11,7 @@ class AdminAnalyticsController extends Controller
 {
     public function __invoke(Request $request, ExecutiveAnalyticsService $executive): View
     {
-        abort_unless($request->user()?->canAdmin(), 403);
+        abort_unless($request->user()?->canAdmin() || $request->user()?->isBoardMember(), 403);
 
         $currentYear = (int) now()->format('Y');
         $minYear = $executive->earliestDataYear();

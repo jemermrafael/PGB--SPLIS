@@ -7,7 +7,7 @@
     <div class="splis-page-header">
         <div>
             <h1 class="splis-page-title">Election Terms</h1>
-            <p class="splis-page-subtitle">Track committee rosters per election period. Mark one term as current for new assignments.</p>
+            <p class="splis-page-subtitle">Track Committee rosters per election period. Mark one term as current for new assignments.</p>
         </div>
         @can('create', App\Models\CommitteeTerm::class)
             <a href="{{ route('committee-terms.create') }}" class="splis-btn-primary inline-flex items-center gap-2">

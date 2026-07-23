@@ -22,16 +22,45 @@
     @else
         <div class="splis-card splis-card-body mb-8 space-y-3">
             <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Linked Board Member</p>
-            <p class="text-lg font-medium text-slate-900 dark:text-slate-100">{{ $boardMember->displayName() }}</p>
-            <p class="text-sm text-slate-500">
-                {{ $boardMember->districtForTerm($selectedTerm->id) ?: 'District not set' }}
-                · {{ $assignmentCount }} committee assignment(s) in {{ $selectedTerm->label }}
-            </p>
+            <div class="flex flex-wrap items-center gap-4">
+                @if ($boardMember->photo_path)
+                    <button
+                        type="button"
+                        class="splis-bm-photo-thumb"
+                        style="width:130px;height:130px;padding:0;border:0;border-radius:0;overflow:hidden;flex-shrink:0;cursor:pointer;background:transparent"
+                        data-pdf-modal-open
+                        data-pdf-viewer="image"
+                        data-pdf-src="{{ route('board-members.photo', $boardMember) }}"
+                        data-pdf-url="{{ route('board-members.photo', $boardMember) }}"
+                        data-pdf-title="{{ $boardMember->displayName() }}"
+                        aria-label="View full profile photo"
+                    >
+                        <img
+                            src="{{ route('board-members.photo', $boardMember) }}"
+                            alt="Profile photo"
+                            style="display:block;width:130px;height:130px;object-fit:contain;border-radius:0"
+                        >
+                    </button>
+                @endif
+                <div>
+                    <p class="text-lg font-medium text-slate-900 dark:text-slate-100">{{ $boardMember->displayName() }}</p>
+                    <p class="text-sm text-slate-500">
+                        {{ $boardMember->districtForTerm($selectedTerm->id) ?: 'District not set' }}
+                        · {{ $assignmentCount }} Committee Assignment(s) in {{ $selectedTerm->label }}
+                    </p>
+                    @if ($boardMember->mobile_number)
+                        <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Mobile: {{ $boardMember->mobile_number }}</p>
+                    @endif
+                    @if ($user->email)
+                        <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Email: {{ $user->email }}</p>
+                    @endif
+                </div>
+            </div>
             <a href="{{ route('board-member.committees.index') }}" class="splis-link text-sm">View My Committees</a>
         </div>
     @endif
 
-    <form method="POST" action="{{ route('board-member.profile.update') }}" class="splis-card splis-card-body space-y-5">
+    <form method="POST" action="{{ route('board-member.profile.update') }}" enctype="multipart/form-data" class="splis-card splis-card-body space-y-5">
         @csrf
         @method('PUT')
 
@@ -53,6 +82,14 @@
                     <label class="splis-label" for="honorific">Honorific (roster)</label>
                     <input type="text" name="honorific" id="honorific" value="{{ old('honorific', $boardMember->honorific) }}" class="splis-input" placeholder="Hon." maxlength="40">
                     <p class="mt-1 text-xs text-slate-500">Shown with your official name on committee rosters. District and legal name are managed by the SP office.</p>
+                </div>
+                <div>
+                    <label class="splis-label" for="mobile_number">Mobile number</label>
+                    <input type="text" name="mobile_number" id="mobile_number" value="{{ old('mobile_number', $boardMember->mobile_number) }}" class="splis-input" maxlength="50">
+                </div>
+                <div>
+                    <label class="splis-label" for="photo">Profile photo</label>
+                    <input type="file" name="photo" id="photo" accept="image/*" class="splis-input">
                 </div>
             @endif
             <div>

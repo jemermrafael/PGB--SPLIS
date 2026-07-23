@@ -10,8 +10,27 @@ use App\Support\ActivityLogPresenter;
 
 class ActivityLogNotifier
 {
+    /**
+     * Noisy operational events that should not notify admin/encoder inboxes.
+     *
+     * @var list<string>
+     */
+    public const HIDDEN_ACTIONS = [
+        'ordinance.pdf_mirrored',
+        'appropriation_ordinance.pdf_mirrored',
+        'backup.created',
+        'data_sync.drive_mirror_process',
+        'data_sync.agenda_csv',
+        'data_sync.link_pdfs',
+        'data_sync.resolutions_csv',
+    ];
+
     public function notify(ActivityLog $log): void
     {
+        if (in_array($log->action, self::HIDDEN_ACTIONS, true)) {
+            return;
+        }
+
         $log->loadMissing('user');
 
         $admins = User::query()

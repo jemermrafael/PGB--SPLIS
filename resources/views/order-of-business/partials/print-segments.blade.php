@@ -21,6 +21,14 @@
                             <td>{!! nl2br(e($segment['body'])) !!}</td>
                         </tr>
                     @endif
+                    @if (! empty($segment['guests']))
+                        @foreach ($segment['guests'] as $index => $guestName)
+                            <tr>
+                                <td></td>
+                                <td class="ob-print-guest-line">{{ $index + 1 }}. {{ $guestName }}</td>
+                            </tr>
+                        @endforeach
+                    @endif
                 </tbody>
             </table>
             @break

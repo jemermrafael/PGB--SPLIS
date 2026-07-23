@@ -145,7 +145,8 @@ class OrdinanceSearchService
         $ordinanceNo = OrdinanceNumberParser::parse($term);
 
         $query->where(function (Builder $query) use ($term, $ordinanceNo): void {
-            $query->where('subject', 'like', "%{$term}%")
+            $query->where('title', 'like', "%{$term}%")
+                ->orWhere('subject', 'like', "%{$term}%")
                 ->orWhere('implementing_bodies', 'like', "%{$term}%")
                 ->orWhere('remarks', 'like', "%{$term}%");
 
@@ -171,7 +172,8 @@ class OrdinanceSearchService
             'number' => $ordinance->displayNumber(),
             'series' => (string) $ordinance->series_year,
             'series_label' => $ordinance->displaySeries(),
-            'title' => $ordinance->subject ?? '',
+            'title' => trim((string) ($ordinance->title ?? '')),
+            'subject' => trim((string) ($ordinance->subject ?? '')),
             'url' => route('ordinances.show', $ordinance),
             'has_pdf' => filled($pdfUrl),
             'pdf_url' => $pdfUrl,
@@ -207,7 +209,7 @@ class OrdinanceSearchService
             'number' => $ordinance->displayNumber(),
             'series' => (string) $ordinance->series_year,
             'series_label' => $ordinance->displaySeries(),
-            'title' => $ordinance->subject ?? '',
+            'title' => $ordinance->listTitle(),
             'author' => $ordinance->boardMembersAttributionDisplay(),
             'committee' => $ordinance->implementing_bodies,
             'keyword' => null,

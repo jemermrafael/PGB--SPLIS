@@ -26,7 +26,7 @@
             ])
         @endif
 
-        <p class="mb-6 text-sm text-slate-500">{{ $totalAssignments }} committee assignment(s) in this term.</p>
+        <p class="mb-6 text-sm text-slate-500">{{ $totalAssignments }} Committee Assignment(s) in this term.</p>
 
         <div class="space-y-6">
             @include('board-member.committees.partials.role-section', [

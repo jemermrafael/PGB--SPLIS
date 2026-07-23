@@ -49,13 +49,11 @@
         <button type="button" class="splis-agenda-chip" data-agenda-quick-filter data-filter-due-soon="1">Due soon</button>
         <button type="button" class="splis-agenda-chip" data-agenda-quick-filter data-filter-status="done">Done</button>
         <button type="button" class="splis-agenda-chip" data-agenda-quick-filter data-filter-status="no_due_date">No deadline</button>
-        <button type="button" class="splis-agenda-chip" data-agenda-quick-filter data-filter-has-incoming="1">Has incoming</button>
     </div>
 
     <form id="agenda-search-form" class="splis-filter-panel splis-filter-panel--accent">
         <div class="splis-filter-panel-accent-bar" aria-hidden="true"></div>
         <input type="hidden" name="due_soon" id="agenda-filter-due-soon" value="">
-        <input type="hidden" name="has_incoming" id="agenda-filter-has-incoming" value="">
         <h2 class="mb-4 flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-100">
             <span class="splis-filter-panel-icon">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
@@ -161,11 +159,11 @@
             @include('partials.view-toggle', ['id' => 'agenda-view-toggle'])
         </div>
 
-        <div id="agenda-list-wrap" class="splis-table-wrap" data-drag-scroll>
-            <table class="splis-table min-w-[70rem]">
+        <div id="agenda-list-wrap" class="splis-table-wrap splis-agenda-table-wrap" data-drag-scroll>
+            <table class="splis-table splis-agenda-table min-w-[70rem]">
                 <thead>
                     <tr>
-                        <th class="whitespace-nowrap">#</th>
+                        <th class="splis-agenda-sticky-col whitespace-nowrap">#</th>
                         <th class="min-w-[12rem] max-w-md">Title</th>
                         <th class="hidden whitespace-nowrap md:table-cell">Sender</th>
                         <th class="hidden whitespace-nowrap lg:table-cell">Committee</th>

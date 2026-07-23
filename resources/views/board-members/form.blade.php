@@ -54,7 +54,7 @@
 
             <div>
                 <label class="splis-label" for="district">District</label>
-                <select name="district" id="district" class="splis-input">
+                <select name="district" id="district" class="splis-input" data-ex-officio-district>
                     <option value="">— Select district —</option>
                     @foreach ($districts as $district)
                         <option value="{{ $district }}" @selected($selectedDistrict === $district)>{{ $district }}</option>
@@ -65,11 +65,25 @@
                 </select>
             </div>
 
+            <div class="mt-4 {{ ($selectedDistrict === 'Ex Officio') ? '' : 'hidden' }}" data-ex-officio-title-wrap>
+                <label class="splis-label" for="ex_officio_title">Ex Officio title</label>
+                <input
+                    type="text"
+                    name="ex_officio_title"
+                    id="ex_officio_title"
+                    value="{{ old('ex_officio_title', $assignment?->ex_officio_title) }}"
+                    class="splis-input"
+                    placeholder="e.g. PCL President"
+                    maxlength="150"
+                >
+                <p class="mt-1 text-xs text-slate-500">Shown under the name on the printable attendance sheet as (PCL President).</p>
+            </div>
+
             <div class="mt-4">
                 <label class="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300">
                     <input type="hidden" name="is_active" value="0">
                     <input type="checkbox" name="is_active" value="1" @checked($isActive) class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
-                    Active on this term’s roster (available for committee assignment)
+                    Active on this term’s roster (available for Committee Assignment)
                 </label>
             </div>
         </div>
@@ -108,4 +122,20 @@
         @endcan
     @endif
 </div>
+@push('scripts')
+<script>
+    (() => {
+        const district = document.querySelector('[data-ex-officio-district]');
+        const wrap = document.querySelector('[data-ex-officio-title-wrap]');
+        if (!district || !wrap) {
+            return;
+        }
+        const sync = () => {
+            wrap.classList.toggle('hidden', district.value !== 'Ex Officio');
+        };
+        district.addEventListener('change', sync);
+        sync();
+    })();
+</script>
+@endpush
 @endsection

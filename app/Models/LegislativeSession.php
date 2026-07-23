@@ -93,6 +93,11 @@ class LegislativeSession extends Model
             ->orderBy('id');
     }
 
+    public function committeeReportSummary(): HasOne
+    {
+        return $this->hasOne(CommitteeReportSummary::class);
+    }
+
     public function hasLocalCommitteeReportFiles(): bool
     {
         return $this->relationLoaded('committeeReportFiles')

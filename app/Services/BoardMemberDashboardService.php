@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\CommitteeMembershipRole;
+use App\Enums\ObBlockType;
 use App\Models\AgendaItem;
 use App\Models\BoardMember;
 use App\Models\Committee;
@@ -17,6 +18,10 @@ use Illuminate\Support\Collection;
 
 class BoardMemberDashboardService
 {
+    public function __construct(
+        protected BoardMemberRosterService $rosterService,
+    ) {}
+
     /**
      * Election terms where the board member has at least one committee assignment.
      *
@@ -253,6 +258,47 @@ class BoardMemberDashboardService
     }
 
     /**
+     * Agendas referred to committees where the member is Chair.
+     *
+     * @return Builder<AgendaItem>
+     */
+    public function chairmanshipAgendaQueryFor(User $user): Builder
+    {
+        $committees = $this->assignmentsGroupedByRole($user)['chair']
+            ->pluck('committee')
+            ->filter();
+
+        if ($committees->isEmpty()) {
+            return AgendaItem::query()->whereRaw('0 = 1');
+        }
+
+        return AgendaItem::query()
+            ->where(function (Builder $query) use ($committees): void {
+                foreach ($committees as $committee) {
+                    $query->orWhere('committee_referred', 'like', '%'.$committee->name.'%');
+                }
+            });
+    }
+
+    /**
+     * Chairmanship agendas that do not yet have a committee report file/link.
+     *
+     * @return Builder<AgendaItem>
+     */
+    public function chairmanshipAgendasNeedingReportQueryFor(User $user): Builder
+    {
+        return $this->chairmanshipAgendaQueryFor($user)
+            ->where(function (Builder $query): void {
+                $query->whereNull('committee_report_pdf_path')
+                    ->orWhere('committee_report_pdf_path', '');
+            })
+            ->where(function (Builder $query): void {
+                $query->whereNull('committee_report_url')
+                    ->orWhere('committee_report_url', '');
+            });
+    }
+
+    /**
      * @return Builder<AgendaItem>
      */
     public function agendaQueryFor(User $user): Builder
@@ -331,27 +377,34 @@ class BoardMemberDashboardService
     public function rosterForAttendance(): Collection
     {
         $term = CommitteeTerm::query()->current()->first() ?? CommitteeTerm::currentOrCreate();
-        $termId = $term->id;
 
-        return BoardMember::query()
-            ->whereHas('termAssignments', function ($query) use ($termId): void {
-                $query
-                    ->where('committee_term_id', $termId)
-                    ->where('is_active', true);
-            })
-            ->with(['termAssignments' => fn ($query) => $query->where('committee_term_id', $termId)])
-            ->get()
-            ->sortBy(function (BoardMember $member) use ($termId) {
-                $district = $member->districtForTerm($termId) ?? $member->district ?? '';
+        return $this->rosterService->orderedActiveMembers($term);
+    }
 
-                return match ($district) {
-                    'Vice Governor' => '0',
-                    '1st District' => '1',
-                    '2nd District' => '2',
-                    '3rd District' => '3',
-                    default => '9'.$member->name,
-                };
-            })
+    /**
+     * Regular unassigned business on an Order of Business session (for referral).
+     *
+     * @return Collection<int, AgendaItem>
+     */
+    public function incomingForReferralOnSession(?LegislativeSession $session): Collection
+    {
+        if ($session === null) {
+            return collect();
+        }
+
+        $session->loadMissing('obDocument.blocks.agendaItem');
+
+        $blocks = $session->obDocument?->blocks;
+        if ($blocks === null) {
+            return collect();
+        }
+
+        return $blocks
+            ->filter(fn ($block) => $block->type === ObBlockType::UnassignedAgenda)
+            ->filter(fn ($block) => ($block->content['kind'] ?? 'regular') !== 'urgent')
+            ->map(fn ($block) => $block->agendaItem)
+            ->filter()
+            ->unique('id')
             ->values();
     }
 }

@@ -42,9 +42,13 @@
             $navItems[] = ['label' => 'Agenda', 'url' => route('agenda.index'), 'active' => request()->routeIs('agenda.*'), 'icon' => 'clipboard-list'];
             $navItems[] = ['label' => 'Order of Business', 'url' => route('ob.sessions.index'), 'active' => request()->routeIs('ob.*'), 'icon' => 'calendar'];
             $navItems[] = ['label' => 'Reference Materials', 'url' => route('references.index'), 'active' => request()->routeIs('references.*'), 'icon' => 'book'];
+            if (($user?->canEncode() ?? false) || ($user?->canAdmin() ?? false)) {
+                $navItems[] = ['label' => 'Directory', 'url' => route('directory.index'), 'active' => request()->routeIs('directory.*'), 'icon' => 'book'];
+            }
         } elseif ($isBoardMember) {
             $navItems[] = ['label' => 'My Committees', 'url' => route('board-member.committees.index'), 'active' => $myCommitteesNavActive, 'icon' => 'users'];
             $navItems[] = ['label' => 'Order of Business', 'url' => route('ob.sessions.index'), 'active' => request()->routeIs('ob.*'), 'icon' => 'calendar'];
+            $navItems[] = ['label' => 'Committee Reports', 'url' => route('board-member.committee-reports.index'), 'active' => request()->routeIs('board-member.committee-reports.*'), 'icon' => 'file-text'];
         }
 
         $resolutionsNavActive = request()->routeIs('resolutions.*') || ($incomingEnabled && request()->routeIs('incoming.*'));
@@ -115,7 +119,7 @@
                                         My Committees
                                     </a>
                                 @endif
-                                @if (auth()->user()->canAdmin())
+                                @if (auth()->user()->canAdmin() || auth()->user()->isBoardMember())
                                     <a href="{{ route('admin.analytics.index') }}" class="splis-user-menu-link inline-flex items-center gap-2">
                                         <x-icon name="chart-bar" class="h-4 w-4 shrink-0 opacity-80" />
                                         Executive Dashboard

@@ -178,7 +178,7 @@
                         <th>Number</th>
                         <th class="hidden sm:table-cell">Type</th>
                         <th class="min-w-[12rem] max-w-md">Title</th>
-                        <th class="hidden md:table-cell">Author</th>
+                        <th class="hidden md:table-cell">Sponsored</th>
                         <th class="hidden lg:table-cell">Committee</th>
                         <th class="hidden sm:table-cell">Date</th>
                         <th class="hidden xl:table-cell">Publication</th>
@@ -195,60 +195,5 @@
         <div id="dashboard-search-pagination" class="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"></div>
     </div>
 
-    @if (auth()->user()->canAdmin())
-    <div class="splis-card splis-card--accent mt-8">
-        <div class="splis-card-header splis-card-header--accent">
-            <h2 class="splis-card-title flex items-center gap-2">
-                <span class="splis-card-title-icon splis-card-title-icon--activity">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                </span>
-                Recent Activity
-            </h2>
-        </div>
-        <div class="splis-card-body !pt-4">
-            @php
-                $activityTones = [
-                    'incoming.created' => 'blue',
-                    'incoming.updated' => 'amber',
-                    'incoming.linked' => 'green',
-                    'incoming.imported_from_sptrack' => 'slate',
-                    'resolution.created' => 'brand',
-                    'resolution.updated' => 'amber',
-                    'resolution.trashed' => 'amber',
-                    'resolution.restored' => 'green',
-                    'resolution.deleted' => 'red',
-                    'resolution.published_from_incoming' => 'gold',
-                    'agenda.created' => 'blue',
-                    'agenda.published' => 'green',
-                    'ordinance.created' => 'brand',
-                ];
-            @endphp
-            <ul class="space-y-3">
-                @forelse ($recentActivity as $log)
-                    @php
-                        $tone = $activityTones[$log->action] ?? 'slate';
-                        $label = \App\Support\ActivityLogPresenter::label($log);
-                    @endphp
-                    <li class="splis-activity-feed-item splis-activity-feed-item--{{ $tone }}">
-                        <div class="flex items-start justify-between gap-4">
-                            <div class="min-w-0 flex-1">
-                                <span class="splis-activity-pill splis-activity-pill--{{ $tone }}">{{ $label }}</span>
-                                @if ($log->user)
-                                    <p class="mt-1.5 text-sm text-slate-600 dark:text-slate-300">{{ $log->user->name }}</p>
-                                @endif
-                            </div>
-                            <div class="flex shrink-0 items-start gap-2">
-                                <span class="text-xs text-slate-400">{{ $log->created_at?->diffForHumans() }}</span>
-                                @include('partials.activity-log-delete', ['log' => $log])
-                            </div>
-                        </div>
-                    </li>
-                @empty
-                    <li class="py-4 text-center text-sm text-slate-400">No activity yet.</li>
-                @endforelse
-            </ul>
-        </div>
-    </div>
-    @endif
 </div>
 @endsection

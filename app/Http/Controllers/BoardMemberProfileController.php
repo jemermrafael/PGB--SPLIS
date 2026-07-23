@@ -40,7 +40,7 @@ class BoardMemberProfileController extends Controller
         ]);
     }
 
-    public function update(Request $request): RedirectResponse
+    public function update(Request $request, BoardMemberProfileService $profiles): RedirectResponse
     {
         /** @var User $user */
         $user = $request->user();
@@ -63,6 +63,8 @@ class BoardMemberProfileController extends Controller
             ],
             'password' => ['nullable', 'confirmed', Password::defaults()],
             'honorific' => ['nullable', 'string', 'max:40'],
+            'mobile_number' => ['nullable', 'string', 'max:50'],
+            'photo' => ['nullable', 'image', 'max:5120'],
         ]);
 
         $user->fill([
@@ -81,6 +83,12 @@ class BoardMemberProfileController extends Controller
             $user->boardMember->forceFill([
                 'honorific' => trim((string) ($data['honorific'] ?? '')) ?: null,
             ])->save();
+
+            $profiles->updateContactAndPhoto(
+                $user->boardMember,
+                $data['mobile_number'] ?? null,
+                $request->file('photo'),
+            );
         }
 
         return redirect()

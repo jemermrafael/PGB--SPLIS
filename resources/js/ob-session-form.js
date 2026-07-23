@@ -82,7 +82,7 @@ export function initObSessionForm() {
 
             poolEl.innerHTML = data.data
                 .map((item) => {
-                    const label = item.display_label ?? (item.tracking_no ? `#${item.tracking_no}` : 'Pending assignment');
+                    const label = item.display_label ?? (item.tracking_no ? `#${item.tracking_no}` : '---');
                     const isSelected = selected.has(item.id);
                     return `
                         <label class="splis-ob-agenda-item">
@@ -114,7 +114,7 @@ export function initObSessionForm() {
         if (target.checked) {
             selected.set(id, {
                 id,
-                label: labelEl?.textContent ?? 'Pending assignment',
+                label: labelEl?.textContent ?? '---',
                 title: titleEl?.textContent ?? '',
             });
         } else {
@@ -152,7 +152,7 @@ export function initObSessionForm() {
     hiddenContainer?.querySelectorAll('input[name="agenda_item_ids[]"]').forEach((input) => {
         const id = Number(input.value);
         if (id) {
-            selected.set(id, { id, label: 'Pending assignment', title: '' });
+            selected.set(id, { id, label: '---', title: '' });
         }
     });
     syncHiddenInputs();

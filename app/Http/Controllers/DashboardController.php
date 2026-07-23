@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ActivityLog;
 use App\Models\Category;
 use App\Models\Department;
 use App\Models\Municipality;
@@ -73,9 +72,6 @@ class DashboardController extends Controller
             'newCount' => $newCount,
             'currentYearCount' => Resolution::query()->where('series', $currentYear)->count()
                 + Ordinance::query()->where('series_year', $currentYear)->count(),
-            'recentActivity' => $user->canAdmin()
-                ? ActivityLog::query()->with('user')->latest('created_at')->limit(10)->get()
-                : collect(),
             'categories' => Category::forSelect(),
             'departments' => Department::orderBy('description')->get(),
             'municipalities' => Municipality::orderBy('description')->get(),

@@ -38,7 +38,7 @@
             <div class="splis-card-header flex flex-wrap items-start justify-between gap-2">
                 <div>
                     <h3 class="splis-card-title">Pending by committee</h3>
-                    <p class="splis-card-subtitle">Open items under your committee assignments</p>
+                    <p class="splis-card-subtitle">Open items under your Committee assignments</p>
                 </div>
                 <a href="{{ route('board-member.agenda.index') }}" class="splis-link text-sm">My Agenda</a>
             </div>

@@ -11,9 +11,9 @@ enum OrdinanceBoardMemberRole: string
     public function label(): string
     {
         return match ($this) {
-            self::Author => 'Authored by',
-            self::Sponsor => 'Sponsored by',
-            self::AuthoredSponsored => 'Authored & Sponsored by',
+            self::Author => 'Authored',
+            self::Sponsor => 'Sponsored',
+            self::AuthoredSponsored => 'Authored and Sponsored',
         };
     }
 

@@ -43,11 +43,16 @@ function renderStatusBadge(status, statusLabel) {
     return `<span class="splis-agenda-status${statusClass}">${label}</span>`;
 }
 
+function renderRemarksCell(remarks) {
+    const { display, full, truncated } = truncateWords(remarks, 8);
+
+    return `<td class="max-w-[12rem] text-sm">${renderTruncatedTitle(display, full, truncated)}</td>`;
+}
+
 function renderListItem(item) {
-    const remarks = String(item.remarks || '').trim();
     return `
         <tr class="splis-agenda-row" data-href="${escapeHtml(item.url)}">
-            <td class="whitespace-nowrap font-semibold">
+            <td class="splis-agenda-sticky-col whitespace-nowrap font-semibold">
                 <a href="${escapeHtml(item.url)}" class="splis-doc-list-link">${escapeHtml(item.list_number ?? item.display_label ?? item.tracking_no ?? 'Unnumbered')}</a>
             </td>
             ${renderTitleCell(item.title)}
@@ -58,7 +63,7 @@ function renderListItem(item) {
             ${renderDaysLeftCell(item.days_left_label, item.days_left_tone)}
             <td>${renderStatusBadge(item.status, item.status_label)}${item.published_to ? ` <span class="splis-badge-linked ml-1 whitespace-nowrap">Published to ${escapeHtml(item.published_to)}</span>` : ''}</td>
             <td class="hidden xl:table-cell whitespace-nowrap">${escapeHtml(item.reso_label || '—')}</td>
-            <td class="text-sm">${escapeHtml(remarks || '—')}</td>
+            ${renderRemarksCell(item.remarks)}
         </tr>
     `;
 }
@@ -134,7 +139,6 @@ export function initAgendaSearch() {
     const searchUrl = root.dataset.searchUrl;
     const statusSelect = document.getElementById('agenda-filter-status');
     const dueSoonInput = document.getElementById('agenda-filter-due-soon');
-    const hasIncomingInput = document.getElementById('agenda-filter-has-incoming');
 
     let currentPage = 1;
     let viewMode = preferredDocView('splis-agenda-view');
@@ -174,9 +178,6 @@ export function initAgendaSearch() {
             setActiveChip(root, null);
             if (dueSoonInput) {
                 dueSoonInput.value = '';
-            }
-            if (hasIncomingInput) {
-                hasIncomingInput.value = '';
             }
             fetchResults();
         }, 0);
@@ -231,9 +232,6 @@ export function initAgendaSearch() {
         if (dueSoonInput) {
             dueSoonInput.value = '';
         }
-        if (hasIncomingInput) {
-            hasIncomingInput.value = '';
-        }
         if (statusSelect) {
             statusSelect.value = '';
         }
@@ -244,9 +242,6 @@ export function initAgendaSearch() {
             }
             if (button.dataset.filterDueSoon && dueSoonInput) {
                 dueSoonInput.value = '1';
-            }
-            if (button.dataset.filterHasIncoming && hasIncomingInput) {
-                hasIncomingInput.value = '1';
             }
         }
 

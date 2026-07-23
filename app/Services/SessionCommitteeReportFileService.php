@@ -96,6 +96,7 @@ class SessionCommitteeReportFileService
         ?string $mimeType = null,
         ?int $userId = null,
         ?int $fileSize = null,
+        ?int $boardMemberCommitteeReportId = null,
     ): LegislativeSessionCommitteeReportFile {
         $extension = ltrim(strtolower($extension), '.');
         $originalName = trim((string) $originalFilename);
@@ -114,6 +115,7 @@ class SessionCommitteeReportFileService
         }
 
         return $session->committeeReportFiles()->create([
+            'board_member_committee_report_id' => $boardMemberCommitteeReportId,
             'original_filename' => $originalName !== '' ? $originalName : $storedName,
             'stored_path' => $relative,
             'mime_type' => $mimeType ?: match ($extension) {

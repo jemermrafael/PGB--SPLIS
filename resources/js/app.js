@@ -18,6 +18,7 @@ import { initHeaderNotifications } from './header-notifications';
 import { initNotificationsFeed } from './notifications-feed';
 import { initBoardMemberOrdinancesTable } from './board-member-ordinances';
 import { initAdminBoardMemberOrdinancesSearch } from './admin-board-member-ordinances';
+import { initBoardMemberCommitteeReportAgendaSearch } from './board-member-committee-reports';
 import {
     initBoardMemberAgendaSearch,
     initBoardMemberDashboardAgenda,
@@ -37,10 +38,16 @@ import { initSessionGuests, initSessionAttendanceSelectAll } from './session-gue
 import { initTermSwitchers } from './term-switcher';
 import { initDocumentFolderModal } from './document-folder-modal';
 import { initPdfViewerModal } from './pdf-viewer-modal';
+import { bindTitleTooltips } from './title-tooltip';
+import { initCommitteeReportSummaryMaker } from './committee-report-summary-maker';
+import { initMonthlyAttendanceMaker } from './monthly-attendance-maker';
 
 document.addEventListener('DOMContentLoaded', () => {
     initPdfViewerModal();
+    bindTitleTooltips(document);
     initDocumentFolderModal();
+    initCommitteeReportSummaryMaker();
+    initMonthlyAttendanceMaker();
     initDropdowns();
     initHeaderNav();
     initAccessibility();
@@ -64,6 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initNotificationsFeed();
     initBoardMemberOrdinancesTable();
     initAdminBoardMemberOrdinancesSearch();
+    initBoardMemberCommitteeReportAgendaSearch();
     initBoardMemberDashboardAgenda();
     initBoardMemberDashboardOb();
     initBoardMemberAgendaSearch();
