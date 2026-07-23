@@ -10,7 +10,7 @@ class OrdinancePolicy
 {
     public function viewAny(User $user): bool
     {
-        return ! $user->isMunicipalViewer();
+        return true;
     }
 
     public function view(User $user, Ordinance $ordinance): bool

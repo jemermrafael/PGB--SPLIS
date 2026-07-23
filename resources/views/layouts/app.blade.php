@@ -188,6 +188,16 @@
                         <x-icon name="inbox" class="h-4 w-4 shrink-0 opacity-80" />
                         My Requests
                     </a>
+                    <a
+                        href="{{ route('ordinances.index') }}"
+                        @class([
+                            'splis-navbar-link inline-flex items-center gap-1.5',
+                            'splis-navbar-link-active' => request()->routeIs('ordinances.*'),
+                        ])
+                    >
+                        <x-icon name="file-text" class="h-4 w-4 shrink-0 opacity-80" />
+                        Ordinances
+                    </a>
                     @endif
 
                     @if (! $isBoardMember && ! $isMunicipalViewer)

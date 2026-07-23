@@ -1,13 +1,14 @@
 @php
     $isPaginator = $records instanceof \Illuminate\Pagination\LengthAwarePaginator;
     $rows = $isPaginator ? $records : collect($records);
-    $colspan = ($showType ?? false) ? 7 : 6;
+    $colspan = ($showType ?? false) ? 8 : 7;
 @endphp
 
 <div id="bm-ordinances-table" class="splis-table-wrap splis-card overflow-hidden">
     <table class="splis-table">
         <thead>
             <tr>
+                <th class="w-12">PDF</th>
                 @if ($showType ?? false)
                     <th>Type</th>
                 @endif
@@ -22,6 +23,19 @@
         <tbody>
             @forelse ($rows as $record)
                 <tr>
+                    <td class="text-center">
+                        @if (! empty($record['has_pdf']) && ! empty($record['pdf_url']))
+                            @include('partials.pdf-modal-trigger', [
+                                'url' => $record['pdf_url'],
+                                'title' => ($record['number_label'] ?? 'Ordinance').' PDF',
+                                'label' => '',
+                                'class' => 'splis-doc-pdf-icon',
+                                'icon' => 'file-text',
+                            ])
+                        @else
+                            <span class="text-slate-300">—</span>
+                        @endif
+                    </td>
                     @if ($showType ?? false)
                         <td class="whitespace-nowrap">
                             <span class="splis-badge">{{ $record['type_label'] }}</span>

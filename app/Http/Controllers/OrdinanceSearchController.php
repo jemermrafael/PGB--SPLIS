@@ -10,6 +10,8 @@ class OrdinanceSearchController extends Controller
 {
     public function __invoke(Request $request, OrdinanceSearchService $search): JsonResponse
     {
+        $this->authorize('viewAny', \App\Models\Ordinance::class);
+
         $filters = $request->only([
             'number',
             'title',

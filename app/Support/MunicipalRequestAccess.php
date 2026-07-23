@@ -67,20 +67,11 @@ class MunicipalRequestAccess
 
     public static function userCanViewOrdinance(User $user, Ordinance $ordinance): bool
     {
-        if ($user->canEncode() || $user->isBoardMember()) {
+        if ($user->canEncode() || $user->isBoardMember() || $user->isMunicipalViewer()) {
             return true;
         }
 
-        if (! $user->isMunicipalViewer() || $user->municipality === null) {
-            return false;
-        }
-
-        $agenda = $ordinance->relationLoaded('publishedFromAgenda')
-            ? $ordinance->publishedFromAgenda
-            : $ordinance->publishedFromAgenda()->withTrashed()->first();
-
-        return $agenda instanceof AgendaItem
-            && self::agendaBelongsToMunicipality($agenda, $user->municipality);
+        return false;
     }
 
     public static function userCanViewAppropriationOrdinance(User $user, AppropriationOrdinance $appropriationOrdinance): bool

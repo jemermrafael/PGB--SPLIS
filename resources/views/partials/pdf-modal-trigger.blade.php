@@ -18,8 +18,11 @@
         data-pdf-src="{{ $src }}"
         data-pdf-url="{{ $url }}"
         data-pdf-title="{{ $title }}"
+        aria-label="{{ $ariaLabel ?? $title }}"
     >
         <x-icon :name="$icon" class="h-4 w-4" />
-        {{ $label }}
+        @if (filled($label))
+            {{ $label }}
+        @endif
     </button>
 @endif

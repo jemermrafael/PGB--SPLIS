@@ -121,6 +121,8 @@ class MyOrdinanceService
      */
     protected function fromOrdinance(Ordinance $ordinance): array
     {
+        $pdfUrl = $ordinance->pdfPublicUrl();
+
         return [
             'type' => 'ordinance',
             'type_label' => 'Ordinance',
@@ -134,6 +136,8 @@ class MyOrdinanceService
             'date_approved' => $ordinance->date_approved,
             'authors' => $ordinance->boardMembersAttributionDisplay(),
             'url' => route('ordinances.show', $ordinance),
+            'has_pdf' => filled($pdfUrl),
+            'pdf_url' => $pdfUrl,
         ];
     }
 
@@ -142,6 +146,8 @@ class MyOrdinanceService
      */
     protected function fromAppropriationOrdinance(AppropriationOrdinance $ordinance): array
     {
+        $pdfUrl = $ordinance->pdfPublicUrl();
+
         return [
             'type' => 'appropriation_ordinance',
             'type_label' => 'Appropriation Ordinance',
@@ -155,6 +161,8 @@ class MyOrdinanceService
             'date_approved' => $ordinance->date_approved,
             'authors' => null,
             'url' => route('appropriation-ordinances.show', $ordinance),
+            'has_pdf' => filled($pdfUrl),
+            'pdf_url' => $pdfUrl,
         ];
     }
 }
