@@ -61,7 +61,7 @@
                                 href="{{ route('committees.show', ['committee' => $committee, 'term' => $selectedTerm->id]) }}"
                                 class="inline-flex max-w-full hover:opacity-90"
                             >
-                                <x-committee-meta :committee="$committee" class="!normal-case tracking-normal" />
+                                <x-committee-meta :committee="$committee" class="splis-list-committee--lg !normal-case tracking-normal" />
                             </a>
                         </td>
                         <td class="hidden lg:table-cell">

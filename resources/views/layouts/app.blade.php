@@ -43,7 +43,7 @@
             $navItems[] = ['label' => 'Order of Business', 'url' => route('ob.sessions.index'), 'active' => request()->routeIs('ob.*'), 'icon' => 'calendar'];
             $navItems[] = ['label' => 'Reference Materials', 'url' => route('references.index'), 'active' => request()->routeIs('references.*'), 'icon' => 'book'];
             if (($user?->canEncode() ?? false) || ($user?->canAdmin() ?? false)) {
-                $navItems[] = ['label' => 'Directory', 'url' => route('directory.index'), 'active' => request()->routeIs('directory.*'), 'icon' => 'book'];
+                $navItems[] = ['label' => 'Directory', 'url' => route('directory.index'), 'active' => request()->routeIs('directory.*'), 'icon' => 'notebook'];
             }
         } elseif ($isBoardMember) {
             $navItems[] = ['label' => 'My Committees', 'url' => route('board-member.committees.index'), 'active' => $myCommitteesNavActive, 'icon' => 'users'];
@@ -138,6 +138,10 @@
                                     <a href="{{ route('admin.backups.index') }}" class="splis-user-menu-link inline-flex items-center gap-2">
                                         <x-icon name="database" class="h-4 w-4 shrink-0 opacity-80" />
                                         Database Backups
+                                    </a>
+                                    <a href="{{ route('admin.icons.index') }}" class="splis-user-menu-link inline-flex items-center gap-2">
+                                        <x-icon name="sparkles" class="h-4 w-4 shrink-0 opacity-80" />
+                                        Icon Library
                                     </a>
                                     @php $trashTotal = \App\Http\Controllers\Admin\TrashController::totalCount(); @endphp
                                     <a href="{{ route('admin.trash.index') }}" class="splis-user-menu-link inline-flex items-center gap-2">

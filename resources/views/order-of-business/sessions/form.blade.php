@@ -88,7 +88,7 @@
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                         <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">Session Documents</h2>
-                        <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Upload files locally or keep a Google Drive link as fallback. Local files are used first on the session page. Draft Journal and Draft Minutes accept PDF or Word (.docx).</p>
+                        <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Upload files locally or keep a Google Drive link as fallback. Local files are used first on the session page. Summary of Comm. Reports uses Open Maker / Preview. Draft Journal and Draft Minutes are Google Drive links only (Word .docx).</p>
                     </div>
                     @if ($session->missingMirrorSessionPdfSlots() !== [] || filled($session->pdf_committee_reports))
                         <button type="submit" form="mirror-session-pdfs-form" class="splis-btn-secondary inline-flex items-center gap-2 whitespace-nowrap">
@@ -179,59 +179,105 @@
                                 </div>
                             </div>
                         @else
-                            @php
-                                $slotConfig = App\Support\SessionPdfSlot::config($link['field']);
-                                $uploadField = $slotConfig['upload'];
-                                $pathColumn = $slotConfig['path'];
-                                $acceptsOffice = $slotConfig['accepts_office'];
-                            @endphp
-                            <div class="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
-                                <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $link['label'] }}</h3>
-                                <div class="mt-4 grid grid-cols-1 gap-4">
-                                    <div>
-                                        <label class="splis-label" for="{{ $uploadField }}">{{ $link['label'] }} (upload)</label>
-                                        <input
-                                            type="file"
-                                            name="{{ $uploadField }}"
-                                            id="{{ $uploadField }}"
-                                            accept="{{ App\Support\SessionPdfSlot::uploadAcceptAttribute($link['field']) }}"
-                                            class="splis-input"
-                                        >
-                                        @if ($acceptsOffice)
+                            @if ($link['kind'] === 'maker')
+                                <div class="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
+                                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                        <div>
+                                            <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $link['label'] }}</h3>
                                             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                                PDF or Word (.doc / .docx).
+                                                Built in the Committee Report Summary maker. No file upload or Drive URL.
                                             </p>
-                                        @endif
-                                        @if ($link['mirrored'])
-                                            <div class="mt-2 flex flex-wrap items-center gap-2">
-                                                <p class="text-xs text-slate-500 dark:text-slate-400">
-                                                    Local file: <code>{{ $session->{$pathColumn} }}</code> — uploading replaces it.
-                                                </p>
-                                                <button
-                                                    type="submit"
-                                                    form="remove-session-pdf-{{ $link['field'] }}"
-                                                    class="splis-btn-ghost inline-flex items-center gap-1.5 !px-2 !py-1 text-xs text-red-600 dark:text-red-400"
-                                                >
-                                                    <x-icon name="trash" class="h-3.5 w-3.5" />
-                                                    Remove file
-                                                </button>
-                                            </div>
-                                        @endif
+                                        </div>
+                                        <div class="flex shrink-0 flex-wrap items-center gap-2">
+                                            <a
+                                                href="{{ route('ob.sessions.committee-report-summary.maker', $session) }}"
+                                                class="splis-btn-secondary inline-flex items-center gap-2 text-sm"
+                                            >
+                                                <x-icon name="file-text" class="h-4 w-4" />
+                                                Open Maker
+                                            </a>
+                                            <a
+                                                href="{{ route('ob.sessions.committee-report-summary.print', $session) }}"
+                                                data-pdf-modal-open
+                                                data-pdf-viewer="iframe"
+                                                data-pdf-src="{{ route('ob.sessions.committee-report-summary.print', $session) }}?embed=1"
+                                                data-pdf-url="{{ route('ob.sessions.committee-report-summary.print', $session) }}"
+                                                data-pdf-title="{{ $link['label'] }}"
+                                                class="splis-btn-secondary inline-flex items-center gap-2 text-sm"
+                                            >
+                                                <x-icon name="printer" class="h-4 w-4" />
+                                                Preview
+                                            </a>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label class="splis-label" for="{{ $link['field'] }}">{{ $link['label'] }} URL (fallback)</label>
+                                </div>
+                            @elseif ($link['kind'] === 'external_link')
+                                <div class="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
+                                    <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $link['label'] }}</h3>
+                                    <div class="mt-4">
+                                        <label class="splis-label" for="{{ $link['field'] }}">Google Drive link (.docx)</label>
                                         <input
                                             type="url"
                                             name="{{ $link['field'] }}"
                                             id="{{ $link['field'] }}"
                                             value="{{ old($link['field'], $session->{$link['field']}) }}"
                                             class="splis-input"
-                                            placeholder="https://"
+                                            placeholder="https://drive.google.com/file/d/..."
                                         >
-                                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Used when no local file is present. Can be mirrored using the button above.</p>
+                                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                            Paste the shared Google Drive link to the Word document. It opens in a new window for online editing — not uploaded or copied to local storage.
+                                        </p>
                                     </div>
                                 </div>
-                            </div>
+                            @else
+                                @php
+                                    $slotConfig = App\Support\SessionPdfSlot::config($link['field']);
+                                    $uploadField = $slotConfig['upload'];
+                                    $pathColumn = $slotConfig['path'];
+                                @endphp
+                                <div class="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
+                                    <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $link['label'] }}</h3>
+                                    <div class="mt-4 grid grid-cols-1 gap-4">
+                                        <div>
+                                            <label class="splis-label" for="{{ $uploadField }}">{{ $link['label'] }} (upload)</label>
+                                            <input
+                                                type="file"
+                                                name="{{ $uploadField }}"
+                                                id="{{ $uploadField }}"
+                                                accept="{{ App\Support\SessionPdfSlot::uploadAcceptAttribute($link['field']) }}"
+                                                class="splis-input"
+                                            >
+                                            @if ($link['mirrored'])
+                                                <div class="mt-2 flex flex-wrap items-center gap-2">
+                                                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                                                        Local file: <code>{{ $session->{$pathColumn} }}</code> — uploading replaces it.
+                                                    </p>
+                                                    <button
+                                                        type="submit"
+                                                        form="remove-session-pdf-{{ $link['field'] }}"
+                                                        class="splis-btn-ghost inline-flex items-center gap-1.5 !px-2 !py-1 text-xs text-red-600 dark:text-red-400"
+                                                    >
+                                                        <x-icon name="trash" class="h-3.5 w-3.5" />
+                                                        Remove file
+                                                    </button>
+                                                </div>
+                                            @endif
+                                        </div>
+                                        <div>
+                                            <label class="splis-label" for="{{ $link['field'] }}">{{ $link['label'] }} URL (fallback)</label>
+                                            <input
+                                                type="url"
+                                                name="{{ $link['field'] }}"
+                                                id="{{ $link['field'] }}"
+                                                value="{{ old($link['field'], $session->{$link['field']}) }}"
+                                                class="splis-input"
+                                                placeholder="https://"
+                                            >
+                                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Used when no local file is present. Can be mirrored using the button above.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
                         @endif
                     @endforeach
                 </div>
@@ -284,7 +330,7 @@
             </form>
         @endforeach
         @foreach ($session->sessionPdfLinkRows() as $link)
-            @if ($link['kind'] !== 'folder' && $link['mirrored'])
+            @if ($link['kind'] === 'file' && $link['mirrored'])
                 <form
                     id="remove-session-pdf-{{ $link['field'] }}"
                     method="POST"

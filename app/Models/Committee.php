@@ -25,6 +25,7 @@ class Committee extends Model
         'is_active',
         'icon_key',
         'icon_path',
+        'icon_library_id',
     ];
 
     protected function casts(): array
@@ -32,7 +33,16 @@ class Committee extends Model
         return [
             'sort_order' => 'integer',
             'is_active' => 'boolean',
+            'icon_library_id' => 'integer',
         ];
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo<\App\Models\IconLibraryItem, $this>
+     */
+    public function iconLibraryItem(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(IconLibraryItem::class, 'icon_library_id');
     }
 
     /**

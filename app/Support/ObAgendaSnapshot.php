@@ -73,8 +73,28 @@ class ObAgendaSnapshot
             return e('Agenda No. —');
         }
 
-        $prefix = count($nos) === 1 ? 'Agenda No. ' : 'Agenda Nos. ';
+        $label = self::displayAgendaNosLabel($content);
         $links = is_array($content['agenda_no_links'] ?? null) ? $content['agenda_no_links'] : [];
+
+        $urlsForNos = array_map(function (string $no) use ($links): ?string {
+            $url = $links[$no] ?? null;
+
+            return filled($url) ? (string) $url : null;
+        }, $nos);
+
+        $filledUrls = array_values(array_filter($urlsForNos, fn (?string $url) => $url !== null));
+
+        // Same committee report for every agenda no. → one link over the whole label.
+        if (
+            count($filledUrls) === count($nos)
+            && count(array_unique($filledUrls)) === 1
+        ) {
+            return '<a href="'.e($filledUrls[0]).'" class="ob-print-link" target="_blank" rel="noopener">'
+                .e($label)
+                .'</a>';
+        }
+
+        $prefix = count($nos) === 1 ? 'Agenda No. ' : 'Agenda Nos. ';
 
         $parts = array_map(function (string $no) use ($links): string {
             $url = $links[$no] ?? null;

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Committee;
 use App\Models\CommitteeTerm;
+use App\Models\IconLibraryItem;
 use App\Services\BoardMemberRosterService;
 use App\Services\CommitteeRosterService;
 use App\Support\CommitteeIcon;
@@ -70,6 +71,7 @@ class CommitteeController extends Controller
             ],
             'iconKeys' => CommitteeIcon::allowedKeys(),
             'iconPaths' => CommitteeIcon::paths(),
+            'libraryIcons' => IconLibraryItem::query()->latest()->get(),
         ]);
     }
 
@@ -153,6 +155,7 @@ class CommitteeController extends Controller
             'roster' => $roster,
             'iconKeys' => CommitteeIcon::allowedKeys(),
             'iconPaths' => CommitteeIcon::paths(),
+            'libraryIcons' => IconLibraryItem::query()->latest()->get(),
         ]);
     }
 
@@ -214,6 +217,7 @@ class CommitteeController extends Controller
 
         if ($canManageIcon) {
             $rules['icon_key'] = ['nullable', 'string', Rule::in(CommitteeIcon::allowedKeys())];
+            $rules['icon_library_id'] = ['nullable', 'integer', 'exists:icon_library_items,id'];
             $rules['icon'] = ['nullable', 'file', 'mimes:png,svg', 'mimetypes:image/png,image/svg+xml,text/plain', 'max:512'];
             $rules['remove_icon'] = ['sometimes', 'boolean'];
         }
@@ -222,7 +226,7 @@ class CommitteeController extends Controller
             'is_active' => $request->boolean('is_active'),
         ];
 
-        unset($data['icon'], $data['remove_icon']);
+        unset($data['icon'], $data['remove_icon'], $data['icon_library_id']);
 
         return $data;
     }
@@ -235,10 +239,24 @@ class CommitteeController extends Controller
 
         if ($request->boolean('remove_icon')) {
             CommitteeIcon::clearUpload($committee);
+
+            return;
         }
 
         if ($request->hasFile('icon')) {
             CommitteeIcon::storeUpload($committee, $request->file('icon'));
+
+            return;
+        }
+
+        if ($request->filled('icon_library_id')) {
+            CommitteeIcon::assignLibraryItem($committee, (int) $request->input('icon_library_id'));
+
+            return;
+        }
+
+        if ($request->has('icon_library_id') && $request->input('icon_library_id') === '') {
+            CommitteeIcon::assignLibraryItem($committee, null);
         }
     }
 

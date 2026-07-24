@@ -51,7 +51,11 @@ class SessionPdfService
     {
         $config = SessionPdfSlot::config($slot);
 
-        if ($config['kind'] === 'folder') {
+        if ($config['kind'] === 'maker') {
+            return null;
+        }
+
+        if (in_array($config['kind'], ['folder', 'external_link'], true)) {
             $url = trim((string) ($session->{$config['field']} ?? ''));
 
             return $url !== '' ? $url : null;
@@ -70,8 +74,18 @@ class SessionPdfService
     {
         $config = SessionPdfSlot::config($slot);
 
+        if ($config['kind'] === 'maker') {
+            return 'maker';
+        }
+
         if ($config['kind'] === 'folder') {
             return 'link';
+        }
+
+        if ($config['kind'] === 'external_link') {
+            $url = trim((string) ($session->{$config['field']} ?? ''));
+
+            return $url !== '' ? 'external' : null;
         }
 
         $pathColumn = $config['path'];
@@ -104,16 +118,17 @@ class SessionPdfService
 
     public function store(UploadedFile $file, LegislativeSession $session, string $slot): string
     {
+        if (SessionPdfSlot::isExternalLinkOnly($slot) || ! SessionPdfSlot::isMirrorable($slot)) {
+            throw new \InvalidArgumentException('This session document slot does not support uploads.');
+        }
+
         $media = MediaType::fromUploadedMime(
             (string) $file->getMimeType(),
             $file->getClientOriginalExtension(),
         );
 
-        if (
-            MediaType::isOfficeMime($media['mime'])
-            && ! SessionPdfSlot::acceptsOfficeDocuments($slot)
-        ) {
-            throw new \InvalidArgumentException('Word documents are only allowed for Draft Journal and Draft Minutes.');
+        if (MediaType::isOfficeMime($media['mime'])) {
+            throw new \InvalidArgumentException('Word documents cannot be uploaded for this slot.');
         }
 
         return $this->storeBytes(

@@ -11,7 +11,7 @@
         <x-page-heading
             title="Board Members"
             subtitle="Sangguniang Panlalawigan roster — Vice Governor, District Board Members, and Ex Officio Members."
-            icon="users"
+            icon="user"
         />
         @can('create', App\Models\BoardMember::class)
             <a href="{{ route('board-members.create', ['term' => $selectedTerm->id]) }}" class="splis-btn-primary inline-flex items-center gap-2">

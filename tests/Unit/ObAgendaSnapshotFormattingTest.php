@@ -106,4 +106,36 @@ class ObAgendaSnapshotFormattingTest extends TestCase
             $formatted['filer_note'],
         );
     }
+
+    public function test_shared_committee_report_links_whole_agenda_nos_label(): void
+    {
+        $html = ObAgendaSnapshot::displayAgendaNosLabelHtml([
+            'agenda_nos' => ['058', '267'],
+            'agenda_no_links' => [
+                '058' => 'https://example.test/report.pdf',
+                '267' => 'https://example.test/report.pdf',
+            ],
+        ]);
+
+        $this->assertSame(
+            '<a href="https://example.test/report.pdf" class="ob-print-link" target="_blank" rel="noopener">Agenda Nos. 058, 267</a>',
+            $html,
+        );
+    }
+
+    public function test_different_committee_report_urls_link_each_agenda_no(): void
+    {
+        $html = ObAgendaSnapshot::displayAgendaNosLabelHtml([
+            'agenda_nos' => ['058', '267'],
+            'agenda_no_links' => [
+                '058' => 'https://example.test/a.pdf',
+                '267' => 'https://example.test/b.pdf',
+            ],
+        ]);
+
+        $this->assertSame(
+            'Agenda Nos. <a href="https://example.test/a.pdf" class="ob-print-link" target="_blank" rel="noopener">058</a>, <a href="https://example.test/b.pdf" class="ob-print-link" target="_blank" rel="noopener">267</a>',
+            $html,
+        );
+    }
 }

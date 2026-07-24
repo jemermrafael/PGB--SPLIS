@@ -7,8 +7,8 @@
     <div class="splis-page-header">
         <x-page-heading
             title="Directory"
-            subtitle="SP Office contacts for encoders and administrators."
-            icon="users"
+            subtitle="Find contact information for Provincial Government Offices and Personnel."
+            icon="notebook"
         />
         @can('create', App\Models\DirectoryEntry::class)
             <a href="{{ route('directory.create') }}" class="splis-btn-primary inline-flex items-center gap-2">

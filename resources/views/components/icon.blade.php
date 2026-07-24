@@ -64,6 +64,18 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 4h5v5" />
             @break
 
+        @case('sparkles')
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v3" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 18v3" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h3" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18 12h3" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="m6.3 6.3 2.1 2.1" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="m15.6 15.6 2.1 2.1" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="m17.7 6.3-2.1 2.1" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="m8.4 15.6-2.1 2.1" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" />
+            @break
+
         @case('archive')
             <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 7l1 11a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-11" />
@@ -152,6 +164,16 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h8" />
+            @break
+
+        @case('notebook')
+            <rect x="6" y="3" width="13" height="18" rx="2" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h2" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 11h2" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 15h2" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 8h6" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 12h6" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 16h4" />
             @break
 
         @case('chart-bar')

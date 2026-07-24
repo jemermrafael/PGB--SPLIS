@@ -96,18 +96,47 @@ class CommitteeIcon
 
     public static function hasCustomFile(?Committee $committee): bool
     {
-        return $committee !== null
-            && filled($committee->icon_path)
+        if ($committee === null) {
+            return false;
+        }
+
+        if (self::libraryItemFor($committee) !== null) {
+            return true;
+        }
+
+        return filled($committee->icon_path)
             && Storage::disk('local')->exists($committee->icon_path);
     }
 
     public static function customUrl(?Committee $committee): ?string
     {
-        if (! self::hasCustomFile($committee)) {
+        if ($committee === null) {
+            return null;
+        }
+
+        $library = self::libraryItemFor($committee);
+        if ($library !== null) {
+            return $library->publicUrl();
+        }
+
+        if (! filled($committee->icon_path) || ! Storage::disk('local')->exists($committee->icon_path)) {
             return null;
         }
 
         return route('committees.icon', $committee);
+    }
+
+    public static function libraryItemFor(?Committee $committee): ?\App\Models\IconLibraryItem
+    {
+        if ($committee === null || ! filled($committee->icon_library_id)) {
+            return null;
+        }
+
+        $item = $committee->relationLoaded('iconLibraryItem')
+            ? $committee->iconLibraryItem
+            : $committee->iconLibraryItem()->first();
+
+        return $item !== null && $item->existsLocally() ? $item : null;
     }
 
     public static function storeUpload(Committee $committee, UploadedFile $file): void
@@ -125,7 +154,10 @@ class CommitteeIcon
         Storage::disk('local')->makeDirectory($directory);
         $file->storeAs($directory, "icon.{$extension}", 'local');
 
-        $committee->forceFill(['icon_path' => $path])->save();
+        $committee->forceFill([
+            'icon_path' => $path,
+            'icon_library_id' => null,
+        ])->save();
     }
 
     public static function clearUpload(Committee $committee, bool $save = true): void
@@ -135,10 +167,34 @@ class CommitteeIcon
         }
 
         $committee->icon_path = null;
+        $committee->icon_library_id = null;
 
         if ($save) {
             $committee->save();
         }
+    }
+
+    public static function assignLibraryItem(Committee $committee, ?int $libraryId): void
+    {
+        if ($libraryId === null) {
+            $committee->forceFill(['icon_library_id' => null])->save();
+
+            return;
+        }
+
+        $item = \App\Models\IconLibraryItem::query()->find($libraryId);
+        if ($item === null || ! $item->existsLocally()) {
+            return;
+        }
+
+        if ($committee->icon_path && Storage::disk('local')->exists($committee->icon_path)) {
+            Storage::disk('local')->delete($committee->icon_path);
+        }
+
+        $committee->forceFill([
+            'icon_library_id' => $item->id,
+            'icon_path' => null,
+        ])->save();
     }
 
     /**

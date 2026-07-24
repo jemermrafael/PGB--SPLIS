@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Committee;
-use App\Support\CommitteeIcon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -15,7 +14,10 @@ class CommitteeIconController extends Controller
         abort_unless($request->user() !== null, 403);
         $this->authorize('view', $committee);
 
-        abort_unless(CommitteeIcon::hasCustomFile($committee), 404);
+        abort_unless(
+            filled($committee->icon_path) && Storage::disk('local')->exists($committee->icon_path),
+            404,
+        );
 
         $mime = Storage::disk('local')->mimeType($committee->icon_path) ?: 'image/png';
 

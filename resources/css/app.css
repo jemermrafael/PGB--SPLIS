@@ -629,7 +629,7 @@
     }
 
     .splis-stat--clickable {
-        @apply cursor-pointer border-0 p-6 text-left;
+        @apply cursor-pointer text-left;
     }
 
     .splis-stat--clickable:focus-visible {
@@ -1235,6 +1235,20 @@
 
     .splis-list-committee {
         @apply inline-flex max-w-full items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-sky-900 ring-1 ring-sky-100;
+    }
+
+    .splis-list-committee--lg {
+        @apply gap-2 rounded-xl px-3.5 py-1.5 text-sm tracking-wide;
+    }
+
+    .splis-list-committee--lg .splis-list-committee-icon svg {
+        width: 1.125rem;
+        height: 1.125rem;
+    }
+
+    .splis-list-committee--lg .splis-list-committee-icon-glyph {
+        width: 1.125rem;
+        height: 1.125rem;
     }
 
     .splis-list-committee-icon {
@@ -3066,7 +3080,7 @@
     }
 
     .ob-print-agenda-number {
-        @apply text-base font-bold;
+        @apply text-xl font-bold;
     }
 
     .ob-print-section-three-highlight {

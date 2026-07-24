@@ -36,6 +36,8 @@ use App\Http\Controllers\AdminAnalyticsMapController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin\DatabaseBackupController;
 use App\Http\Controllers\Admin\DataSyncController;
+use App\Http\Controllers\Admin\IconLibraryController;
+use App\Http\Controllers\IconLibraryFileController;
 use App\Http\Controllers\Admin\RolePermissionsController;
 use App\Http\Controllers\Admin\TrashController;
 use App\Http\Controllers\DirectoryEntryController;
@@ -232,6 +234,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/committees/create', [CommitteeController::class, 'create'])->name('committees.create');
     Route::post('/committees', [CommitteeController::class, 'store'])->name('committees.store');
     Route::get('/committees/{committee}/icon', CommitteeIconController::class)->name('committees.icon');
+    Route::get('/icon-library/{iconLibraryItem}', IconLibraryFileController::class)->name('icon-library.show');
     Route::get('/committees/{committee}', [CommitteeController::class, 'show'])->name('committees.show')->withTrashed();
     Route::get('/committees/{committee}/edit', [CommitteeController::class, 'edit'])->name('committees.edit');
     Route::put('/committees/{committee}', [CommitteeController::class, 'update'])->name('committees.update');
@@ -308,6 +311,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/backups/{filename}', [DatabaseBackupController::class, 'download'])
             ->where('filename', 'splis-\d{4}-\d{2}-\d{2}-\d{6}\.sql\.gz')
             ->name('backups.download');
+
+        Route::get('/icons', [IconLibraryController::class, 'index'])->name('icons.index');
+        Route::post('/icons', [IconLibraryController::class, 'store'])->name('icons.store');
+        Route::delete('/icons/{iconLibraryItem}', [IconLibraryController::class, 'destroy'])->name('icons.destroy');
 
         Route::get('/trash', [TrashController::class, 'index'])->name('trash.index');
         Route::post('/trash/{type}/{id}/restore', [TrashController::class, 'restore'])

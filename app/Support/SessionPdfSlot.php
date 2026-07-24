@@ -37,11 +37,33 @@ final class SessionPdfSlot
     public static function mirrorable(): array
     {
         return [
-            self::SUMMARY_COMMITTEE_REPORTS,
-            self::DRAFT_JOURNAL,
-            self::DRAFT_MINUTES,
             self::FINAL_JOURNAL,
             self::FINAL_MINUTES,
+        ];
+    }
+
+    /**
+     * Google Drive .docx links only — open externally, never uploaded or mirrored.
+     *
+     * @return list<string>
+     */
+    public static function externalLinkOnly(): array
+    {
+        return [
+            self::DRAFT_JOURNAL,
+            self::DRAFT_MINUTES,
+        ];
+    }
+
+    /**
+     * Built in the Committee Report Summary maker — no upload or Drive URL.
+     *
+     * @return list<string>
+     */
+    public static function makerOnly(): array
+    {
+        return [
+            self::SUMMARY_COMMITTEE_REPORTS,
         ];
     }
 
@@ -55,20 +77,29 @@ final class SessionPdfSlot
         return in_array($slot, self::mirrorable(), true);
     }
 
+    public static function isExternalLinkOnly(string $slot): bool
+    {
+        return in_array($slot, self::externalLinkOnly(), true);
+    }
+
+    public static function isMakerOnly(string $slot): bool
+    {
+        return in_array($slot, self::makerOnly(), true);
+    }
+
     /**
-     * @return array{field:string,path:?string,upload:?string,filename:?string,label:string,kind:string,accepts_office:bool}
+     * @return array{field:string,path:?string,upload:?string,filename:?string,label:string,kind:string}
      */
     public static function config(string $slot): array
     {
         return match ($slot) {
             self::SUMMARY_COMMITTEE_REPORTS => [
                 'field' => self::SUMMARY_COMMITTEE_REPORTS,
-                'path' => 'pdf_summary_committee_reports_path',
-                'upload' => 'pdf_summary_committee_reports_file',
-                'filename' => 'summary-committee-reports',
+                'path' => null,
+                'upload' => null,
+                'filename' => null,
                 'label' => 'Summary of Comm. Reports',
-                'kind' => 'file',
-                'accepts_office' => false,
+                'kind' => 'maker',
             ],
             self::COMMITTEE_REPORTS_FOLDER => [
                 'field' => self::COMMITTEE_REPORTS_FOLDER,
@@ -77,25 +108,22 @@ final class SessionPdfSlot
                 'filename' => null,
                 'label' => 'Committee Reports',
                 'kind' => 'folder',
-                'accepts_office' => false,
             ],
             self::DRAFT_JOURNAL => [
                 'field' => self::DRAFT_JOURNAL,
-                'path' => 'pdf_draft_journal_path',
-                'upload' => 'pdf_draft_journal_file',
-                'filename' => 'draft-journal',
+                'path' => null,
+                'upload' => null,
+                'filename' => null,
                 'label' => 'Draft Journal',
-                'kind' => 'file',
-                'accepts_office' => true,
+                'kind' => 'external_link',
             ],
             self::DRAFT_MINUTES => [
                 'field' => self::DRAFT_MINUTES,
-                'path' => 'pdf_draft_minutes_path',
-                'upload' => 'pdf_draft_minutes_file',
-                'filename' => 'draft-minutes',
+                'path' => null,
+                'upload' => null,
+                'filename' => null,
                 'label' => 'Draft Minutes',
-                'kind' => 'file',
-                'accepts_office' => true,
+                'kind' => 'external_link',
             ],
             self::FINAL_JOURNAL => [
                 'field' => self::FINAL_JOURNAL,
@@ -104,7 +132,6 @@ final class SessionPdfSlot
                 'filename' => 'final-journal',
                 'label' => 'Final Journal',
                 'kind' => 'file',
-                'accepts_office' => false,
             ],
             self::FINAL_MINUTES => [
                 'field' => self::FINAL_MINUTES,
@@ -113,32 +140,18 @@ final class SessionPdfSlot
                 'filename' => 'final-minutes',
                 'label' => 'Final Minutes',
                 'kind' => 'file',
-                'accepts_office' => false,
             ],
             default => throw new \InvalidArgumentException('Unknown session PDF slot: '.$slot),
         };
     }
 
-    public static function acceptsOfficeDocuments(string $slot): bool
-    {
-        return self::config($slot)['accepts_office'] === true;
-    }
-
     public static function uploadMimes(string $slot): string
     {
-        $base = 'pdf,jpg,jpeg,png,gif,webp';
-
-        return self::acceptsOfficeDocuments($slot) ? $base.',doc,docx' : $base;
+        return 'pdf,jpg,jpeg,png,gif,webp';
     }
 
     public static function uploadAcceptAttribute(string $slot): string
     {
-        $base = 'application/pdf,image/jpeg,image/png,image/gif,image/webp,.pdf,.jpg,.jpeg,.png,.gif,.webp';
-
-        if (! self::acceptsOfficeDocuments($slot)) {
-            return $base;
-        }
-
-        return $base.',application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.doc,.docx';
+        return 'application/pdf,image/jpeg,image/png,image/gif,image/webp,.pdf,.jpg,.jpeg,.png,.gif,.webp';
     }
 }

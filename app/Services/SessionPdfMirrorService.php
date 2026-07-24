@@ -26,7 +26,7 @@ class SessionPdfMirrorService
         }
 
         if (! SessionPdfSlot::isMirrorable($slot)) {
-            return ['ok' => false, 'message' => 'This slot is a folder link and cannot be mirrored as a single PDF.', 'slot' => $slot];
+            return ['ok' => false, 'message' => 'This document slot cannot be mirrored to local storage.', 'slot' => $slot];
         }
 
         $config = SessionPdfSlot::config($slot);
@@ -51,8 +51,7 @@ class SessionPdfMirrorService
         }
 
         try {
-            $forceFormat = SessionPdfSlot::acceptsOfficeDocuments($slot) ? null : 'pdf';
-            $file = $this->downloader->downloadFile($url, $forceFormat);
+            $file = $this->downloader->downloadFile($url, 'pdf');
             $path = $this->pdfs->storeBytes($file['contents'], $session, $slot, $file['extension']);
             $session->update([$config['path'] => $path]);
 

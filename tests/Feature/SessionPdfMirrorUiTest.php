@@ -33,7 +33,12 @@ class SessionPdfMirrorUiTest extends TestCase
             ->assertOk()
             ->assertSee('Upload PDF files', false)
             ->assertSee('Google Drive folder link (fallback)', false)
-            ->assertSee('Draft Journal (upload)', false)
+            ->assertSee('Google Drive link (.docx)', false)
+            ->assertDontSee('Draft Journal (upload)', false)
+            ->assertDontSee('Summary of Comm. Reports (upload)', false)
+            ->assertDontSee('Summary of Comm. Reports URL (fallback)', false)
+            ->assertSee('Open Maker', false)
+            ->assertSee('Preview', false)
             ->assertSee('Download linked files');
     }
 
@@ -117,22 +122,22 @@ class SessionPdfMirrorUiTest extends TestCase
             'session_date' => now()->addWeek(),
             'session_kind' => 'regular',
             'status' => 'draft',
-            'pdf_draft_journal' => 'https://drive.google.com/file/d/example/view',
+            'pdf_final_journal' => 'https://drive.google.com/file/d/example/view',
             'created_by' => $admin->id,
         ]);
 
-        $storedPath = 'order-of-business/'.$session->id.'/draft-journal.pdf';
+        $storedPath = 'order-of-business/'.$session->id.'/final-journal.pdf';
         Storage::disk('local')->put($storedPath, '%PDF-1.4 test');
-        $session->update(['pdf_draft_journal_path' => $storedPath]);
+        $session->update(['pdf_final_journal_path' => $storedPath]);
 
         $this->actingAs($admin)
-            ->delete(route('ob.sessions.pdf.destroy', [$session, 'pdf_draft_journal']))
+            ->delete(route('ob.sessions.pdf.destroy', [$session, 'pdf_final_journal']))
             ->assertRedirect(route('ob.sessions.edit', $session));
 
         $session->refresh();
 
-        $this->assertNull($session->pdf_draft_journal_path);
-        $this->assertSame('https://drive.google.com/file/d/example/view', $session->pdf_draft_journal);
+        $this->assertNull($session->pdf_final_journal_path);
+        $this->assertSame('https://drive.google.com/file/d/example/view', $session->pdf_final_journal);
         $this->assertNull($session->deleted_at);
         Storage::disk('local')->assertMissing($storedPath);
     }
@@ -203,7 +208,7 @@ class SessionPdfMirrorUiTest extends TestCase
                 'session_date' => $session->session_date->format('Y-m-d'),
                 'session_kind' => 'regular',
                 'status' => 'draft',
-                'pdf_draft_journal_file' => UploadedFile::fake()->create('draft-journal.pdf', 100, 'application/pdf'),
+                'pdf_final_journal_file' => UploadedFile::fake()->create('final-journal.pdf', 100, 'application/pdf'),
                 'committee_report_files' => [
                     UploadedFile::fake()->create('committee-a.pdf', 100, 'application/pdf'),
                     UploadedFile::fake()->create('committee-b.pdf', 100, 'application/pdf'),
@@ -213,12 +218,12 @@ class SessionPdfMirrorUiTest extends TestCase
 
         $session->refresh();
 
-        $this->assertNotNull($session->pdf_draft_journal_path);
+        $this->assertNotNull($session->pdf_final_journal_path);
         $this->assertSame(2, $session->committeeReportFiles()->count());
-        Storage::disk('local')->assertExists($session->pdf_draft_journal_path);
+        Storage::disk('local')->assertExists($session->pdf_final_journal_path);
     }
 
-    public function test_update_stores_uploaded_draft_journal_docx(): void
+    public function test_update_saves_draft_journal_and_minutes_as_external_links_only(): void
     {
         Storage::fake('local');
 
@@ -231,36 +236,32 @@ class SessionPdfMirrorUiTest extends TestCase
             'created_by' => $admin->id,
         ]);
 
+        $journalUrl = 'https://drive.google.com/file/d/journalDoc/view';
+        $minutesUrl = 'https://drive.google.com/file/d/minutesDoc/view';
+
         $this->actingAs($admin)
             ->put(route('ob.sessions.update', $session), [
                 'session_date' => $session->session_date->format('Y-m-d'),
                 'session_kind' => 'regular',
                 'status' => 'draft',
-                'pdf_draft_journal_file' => UploadedFile::fake()->create(
-                    'draft-journal.docx',
-                    100,
-                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                ),
-                'pdf_draft_minutes_file' => UploadedFile::fake()->create(
-                    'draft-minutes.docx',
-                    100,
-                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                ),
+                'pdf_draft_journal' => $journalUrl,
+                'pdf_draft_minutes' => $minutesUrl,
             ])
             ->assertRedirect(route('ob.sessions.show', $session));
 
         $session->refresh();
 
-        $this->assertNotNull($session->pdf_draft_journal_path);
-        $this->assertStringEndsWith('.docx', $session->pdf_draft_journal_path);
-        $this->assertNotNull($session->pdf_draft_minutes_path);
-        $this->assertStringEndsWith('.docx', $session->pdf_draft_minutes_path);
-        Storage::disk('local')->assertExists($session->pdf_draft_journal_path);
-        Storage::disk('local')->assertExists($session->pdf_draft_minutes_path);
+        $this->assertSame($journalUrl, $session->pdf_draft_journal);
+        $this->assertSame($minutesUrl, $session->pdf_draft_minutes);
+        $this->assertNull($session->pdf_draft_journal_path);
+        $this->assertNull($session->pdf_draft_minutes_path);
 
         $this->actingAs($admin)
             ->get(route('ob.sessions.show', $session))
             ->assertOk()
-            ->assertSee('Download', false);
+            ->assertSee($journalUrl, false)
+            ->assertSee($minutesUrl, false)
+            ->assertSee('Open link', false)
+            ->assertDontSee('Draft Journal (upload)', false);
     }
 }

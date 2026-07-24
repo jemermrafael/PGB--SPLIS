@@ -21,7 +21,7 @@
                 <p class="splis-page-subtitle">{{ $session->venue }}</p>
             @endif
         </div>
-        <div class="flex flex-wrap justify-end gap-2">
+        <div class="flex flex-wrap justify-end gap-2" style="align-self:end;">
             @if (auth()->user()?->canRecordAttendance())
                 <a href="{{ route('ob.sessions.attendance', $session) }}" @class([
                     'inline-flex items-center gap-2',
@@ -147,7 +147,7 @@
                 @foreach ($sessionPdfRows as $link)
                     <li class="flex items-center justify-between gap-4 rounded-lg border border-slate-100 px-3 py-2.5 dark:border-slate-800">
                         <span class="min-w-0 truncate text-sm font-medium text-slate-700 dark:text-slate-300">{{ $link['label'] }}</span>
-                        @if ($link['field'] === 'pdf_summary_committee_reports')
+                        @if ($link['field'] === 'pdf_summary_committee_reports' || ($link['kind'] ?? null) === 'maker')
                             <span class="flex shrink-0 flex-wrap items-center justify-end gap-2">
                                 @can('update', $session)
                                     <a
@@ -170,15 +170,6 @@
                                     <x-icon name="printer" class="h-4 w-4" />
                                     Preview
                                 </a>
-                                @if ($link['url'])
-                                    @include('partials.pdf-modal-trigger', [
-                                        'url' => $link['url'],
-                                        'viewer' => $link['viewer'],
-                                        'title' => $link['label'],
-                                        'label' => 'Uploaded file',
-                                        'class' => 'splis-btn-ghost inline-flex shrink-0 items-center gap-2 text-sm',
-                                    ])
-                                @endif
                             </span>
                         @elseif ($link['kind'] === 'folder')
                             @if ($hasCommitteeReportsFolder)
@@ -199,7 +190,17 @@
                                 <span class="shrink-0 text-sm text-slate-400">No files</span>
                             @endif
                         @elseif ($link['url'])
-                            @if (($link['viewer'] ?? null) === 'download')
+                            @if (($link['viewer'] ?? null) === 'external' || ($link['kind'] ?? null) === 'external_link')
+                                <a
+                                    href="{{ $link['url'] }}"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="splis-btn-secondary inline-flex shrink-0 items-center gap-2 text-sm"
+                                >
+                                    <x-icon name="external-link" class="h-4 w-4" />
+                                    Open link
+                                </a>
+                            @elseif (($link['viewer'] ?? null) === 'download')
                                 <a
                                     href="{{ $link['url'] }}"
                                     class="splis-btn-secondary inline-flex shrink-0 items-center gap-2 text-sm"
@@ -218,7 +219,7 @@
                                 ])
                             @endif
                         @else
-                            <span class="shrink-0 text-sm text-slate-400">No file</span>
+                            <span class="shrink-0 text-sm text-slate-400">{{ ($link['kind'] ?? null) === 'external_link' ? 'No link' : 'No file' }}</span>
                         @endif
                     </li>
                 @endforeach

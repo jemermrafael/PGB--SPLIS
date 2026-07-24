@@ -112,14 +112,10 @@ class LegislativeSessionController extends Controller
 
         $validated = $this->validated($request);
 
-        unset(
-            $validated['pdf_summary_committee_reports_file'],
-            $validated['pdf_draft_journal_file'],
-            $validated['pdf_draft_minutes_file'],
-            $validated['pdf_final_journal_file'],
-            $validated['pdf_final_minutes_file'],
-            $validated['committee_report_files'],
-        );
+        foreach (SessionPdfSlot::mirrorable() as $slot) {
+            unset($validated[SessionPdfSlot::config($slot)['upload']]);
+        }
+        unset($validated['committee_report_files']);
 
         $legislativeSession->update($validated);
 
@@ -190,6 +186,10 @@ class LegislativeSessionController extends Controller
         ];
 
         foreach (array_keys(config('order_of_business.session_pdf_links', [])) as $field) {
+            if (SessionPdfSlot::isValid($field) && SessionPdfSlot::isMakerOnly($field)) {
+                continue;
+            }
+
             $rules[$field] = ['nullable', 'string', 'max:500'];
         }
 
