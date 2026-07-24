@@ -42,7 +42,9 @@ export function initBoardMemberCommitteeReportAgendaSearch() {
     const list = document.getElementById('bm-cr-agenda-list');
     const committeeSelect = document.getElementById('bm-cr-committee-id');
     const searchInput = document.getElementById('bm-cr-q');
+    const boardMemberSelect = document.getElementById('board_member_id');
     const searchUrl = root.dataset.searchUrl;
+    const needsBoardMember = root.dataset.boardMemberParam === '1';
 
     if (!list || !committeeSelect || !searchInput || !searchUrl) {
         return;
@@ -50,6 +52,21 @@ export function initBoardMemberCommitteeReportAgendaSearch() {
 
     let debounceTimer;
     let requestId = 0;
+
+    boardMemberSelect?.addEventListener('change', () => {
+        if (! needsBoardMember) {
+            return;
+        }
+
+        const params = new URLSearchParams();
+        if (boardMemberSelect.value) {
+            params.set('board_member_id', boardMemberSelect.value);
+        }
+        const query = params.toString();
+        window.location.href = query
+            ? `${window.location.pathname}?${query}`
+            : window.location.pathname;
+    });
 
     committeeSelect.addEventListener('change', () => {
         fetchAgendas();
@@ -73,6 +90,10 @@ export function initBoardMemberCommitteeReportAgendaSearch() {
         }
     });
 
+    function boardMemberId() {
+        return String(boardMemberSelect?.value || '').trim();
+    }
+
     function selectedIds() {
         return new Set(
             [...list.querySelectorAll('input[name="agenda_item_ids[]"]:checked')].map((input) => Number(input.value)),
@@ -83,7 +104,11 @@ export function initBoardMemberCommitteeReportAgendaSearch() {
         const params = new URLSearchParams();
         const q = searchInput.value.trim();
         const committeeId = committeeSelect.value;
+        const memberId = boardMemberId();
 
+        if (needsBoardMember && memberId !== '') {
+            params.set('board_member_id', memberId);
+        }
         if (q !== '') {
             params.set('q', q);
         }
@@ -97,11 +122,20 @@ export function initBoardMemberCommitteeReportAgendaSearch() {
     }
 
     async function fetchAgendas() {
+        if (needsBoardMember && boardMemberId() === '') {
+            list.innerHTML = '<p class="px-2 py-8 text-center text-sm text-slate-500">Select a Board Member chair to load open agendas.</p>';
+            return;
+        }
+
         const checked = selectedIds();
         const params = new URLSearchParams();
         const q = searchInput.value.trim();
         const committeeId = committeeSelect.value;
+        const memberId = boardMemberId();
 
+        if (needsBoardMember && memberId !== '') {
+            params.set('board_member_id', memberId);
+        }
         if (q !== '') {
             params.set('q', q);
         }
@@ -109,11 +143,17 @@ export function initBoardMemberCommitteeReportAgendaSearch() {
             params.set('committee_id', committeeId);
         }
 
+        const url = new URL(searchUrl, window.location.origin);
+        const reportId = url.searchParams.get('report_id');
+        if (reportId) {
+            params.set('report_id', reportId);
+        }
+
         const currentRequest = ++requestId;
         list.classList.add('opacity-60');
 
         try {
-            const response = await fetch(`${searchUrl}?${params.toString()}`, {
+            const response = await fetch(`${searchUrl.split('?')[0]}?${params.toString()}`, {
                 headers: {
                     Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',

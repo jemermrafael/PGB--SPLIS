@@ -79,7 +79,7 @@
             <div>
                 <label class="splis-label" for="committee-filter-committee">Committee</label>
                 <select name="committee_id" id="committee-filter-committee" class="splis-select">
-                    <option value="">All committees</option>
+                    <option value="">All Committees</option>
                     @foreach ($committees as $committee)
                         <option value="{{ $committee->id }}" @selected((int) ($filters['committee_id'] ?? 0) === $committee->id)>{{ $committee->name }}</option>
                     @endforeach

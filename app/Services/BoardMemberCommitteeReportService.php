@@ -35,11 +35,11 @@ class BoardMemberCommitteeReportService
         UploadedFile $pdf,
         ?string $title,
         array $agendaItemIds,
+        ?int $onBehalfOfBoardMemberId = null,
     ): BoardMemberCommitteeReport {
-        $boardMemberId = (int) $user->board_member_id;
-        abort_if($boardMemberId <= 0, 403);
+        $boardMemberId = $this->resolveTargetBoardMemberId($user, $onBehalfOfBoardMemberId);
 
-        $allowedIds = $this->resolveAllowedAgendaIds($user, $agendaItemIds);
+        $allowedIds = $this->resolveAllowedAgendaIds($boardMemberId, $agendaItemIds);
 
         $directory = "board-member-committee-reports/{$boardMemberId}";
         $storedPath = $pdf->store($directory, 'local');
@@ -89,9 +89,9 @@ class BoardMemberCommitteeReportService
         ?string $title,
         array $agendaItemIds,
     ): BoardMemberCommitteeReport {
-        abort_unless((int) $report->board_member_id === (int) $user->board_member_id, 403);
+        $this->assertCanMutate($user, $report);
 
-        $allowedIds = $this->resolveAllowedAgendaIds($user, $agendaItemIds, $report);
+        $allowedIds = $this->resolveAllowedAgendaIds((int) $report->board_member_id, $agendaItemIds, $report);
         $reportTitle = trim((string) $title) ?: null;
 
         return DB::transaction(function () use (
@@ -137,7 +137,7 @@ class BoardMemberCommitteeReportService
 
     public function delete(User $user, BoardMemberCommitteeReport $report): void
     {
-        abort_unless((int) $report->board_member_id === (int) $user->board_member_id, 403);
+        $this->assertCanMutate($user, $report);
 
         DB::transaction(function () use ($user, $report): void {
             $agendaIds = $report->agendaItems()->pluck('agenda_items.id')->map(fn ($id) => (int) $id)->all();
@@ -155,12 +155,43 @@ class BoardMemberCommitteeReportService
         });
     }
 
+    protected function resolveTargetBoardMemberId(User $user, ?int $onBehalfOfBoardMemberId): int
+    {
+        if ($user->isBoardMember()) {
+            $boardMemberId = (int) $user->board_member_id;
+            abort_if($boardMemberId <= 0, 403);
+
+            return $boardMemberId;
+        }
+
+        abort_unless($user->canEncode(), 403);
+        $boardMemberId = (int) ($onBehalfOfBoardMemberId ?? 0);
+        abort_if($boardMemberId <= 0, 422, 'Select a Board Member chair for this report.');
+
+        return $boardMemberId;
+    }
+
+    protected function assertCanMutate(User $user, BoardMemberCommitteeReport $report): void
+    {
+        if ($user->isBoardMember()
+            && $user->board_member_id !== null
+            && (int) $report->board_member_id === (int) $user->board_member_id) {
+            return;
+        }
+
+        if ($user->canEncode() && (int) $report->submitted_by === (int) $user->id) {
+            return;
+        }
+
+        abort(403);
+    }
+
     /**
      * @param  list<int|string>  $agendaItemIds
      * @return Collection<int, int>
      */
     protected function resolveAllowedAgendaIds(
-        User $user,
+        int $boardMemberId,
         array $agendaItemIds,
         ?BoardMemberCommitteeReport $existingReport = null,
     ): Collection {
@@ -178,7 +209,7 @@ class BoardMemberCommitteeReportService
             ? $existingReport->agendaItems()->pluck('agenda_items.id')->map(fn ($id) => (int) $id)
             : collect();
 
-        $openIds = $this->dashboard->chairmanshipAgendasNeedingReportQueryFor($user)
+        $openIds = $this->dashboard->chairmanshipAgendasNeedingReportQueryForBoardMember($boardMemberId)
             ->whereIn('id', $requestedIds->all())
             ->pluck('id')
             ->map(fn ($id) => (int) $id);
@@ -187,14 +218,14 @@ class BoardMemberCommitteeReportService
             ->filter(fn (int $id) => $openIds->contains($id) || $keptIds->contains($id))
             ->values();
 
-        $chairIds = $this->dashboard->chairmanshipAgendaQueryFor($user)
+        $chairIds = $this->dashboard->chairmanshipAgendaQueryForBoardMember($boardMemberId)
             ->whereIn('id', $requestedIds->all())
             ->pluck('id')
             ->map(fn ($id) => (int) $id);
 
         if ($requestedIds->diff($chairIds)->isNotEmpty() || $requestedIds->diff($allowedIds)->isNotEmpty()) {
             throw ValidationException::withMessages([
-                'agenda_item_ids' => ['Select agendas from your chairmanship that do not already have a committee report.'],
+                'agenda_item_ids' => ['Select agendas from the chairmanship that do not already have a committee report.'],
             ]);
         }
 

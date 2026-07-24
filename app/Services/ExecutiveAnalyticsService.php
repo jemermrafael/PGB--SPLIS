@@ -119,7 +119,7 @@ class ExecutiveAnalyticsService
             'municipalities' => $municipalities,
             'year' => $year,
             'month' => $month,
-            'committee' => $committee?->name ?? 'All committees',
+            'committee' => $committee?->name ?? 'All Committees',
             'committee_id' => $committee?->id,
             'period_label' => $this->mapPeriodLabel($year, $month),
             'total' => (int) collect($municipalities)->sum('total'),

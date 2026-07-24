@@ -509,6 +509,14 @@ class BoardMemberCommitteeReportTest extends TestCase
             'prescribed_days' => 0,
             'created_by' => $user->id,
         ]);
+        $chairDone = AgendaItem::query()->create([
+            'tracking_no' => '103',
+            'title' => 'Chair done agenda',
+            'committee_referred' => $chairCommittee->name,
+            'status' => AgendaItem::STATUS_DONE,
+            'prescribed_days' => 0,
+            'created_by' => $user->id,
+        ]);
         $memberAgenda = AgendaItem::query()->create([
             'tracking_no' => '201',
             'title' => 'Member-only committee agenda',
@@ -525,6 +533,7 @@ class BoardMemberCommitteeReportTest extends TestCase
             ->assertSee('All Chairmanships')
             ->assertSee($chairCommittee->name)
             ->assertDontSee('Chair agenda with report')
+            ->assertDontSee('Chair done agenda')
             ->assertDontSee('Member-only committee agenda')
             ->assertDontSee('Has report');
 
@@ -555,6 +564,12 @@ class BoardMemberCommitteeReportTest extends TestCase
             app(\App\Services\BoardMemberDashboardService::class)
                 ->chairmanshipAgendasNeedingReportQueryFor($user)
                 ->whereKey($chairWithReport->id)
+                ->exists()
+        );
+        $this->assertFalse(
+            app(\App\Services\BoardMemberDashboardService::class)
+                ->chairmanshipAgendasNeedingReportQueryFor($user)
+                ->whereKey($chairDone->id)
                 ->exists()
         );
         $this->assertFalse(

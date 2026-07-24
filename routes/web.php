@@ -6,6 +6,7 @@ use App\Http\Controllers\BoardMemberAgendaSearchController;
 use App\Http\Controllers\BoardMemberCommitteeAgendaController;
 use App\Http\Controllers\BoardMemberCommitteeController;
 use App\Http\Controllers\BoardMemberCommitteeReportController;
+use App\Http\Controllers\StaffCommitteeReportController;
 use App\Http\Controllers\BoardMemberPhotoController;
 use App\Http\Controllers\BoardMemberProfileController;
 use App\Http\Controllers\BoardMemberSessionCalendarController;
@@ -109,6 +110,17 @@ Route::middleware('auth')->group(function () {
     Route::put('/my-committee-reports/{committeeReport}', [BoardMemberCommitteeReportController::class, 'update'])->name('board-member.committee-reports.update');
     Route::delete('/my-committee-reports/{committeeReport}', [BoardMemberCommitteeReportController::class, 'destroy'])->name('board-member.committee-reports.destroy');
     Route::get('/my-committee-reports/{committeeReport}/pdf', [BoardMemberCommitteeReportController::class, 'pdf'])->name('board-member.committee-reports.pdf');
+
+    Route::get('/committee-reports', [StaffCommitteeReportController::class, 'index'])->name('committee-reports.index');
+    Route::get('/committee-reports/search', [StaffCommitteeReportController::class, 'search'])->name('committee-reports.search');
+    Route::get('/committee-reports/create', [StaffCommitteeReportController::class, 'create'])->name('committee-reports.create');
+    Route::get('/committee-reports/agendas', [StaffCommitteeReportController::class, 'agendas'])->name('committee-reports.agendas');
+    Route::post('/committee-reports', [StaffCommitteeReportController::class, 'store'])->name('committee-reports.store');
+    Route::get('/committee-reports/{committeeReport}/edit', [StaffCommitteeReportController::class, 'edit'])->name('committee-reports.edit');
+    Route::put('/committee-reports/{committeeReport}', [StaffCommitteeReportController::class, 'update'])->name('committee-reports.update');
+    Route::delete('/committee-reports/{committeeReport}', [StaffCommitteeReportController::class, 'destroy'])->name('committee-reports.destroy');
+    Route::get('/committee-reports/{committeeReport}/pdf', [StaffCommitteeReportController::class, 'pdf'])->name('committee-reports.pdf');
+
     Route::get('/dashboard/ob/search', BoardMemberObSearchController::class)->name('board-member.dashboard.ob.search');
     Route::get('/my-sessions/{session}/calendar.ics', BoardMemberSessionCalendarController::class)->name('board-member.sessions.ics');
 

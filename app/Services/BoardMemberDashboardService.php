@@ -82,9 +82,21 @@ class BoardMemberDashboardService
      */
     public function committeeAssignmentsFor(User $user, ?CommitteeTerm $term = null): Collection
     {
-        $boardMember = $user->boardMember;
+        $boardMemberId = (int) ($user->board_member_id ?? 0);
 
-        if ($boardMember === null) {
+        if ($boardMemberId <= 0) {
+            return collect();
+        }
+
+        return $this->committeeAssignmentsForBoardMember($boardMemberId, $term);
+    }
+
+    /**
+     * @return Collection<int, array{committee: Committee, role: CommitteeMembershipRole, role_label: string}>
+     */
+    public function committeeAssignmentsForBoardMember(int $boardMemberId, ?CommitteeTerm $term = null): Collection
+    {
+        if ($boardMemberId <= 0) {
             return collect();
         }
 
@@ -93,7 +105,7 @@ class BoardMemberDashboardService
 
         return CommitteeMembership::query()
             ->with('committee')
-            ->where('board_member_id', $boardMember->id)
+            ->where('board_member_id', $boardMemberId)
             ->where('committee_term_id', $termId)
             ->get()
             ->filter(fn (CommitteeMembership $membership) => $membership->committee !== null)
@@ -103,6 +115,18 @@ class BoardMemberDashboardService
                 'role' => $membership->role,
                 'role_label' => $membership->role->label(),
             ])
+            ->values();
+    }
+
+    /**
+     * @return Collection<int, Committee>
+     */
+    public function chairCommitteesForBoardMember(int $boardMemberId, ?CommitteeTerm $term = null): Collection
+    {
+        return $this->committeeAssignmentsForBoardMember($boardMemberId, $term)
+            ->filter(fn (array $a) => $a['role'] === CommitteeMembershipRole::Chair)
+            ->pluck('committee')
+            ->filter()
             ->values();
     }
 
@@ -264,9 +288,15 @@ class BoardMemberDashboardService
      */
     public function chairmanshipAgendaQueryFor(User $user): Builder
     {
-        $committees = $this->assignmentsGroupedByRole($user)['chair']
-            ->pluck('committee')
-            ->filter();
+        return $this->chairmanshipAgendaQueryForBoardMember((int) ($user->board_member_id ?? 0));
+    }
+
+    /**
+     * @return Builder<AgendaItem>
+     */
+    public function chairmanshipAgendaQueryForBoardMember(int $boardMemberId): Builder
+    {
+        $committees = $this->chairCommitteesForBoardMember($boardMemberId);
 
         if ($committees->isEmpty()) {
             return AgendaItem::query()->whereRaw('0 = 1');
@@ -287,7 +317,16 @@ class BoardMemberDashboardService
      */
     public function chairmanshipAgendasNeedingReportQueryFor(User $user): Builder
     {
-        return $this->chairmanshipAgendaQueryFor($user)
+        return $this->chairmanshipAgendasNeedingReportQueryForBoardMember((int) ($user->board_member_id ?? 0));
+    }
+
+    /**
+     * @return Builder<AgendaItem>
+     */
+    public function chairmanshipAgendasNeedingReportQueryForBoardMember(int $boardMemberId): Builder
+    {
+        return $this->chairmanshipAgendaQueryForBoardMember($boardMemberId)
+            ->where('status', '!=', AgendaItem::STATUS_DONE)
             ->where(function (Builder $query): void {
                 $query->whereNull('committee_report_pdf_path')
                     ->orWhere('committee_report_pdf_path', '');

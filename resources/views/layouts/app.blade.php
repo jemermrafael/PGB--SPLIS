@@ -56,6 +56,7 @@
             || request()->routeIs('board-members.*')
             || request()->routeIs('committee-terms.*')
             || request()->routeIs('committee-monitoring.*')
+            || request()->routeIs('committee-reports.*')
             || request()->routeIs('admin.board-member-ordinances');
     @endphp
 
@@ -341,6 +342,18 @@
                             >
                                 Committee Monitoring
                             </a>
+                            @can('viewAny', App\Models\BoardMemberCommitteeReport::class)
+                                <a
+                                    href="{{ route('committee-reports.index') }}"
+                                    role="menuitem"
+                                    @class([
+                                        'splis-nav-dropdown-link',
+                                        'splis-nav-dropdown-link-active' => request()->routeIs('committee-reports.*'),
+                                    ])
+                                >
+                                    Committee Reports
+                                </a>
+                            @endcan
                             @if ($user?->canRecordAttendance())
                                 <a href="{{ route('ob.sessions.attendance.monthly') }}" role="menuitem" @class(['splis-nav-dropdown-link', 'splis-nav-dropdown-link-active' => request()->routeIs('ob.sessions.attendance.monthly')])>Monthly Attendance</a>
                                 <a href="{{ route('admin.board-member-ordinances') }}" role="menuitem" @class(['splis-nav-dropdown-link', 'splis-nav-dropdown-link-active' => request()->routeIs('admin.board-member-ordinances')])>BM Authored Ordinances</a>

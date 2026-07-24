@@ -26,9 +26,9 @@ class DashboardAnalyticsFeatureTest extends TestCase
             ->assertSee('Legislative Output by Year')
             ->assertSee('Monthly Output')
             ->assertSee('Bataan — Agendas')
-            ->assertSee('All months')
-            ->assertSee('All committees')
-            ->assertDontSee('Geographic dashboard')
+            ->assertSee('All Months')
+            ->assertSee('All Committees')
+            ->assertDontSee('Geographic Dashboard')
             ->assertDontSee('Department × Budget Amount')
             ->assertDontSee('Municipality × Resolution Category')
             ->assertDontSee('SLA Compliance')
@@ -59,7 +59,7 @@ class DashboardAnalyticsFeatureTest extends TestCase
                 'year' => 2024,
             ]))
             ->assertOk()
-            ->assertJsonPath('committee', 'All committees')
+            ->assertJsonPath('committee', 'All Committees')
             ->assertJsonPath('committee_id', null);
     }
 

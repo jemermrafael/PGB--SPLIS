@@ -50,7 +50,7 @@ function updateMapSubtitle(root, payload) {
         return;
     }
 
-    const committee = payload?.committee || 'All committees';
+    const committee = payload?.committee || 'All Committees';
 
     subtitle.textContent = `${committee} · ${payload?.period_label ?? ''} · ${formatMapValue(payload?.total ?? 0)} agendas`;
 }

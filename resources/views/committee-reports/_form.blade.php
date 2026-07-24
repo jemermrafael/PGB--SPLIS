@@ -3,11 +3,12 @@
     $report = $report ?? null;
     $isEdit = $report !== null;
     $selectedAgendaIds = collect($selectedAgendaIds ?? [])->map(fn ($id) => (int) $id)->all();
+    $chairMembers = $chairMembers ?? collect();
 @endphp
 
 <form
     method="POST"
-    action="{{ $isEdit ? route('board-member.committee-reports.update', $report) : route('board-member.committee-reports.store') }}"
+    action="{{ $isEdit ? route('committee-reports.update', $report) : route('committee-reports.store') }}"
     enctype="multipart/form-data"
 >
     @csrf
@@ -17,6 +18,25 @@
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div class="splis-card splis-card-body space-y-5">
+            @if (! $isEdit)
+                <div>
+                    <label class="splis-label" for="board_member_id">Board Member (Chair)</label>
+                    <select name="board_member_id" id="board_member_id" class="splis-select" required>
+                        <option value="">Select Board Member</option>
+                        @foreach ($chairMembers as $member)
+                            <option value="{{ $member->id }}" @selected((int) old('board_member_id', $boardMemberId) === (int) $member->id)>
+                                {{ $member->displayName() }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('board_member_id')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+            @else
+                <input type="hidden" name="board_member_id" id="board_member_id" value="{{ $boardMemberId }}">
+            @endif
+
             <div>
                 <label class="splis-label" for="title">Report title (optional)</label>
                 <input
@@ -54,15 +74,13 @@
             <p class="text-xs text-slate-500 dark:text-slate-400">
                 Tagged agendas will use this PDF as their Committee Report and are placed automatically under
                 <strong>IV. Committee Reports</strong> on the nearest upcoming Order of Business.
-                Agendas from the same committee share one file, named like
-                <code class="text-[0.7rem]">1. ENVIRONMENT-Agenda 058, 267.pdf</code>.
             </p>
 
             <div class="flex flex-wrap gap-2">
                 <button type="submit" class="splis-btn-primary">
                     {{ $isEdit ? 'Save Changes' : 'Submit Report' }}
                 </button>
-                <a href="{{ route('board-member.committee-reports.index') }}" class="splis-btn-ghost">Cancel</a>
+                <a href="{{ route('committee-reports.index') }}" class="splis-btn-ghost">Cancel</a>
             </div>
         </div>
 
@@ -70,18 +88,19 @@
             id="bm-cr-agenda-panel"
             class="splis-card overflow-hidden"
             data-search-url="{{ $agendaSearchUrl }}"
+            data-board-member-param="1"
         >
-            <div class="splis-card-header flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div class="splis-card-header">
                 <div>
                     <h2 class="splis-card-title">Chairmanship Agenda</h2>
-                    <p class="splis-card-subtitle">Items referred to Committees you Chair (without a Report yet).</p>
+                    <p class="splis-card-subtitle">Items referred to committees this Board Member chairs (without a report yet).</p>
                 </div>
             </div>
             <div class="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                         <label class="splis-label" for="bm-cr-committee-id">Committee</label>
-                        <select id="bm-cr-committee-id" class="splis-select">
+                        <select id="bm-cr-committee-id" class="splis-select" @disabled(! $boardMemberId && ! $isEdit)>
                             <option value="">All Chairmanships</option>
                             @foreach ($chairCommittees as $committee)
                                 <option value="{{ $committee->id }}" @selected((int) $committeeId === (int) $committee->id)>{{ $committee->name }}</option>
@@ -97,6 +116,7 @@
                             class="splis-input"
                             placeholder="Tracking no. or title"
                             autocomplete="off"
+                            @disabled(! $boardMemberId && ! $isEdit)
                         >
                     </div>
                 </div>
@@ -135,7 +155,9 @@
                     </label>
                 @empty
                     <p class="px-2 py-8 text-center text-sm text-slate-500">
-                        @if ($q !== '' || $committeeId)
+                        @if (! $boardMemberId && ! $isEdit)
+                            Select a Board Member chair to load open agendas.
+                        @elseif ($q !== '' || $committeeId)
                             No chairmanship agenda items matched your filter.
                         @else
                             No open chairmanship agenda items need a committee report.
