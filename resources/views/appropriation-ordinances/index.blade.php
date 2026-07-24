@@ -3,12 +3,13 @@
 @section('title', 'Appropriation Ordinances — '.config('app.name'))
 
 @section('content')
-<div class="splis-archive-bg max-w-6xl">
+<div class="max-w-6xl">
     <div class="splis-page-header">
-        <div>
-            <h1 class="splis-page-title">Appropriation Ordinances</h1>
-            <p class="splis-page-subtitle">Provincial appropriation ordinances — intake through SP passage and gubernatorial approval.</p>
-        </div>
+        <x-page-heading
+            title="Appropriation Ordinances"
+            subtitle="Provincial appropriation ordinances — intake through SP passage and gubernatorial approval."
+            icon="ordinances"
+        />
         @can('create', App\Models\AppropriationOrdinance::class)
             <a href="{{ route('appropriation-ordinances.create') }}" class="splis-btn-primary inline-flex items-center gap-2">
                 <x-icon name="plus" class="h-4 w-4" stroke-width="2" />

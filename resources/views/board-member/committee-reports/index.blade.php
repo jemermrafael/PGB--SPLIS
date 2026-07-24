@@ -5,10 +5,11 @@
 @section('content')
 <div class="max-w-4xl">
     <div class="splis-page-header">
-        <div>
-            <h1 class="splis-page-title">Committee Reports</h1>
-            <p class="splis-page-subtitle">Upload PDF reports, tag your Committee Agendas, and attach them to Session Committee Reports.</p>
-        </div>
+        <x-page-heading
+            title="Committee Reports"
+            subtitle="Upload PDF reports, tag your Committee Agendas, and attach them to Session Committee Reports."
+            icon="file-text"
+        />
         @can('create', App\Models\BoardMemberCommitteeReport::class)
             <a href="{{ route('board-member.committee-reports.create') }}" class="splis-btn-primary inline-flex items-center gap-2">
                 <x-icon name="plus" class="h-4 w-4" />

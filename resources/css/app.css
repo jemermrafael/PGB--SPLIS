@@ -25,7 +25,8 @@
     --color-brand-red: #b42318;
     --color-brand-green: #1f6b3a;
     --color-brand-accent: #d4a843;
-    --color-surface: #f5f7fa;
+    /* Cooler, slightly deeper surface so white cards/tables read with more contrast */
+    --color-surface: #e6edf5;
     --color-surface-elevated: #ffffff;
 }
 
@@ -47,7 +48,7 @@
     }
 
     body {
-        @apply bg-surface text-slate-800 antialiased;
+        @apply bg-surface text-slate-900 antialiased;
     }
 
     html.dark body {
@@ -312,40 +313,6 @@
             radial-gradient(circle at 0% 100%, rgb(12 35 64 / 0.04), transparent 35%);
     }
 
-    /* Dashboard: login building photo blended into surface, same asset as sign-in. */
-    .splis-main:has(.splis-dashboard) {
-        background-color: var(--color-surface);
-        background-image:
-            linear-gradient(
-                135deg,
-                color-mix(in srgb, var(--color-surface) 78%, transparent) 0%,
-                color-mix(in srgb, var(--color-surface) 86%, transparent) 42%,
-                color-mix(in srgb, var(--color-surface) 92%, transparent) 100%
-            ),
-            url('/images/login-background.png');
-        background-position: center;
-        background-size: cover;
-        background-repeat: no-repeat;
-        background-attachment: fixed;
-    }
-
-    /* Resolutions / Ordinances archives: building photo with warm gold-tinted blend. */
-    .splis-main:has(.splis-archive-bg) {
-        background-color: var(--color-surface);
-        background-image:
-            linear-gradient(
-                160deg,
-                color-mix(in srgb, var(--color-surface) 74%, transparent) 0%,
-                color-mix(in srgb, var(--color-brand-gold) 8%, var(--color-surface)) 38%,
-                color-mix(in srgb, var(--color-surface) 90%, transparent) 100%
-            ),
-            url('/images/login-background.png');
-        background-position: 60% center;
-        background-size: cover;
-        background-repeat: no-repeat;
-        background-attachment: fixed;
-    }
-
     .splis-page {
         @apply mx-auto max-w-7xl px-6 py-8 md:px-8;
         padding-bottom: 4.5rem;
@@ -387,7 +354,7 @@
     }
 
     .splis-term-switcher-chip {
-        @apply shrink-0 whitespace-nowrap;
+        @apply inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap;
     }
 
     .splis-term-switcher-arrow {
@@ -419,15 +386,54 @@
     }
 
     .splis-page-subtitle {
-        @apply mt-1 text-sm text-slate-500;
+        @apply mt-1 text-sm text-slate-600;
+    }
+
+    .splis-page-heading {
+        @apply flex min-w-0 items-start gap-4;
+    }
+
+    .splis-page-heading-badge {
+        @apply relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand-900 text-white shadow-lg shadow-brand-900/25;
+        background-image:
+            linear-gradient(var(--color-brand-900), var(--color-brand-900)),
+            linear-gradient(135deg, var(--color-brand-gold) 0%, #4aa3c7 45%, var(--color-brand-700) 100%);
+        background-origin: border-box;
+        background-clip: padding-box, border-box;
+        border: 3px solid transparent;
+    }
+
+    .splis-page-heading-glyph {
+        @apply h-9 w-9;
+    }
+
+    .splis-page-heading-glyph-simple {
+        @apply h-7 w-7 text-white;
+    }
+
+    .splis-page-heading-copy {
+        @apply min-w-0 pt-0.5;
+    }
+
+    .splis-page-heading-title {
+        @apply relative text-2xl font-bold tracking-tight text-brand-950 md:text-3xl;
+    }
+
+    .splis-page-heading-title::after {
+        content: '';
+        @apply absolute -bottom-1.5 left-0 h-1 w-12 rounded-full bg-brand-gold;
+    }
+
+    .splis-page-heading-subtitle {
+        @apply mt-3 text-sm font-medium text-slate-600 md:text-base;
     }
 
     .splis-form-section {
-        @apply overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/50 dark:border-slate-700 dark:bg-slate-900 dark:shadow-none;
+        @apply overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-md shadow-slate-300/40 dark:border-slate-700 dark:bg-slate-900 dark:shadow-none;
     }
 
     .splis-form-section-header {
-        @apply border-b border-slate-100 px-6 py-4 dark:border-slate-700;
+        @apply border-b border-slate-200 px-6 py-4 dark:border-slate-700;
     }
 
     .splis-form-section-title {
@@ -435,7 +441,7 @@
     }
 
     .splis-form-section-subtitle {
-        @apply mt-0.5 text-sm text-slate-500 dark:text-slate-400;
+        @apply mt-0.5 text-sm text-slate-600 dark:text-slate-400;
     }
 
     .splis-form-section-body {
@@ -475,7 +481,7 @@
     }
 
     .splis-workflow-steps {
-        @apply mb-6 overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900;
+        @apply mb-6 overflow-hidden rounded-2xl border border-slate-300 bg-white p-4 shadow-md dark:border-slate-700 dark:bg-slate-900;
     }
 
     .splis-workflow-steps-list {
@@ -531,7 +537,7 @@
     }
 
     .splis-card {
-        @apply overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/50;
+        @apply overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-md shadow-slate-300/40;
     }
 
     .splis-card-body {
@@ -539,7 +545,7 @@
     }
 
     .splis-card-header {
-        @apply border-b border-slate-100 px-6 py-4;
+        @apply border-b border-slate-200 px-6 py-4;
     }
 
     .splis-card-title {
@@ -547,27 +553,27 @@
     }
 
     .splis-stat {
-        @apply relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-200/50 transition hover:-translate-y-0.5 hover:shadow-md;
+        @apply relative overflow-hidden rounded-2xl border border-slate-300 bg-white p-6 shadow-md shadow-slate-300/40 transition hover:-translate-y-0.5 hover:shadow-lg;
     }
 
     .splis-stat--brand {
-        @apply border-l-4 border-l-brand-700 bg-gradient-to-br from-brand-50 to-white;
+        @apply border-l-[5px] border-l-brand-700 bg-gradient-to-br from-brand-100/80 to-white;
     }
 
     .splis-stat--gold {
-        @apply border-l-4 border-l-brand-gold bg-gradient-to-br from-amber-50 to-white;
+        @apply border-l-[5px] border-l-brand-gold bg-gradient-to-br from-amber-100/80 to-white;
     }
 
     .splis-stat--green {
-        @apply border-l-4 border-l-brand-green bg-gradient-to-br from-emerald-50 to-white;
+        @apply border-l-[5px] border-l-brand-green bg-gradient-to-br from-emerald-100/80 to-white;
     }
 
     .splis-stat--sky {
-        @apply border-l-4 border-l-sky-600 bg-gradient-to-br from-sky-50 to-white;
+        @apply border-l-[5px] border-l-sky-600 bg-gradient-to-br from-sky-100/80 to-white;
     }
 
     .splis-stat--amber {
-        @apply border-l-4 border-l-amber-500 bg-gradient-to-br from-orange-50 to-white;
+        @apply border-l-[5px] border-l-amber-500 bg-gradient-to-br from-orange-100/80 to-white;
     }
 
     .splis-stat--brand .splis-stat-value {
@@ -591,15 +597,15 @@
     }
 
     .splis-stat-label {
-        @apply text-sm font-medium text-slate-500;
+        @apply text-sm font-semibold text-slate-700;
     }
 
     .splis-stat-value {
-        @apply mt-2 text-3xl font-bold tracking-tight text-slate-900;
+        @apply mt-2 text-3xl font-bold tracking-tight text-slate-950;
     }
 
     .splis-stat-meta {
-        @apply mt-2 text-xs text-slate-400;
+        @apply mt-2 text-xs font-medium text-slate-600;
     }
 
     .splis-stat-icon {
@@ -607,19 +613,19 @@
     }
 
     .splis-stat-icon--brand {
-        @apply bg-brand-700/15 text-brand-700;
+        @apply bg-brand-700/20 text-brand-800;
     }
 
     .splis-stat-icon--gold {
-        @apply bg-brand-gold/20 text-amber-800;
+        @apply bg-brand-gold/30 text-amber-900;
     }
 
     .splis-stat-icon--green {
-        @apply bg-brand-green/15 text-brand-green;
+        @apply bg-brand-green/20 text-brand-green;
     }
 
     .splis-stat-icon--sky {
-        @apply bg-sky-500/15 text-sky-700;
+        @apply bg-sky-500/20 text-sky-800;
     }
 
     .splis-stat--clickable {
@@ -797,23 +803,13 @@
     }
 
     .splis-dashboard-hero {
-        @apply relative mb-8 w-full overflow-hidden rounded-2xl border border-brand-700/30 px-6 py-7 shadow-lg sm:px-8;
+        @apply relative mb-8 w-full overflow-hidden rounded-2xl border-2 border-brand-gold/40 px-6 py-7 shadow-xl sm:px-8;
         background-image: linear-gradient(125deg, var(--color-brand-950) 0%, var(--color-brand-800) 45%, var(--color-brand-700) 100%);
     }
 
     .splis-dashboard-hero-glow {
-        @apply pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full opacity-40;
-        background: radial-gradient(circle, rgb(212 168 67 / 0.45) 0%, transparent 70%);
-    }
-
-    .splis-dashboard-hero-building {
-        @apply pointer-events-none absolute inset-y-0 right-0 w-[min(28rem,58%)] opacity-[0.28] sm:opacity-[0.34];
-        background-image: url('/images/login-background.png');
-        background-position: 72% center;
-        background-repeat: no-repeat;
-        background-size: cover;
-        -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 0.55) 28%, black 55%);
-        mask-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 0.55) 28%, black 55%);
+        @apply pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full opacity-50;
+        background: radial-gradient(circle, rgb(212 168 67 / 0.55) 0%, transparent 70%);
     }
 
     .splis-dashboard-hero-content {
@@ -825,7 +821,7 @@
     }
 
     .splis-dashboard-hero-subtitle {
-        @apply mt-2 w-full max-w-none text-base text-slate-300;
+        @apply mt-2 w-full max-w-none text-base font-medium text-slate-100;
     }
 
     .splis-analytics-bars {
@@ -889,7 +885,7 @@
     }
 
     .splis-filter-panel--accent {
-        @apply relative border-brand-200/60 bg-gradient-to-b from-brand-50/50 to-white;
+        @apply relative border-brand-200 bg-gradient-to-b from-brand-50 to-white;
     }
 
     .splis-filter-panel--accent:has(.splis-combobox.is-open),
@@ -899,11 +895,11 @@
     }
 
     .splis-filter-panel-accent-bar {
-        @apply absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-700 via-brand-gold to-brand-green;
+        @apply absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-brand-700 via-brand-gold to-brand-green;
     }
 
     .splis-filter-panel-icon {
-        @apply inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-700/10 text-brand-700;
+        @apply inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-700/20 text-brand-800;
     }
 
     .splis-card--accent .splis-card-header--accent {
@@ -987,7 +983,7 @@
     }
 
     .splis-btn-secondary {
-        @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 focus:ring-slate-300;
+        @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 border border-slate-300 bg-white text-slate-800 shadow-sm hover:border-slate-400 hover:bg-slate-50 focus:ring-slate-300;
     }
 
     .splis-ordinance-status-btn {
@@ -1011,7 +1007,7 @@
     }
 
     .splis-btn-ghost {
-        @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus:ring-slate-300;
+        @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 text-slate-700 hover:bg-slate-200/70 hover:text-slate-950 focus:ring-slate-300;
     }
 
     .splis-btn-danger {
@@ -1023,13 +1019,13 @@
     }
 
     .splis-label {
-        @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500;
+        @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-700;
     }
 
     .splis-input,
     .splis-select,
     .splis-textarea {
-        @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 shadow-sm transition placeholder:text-slate-400 focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/25;
+        @apply w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-500 focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30;
     }
 
     .splis-select {
@@ -1040,7 +1036,7 @@
     }
 
     .splis-table-wrap {
-        @apply relative overflow-x-auto rounded-2xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/50;
+        @apply relative overflow-x-auto rounded-2xl border border-slate-300 bg-white shadow-md shadow-slate-300/40;
     }
 
     .splis-table-scroll-hint {
@@ -1088,19 +1084,19 @@
     }
 
     .splis-table thead {
-        @apply bg-slate-50/80 text-left text-xs font-semibold uppercase tracking-wide text-slate-500;
+        @apply bg-brand-50 text-left text-xs font-bold uppercase tracking-wide text-brand-900;
     }
 
     .splis-table th {
-        @apply px-5 py-3.5;
+        @apply border-b border-slate-300 px-5 py-3.5;
     }
 
     .splis-table td {
-        @apply border-t border-slate-100 px-5 py-4;
+        @apply border-t border-slate-200 px-5 py-4 text-slate-800;
     }
 
     .splis-table tbody tr {
-        @apply transition-colors duration-75 hover:bg-slate-50/40;
+        @apply transition-colors duration-75 hover:bg-brand-50/60;
     }
 
     .splis-attendance-monthly-table .splis-attendance-monthly-session {
@@ -1211,6 +1207,81 @@
 
     .splis-badge-approved {
         @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100;
+    }
+
+    .splis-badge-with-icon {
+        @apply gap-1;
+    }
+
+    .splis-list-meta {
+        @apply inline-flex max-w-full items-center gap-2 text-sm text-slate-800;
+    }
+
+    .splis-list-meta-avatar {
+        @apply inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-800;
+    }
+
+    .splis-list-meta-avatar--muted {
+        @apply bg-slate-100 text-slate-700;
+    }
+
+    .splis-list-meta-icon {
+        @apply inline-flex shrink-0 text-brand-800;
+    }
+
+    .splis-list-meta-text {
+        @apply min-w-0 truncate font-medium;
+    }
+
+    .splis-list-committee {
+        @apply inline-flex max-w-full items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-sky-900 ring-1 ring-sky-100;
+    }
+
+    .splis-list-committee-icon {
+        @apply inline-flex shrink-0 text-sky-800;
+    }
+
+    .splis-list-committee-icon-glyph {
+        display: inline-block;
+        width: 0.875rem;
+        height: 0.875rem;
+        flex-shrink: 0;
+        background-color: currentColor;
+        -webkit-mask: var(--committee-icon) center / contain no-repeat;
+        mask: var(--committee-icon) center / contain no-repeat;
+    }
+
+    .splis-list-committee-icon-glyph--lg {
+        width: 4rem;
+        height: 4rem;
+    }
+
+    .splis-list-committee-text {
+        @apply min-w-0 truncate;
+    }
+
+    html.dark .splis-list-meta {
+        @apply text-slate-200;
+    }
+
+    html.dark .splis-list-meta-avatar {
+        @apply bg-sky-950 text-sky-300;
+    }
+
+    html.dark .splis-list-meta-avatar--muted {
+        @apply bg-slate-800 text-slate-300;
+    }
+
+    html.dark .splis-list-meta-icon {
+        @apply text-brand-gold;
+    }
+
+    html.dark .splis-list-committee {
+        @apply bg-sky-950/60 text-sky-200 ring-sky-900;
+    }
+
+    html.dark .splis-list-committee-icon {
+        @apply text-sky-300;
     }
 
     .splis-badge-ordinance-published {
@@ -1697,11 +1768,11 @@
     }
 
     .splis-filter-panel {
-        @apply mb-6 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-200/50;
+        @apply mb-6 rounded-2xl border border-slate-300 bg-white p-5 shadow-md shadow-slate-300/40;
     }
 
     .splis-filter-advanced {
-        @apply mt-4 border-t border-slate-100 pt-4 dark:border-slate-700;
+        @apply mt-4 border-t border-slate-200 pt-4 dark:border-slate-700;
     }
 
     .splis-filter-advanced-toggle {
@@ -1739,7 +1810,7 @@
     }
 
     .splis-view-toggle {
-        @apply inline-flex gap-0.5 rounded-xl border border-slate-200/90 bg-white p-1 shadow-sm;
+        @apply inline-flex gap-0.5 rounded-xl border border-slate-300 bg-white p-1 shadow-md;
     }
 
     .splis-view-toggle-btn {
@@ -1747,7 +1818,7 @@
     }
 
     .splis-view-toggle-btn:hover:not(.active) {
-        @apply bg-slate-50;
+        @apply bg-slate-100;
     }
 
     .splis-view-toggle-btn.active {
@@ -1755,7 +1826,7 @@
     }
 
     .splis-attribution-toggle {
-        @apply inline-flex w-full gap-0.5 rounded-xl border border-slate-200/90 bg-white p-1 shadow-sm sm:w-auto;
+        @apply inline-flex w-full gap-0.5 rounded-xl border border-slate-300 bg-white p-1 shadow-md sm:w-auto;
     }
 
     .splis-attribution-toggle-btn {
@@ -2219,7 +2290,7 @@
     }
 
     .splis-doc-card {
-        @apply rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-colors duration-75 hover:bg-slate-50/60;
+        @apply rounded-2xl border border-slate-300 bg-white p-5 shadow-md transition-colors duration-75 hover:bg-brand-50/50;
     }
 
     .splis-doc-card-number {
@@ -2235,7 +2306,7 @@
     }
 
     .splis-doc-pdf-icon {
-        @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-brand-800 transition hover:bg-slate-100;
+        @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-brand-red transition hover:bg-red-50;
     }
 
     .splis-mobile-card-list {
@@ -2243,7 +2314,7 @@
     }
 
     .splis-mobile-card {
-        @apply rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm;
+        @apply rounded-2xl border border-slate-300 bg-white p-4 shadow-md;
     }
 
     .splis-mobile-card-title {
@@ -2263,7 +2334,7 @@
     }
 
     .splis-doc-card-meta dt {
-        @apply font-semibold uppercase tracking-wide text-slate-500;
+        @apply font-semibold uppercase tracking-wide text-slate-700;
     }
 
     .splis-doc-card-meta dd {
@@ -2273,38 +2344,6 @@
     html.dark .splis-main {
         background-image: none;
         @apply bg-slate-950;
-    }
-
-    html.dark .splis-main:has(.splis-dashboard) {
-        background-color: rgb(2 6 23);
-        background-image:
-            linear-gradient(
-                135deg,
-                rgb(2 6 23 / 0.86) 0%,
-                rgb(2 6 23 / 0.9) 45%,
-                rgb(2 6 23 / 0.94) 100%
-            ),
-            url('/images/login-background.png');
-        background-position: center;
-        background-size: cover;
-        background-repeat: no-repeat;
-        background-attachment: fixed;
-    }
-
-    html.dark .splis-main:has(.splis-archive-bg) {
-        background-color: rgb(2 6 23);
-        background-image:
-            linear-gradient(
-                160deg,
-                rgb(2 6 23 / 0.84) 0%,
-                color-mix(in srgb, var(--color-brand-gold) 12%, rgb(2 6 23 / 0.9)) 40%,
-                rgb(2 6 23 / 0.94) 100%
-            ),
-            url('/images/login-background.png');
-        background-position: 60% center;
-        background-size: cover;
-        background-repeat: no-repeat;
-        background-attachment: fixed;
     }
 
     html.dark .splis-filter-check {
@@ -2420,11 +2459,13 @@
 
     html.dark .splis-card-title,
     html.dark .splis-page-title,
+    html.dark .splis-page-heading-title,
     html.dark .splis-stat-value {
         @apply text-slate-100;
     }
 
     html.dark .splis-page-subtitle,
+    html.dark .splis-page-heading-subtitle,
     html.dark .splis-stat-label,
     html.dark .splis-detail-label,
     html.dark .splis-table-title {
@@ -2451,15 +2492,19 @@
     }
 
     html.dark .splis-table thead {
-        @apply bg-slate-800/80 text-slate-400;
+        @apply border-b border-slate-600 bg-slate-800 text-slate-200;
+    }
+
+    html.dark .splis-table th {
+        @apply border-slate-600;
     }
 
     html.dark .splis-table td {
-        @apply border-slate-700;
+        @apply border-slate-700 text-slate-200;
     }
 
     html.dark .splis-table tbody tr:hover {
-        @apply bg-slate-800/25;
+        @apply bg-slate-800/50;
     }
 
     html.dark .splis-doc-card:hover {

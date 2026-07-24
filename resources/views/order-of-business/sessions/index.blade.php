@@ -5,10 +5,11 @@
 @section('content')
 <div>
     <div class="splis-page-header">
-        <div>
-            <h1 class="splis-page-title">Order of Business</h1>
-            <p class="splis-page-subtitle">Legislative Sessions and OB documents — {{ $sessions->total() }} session{{ $sessions->total() === 1 ? '' : 's' }} on file.</p>
-        </div>
+        <x-page-heading
+            title="Order of Business"
+            subtitle="Legislative Sessions and OB documents — {{ $sessions->total() }} session{{ $sessions->total() === 1 ? '' : 's' }} on file."
+            icon="calendar"
+        />
         @can('create', App\Models\LegislativeSession::class)
             <a href="{{ route('ob.sessions.create') }}" class="splis-btn-primary inline-flex items-center gap-2">
                 <x-icon name="plus" class="h-4 w-4" stroke-width="2" />

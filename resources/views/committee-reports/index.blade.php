@@ -9,10 +9,11 @@
     data-search-url="{{ $searchUrl }}"
 >
     <div class="splis-page-header">
-        <div>
-            <h1 class="splis-page-title">Committee Reports</h1>
-            <p class="splis-page-subtitle">Reports submitted by Board Members and staff. BM-submitted reports are view-only for encoders and admins.</p>
-        </div>
+        <x-page-heading
+            title="Committee Reports"
+            subtitle="Reports submitted by Board Members and staff. BM-submitted reports are view-only for encoders and admins."
+            icon="file-text"
+        />
         @can('create', App\Models\BoardMemberCommitteeReport::class)
             <a href="{{ route('committee-reports.create') }}" class="splis-btn-primary inline-flex items-center gap-2">
                 <x-icon name="plus" class="h-4 w-4" />

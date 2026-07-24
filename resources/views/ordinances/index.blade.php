@@ -3,12 +3,13 @@
 @section('title', 'Ordinances — '.config('app.name'))
 
 @section('content')
-<div id="ordinances-search" class="splis-archive-bg splis-ordinances-index" data-search-url="{{ route('ordinances.search') }}">
+<div id="ordinances-search" class="splis-ordinances-index" data-search-url="{{ route('ordinances.search') }}">
     <div class="splis-page-header">
-        <div>
-            <h1 class="splis-page-title">Ordinances</h1>
-            <p class="splis-page-subtitle">Search and browse provincial ordinances by series, subject, and enactment dates.</p>
-        </div>
+        <x-page-heading
+            title="Ordinances"
+            subtitle="Search and browse provincial ordinances by series, subject, and enactment dates."
+            icon="ordinances"
+        />
         @can('create', App\Models\Ordinance::class)
             <a href="{{ route('ordinances.create') }}" class="splis-btn-primary inline-flex items-center gap-2">
                 <x-icon name="plus" class="h-4 w-4" stroke-width="2" />

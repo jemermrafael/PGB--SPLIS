@@ -1,14 +1,7 @@
 import { renderAjaxPagination } from './pagination';
 import { bindTitleTooltips, renderTruncatedTitle, truncateWords } from './title-tooltip';
 import { preferredDocView } from './doc-view';
-
-function escapeHtml(value) {
-    return String(value ?? '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;');
-}
+import { escapeHtml, renderCommitteeMeta } from './list-meta';
 
 function formatDate(value) {
     if (!value) {
@@ -57,7 +50,7 @@ function renderListItem(item) {
             </td>
             ${renderTitleCell(item.title)}
             <td class="hidden md:table-cell">${escapeHtml(item.sender || '—')}</td>
-            <td class="hidden lg:table-cell">${escapeHtml(item.committee || '—')}</td>
+            <td class="hidden md:table-cell">${renderCommitteeMeta(item.committee, { key: item.committee_icon_key, url: item.committee_icon_url })}</td>
             <td class="hidden sm:table-cell whitespace-nowrap">${formatDate(item.date_received)}</td>
             <td class="whitespace-nowrap">${formatDate(item.due_date)}</td>
             ${renderDaysLeftCell(item.days_left_label, item.days_left_tone)}
@@ -83,7 +76,7 @@ function renderGridItem(item) {
             <dl class="splis-doc-card-meta">
                 <div><dt>Sender</dt><dd>${escapeHtml(item.sender || '—')}</dd></div>
                 <div><dt>Due</dt><dd>${formatDate(item.due_date)}</dd></div>
-                <div class="col-span-2"><dt>Committee</dt><dd>${escapeHtml(item.committee || '—')}</dd></div>
+                <div class="col-span-2"><dt>Committee</dt><dd>${renderCommitteeMeta(item.committee, { key: item.committee_icon_key, url: item.committee_icon_url })}</dd></div>
                 <div class="col-span-2"><dt>Days left</dt><dd><span class="splis-agenda-days${toneClass}">${escapeHtml(item.days_left_label || '—')}</span></dd></div>
             </dl>
             <div class="mt-auto flex items-center justify-between gap-2 border-t border-slate-100 pt-3 dark:border-slate-700">

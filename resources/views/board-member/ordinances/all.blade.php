@@ -5,10 +5,11 @@
 @section('content')
 <div class="max-w-6xl" id="bm-all-ordinances" data-search-url="{{ route('board-member.ordinances.all.search') }}">
     <div class="splis-page-header">
-        <div>
-            <h1 class="splis-page-title">All Ordinances</h1>
-            <p class="splis-page-subtitle">Provincial Ordinances and Appropriation Ordinances in one list.</p>
-        </div>
+        <x-page-heading
+            title="All Ordinances"
+            subtitle="Provincial Ordinances and Appropriation Ordinances in one list."
+            icon="ordinances"
+        />
     </div>
 
     <form method="GET" id="bm-ordinances-search-form" class="splis-filter-panel mb-6">

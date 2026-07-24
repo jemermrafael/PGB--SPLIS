@@ -6,7 +6,6 @@
 <div class="splis-dashboard w-full">
     <div class="splis-dashboard-hero mb-8">
         <div class="splis-dashboard-hero-glow" aria-hidden="true"></div>
-        <div class="splis-dashboard-hero-building" aria-hidden="true"></div>
         <div class="splis-dashboard-hero-content">
             <p class="splis-dashboard-hero-eyebrow">Municipal portal</p>
             <h1 class="splis-page-title text-white">Welcome, {{ $user->name }}</h1>

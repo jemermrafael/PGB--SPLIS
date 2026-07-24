@@ -3,14 +3,13 @@ import { applyKeywordFromQuery } from './search-query';
 import { bindTitleTooltips, renderTruncatedTitle, truncateWords } from './title-tooltip';
 import { preferredDocView } from './doc-view';
 import { pdfModalTriggerAttrs } from './pdf-embed-url';
-
-function escapeHtml(value) {
-    return String(value ?? '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;');
-}
+import {
+    escapeHtml,
+    renderAuthorMeta,
+    renderCommitteeMeta,
+    renderDateMeta,
+    renderStatusBadge,
+} from './list-meta';
 
 function formatDate(value) {
     if (!value) {
@@ -65,10 +64,10 @@ function renderListItem(doc) {
                 <a href="${escapeHtml(doc.url)}" class="splis-doc-list-link">${escapeHtml(doc.number)}</a>
             </td>
             ${renderTitleCell(doc.title)}
-            <td class="hidden md:table-cell">${escapeHtml(doc.author || '—')}</td>
-            <td class="hidden lg:table-cell">${escapeHtml(doc.committee || '—')}</td>
-            <td class="hidden sm:table-cell whitespace-nowrap">${formatDate(doc.date)}</td>
-            <td><span class="splis-badge-approved capitalize">${escapeHtml(doc.status || '—')}</span></td>
+            <td class="hidden md:table-cell">${renderAuthorMeta(doc.author)}</td>
+            <td class="hidden lg:table-cell">${renderCommitteeMeta(doc.committee, { key: doc.committee_icon_key, url: doc.committee_icon_url })}</td>
+            <td class="hidden sm:table-cell whitespace-nowrap">${renderDateMeta(formatDate(doc.date))}</td>
+            <td>${renderStatusBadge(doc.status)}</td>
             <td class="hidden lg:table-cell text-slate-500">${escapeHtml(doc.series || '—')}</td>
         </tr>
     `;
@@ -85,12 +84,12 @@ function renderGridItem(doc) {
             </div>
             <p class="splis-doc-card-title">${renderTruncatedTitle(display, full, truncated)}</p>
             <dl class="splis-doc-card-meta">
-                <div><dt>Author</dt><dd>${escapeHtml(doc.author || '—')}</dd></div>
-                <div><dt>Date</dt><dd>${formatDate(doc.date)}</dd></div>
-                <div class="col-span-2"><dt>Committee</dt><dd>${escapeHtml(doc.committee || '—')}</dd></div>
+                <div><dt>Author</dt><dd>${renderAuthorMeta(doc.author)}</dd></div>
+                <div><dt>Date</dt><dd>${renderDateMeta(formatDate(doc.date))}</dd></div>
+                <div class="col-span-2"><dt>Committee</dt><dd>${renderCommitteeMeta(doc.committee, { key: doc.committee_icon_key, url: doc.committee_icon_url })}</dd></div>
             </dl>
             <div class="mt-auto flex items-center justify-between gap-2 border-t border-slate-100 pt-3 dark:border-slate-700">
-                <span class="splis-badge-approved capitalize">${escapeHtml(doc.status || '—')}</span>
+                ${renderStatusBadge(doc.status)}
                 ${doc.has_pdf
                     ? `<a ${pdfModalTriggerAttrs(doc.pdf_url, `${doc.number || 'Resolution'} PDF`)} class="splis-doc-list-link text-xs font-semibold">View PDF</a>`
                     : '<span class="text-xs text-slate-400">No PDF</span>'}

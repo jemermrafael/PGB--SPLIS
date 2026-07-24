@@ -5,10 +5,11 @@
 @section('content')
 <div class="max-w-full">
     <div class="splis-page-header !mb-6">
-        <div>
-            <h1 class="splis-page-title">Monthly Attendance Report</h1>
-            <p class="splis-page-subtitle">{{ \Carbon\Carbon::create($year, $month, 1)->format('F Y') }} · {{ $sessions->count() }} session(s)</p>
-        </div>
+        <x-page-heading
+            title="Monthly Attendance Report"
+            subtitle="{{ \Carbon\Carbon::create($year, $month, 1)->format('F Y') }} · {{ $sessions->count() }} session(s)"
+            icon="clipboard-check"
+        />
         <div class="flex flex-wrap gap-2">
             <a href="{{ route('ob.sessions.attendance.monthly.maker', ['year' => $year, 'month' => $month]) }}" class="splis-btn-secondary inline-flex items-center gap-2">
                 <x-icon name="edit" class="h-4 w-4" />

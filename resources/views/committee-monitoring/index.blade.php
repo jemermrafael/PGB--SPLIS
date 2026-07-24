@@ -12,10 +12,11 @@
     data-search-url="{{ route('committee-monitoring.index') }}"
 >
     <div class="splis-page-header">
-        <div>
-            <h1 class="splis-page-title">Committee Monitoring</h1>
-            <p class="splis-page-subtitle">Referral tracking, committee schedules, and report/status monitoring for referred measures.</p>
-        </div>
+        <x-page-heading
+            title="Committee Monitoring"
+            subtitle="Referral tracking, committee schedules, and report/status monitoring for referred measures."
+            icon="monitor"
+        />
     </div>
 
     <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">

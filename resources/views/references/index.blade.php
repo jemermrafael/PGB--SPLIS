@@ -5,10 +5,11 @@
 @section('content')
 <div class="max-w-7xl">
     <div class="splis-page-header">
-        <div>
-            <h1 class="splis-page-title">Reference Materials</h1>
-            <p class="splis-page-subtitle">Digital compendium of guidelines, memoranda, circulars, issuances, manuals, and related references.</p>
-        </div>
+        <x-page-heading
+            title="Reference Materials"
+            subtitle="Digital Compendium of Guidelines, Memoranda, Circulars, Issuances, Manuals, and Related References."
+            icon="book"
+        />
         @can('create', App\Models\ReferenceMaterial::class)
             <a href="{{ route('references.create') }}" class="splis-btn-primary inline-flex items-center gap-2">
                 <x-icon name="plus" class="h-4 w-4" stroke-width="2" />
@@ -83,7 +84,15 @@
                 </div>
                 <div class="mt-3 flex items-center gap-3">
                     <a href="{{ route('references.show', $material) }}" class="splis-link text-sm">Open</a>
-                    @if ($material->hasFile())
+                    @if ($material->hasFile() && $material->isPdf())
+                        @include('partials.pdf-modal-trigger', [
+                            'url' => route('references.view', $material),
+                            'title' => $material->title.' PDF',
+                            'label' => 'View PDF',
+                            'icon' => 'book-closed',
+                            'class' => 'splis-link text-sm inline-flex items-center gap-1',
+                        ])
+                    @elseif ($material->hasFile())
                         <a href="{{ route('references.download', $material) }}" class="splis-link text-sm">Download</a>
                     @endif
                 </div>
@@ -110,13 +119,13 @@
         <table class="splis-table">
             <thead>
                 <tr>
+                    <th class="w-12 text-center">File</th>
                     <th>Title</th>
                     <th class="min-w-[12rem] max-w-md">Summary</th>
                     <th class="hidden lg:table-cell">Type</th>
                     <th class="hidden xl:table-cell">Office</th>
                     <th class="hidden md:table-cell">Issued</th>
                     <th>Status</th>
-                    <th>File</th>
                 </tr>
             </thead>
             <tbody>
@@ -130,8 +139,31 @@
                             : ($summaryFull !== '' ? $summaryFull : '—');
                     @endphp
                     <tr>
+                        <td class="text-center">
+                            @if ($material->hasFile() && $material->isPdf())
+                                @include('partials.pdf-modal-trigger', [
+                                    'url' => route('references.view', $material),
+                                    'title' => $material->title.' PDF',
+                                    'label' => '',
+                                    'icon' => 'book-closed',
+                                    'class' => 'splis-doc-pdf-icon !text-brand-800 hover:!bg-brand-50',
+                                    'ariaLabel' => 'View PDF: '.$material->title,
+                                ])
+                            @elseif ($material->hasFile())
+                                <a
+                                    href="{{ route('references.download', $material) }}"
+                                    class="splis-doc-pdf-icon !text-brand-800 hover:!bg-brand-50"
+                                    title="Download file"
+                                    aria-label="Download file"
+                                >
+                                    <x-icon name="book-closed" class="h-4 w-4" />
+                                </a>
+                            @else
+                                <span class="text-slate-300">—</span>
+                            @endif
+                        </td>
                         <td>
-                            <a href="{{ route('references.show', $material) }}" class="splis-table-title splis-table-title--list">{{ $material->title }}</a>
+                            <a href="{{ route('references.show', $material) }}" class="splis-link font-semibold">{{ $material->title }}</a>
                             <p class="text-xs text-slate-500">
                                 {{ $material->reference_no ?: 'No reference no.' }}
                                 @if ($material->version_no)
@@ -156,13 +188,6 @@
                                 <span class="splis-badge-unlinked">{{ $material->statusLabel() }}</span>
                             @else
                                 <span class="splis-badge">{{ $material->statusLabel() }}</span>
-                            @endif
-                        </td>
-                        <td>
-                            @if ($material->hasFile())
-                                <a href="{{ route('references.download', $material) }}" class="splis-link">Download</a>
-                            @else
-                                <span class="text-slate-500">—</span>
                             @endif
                         </td>
                     </tr>

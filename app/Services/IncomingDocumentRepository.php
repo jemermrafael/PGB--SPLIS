@@ -41,6 +41,7 @@ class IncomingDocumentRepository
             'sp_number' => $spNumber,
             'sp_series' => $item->sp_series,
             'committee' => $item->referral,
+            ...\App\Support\CommitteeIcon::listIconFields($item->referral),
             'keyword' => $item->keyword,
             'date' => $item->sp_date_approved?->format('Y-m-d'),
             'workflow_status' => $item->workflow_status,

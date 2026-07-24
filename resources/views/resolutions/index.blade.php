@@ -3,12 +3,13 @@
 @section('title', 'Resolutions — '.config('app.name'))
 
 @section('content')
-<div id="resolutions-search" class="splis-archive-bg splis-resolutions-index" data-search-url="{{ route('resolutions.search') }}">
+<div id="resolutions-search" class="splis-resolutions-index" data-search-url="{{ route('resolutions.search') }}">
     <div class="splis-page-header">
-        <div>
-            <h1 class="splis-page-title">All Resolutions</h1>
-            <p class="splis-page-subtitle">Search and browse the adopted resolution archive.</p>
-        </div>
+        <x-page-heading
+            title="All Resolutions"
+            subtitle="Search and browse the adopted resolution archive."
+            icon="file-text"
+        />
         <div class="flex flex-wrap gap-2">
             @can('create', App\Models\Resolution::class)
                 <a href="{{ route('resolutions.create') }}" class="splis-btn-primary inline-flex items-center gap-2">

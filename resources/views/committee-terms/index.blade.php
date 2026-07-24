@@ -5,10 +5,11 @@
 @section('content')
 <div class="max-w-4xl">
     <div class="splis-page-header">
-        <div>
-            <h1 class="splis-page-title">Election Terms</h1>
-            <p class="splis-page-subtitle">Track Committee rosters per election period. Mark one term as current for new assignments.</p>
-        </div>
+        <x-page-heading
+            title="Election Terms"
+            subtitle="Track Committee rosters per election period. Mark one term as current for new assignments."
+            icon="calendar"
+        />
         @can('create', App\Models\CommitteeTerm::class)
             <a href="{{ route('committee-terms.create') }}" class="splis-btn-primary inline-flex items-center gap-2">
                 <x-icon name="plus" class="h-4 w-4" stroke-width="2" />

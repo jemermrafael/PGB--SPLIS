@@ -5,13 +5,10 @@
 @section('content')
 <div id="agenda-search" class="splis-agenda-index" data-search-url="{{ route('agenda.search') }}">
     <div class="splis-page-header">
-        <div>
-            <h1 class="splis-page-title">Agenda</h1>
-            <p class="splis-page-subtitle">
-                Track incoming requests, committee referral, deadlines, and provincial output —
-                <span id="agenda-stat-total">{{ number_format($stats['total']) }}</span> items on file.
-            </p>
-        </div>
+        <x-page-heading title="Agenda" icon="agenda">
+            Track Incoming Requests, Committee Referral, Deadlines, and Provincial Output —
+            <span id="agenda-stat-total">{{ number_format($stats['total']) }}</span> items on file.
+        </x-page-heading>
         @can('create', App\Models\AgendaItem::class)
             <a href="{{ route('agenda.create') }}" class="splis-btn-primary inline-flex items-center gap-2">
                 <x-icon name="plus" class="h-4 w-4" stroke-width="2" />
@@ -166,7 +163,7 @@
                         <th class="splis-agenda-sticky-col whitespace-nowrap">#</th>
                         <th class="min-w-[12rem] max-w-md">Title</th>
                         <th class="hidden whitespace-nowrap md:table-cell">Sender</th>
-                        <th class="hidden whitespace-nowrap lg:table-cell">Committee</th>
+                        <th class="hidden whitespace-nowrap md:table-cell">Committee</th>
                         <th class="hidden whitespace-nowrap sm:table-cell">Received</th>
                         <th class="whitespace-nowrap">Due</th>
                         <th class="whitespace-nowrap">Days left</th>

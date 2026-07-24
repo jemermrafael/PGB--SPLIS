@@ -31,4 +31,9 @@ class CommitteePolicy
     {
         return $user->canEncode();
     }
+
+    public function manageIcon(User $user, Committee $committee): bool
+    {
+        return $user->isSuperadmin();
+    }
 }

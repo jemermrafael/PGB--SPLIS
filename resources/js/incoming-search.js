@@ -1,14 +1,13 @@
 import { renderAjaxPagination } from './pagination';
 import { applyKeywordFromQuery } from './search-query';
 import { bindTitleTooltips, renderTruncatedTitle, truncateWords } from './title-tooltip';
-
-function escapeHtml(value) {
-    return String(value ?? '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;');
-}
+import {
+    escapeHtml,
+    renderCommitteeMeta,
+    renderDateMeta,
+    renderMunicipalityMeta,
+    renderStatusBadge,
+} from './list-meta';
 
 function formatDate(value) {
     if (!value) {
@@ -44,15 +43,11 @@ function renderListItem(item) {
                 </a>
             </td>
             ${renderTitleCell(item.title)}
-            <td class="hidden md:table-cell">${escapeHtml(item.municipality || '—')}</td>
-            <td class="hidden lg:table-cell">${escapeHtml(item.committee || '—')}</td>
-            <td class="hidden sm:table-cell whitespace-nowrap">${formatDate(item.date)}</td>
+            <td class="hidden md:table-cell">${renderMunicipalityMeta(item.municipality)}</td>
+            <td class="hidden lg:table-cell">${renderCommitteeMeta(item.committee, { key: item.committee_icon_key, url: item.committee_icon_url })}</td>
+            <td class="hidden sm:table-cell whitespace-nowrap">${renderDateMeta(formatDate(item.date))}</td>
             <td class="whitespace-nowrap">${escapeHtml(item.sp_number || '—')}</td>
-            <td>
-                <span class="${item.is_linked ? 'splis-badge-linked' : 'splis-badge-unlinked'}">
-                    ${item.is_linked ? 'Linked' : 'Unlinked'}
-                </span>
-            </td>
+            <td>${renderStatusBadge(item.is_linked ? 'Linked' : 'Unlinked')}</td>
         </tr>
     `;
 }

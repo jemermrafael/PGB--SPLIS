@@ -8,10 +8,11 @@
 @endphp
 <div id="board-members-index" class="max-w-6xl">
     <div class="splis-page-header">
-        <div>
-            <h1 class="splis-page-title">Board Members</h1>
-            <p class="splis-page-subtitle">Sangguniang Panlalawigan roster — Vice Governor, District Board Members, and Ex Officio Members.</p>
-        </div>
+        <x-page-heading
+            title="Board Members"
+            subtitle="Sangguniang Panlalawigan roster — Vice Governor, District Board Members, and Ex Officio Members."
+            icon="users"
+        />
         @can('create', App\Models\BoardMember::class)
             <a href="{{ route('board-members.create', ['term' => $selectedTerm->id]) }}" class="splis-btn-primary inline-flex items-center gap-2">
                 <x-icon name="plus" class="h-4 w-4" stroke-width="2" />

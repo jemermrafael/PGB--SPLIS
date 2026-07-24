@@ -18,6 +18,7 @@ use App\Http\Controllers\AppropriationOrdinancePdfController;
 use App\Http\Controllers\AppropriationOrdinancePdfMirrorController;
 use App\Http\Controllers\BoardMemberOrdinanceReportController;
 use App\Http\Controllers\CommitteeController;
+use App\Http\Controllers\CommitteeIconController;
 use App\Http\Controllers\CommitteeMonitoringController;
 use App\Http\Controllers\CommitteeReportSummaryController;
 use App\Http\Controllers\CommitteeTermController;
@@ -230,6 +231,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/committees', [CommitteeController::class, 'index'])->name('committees.index');
     Route::get('/committees/create', [CommitteeController::class, 'create'])->name('committees.create');
     Route::post('/committees', [CommitteeController::class, 'store'])->name('committees.store');
+    Route::get('/committees/{committee}/icon', CommitteeIconController::class)->name('committees.icon');
     Route::get('/committees/{committee}', [CommitteeController::class, 'show'])->name('committees.show')->withTrashed();
     Route::get('/committees/{committee}/edit', [CommitteeController::class, 'edit'])->name('committees.edit');
     Route::put('/committees/{committee}', [CommitteeController::class, 'update'])->name('committees.update');

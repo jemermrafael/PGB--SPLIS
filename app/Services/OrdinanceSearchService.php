@@ -212,6 +212,7 @@ class OrdinanceSearchService
             'title' => $ordinance->listTitle(),
             'author' => $ordinance->boardMembersAttributionDisplay(),
             'committee' => $ordinance->implementing_bodies,
+            ...\App\Support\CommitteeIcon::listIconFields($ordinance->implementing_bodies),
             'keyword' => null,
             'date' => $ordinance->date_enacted?->format('Y-m-d') ?? $ordinance->date_approved?->format('Y-m-d'),
             'status' => $ordinance->classification,

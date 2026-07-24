@@ -10,10 +10,11 @@
     data-initial-member-id="{{ $selectedMemberId }}"
 >
     <div class="splis-page-header !mb-6">
-        <div>
-            <h1 class="splis-page-title">Board Member Authored Ordinances</h1>
-            <p class="splis-page-subtitle">Provincial Ordinances by Board Member — passed or pending.</p>
-        </div>
+        <x-page-heading
+            title="Board Member Authored Ordinances"
+            subtitle="Provincial Ordinances by Board Member — passed or pending."
+            icon="ordinances"
+        />
     </div>
 
     <form method="GET" id="bm-authored-ordinances-form" class="splis-card splis-card-body mb-6">

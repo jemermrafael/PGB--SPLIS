@@ -5,13 +5,10 @@
 @section('content')
 <div class="max-w-5xl">
     <div class="splis-page-header">
-        <div>
-            <h1 class="splis-page-title">My Committees</h1>
-            <p class="splis-page-subtitle">
-                Your Chairmanship, Vice Chairmanship, and Membership for
-                {{ $selectedTerm->label }}@if ($selectedTerm->is_current) (current term)@endif.
-            </p>
-        </div>
+        <x-page-heading title="My Committees" icon="users">
+            Your Chairmanship, Vice Chairmanship, and Membership for
+            {{ $selectedTerm->label }}@if ($selectedTerm->is_current) (current term)@endif.
+        </x-page-heading>
         <a href="{{ route('dashboard') }}" class="splis-btn-ghost">Dashboard</a>
     </div>
 

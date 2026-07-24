@@ -55,6 +55,7 @@ class AgendaItemRepository
             'sender' => $item->sender,
             'title' => $item->title,
             'committee' => $item->committee_referred,
+            ...\App\Support\CommitteeIcon::listIconFields($item->committee_referred),
             'due_date' => $item->due_date?->format('Y-m-d'),
             'days_left_label' => $item->days_left_label,
             'days_left_tone' => AgendaDeadline::toneForItem($item),

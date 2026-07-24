@@ -22,6 +22,7 @@
                 class="{{ $term->id === $selectedTerm->id ? 'splis-btn-primary' : 'splis-btn-secondary' }} splis-term-switcher-chip text-sm"
                 @if ($term->id === $selectedTerm->id) aria-current="page" data-term-switcher-active @endif
             >
+                <x-icon name="calendar" class="h-3.5 w-3.5 shrink-0 opacity-80" />
                 {{ $term->label }}@if ($showCurrentBadge && $term->is_current) (current)@endif
             </a>
         @endforeach

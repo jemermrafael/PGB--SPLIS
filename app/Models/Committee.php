@@ -23,6 +23,8 @@ class Committee extends Model
         'members',
         'secretary',
         'is_active',
+        'icon_key',
+        'icon_path',
     ];
 
     protected function casts(): array

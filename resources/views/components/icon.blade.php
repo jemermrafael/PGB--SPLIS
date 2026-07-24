@@ -113,10 +113,7 @@
             @break
 
         @case('scale')
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M7 8l-2 10" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l2 10" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0012 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 01-2.031.352 5.988 5.988 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L18.75 4.971zm-16.5.52c.99-.203 1.99-.377 3-.52m0 0l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.989 5.989 0 01-2.031.352 5.989 5.989 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L5.25 4.971z" />
             @break
 
         @case('users')
@@ -124,6 +121,19 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 11a3 3 0 1 0 0-6a3 3 0 0 0 0 6" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M20 19a3 3 0 0 0-2.2-2.9" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 19a3 3 0 0 1 2.2-2.9" />
+            @break
+
+        @case('meeting')
+            <circle cx="7" cy="7.5" r="2" />
+            <circle cx="12" cy="6.5" r="2.25" />
+            <circle cx="17" cy="7.5" r="2" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.5 16.5c.4-2.2 2-3.5 3.5-3.5s3.1 1.3 3.5 3.5" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.5 15.2c.6-1.7 1.9-2.7 3.5-2.7s2.9 1 3.5 2.7" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 16.5c.4-2.2 2-3.5 3.5-3.5s3.1 1.3 3.5 3.5" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 19.5h16" />
+            <circle cx="9.25" cy="11.25" r="0.7" fill="currentColor" stroke="none" />
+            <circle cx="12" cy="10.5" r="0.7" fill="currentColor" stroke="none" />
+            <circle cx="14.75" cy="11.25" r="0.7" fill="currentColor" stroke="none" />
             @break
 
         @case('calendar')
@@ -136,6 +146,12 @@
         @case('book')
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 4h9a3 3 0 0 1 3 3v13H8a3 3 0 0 0-3 3V4" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M8 4a3 3 0 0 0-3 3v13" />
+            @break
+
+        @case('book-closed')
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h8" />
             @break
 
         @case('chart-bar')
@@ -173,9 +189,22 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M10 15h6" />
             @break
 
+        @case('calendar-check')
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 3v3" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16 3v3" />
+            <rect x="4" y="6" width="16" height="15" rx="2" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 11h16" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="m9 16 2 2 4-4" />
+            @break
+
         @case('user')
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 11a3 3 0 1 0 0-6a3 3 0 0 0 0 6" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 20a6 6 0 0 1 12 0" />
+            @break
+
+        @case('mail')
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="m3 7 9 6 9-6" />
             @break
 
         @case('maximize')

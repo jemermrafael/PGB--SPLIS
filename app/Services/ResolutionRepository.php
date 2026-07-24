@@ -45,6 +45,7 @@ class ResolutionRepository
             'title' => $item->resolutionTitle,
             'author' => $item->sponsoredBy,
             'committee' => $item->committee,
+            ...\App\Support\CommitteeIcon::listIconFields($item->committee),
             'keyword' => $item->keyword,
             'date' => $item->dateApproved,
             'series' => $item->series,

@@ -6,6 +6,7 @@ use App\Models\Committee;
 use App\Models\CommitteeTerm;
 use App\Services\BoardMemberRosterService;
 use App\Services\CommitteeRosterService;
+use App\Support\CommitteeIcon;
 use App\Support\TrashActivity;
 use App\Support\CommitteeSecretaryOptions;
 use App\Support\CommitteeTermSelection;
@@ -67,6 +68,8 @@ class CommitteeController extends Controller
                 'vice_chair_id' => null,
                 'member_ids' => [],
             ],
+            'iconKeys' => CommitteeIcon::allowedKeys(),
+            'iconPaths' => CommitteeIcon::paths(),
         ]);
     }
 
@@ -76,6 +79,7 @@ class CommitteeController extends Controller
 
         $data = $this->validated($request);
         $committee = Committee::create($data);
+        $this->syncCommitteeIcon($request, $committee);
 
         $term = CommitteeTerm::query()->findOrFail((int) $request->input('committee_term_id'));
         $this->rosterService->saveRoster($committee, $term, $this->rosterInput($request));
@@ -147,6 +151,8 @@ class CommitteeController extends Controller
             'secretaryOptions' => CommitteeSecretaryOptions::names(),
             'secretaryName' => $roster['secretary'],
             'roster' => $roster,
+            'iconKeys' => CommitteeIcon::allowedKeys(),
+            'iconPaths' => CommitteeIcon::paths(),
         ]);
     }
 
@@ -155,6 +161,7 @@ class CommitteeController extends Controller
         $this->authorize('update', $committee);
 
         $committee->update($this->validated($request, $committee));
+        $this->syncCommitteeIcon($request, $committee);
 
         $term = CommitteeTerm::query()->findOrFail((int) $request->input('committee_term_id'));
         $this->rosterService->saveRoster($committee, $term, $this->rosterInput($request));
@@ -181,7 +188,13 @@ class CommitteeController extends Controller
      */
     protected function validated(Request $request, ?Committee $committee = null): array
     {
-        return $request->validate([
+        $canManageIcon = $request->user()?->isSuperadmin() === true;
+
+        if ($canManageIcon && $request->input('icon_key') === '') {
+            $request->merge(['icon_key' => null]);
+        }
+
+        $rules = [
             'sort_order' => ['required', 'integer', 'min:0', 'max:65535'],
             'name' => [
                 'required',
@@ -197,9 +210,36 @@ class CommitteeController extends Controller
             'secretary' => ['nullable', 'string', 'max:200'],
             'member_ids' => ['nullable', 'array'],
             'member_ids.*' => ['integer', 'exists:board_members,id'],
-        ]) + [
+        ];
+
+        if ($canManageIcon) {
+            $rules['icon_key'] = ['nullable', 'string', Rule::in(CommitteeIcon::allowedKeys())];
+            $rules['icon'] = ['nullable', 'file', 'mimes:png,svg', 'mimetypes:image/png,image/svg+xml,text/plain', 'max:512'];
+            $rules['remove_icon'] = ['sometimes', 'boolean'];
+        }
+
+        $data = $request->validate($rules) + [
             'is_active' => $request->boolean('is_active'),
         ];
+
+        unset($data['icon'], $data['remove_icon']);
+
+        return $data;
+    }
+
+    protected function syncCommitteeIcon(Request $request, Committee $committee): void
+    {
+        if ($request->user()?->cannot('manageIcon', $committee)) {
+            return;
+        }
+
+        if ($request->boolean('remove_icon')) {
+            CommitteeIcon::clearUpload($committee);
+        }
+
+        if ($request->hasFile('icon')) {
+            CommitteeIcon::storeUpload($committee, $request->file('icon'));
+        }
     }
 
     /**

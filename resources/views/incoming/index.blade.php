@@ -5,10 +5,11 @@
 @section('content')
 <div id="incoming-search" data-search-url="{{ route('incoming.search') }}">
     <div class="splis-page-header">
-        <div>
-            <h1 class="splis-page-title">Incoming</h1>
-            <p class="splis-page-subtitle">Track municipal submissions and workflow before adoption into the resolution archive.</p>
-        </div>
+        <x-page-heading
+            title="Incoming"
+            subtitle="Track municipal submissions and workflow before adoption into the resolution archive."
+            icon="inbox"
+        />
         @can('create', App\Models\IncomingDocument::class)
             <a href="{{ route('incoming.create') }}" class="splis-btn-primary inline-flex items-center gap-2">
                 <x-icon name="plus" class="h-4 w-4" stroke-width="2" />

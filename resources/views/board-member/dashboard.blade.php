@@ -6,7 +6,6 @@
 <div class="splis-dashboard w-full">
     <div class="splis-dashboard-hero mb-8">
         <div class="splis-dashboard-hero-glow" aria-hidden="true"></div>
-        <div class="splis-dashboard-hero-building" aria-hidden="true"></div>
         <div class="splis-dashboard-hero-content flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-0">
                 <p class="splis-dashboard-hero-eyebrow">Board Member Portal</p>

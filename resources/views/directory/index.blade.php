@@ -5,10 +5,11 @@
 @section('content')
 <div class="max-w-5xl">
     <div class="splis-page-header">
-        <div>
-            <h1 class="splis-page-title">Directory</h1>
-            <p class="splis-page-subtitle">SP Office contacts for encoders and administrators.</p>
-        </div>
+        <x-page-heading
+            title="Directory"
+            subtitle="SP Office contacts for encoders and administrators."
+            icon="users"
+        />
         @can('create', App\Models\DirectoryEntry::class)
             <a href="{{ route('directory.create') }}" class="splis-btn-primary inline-flex items-center gap-2">
                 <x-icon name="plus" class="h-4 w-4" stroke-width="2" />

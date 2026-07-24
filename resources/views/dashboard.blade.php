@@ -6,7 +6,6 @@
 <div id="dashboard-search" class="splis-dashboard w-full" data-search-url="{{ route('dashboard.documents.search') }}">
     <div class="splis-dashboard-hero">
         <div class="splis-dashboard-hero-glow" aria-hidden="true"></div>
-        <div class="splis-dashboard-hero-building" aria-hidden="true"></div>
         <div class="splis-dashboard-hero-content">
             <p class="splis-dashboard-hero-eyebrow">Legislative archive</p>
             <h1 class="splis-page-title text-white">Welcome, {{ auth()->user()->name }}</h1>
@@ -167,7 +166,7 @@
 
     <div id="dashboard-search-results" class="transition-opacity">
         <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p id="dashboard-search-meta" class="text-sm text-slate-500 dark:text-slate-400">Loading documents…</p>
+            <p id="dashboard-search-meta" class="text-sm font-medium text-slate-700 dark:text-slate-300">Loading documents…</p>
             @include('partials.view-toggle', ['id' => 'dashboard-view-toggle'])
         </div>
 
@@ -175,6 +174,7 @@
             <table class="splis-table">
                 <thead>
                     <tr>
+                        <th class="w-12 text-center">PDF</th>
                         <th>Number</th>
                         <th class="hidden sm:table-cell">Type</th>
                         <th class="min-w-[12rem] max-w-md">Title</th>
@@ -183,7 +183,6 @@
                         <th class="hidden sm:table-cell">Date</th>
                         <th class="hidden xl:table-cell">Publication</th>
                         <th>Status</th>
-                        <th class="w-12">PDF</th>
                     </tr>
                 </thead>
                 <tbody id="dashboard-list-body"></tbody>

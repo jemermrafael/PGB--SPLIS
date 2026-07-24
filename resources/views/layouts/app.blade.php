@@ -39,7 +39,7 @@
         ];
 
         if (! $isBoardMember && ! $isMunicipalViewer) {
-            $navItems[] = ['label' => 'Agenda', 'url' => route('agenda.index'), 'active' => request()->routeIs('agenda.*'), 'icon' => 'clipboard-list'];
+            $navItems[] = ['label' => 'Agenda', 'url' => route('agenda.index'), 'active' => request()->routeIs('agenda.*'), 'icon' => 'calendar-check'];
             $navItems[] = ['label' => 'Order of Business', 'url' => route('ob.sessions.index'), 'active' => request()->routeIs('ob.*'), 'icon' => 'calendar'];
             $navItems[] = ['label' => 'Reference Materials', 'url' => route('references.index'), 'active' => request()->routeIs('references.*'), 'icon' => 'book'];
             if (($user?->canEncode() ?? false) || ($user?->canAdmin() ?? false)) {
@@ -261,7 +261,7 @@
                                 'splis-navbar-link-active' => $myAgendaNavActive,
                             ])
                         >
-                            <x-icon name="clipboard-list" class="h-4 w-4 shrink-0 opacity-80" />
+                            <x-icon name="calendar-check" class="h-4 w-4 shrink-0 opacity-80" />
                             My Agenda
                             <x-icon name="chevron-down" class="ml-auto h-3.5 w-3.5 shrink-0 opacity-70" stroke-width="2" />
                         </button>
@@ -307,7 +307,7 @@
                                 'splis-navbar-link-active' => $committeesNavActive,
                             ])
                         >
-                            <x-icon name="users" class="h-4 w-4 shrink-0 opacity-80" />
+                            <x-icon name="meeting" class="h-4 w-4 shrink-0 opacity-80" />
                             Committees
                             <x-icon name="chevron-down" class="ml-auto h-3.5 w-3.5 shrink-0 opacity-70" stroke-width="2" />
                         </button>
