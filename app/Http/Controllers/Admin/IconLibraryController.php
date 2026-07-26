@@ -27,23 +27,36 @@ class IconLibraryController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => ['nullable', 'string', 'max:120'],
-            'icon' => ['required', 'file', 'mimes:png,svg', 'mimetypes:image/png,image/svg+xml,text/plain', 'max:512'],
+        $request->validate([
+            'icons' => ['required', 'array', 'min:1'],
+            'icons.*' => ['file', 'mimes:png,svg', 'mimetypes:image/png,image/svg+xml,text/plain', 'max:512'],
         ]);
 
-        $item = IconLibrary::store(
-            $request->file('icon'),
-            $validated['name'] ?? null,
-            $request->user()?->id,
-        );
+        $uploaded = [];
+        foreach ($request->file('icons', []) as $file) {
+            if ($file === null) {
+                continue;
+            }
 
-        ActivityLogger::log('icon_library.uploaded', $item, [
-            'name' => $item->name,
-            'path' => $item->stored_path,
-        ]);
+            $item = IconLibrary::store($file, null, $request->user()?->id);
+            $uploaded[] = $item->name;
 
-        return back()->with('status', "Icon uploaded: {$item->name}");
+            ActivityLogger::log('icon_library.uploaded', $item, [
+                'name' => $item->name,
+                'path' => $item->stored_path,
+            ]);
+        }
+
+        $count = count($uploaded);
+        if ($count === 0) {
+            return back()->with('error', 'No icons were uploaded.');
+        }
+
+        $status = $count === 1
+            ? "Icon uploaded: {$uploaded[0]}"
+            : "{$count} icons uploaded.";
+
+        return back()->with('status', $status);
     }
 
     public function destroy(IconLibraryItem $iconLibraryItem): RedirectResponse

@@ -1270,6 +1270,24 @@
         height: 4rem;
     }
 
+    .admin-icon-library-grid {
+        display: grid;
+        gap: 0.5rem;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    @media (min-width: 640px) {
+        .admin-icon-library-grid {
+            grid-template-columns: repeat(8, minmax(0, 1fr));
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .admin-icon-library-grid {
+            grid-template-columns: repeat(16, minmax(0, 1fr));
+        }
+    }
+
     .splis-list-committee-text {
         @apply min-w-0 truncate;
     }

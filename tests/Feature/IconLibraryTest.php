@@ -52,14 +52,15 @@ class IconLibraryTest extends TestCase
 
         $this->actingAs($superadmin)
             ->post(route('admin.icons.store'), [
-                'name' => 'Landmark',
-                'icon' => UploadedFile::fake()->image('landmark.png', 48, 48),
+                'icons' => [
+                    UploadedFile::fake()->image('landmark.png', 48, 48),
+                ],
             ])
             ->assertRedirect();
 
         $item = IconLibraryItem::query()->first();
         $this->assertNotNull($item);
-        $this->assertSame('Landmark', $item->name);
+        $this->assertSame('landmark', $item->name);
         $this->assertTrue(Storage::disk('local')->exists($item->stored_path));
 
         $this->actingAs($superadmin)
@@ -72,6 +73,34 @@ class IconLibraryTest extends TestCase
 
         $this->assertDatabaseMissing('icon_library_items', ['id' => $item->id]);
         Storage::disk('local')->assertMissing($item->stored_path);
+    }
+
+    public function test_superadmin_can_upload_multiple_library_icons(): void
+    {
+        Storage::fake('local');
+
+        $superadmin = User::factory()->create(['role' => UserRole::Superadmin, 'is_active' => true]);
+
+        $this->actingAs($superadmin)
+            ->post(route('admin.icons.store'), [
+                'icons' => [
+                    UploadedFile::fake()->image('alpha.png', 32, 32),
+                    UploadedFile::fake()->image('beta.png', 32, 32),
+                    UploadedFile::fake()->image('gamma.png', 32, 32),
+                ],
+            ])
+            ->assertRedirect();
+
+        $this->assertSame(3, IconLibraryItem::query()->count());
+        $this->assertTrue(
+            IconLibraryItem::query()->where('name', 'alpha')->exists()
+        );
+        $this->assertTrue(
+            IconLibraryItem::query()->where('name', 'beta')->exists()
+        );
+        $this->assertTrue(
+            IconLibraryItem::query()->where('name', 'gamma')->exists()
+        );
     }
 
     public function test_superadmin_can_assign_library_icon_to_committee(): void
