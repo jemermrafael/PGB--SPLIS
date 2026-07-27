@@ -35,8 +35,10 @@ class DirectoryEntryController extends Controller
     {
         $this->authorize('create', DirectoryEntry::class);
 
+        $nextSortOrder = ((int) DirectoryEntry::query()->max('sort_order')) + 1;
+
         return view('directory.form', [
-            'entry' => new DirectoryEntry(['sort_order' => 0]),
+            'entry' => new DirectoryEntry(['sort_order' => $nextSortOrder]),
             'categories' => DirectoryCategory::query()->orderBy('sort_order')->orderBy('name')->get(),
         ]);
     }

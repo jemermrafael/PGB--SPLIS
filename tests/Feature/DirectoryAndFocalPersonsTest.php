@@ -47,6 +47,21 @@ class DirectoryAndFocalPersonsTest extends TestCase
         $this->assertSame('records@bataan.gov.ph', $entry->email);
     }
 
+    public function test_create_form_defaults_sort_order_to_next_after_last_entry(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Encoder, 'is_active' => true]);
+
+        DirectoryEntry::query()->create([
+            'name' => 'First Entry',
+            'sort_order' => 7,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('directory.create'))
+            ->assertOk()
+            ->assertSee('value="8"', false);
+    }
+
     public function test_encoder_can_manage_directory_categories(): void
     {
         $user = User::factory()->create(['role' => UserRole::Encoder, 'is_active' => true]);

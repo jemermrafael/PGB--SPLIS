@@ -33,7 +33,7 @@
 <div class="max-w-2xl">
     <div class="splis-page-header !mb-6">
         <div>
-            <h1 class="splis-page-title">{{ $isEdit ? 'Edit directory entry' : 'New Directory Entry' }}</h1>
+            <h1 class="splis-page-title">{{ $isEdit ? 'Edit Directory Entry' : 'New Directory Entry' }}</h1>
         </div>
     </div>
 
