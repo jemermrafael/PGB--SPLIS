@@ -189,4 +189,31 @@ class DirectoryAndFocalPersonsTest extends TestCase
 
         $this->assertNull($entry->fresh()->focal_persons);
     }
+
+    public function test_directory_search_returns_matching_entries_as_json(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Encoder, 'is_active' => true]);
+        $category = DirectoryCategory::query()->create([
+            'name' => 'SP Secretariat',
+            'sort_order' => 1,
+        ]);
+
+        DirectoryEntry::query()->create([
+            'name' => 'Records Office',
+            'directory_category_id' => $category->id,
+            'emails' => ['records@bataan.gov.ph'],
+            'sort_order' => 1,
+        ]);
+        DirectoryEntry::query()->create([
+            'name' => 'Unrelated Office',
+            'sort_order' => 2,
+        ]);
+
+        $this->actingAs($user)
+            ->getJson(route('directory.search', ['q' => 'Records']))
+            ->assertOk()
+            ->assertJsonStructure(['html', 'meta' => ['total', 'current_page', 'last_page']])
+            ->assertJsonPath('meta.total', 1)
+            ->assertSee('Records Office', false);
+    }
 }

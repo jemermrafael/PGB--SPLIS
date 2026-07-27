@@ -44,6 +44,7 @@ use App\Http\Controllers\Admin\RolePermissionsController;
 use App\Http\Controllers\Admin\TrashController;
 use App\Http\Controllers\DirectoryCategoryController;
 use App\Http\Controllers\DirectoryEntryController;
+use App\Http\Controllers\DirectorySearchController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\BoardMemberObSearchController;
 use App\Http\Controllers\DashboardSearchController;
@@ -227,6 +228,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/agenda/{agenda}/versions/{version}', [AgendaItemController::class, 'destroyVersion'])->name('agenda.versions.destroy');
 
     Route::get('/directory', [DirectoryEntryController::class, 'index'])->name('directory.index');
+    Route::get('/directory/search', DirectorySearchController::class)->name('directory.search');
     Route::get('/directory/categories', [DirectoryCategoryController::class, 'index'])->name('directory.categories.index');
     Route::post('/directory/categories', [DirectoryCategoryController::class, 'store'])->name('directory.categories.store');
     Route::put('/directory/categories/{directoryCategory}', [DirectoryCategoryController::class, 'update'])->name('directory.categories.update');

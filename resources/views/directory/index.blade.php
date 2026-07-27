@@ -3,7 +3,14 @@
 @section('title', 'Staff Directory — '.config('app.name'))
 
 @section('content')
-<div class="w-full">
+<div
+    id="directory-search"
+    class="w-full"
+    data-search-url="{{ route('directory.search') }}"
+    data-category="{{ $selectedCategoryId ?? '' }}"
+    data-current-page="{{ $entries->currentPage() }}"
+    data-last-page="{{ $entries->lastPage() }}"
+>
     <div class="splis-page-header">
         <x-page-heading
             title="Directory"
@@ -45,87 +52,43 @@
         </div>
     @endif
 
-    <div class="splis-table-wrap" data-drag-scroll>
-        <table class="splis-table whitespace-nowrap">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Category</th>
-                    <th>Contact Number</th>
-                    <th>Email</th>
-                    <th>Focal persons</th>
-                    <th>Designation</th>
-                    <th class="text-right">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($entries as $entry)
-                    @php
-                        $emails = $entry->emailList();
-                        $focalPersons = $entry->isProvincialBoardCategory() ? $entry->focalPersonsList() : [];
-                    @endphp
+    <form id="directory-search-form" class="splis-filter-panel mb-4" role="search">
+        <label class="sr-only" for="directory-search-input">Search directory</label>
+        <input
+            id="directory-search-input"
+            type="search"
+            name="q"
+            class="splis-input w-full max-w-md"
+            placeholder="Search name, contact, email, designation…"
+            autocomplete="off"
+        />
+    </form>
+
+    <p id="directory-search-meta" class="mb-3 text-sm text-slate-500 dark:text-slate-400">
+        {{ number_format($entries->total()) }} {{ Str::plural('entry', $entries->total()) }}
+    </p>
+
+    <div id="directory-search-results" class="transition-opacity">
+        <div class="splis-table-wrap" data-drag-scroll>
+            <table class="splis-table whitespace-nowrap">
+                <thead>
                     <tr>
-                        <td class="font-medium text-slate-900 dark:text-slate-100">{{ $entry->name }}</td>
-                        <td>{{ $entry->category?->name ?: '—' }}</td>
-                        <td>{{ $entry->contact_number ?: '—' }}</td>
-                        <td>
-                            @if ($emails !== [])
-                                <div class="flex flex-col gap-0.5">
-                                    @foreach ($emails as $email)
-                                        <a href="mailto:{{ $email }}" class="splis-link">{{ $email }}</a>
-                                    @endforeach
-                                </div>
-                            @else
-                                —
-                            @endif
-                        </td>
-                        <td>
-                            @if ($focalPersons !== [])
-                                <div class="space-y-1.5">
-                                    @foreach ($focalPersons as $person)
-                                        <div>
-                                            <div class="text-sm font-medium text-slate-800 dark:text-slate-200">{{ $person['name'] !== '' ? $person['name'] : '—' }}</div>
-                                            @if (($person['emails'] ?? []) !== [])
-                                                <div class="flex flex-col gap-0.5">
-                                                    @foreach ($person['emails'] as $email)
-                                                        <a href="mailto:{{ $email }}" class="splis-link text-xs">{{ $email }}</a>
-                                                    @endforeach
-                                                </div>
-                                            @endif
-                                        </div>
-                                    @endforeach
-                                </div>
-                            @else
-                                —
-                            @endif
-                        </td>
-                        <td>{{ $entry->designation ?: '—' }}</td>
-                        <td class="text-right">
-                            <div class="inline-flex items-center gap-2">
-                                @can('update', $entry)
-                                    <a href="{{ route('directory.edit', $entry) }}" class="splis-btn-secondary text-sm">Edit</a>
-                                @endcan
-                                @can('delete', $entry)
-                                    <form method="POST" action="{{ route('directory.destroy', $entry) }}" class="inline" onsubmit="return confirm('Remove this directory entry?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="splis-btn-ghost text-sm text-red-600">Delete</button>
-                                    </form>
-                                @endcan
-                            </div>
-                        </td>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Contact Number</th>
+                        <th>Email</th>
+                        <th>Focal persons</th>
+                        <th>Designation</th>
+                        <th class="text-right">Actions</th>
                     </tr>
-                @empty
-                    <tr>
-                        <td colspan="7" class="py-10 text-center text-slate-500">No directory entries yet.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
+                </thead>
+                <tbody id="directory-list-body">
+                    @include('directory.partials.entries-tbody', ['entries' => $entries])
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    @if ($entries->hasPages())
-        <div class="mt-4">{{ $entries->links() }}</div>
-    @endif
+    <div id="directory-search-pagination" class="mt-4"></div>
 </div>
 @endsection

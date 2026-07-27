@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -37,6 +38,30 @@ class DirectoryEntry extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(DirectoryCategory::class, 'directory_category_id');
+    }
+
+    /**
+     * @param  Builder<DirectoryEntry>  $query
+     * @return Builder<DirectoryEntry>
+     */
+    public function scopeSearch(Builder $query, ?string $term): Builder
+    {
+        $term = trim((string) $term);
+        if ($term === '') {
+            return $query;
+        }
+
+        $like = '%'.addcslashes($term, '%_\\').'%';
+
+        return $query->where(function (Builder $inner) use ($like): void {
+            $inner->where('name', 'like', $like)
+                ->orWhere('designation', 'like', $like)
+                ->orWhere('contact_number', 'like', $like)
+                ->orWhere('email', 'like', $like)
+                ->orWhere('emails', 'like', $like)
+                ->orWhere('focal_persons', 'like', $like)
+                ->orWhereHas('category', fn (Builder $category) => $category->where('name', 'like', $like));
+        });
     }
 
     /**
