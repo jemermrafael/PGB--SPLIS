@@ -37,7 +37,9 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin\DatabaseBackupController;
 use App\Http\Controllers\Admin\DataSyncController;
 use App\Http\Controllers\Admin\IconLibraryController;
+use App\Http\Controllers\Admin\PageBackgroundController;
 use App\Http\Controllers\IconLibraryFileController;
+use App\Http\Controllers\PageBackgroundFileController;
 use App\Http\Controllers\Admin\RolePermissionsController;
 use App\Http\Controllers\Admin\TrashController;
 use App\Http\Controllers\DirectoryCategoryController;
@@ -240,6 +242,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/committees', [CommitteeController::class, 'store'])->name('committees.store');
     Route::get('/committees/{committee}/icon', CommitteeIconController::class)->name('committees.icon');
     Route::get('/icon-library/{iconLibraryItem}', IconLibraryFileController::class)->name('icon-library.show');
+    Route::get('/page-backgrounds/{pageBackground}', PageBackgroundFileController::class)->name('page-backgrounds.show');
     Route::get('/committees/{committee}', [CommitteeController::class, 'show'])->name('committees.show')->withTrashed();
     Route::get('/committees/{committee}/edit', [CommitteeController::class, 'edit'])->name('committees.edit');
     Route::put('/committees/{committee}', [CommitteeController::class, 'update'])->name('committees.update');
@@ -321,6 +324,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/icons', [IconLibraryController::class, 'store'])->name('icons.store');
         Route::put('/icons/pages', [IconLibraryController::class, 'updatePageIcons'])->name('icons.pages');
         Route::delete('/icons/{iconLibraryItem}', [IconLibraryController::class, 'destroy'])->name('icons.destroy');
+
+        Route::get('/pages', [PageBackgroundController::class, 'index'])->name('pages.index');
+        Route::put('/pages/{pageKey}', [PageBackgroundController::class, 'update'])
+            ->where('pageKey', '[a-z0-9_]+')
+            ->name('pages.update');
 
         Route::get('/trash', [TrashController::class, 'index'])->name('trash.index');
         Route::post('/trash/{type}/{id}/restore', [TrashController::class, 'restore'])

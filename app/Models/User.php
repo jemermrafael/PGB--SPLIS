@@ -87,7 +87,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Icon Library + page/committee icon overrides — restricted to a named superadmin.
+     * Settings: Icon Library, page backgrounds, committee icon overrides — named superadmin only.
      */
     public function canManageIconLibrary(): bool
     {

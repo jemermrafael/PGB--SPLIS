@@ -139,12 +139,6 @@
                                         <x-icon name="database" class="h-4 w-4 shrink-0 opacity-80" />
                                         Database Backups
                                     </a>
-                                    @if (auth()->user()->canManageIconLibrary())
-                                        <a href="{{ route('admin.icons.index') }}" class="splis-user-menu-link inline-flex items-center gap-2">
-                                            <x-icon name="sparkles" class="h-4 w-4 shrink-0 opacity-80" />
-                                            Icon Library
-                                        </a>
-                                    @endif
                                     @php $trashTotal = \App\Http\Controllers\Admin\TrashController::totalCount(); @endphp
                                     <a href="{{ route('admin.trash.index') }}" class="splis-user-menu-link inline-flex items-center gap-2">
                                         <x-icon name="trash" class="h-4 w-4 shrink-0 opacity-80" stroke-width="1.8" />
@@ -156,6 +150,17 @@
                                     <a href="{{ route('admin.role-permissions.index') }}" class="splis-user-menu-link inline-flex items-center gap-2">
                                         <x-icon name="shield" class="h-4 w-4 shrink-0 opacity-80" />
                                         Role permissions
+                                    </a>
+                                @endif
+                                @if (auth()->user()->canManageIconLibrary())
+                                    <p class="splis-user-menu-section">Settings</p>
+                                    <a href="{{ route('admin.icons.index') }}" class="splis-user-menu-link splis-user-menu-link--nested inline-flex items-center gap-2">
+                                        <x-icon name="sparkles" class="h-4 w-4 shrink-0 opacity-80" />
+                                        Icon Library
+                                    </a>
+                                    <a href="{{ route('admin.pages.index') }}" class="splis-user-menu-link splis-user-menu-link--nested inline-flex items-center gap-2">
+                                        <x-icon name="image" class="h-4 w-4 shrink-0 opacity-80" />
+                                        Pages
                                     </a>
                                 @endif
                                 <form method="POST" action="{{ route('logout') }}">
@@ -391,7 +396,19 @@
             </nav>
         </header>
 
-        <main class="splis-main flex-1">
+        @php
+            $pageKeyOverride = trim($__env->yieldContent('page_key'));
+            $pageBackground = \App\Support\PageBackgrounds::forCurrentRequest($pageKeyOverride !== '' ? $pageKeyOverride : null);
+        @endphp
+        <main
+            @class([
+                'splis-main flex-1',
+                'splis-main--custom-bg' => $pageBackground !== null,
+            ])
+            @if ($pageBackground)
+                style="{{ \App\Support\PageBackgrounds::cssStyle($pageBackground) }}"
+            @endif
+        >
             <div @class([
                 'splis-page',
                 'splis-page--full' => trim($__env->yieldContent('full_width')),

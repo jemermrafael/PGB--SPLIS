@@ -31,14 +31,20 @@ class DirectoryEntryController extends Controller
         ]);
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         $this->authorize('create', DirectoryEntry::class);
 
         $nextSortOrder = ((int) DirectoryEntry::query()->max('sort_order')) + 1;
+        $lastCategoryId = $request->session()->get('directory_last_category_id');
+        $categoryStillExists = $lastCategoryId
+            && DirectoryCategory::query()->whereKey($lastCategoryId)->exists();
 
         return view('directory.form', [
-            'entry' => new DirectoryEntry(['sort_order' => $nextSortOrder]),
+            'entry' => new DirectoryEntry([
+                'sort_order' => $nextSortOrder,
+                'directory_category_id' => $categoryStillExists ? (int) $lastCategoryId : null,
+            ]),
             'categories' => DirectoryCategory::query()->orderBy('sort_order')->orderBy('name')->get(),
         ]);
     }
@@ -49,6 +55,11 @@ class DirectoryEntryController extends Controller
 
         $data = $this->validated($request);
         DirectoryEntry::query()->create($data);
+
+        $request->session()->put(
+            'directory_last_category_id',
+            $data['directory_category_id'] ?? null,
+        );
 
         return redirect()
             ->route('directory.index')

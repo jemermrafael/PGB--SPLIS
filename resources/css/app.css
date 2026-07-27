@@ -164,6 +164,14 @@
         @apply block w-full border-b border-slate-100 px-3 py-2 text-left text-sm font-medium text-brand-800 transition hover:bg-slate-50;
     }
 
+    .splis-user-menu-section {
+        @apply px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400;
+    }
+
+    .splis-user-menu-link--nested {
+        @apply pl-5;
+    }
+
     .splis-header-navbar {
         @apply border-t-[3px] border-brand-gold bg-white;
     }
@@ -311,6 +319,10 @@
         background-image:
             radial-gradient(circle at 100% 0%, rgb(212 168 67 / 0.05), transparent 40%),
             radial-gradient(circle at 0% 100%, rgb(12 35 64 / 0.04), transparent 35%);
+    }
+
+    .splis-main--custom-bg {
+        background-image: none;
     }
 
     .splis-page {
@@ -2258,6 +2270,10 @@
 
     html.dark .splis-user-menu-link {
         @apply border-slate-700 text-slate-100 hover:bg-slate-800 hover:text-white;
+    }
+
+    html.dark .splis-user-menu-section {
+        @apply text-slate-500;
     }
 
     html.dark .splis-user-menu-signout {

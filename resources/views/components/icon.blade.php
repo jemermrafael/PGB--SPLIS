@@ -76,6 +76,12 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" />
             @break
 
+        @case('image')
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5Z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="m4 15 4-4 3 3 4-5 5 6" />
+            <circle cx="9" cy="8.5" r="1.5" />
+            @break
+
         @case('archive')
             <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 7l1 11a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-11" />
