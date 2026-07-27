@@ -33,7 +33,7 @@
             </div>
         </div>
         @can('update', $committee)
-            <a href="{{ route('committees.edit', ['committee' => $committee, 'term' => $selectedTerm->id]) }}" class="splis-btn-primary inline-flex items-center gap-2">
+            <a href="{{ route('committees.edit', ['committee' => $committee, 'term' => $selectedTerm->id]) }}" class="splis-btn-primary inline-flex shrink-0 items-center gap-2 whitespace-nowrap">
                 <x-icon name="edit" class="h-4 w-4" />
                 Edit Roster
             </a>
