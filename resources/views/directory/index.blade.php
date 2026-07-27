@@ -45,7 +45,7 @@
         </div>
     @endif
 
-    <div class="splis-table-wrap">
+    <div class="splis-table-wrap" data-drag-scroll>
         <table class="splis-table whitespace-nowrap">
             <thead>
                 <tr>
