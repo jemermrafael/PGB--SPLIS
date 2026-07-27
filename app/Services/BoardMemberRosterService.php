@@ -65,7 +65,7 @@ class BoardMemberRosterService
             [
                 'district' => $district,
                 'ex_officio_title' => $exOfficioTitle,
-                'is_active' => (bool) ($data['is_active'] ?? true),
+                'is_active' => true,
             ],
         );
 

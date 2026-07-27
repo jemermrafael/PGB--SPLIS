@@ -2,7 +2,6 @@
 
 @php
     $district = $assignment?->district;
-    $isActive = $assignment?->is_active ?? false;
     $hasAssignments = collect($roles)->flatten()->isNotEmpty();
 @endphp
 
@@ -79,17 +78,34 @@
 
     <div class="mb-6 flex flex-wrap items-center gap-2">
         @if ($assignment)
-            @if ($isActive)
-                <span class="splis-badge-linked">Active on roster</span>
-            @else
-                <span class="splis-badge-unlinked">Inactive on roster</span>
-            @endif
             @if ($district === 'Vice Governor')
                 <span class="splis-badge-linked">Presiding Officer of the Sangguniang Panlalawigan</span>
             @endif
         @else
             <span class="splis-badge-unlinked">Not on {{ $selectedTerm->label }} roster</span>
         @endif
+    </div>
+
+    <div class="splis-card splis-card-body mb-6">
+        <h2 class="mb-3 text-base font-semibold text-slate-900 dark:text-slate-100">Contact</h2>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Contact number</p>
+                <p class="mt-1 text-slate-900 dark:text-slate-100">
+                    {{ filled($boardMember->mobile_number) ? $boardMember->mobile_number : '—' }}
+                </p>
+            </div>
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Email address</p>
+                <p class="mt-1 text-slate-900 dark:text-slate-100">
+                    @if (filled($boardMember->email))
+                        <a href="mailto:{{ $boardMember->email }}" class="splis-link break-all">{{ $boardMember->email }}</a>
+                    @else
+                        —
+                    @endif
+                </p>
+            </div>
+        </div>
     </div>
 
     <div class="splis-card splis-card-body mb-8 space-y-6">

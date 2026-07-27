@@ -98,14 +98,16 @@ class BoardMemberController extends Controller
         $boardMember = BoardMember::create([
             'name' => $data['name'],
             'honorific' => $data['honorific'],
+            'mobile_number' => $data['mobile_number'],
+            'email' => $data['email'],
             'district' => $term->is_current ? $data['district'] : null,
-            'is_active' => $term->is_current ? $data['is_active'] : true,
+            'is_active' => true,
         ]);
 
         $this->rosterService->saveAssignment($boardMember, $term, [
             'district' => $data['district'],
             'ex_officio_title' => $data['ex_officio_title'] ?? null,
-            'is_active' => $data['is_active'],
+            'is_active' => true,
         ]);
 
         return redirect()
@@ -141,12 +143,15 @@ class BoardMemberController extends Controller
         $boardMember->update([
             'name' => $data['name'],
             'honorific' => $data['honorific'],
+            'mobile_number' => $data['mobile_number'],
+            'email' => $data['email'],
+            'is_active' => true,
         ]);
 
         $this->rosterService->saveAssignment($boardMember, $term, [
             'district' => $data['district'],
             'ex_officio_title' => $data['ex_officio_title'] ?? null,
-            'is_active' => $data['is_active'],
+            'is_active' => true,
         ]);
 
         return redirect()
@@ -220,13 +225,22 @@ class BoardMemberController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:200'],
             'honorific' => ['nullable', 'string', 'max:50'],
+            'mobile_number' => ['nullable', 'string', 'max:100'],
+            'email' => ['nullable', 'email', 'max:255'],
             'committee_term_id' => ['required', 'integer', 'exists:committee_terms,id'],
             'district' => ['nullable', 'string', Rule::in($districts)],
             'ex_officio_title' => ['nullable', 'string', 'max:150'],
-            'is_active' => ['sometimes', 'boolean'],
         ]);
 
-        $data['is_active'] = $request->boolean('is_active');
+        $data['mobile_number'] = filled($data['mobile_number'] ?? null)
+            ? trim((string) $data['mobile_number'])
+            : null;
+        $data['email'] = filled($data['email'] ?? null)
+            ? trim((string) $data['email'])
+            : null;
+        $data['honorific'] = filled($data['honorific'] ?? null)
+            ? trim((string) $data['honorific'])
+            : null;
 
         return $data;
     }

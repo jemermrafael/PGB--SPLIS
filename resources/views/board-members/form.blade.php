@@ -4,7 +4,6 @@
     $isEdit = $boardMember->exists;
     $districts = config('board_members.districts', []);
     $selectedDistrict = old('district', $assignment?->district ?? $boardMember->district);
-    $isActive = old('is_active', $assignment?->is_active ?? $boardMember->is_active);
 @endphp
 
 @section('title', ($isEdit ? 'Edit Board Member' : 'New Board Member').' — '.config('app.name'))
@@ -32,6 +31,33 @@
             <div class="md:col-span-2">
                 <label class="splis-label" for="name">Full name</label>
                 <input type="text" name="name" id="name" value="{{ old('name', $boardMember->name) }}" required class="splis-input">
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+                <label class="splis-label" for="mobile_number">Contact number</label>
+                <input
+                    type="text"
+                    name="mobile_number"
+                    id="mobile_number"
+                    value="{{ old('mobile_number', $boardMember->mobile_number) }}"
+                    class="splis-input"
+                    maxlength="100"
+                    placeholder="09xxxxxxxxx"
+                >
+            </div>
+            <div>
+                <label class="splis-label" for="email">Email address</label>
+                <input
+                    type="email"
+                    name="email"
+                    id="email"
+                    value="{{ old('email', $boardMember->email) }}"
+                    class="splis-input"
+                    maxlength="255"
+                    placeholder="name@example.com"
+                >
             </div>
         </div>
 
@@ -77,14 +103,6 @@
                     maxlength="150"
                 >
                 <p class="mt-1 text-xs text-slate-500">Shown under the name on the printable attendance sheet as (PCL President).</p>
-            </div>
-
-            <div class="mt-4">
-                <label class="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300">
-                    <input type="hidden" name="is_active" value="0">
-                    <input type="checkbox" name="is_active" value="1" @checked($isActive) class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
-                    Active on this term’s roster (available for Committee Assignment)
-                </label>
             </div>
         </div>
 

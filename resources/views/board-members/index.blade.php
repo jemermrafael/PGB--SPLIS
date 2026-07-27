@@ -76,7 +76,8 @@
                                 </th>
                             @endif
                             <th>Name</th>
-                            <th>Status</th>
+                            <th>Contact number</th>
+                            <th>Email address</th>
                             <th class="text-right">Actions</th>
                         </tr>
                     </thead>
@@ -103,11 +104,12 @@
                                             {{ $member->displayName() }}
                                         </a>
                                     </td>
+                                    <td>{{ $member->mobile_number ?: '—' }}</td>
                                     <td>
-                                        @if ($assignment->is_active)
-                                            <span class="splis-badge-linked">Active</span>
+                                        @if (filled($member->email))
+                                            <a href="mailto:{{ $member->email }}" class="splis-link break-all">{{ $member->email }}</a>
                                         @else
-                                            <span class="splis-badge-unlinked">Inactive</span>
+                                            —
                                         @endif
                                     </td>
                                     <td class="text-right">

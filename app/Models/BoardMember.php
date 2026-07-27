@@ -20,6 +20,7 @@ class BoardMember extends Model
         'honorific',
         'district',
         'mobile_number',
+        'email',
         'photo_path',
         'focal_persons',
         'is_active',
