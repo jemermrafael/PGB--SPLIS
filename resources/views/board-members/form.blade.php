@@ -4,6 +4,7 @@
     $isEdit = $boardMember->exists;
     $districts = config('board_members.districts', []);
     $selectedDistrict = old('district', $assignment?->district ?? $boardMember->district);
+    $usesBmAccountContact = $isEdit && $boardMember->hasLinkedAccount();
 @endphp
 
 @section('title', ($isEdit ? 'Edit Board Member' : 'New Board Member').' — '.config('app.name'))
@@ -34,32 +35,56 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-                <label class="splis-label" for="mobile_number">Contact number</label>
-                <input
-                    type="text"
-                    name="mobile_number"
-                    id="mobile_number"
-                    value="{{ old('mobile_number', $boardMember->mobile_number) }}"
-                    class="splis-input"
-                    maxlength="100"
-                    placeholder="09xxxxxxxxx"
-                >
+        @if ($usesBmAccountContact)
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-800/50">
+                <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Contact</h2>
+                <p class="mb-3 text-xs text-slate-500">Pulled from this member’s Board Member account (My Profile). Staff cannot edit it here.</p>
+                <dl class="grid grid-cols-1 gap-3 sm:grid-cols-2 text-sm">
+                    <div>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Contact number</dt>
+                        <dd class="mt-0.5 text-slate-900 dark:text-slate-100">{{ $boardMember->contactNumber() ?: '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Email address</dt>
+                        <dd class="mt-0.5 text-slate-900 dark:text-slate-100">
+                            @if ($boardMember->contactEmail())
+                                <a href="mailto:{{ $boardMember->contactEmail() }}" class="splis-link break-all">{{ $boardMember->contactEmail() }}</a>
+                            @else
+                                —
+                            @endif
+                        </dd>
+                    </div>
+                </dl>
             </div>
-            <div>
-                <label class="splis-label" for="email">Email address</label>
-                <input
-                    type="email"
-                    name="email"
-                    id="email"
-                    value="{{ old('email', $boardMember->email) }}"
-                    class="splis-input"
-                    maxlength="255"
-                    placeholder="name@example.com"
-                >
+        @else
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                    <label class="splis-label" for="mobile_number">Contact number</label>
+                    <input
+                        type="text"
+                        name="mobile_number"
+                        id="mobile_number"
+                        value="{{ old('mobile_number', $boardMember->mobile_number) }}"
+                        class="splis-input"
+                        maxlength="100"
+                        placeholder="09xxxxxxxxx"
+                    >
+                </div>
+                <div>
+                    <label class="splis-label" for="email">Email address</label>
+                    <input
+                        type="email"
+                        name="email"
+                        id="email"
+                        value="{{ old('email', $boardMember->email) }}"
+                        class="splis-input"
+                        maxlength="255"
+                        placeholder="name@example.com"
+                    >
+                </div>
             </div>
-        </div>
+            <p class="text-xs text-slate-500">When a Board Member login is linked, contact details come from their My Profile instead.</p>
+        @endif
 
         <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-800/50">
             <h2 class="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Term roster</h2>

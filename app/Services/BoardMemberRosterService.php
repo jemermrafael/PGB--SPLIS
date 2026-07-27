@@ -20,7 +20,7 @@ class BoardMemberRosterService
         $assignments = BoardMemberTerm::query()
             ->where('committee_term_id', $term->id)
             ->whereIn('district', $districtOrder)
-            ->with('boardMember')
+            ->with(['boardMember.user'])
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get();

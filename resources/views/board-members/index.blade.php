@@ -104,10 +104,10 @@
                                             {{ $member->displayName() }}
                                         </a>
                                     </td>
-                                    <td>{{ $member->mobile_number ?: '—' }}</td>
+                                    <td>{{ $member->contactNumber() ?: '—' }}</td>
                                     <td>
-                                        @if (filled($member->email))
-                                            <a href="mailto:{{ $member->email }}" class="splis-link break-all">{{ $member->email }}</a>
+                                        @if ($member->contactEmail())
+                                            <a href="mailto:{{ $member->contactEmail() }}" class="splis-link">{{ $member->contactEmail() }}</a>
                                         @else
                                             —
                                         @endif

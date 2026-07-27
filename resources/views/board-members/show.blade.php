@@ -92,18 +92,24 @@
             <div>
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Contact number</p>
                 <p class="mt-1 text-slate-900 dark:text-slate-100">
-                    {{ filled($boardMember->mobile_number) ? $boardMember->mobile_number : '—' }}
+                    {{ $boardMember->contactNumber() ?: '—' }}
                 </p>
+                @if ($boardMember->hasLinkedAccount())
+                    <p class="mt-1 text-xs text-slate-500">From Board Member account</p>
+                @endif
             </div>
             <div>
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Email address</p>
                 <p class="mt-1 text-slate-900 dark:text-slate-100">
-                    @if (filled($boardMember->email))
-                        <a href="mailto:{{ $boardMember->email }}" class="splis-link break-all">{{ $boardMember->email }}</a>
+                    @if ($boardMember->contactEmail())
+                        <a href="mailto:{{ $boardMember->contactEmail() }}" class="splis-link break-all">{{ $boardMember->contactEmail() }}</a>
                     @else
                         —
                     @endif
                 </p>
+                @if ($boardMember->hasLinkedAccount())
+                    <p class="mt-1 text-xs text-slate-500">From Board Member account</p>
+                @endif
             </div>
         </div>
     </div>

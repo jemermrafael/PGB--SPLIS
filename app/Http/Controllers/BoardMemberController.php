@@ -58,6 +58,7 @@ class BoardMemberController extends Controller
         }
 
         $assignment = $this->rosterService->assignmentFor($boardMember, $selectedTerm);
+        $boardMember->load('user');
         $profile = $this->profileService->build($boardMember, $selectedTerm);
 
         return view('board-members.show', [
@@ -124,6 +125,7 @@ class BoardMemberController extends Controller
         );
 
         $assignment = $this->rosterService->assignmentFor($boardMember, $selectedTerm);
+        $boardMember->load('user');
 
         return view('board-members.form', [
             'boardMember' => $boardMember,
@@ -140,13 +142,20 @@ class BoardMemberController extends Controller
         $data = $this->validated($request);
         $term = CommitteeTerm::query()->findOrFail((int) $request->input('committee_term_id'));
 
-        $boardMember->update([
+        $boardMember->load('user');
+
+        $payload = [
             'name' => $data['name'],
             'honorific' => $data['honorific'],
-            'mobile_number' => $data['mobile_number'],
-            'email' => $data['email'],
             'is_active' => true,
-        ]);
+        ];
+
+        if (! $boardMember->hasLinkedAccount()) {
+            $payload['mobile_number'] = $data['mobile_number'];
+            $payload['email'] = $data['email'];
+        }
+
+        $boardMember->update($payload);
 
         $this->rosterService->saveAssignment($boardMember, $term, [
             'district' => $data['district'],

@@ -85,6 +85,35 @@ class BoardMember extends Model
         return $this->hasOne(User::class);
     }
 
+    public function hasLinkedAccount(): bool
+    {
+        if ($this->relationLoaded('user')) {
+            return $this->user !== null;
+        }
+
+        return $this->user()->exists();
+    }
+
+    public function contactNumber(): ?string
+    {
+        $number = trim((string) ($this->mobile_number ?? ''));
+
+        return $number !== '' ? $number : null;
+    }
+
+    public function contactEmail(): ?string
+    {
+        if ($this->hasLinkedAccount()) {
+            $email = trim((string) ($this->user?->email ?? ''));
+
+            return $email !== '' ? $email : null;
+        }
+
+        $email = trim((string) ($this->email ?? ''));
+
+        return $email !== '' ? $email : null;
+    }
+
     public function sessionAttendances(): HasMany
     {
         return $this->hasMany(SessionAttendance::class);
