@@ -1501,6 +1501,18 @@
         @apply text-xs font-medium text-brand-700 transition hover:underline;
     }
 
+    .splis-notify-browser-bar {
+        @apply space-y-1.5 border-b border-slate-100 px-4 py-3;
+    }
+
+    .splis-notify-browser-toggle {
+        @apply inline-flex items-center justify-center disabled:cursor-not-allowed disabled:opacity-60;
+    }
+
+    .splis-notify-browser-hint {
+        @apply text-[11px] leading-snug text-slate-500;
+    }
+
     .splis-notify-list {
         @apply max-h-[min(24rem,calc(100dvh-10rem))] overflow-y-auto;
     }
@@ -2290,6 +2302,14 @@
 
     html.dark .splis-notify-mark-all {
         @apply text-slate-300;
+    }
+
+    html.dark .splis-notify-browser-bar {
+        @apply border-slate-700;
+    }
+
+    html.dark .splis-notify-browser-hint {
+        @apply text-slate-400;
     }
 
     html.dark .splis-notify-item {

@@ -326,7 +326,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/icons/{iconLibraryItem}', [IconLibraryController::class, 'destroy'])->name('icons.destroy');
 
         Route::get('/pages', [PageBackgroundController::class, 'index'])->name('pages.index');
-        Route::put('/pages/{pageKey}', [PageBackgroundController::class, 'update'])
+        Route::match(['post', 'put'], '/pages/{pageKey}', [PageBackgroundController::class, 'update'])
             ->where('pageKey', '[a-z0-9_]+')
             ->name('pages.update');
 

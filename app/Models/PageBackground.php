@@ -31,6 +31,8 @@ class PageBackground extends Model
             return null;
         }
 
-        return route('page-backgrounds.show', $this);
+        $version = substr(sha1(($this->image_path ?? '').'|'.($this->updated_at?->timestamp ?? $this->id)), 0, 12);
+
+        return route('page-backgrounds.show', $this).'?v='.$version;
     }
 }

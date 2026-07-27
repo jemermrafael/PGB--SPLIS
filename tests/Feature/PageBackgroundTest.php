@@ -60,7 +60,7 @@ class PageBackgroundTest extends TestCase
         $user = $this->settingsAdmin();
 
         $this->actingAs($user)
-            ->put(route('admin.pages.update', 'directory'), [
+            ->post(route('admin.pages.update', 'directory'), [
                 'background_type' => 'classic',
                 'color' => '#e2e8f0',
                 'image' => UploadedFile::fake()->image('office.jpg', 800, 600),
@@ -85,6 +85,49 @@ class PageBackgroundTest extends TestCase
             ->assertSee(route('page-backgrounds.show', $background), false);
     }
 
+    public function test_replacing_background_image_updates_stored_file_and_url(): void
+    {
+        Storage::fake('local');
+
+        $user = $this->settingsAdmin();
+
+        $this->actingAs($user)
+            ->post(route('admin.pages.update', 'directory'), [
+                'background_type' => 'classic',
+                'color' => '#ffffff',
+                'image' => UploadedFile::fake()->image('old.jpg', 200, 200),
+                'position' => 'default',
+                'attachment' => 'default',
+                'repeat' => 'default',
+                'size' => 'default',
+            ])
+            ->assertRedirect();
+
+        $background = PageBackground::query()->where('page_key', 'directory')->firstOrFail();
+        $oldPath = $background->image_path;
+        $oldUrl = $background->imageUrl();
+        $this->assertTrue(Storage::disk('local')->exists($oldPath));
+
+        $this->actingAs($user)
+            ->post(route('admin.pages.update', 'directory'), [
+                'background_type' => 'classic',
+                'color' => '#ffffff',
+                'image' => UploadedFile::fake()->image('new.png', 320, 240),
+                'position' => 'default',
+                'attachment' => 'default',
+                'repeat' => 'default',
+                'size' => 'default',
+            ])
+            ->assertRedirect();
+
+        $background->refresh();
+        $this->assertNotSame($oldPath, $background->image_path);
+        $this->assertFalse(Storage::disk('local')->exists($oldPath));
+        $this->assertTrue($background->hasImage());
+        $this->assertNotSame($oldUrl, $background->imageUrl());
+        $this->assertStringContainsString('new.png', (string) $background->image_original_filename);
+    }
+
     public function test_clearing_background_type_removes_settings(): void
     {
         Storage::fake('local');
@@ -92,7 +135,7 @@ class PageBackgroundTest extends TestCase
         $user = $this->settingsAdmin();
 
         $this->actingAs($user)
-            ->put(route('admin.pages.update', 'directory'), [
+            ->post(route('admin.pages.update', 'directory'), [
                 'background_type' => 'classic',
                 'color' => '#ffffff',
                 'image' => UploadedFile::fake()->image('bg.png', 200, 200),
@@ -104,7 +147,7 @@ class PageBackgroundTest extends TestCase
             ->assertRedirect();
 
         $this->actingAs($user)
-            ->put(route('admin.pages.update', 'directory'), [
+            ->post(route('admin.pages.update', 'directory'), [
                 'background_type' => 'none',
             ])
             ->assertRedirect();
@@ -166,7 +209,7 @@ class PageBackgroundTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->put(route('admin.pages.update', PageBackgrounds::committeePageKey($alpha->id)), [
+            ->post(route('admin.pages.update', PageBackgrounds::committeePageKey($alpha->id)), [
                 'background_type' => 'classic',
                 'color' => '#ffeeee',
                 'image' => UploadedFile::fake()->image('alpha.jpg', 400, 300),
@@ -178,7 +221,7 @@ class PageBackgroundTest extends TestCase
             ->assertRedirect();
 
         $this->actingAs($user)
-            ->put(route('admin.pages.update', PageBackgrounds::committeePageKey($beta->id)), [
+            ->post(route('admin.pages.update', PageBackgrounds::committeePageKey($beta->id)), [
                 'background_type' => 'classic',
                 'color' => '#eeffee',
                 'position' => 'top left',

@@ -1,5 +1,6 @@
 const POLL_MS = 60000;
 const POPUP_MS = 8000;
+const BROWSER_NOTIFY_PREF_KEY = 'splis-browser-notifications';
 
 let audioContext = null;
 
@@ -76,6 +77,80 @@ function bindAudioUnlock() {
     document.addEventListener('keydown', unlock, { once: true, passive: true });
 }
 
+function browserNotificationsSupported() {
+    return typeof window.Notification === 'function';
+}
+
+function browserNotificationsPreferred() {
+    return localStorage.getItem(BROWSER_NOTIFY_PREF_KEY) !== 'off';
+}
+
+function setBrowserNotificationsPreferred(enabled) {
+    localStorage.setItem(BROWSER_NOTIFY_PREF_KEY, enabled ? 'on' : 'off');
+}
+
+async function ensureBrowserNotificationPermission() {
+    if (! browserNotificationsSupported()) {
+        return 'unsupported';
+    }
+
+    if (Notification.permission === 'granted') {
+        setBrowserNotificationsPreferred(true);
+        return 'granted';
+    }
+
+    if (Notification.permission === 'denied') {
+        return 'denied';
+    }
+
+    try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            setBrowserNotificationsPreferred(true);
+        }
+        return permission;
+    } catch {
+        return Notification.permission;
+    }
+}
+
+function showBrowserNotification(notification, feedUrl) {
+    if (! browserNotificationsSupported()) {
+        return;
+    }
+
+    if (! browserNotificationsPreferred() || Notification.permission !== 'granted') {
+        return;
+    }
+
+    // Prefer OS notifications when the tab is in the background; still show when focused
+    // so users who leave SPLIS open in another window still get a system alert.
+    const title = notification.title || 'SPLIS notification';
+    const body = notification.body || '';
+    const tag = `splis-notify-${notification.id}`;
+
+    try {
+        const browserNote = new Notification(title, {
+            body,
+            tag,
+            renotify: true,
+            requireInteraction: false,
+        });
+
+        browserNote.onclick = () => {
+            window.focus();
+            if (notification.link) {
+                window.location.assign(notification.link);
+            } else if (feedUrl) {
+                window.location.assign(feedUrl);
+            }
+            browserNote.close();
+        };
+    } catch {
+        // Some browsers throw if permission changed mid-session.
+    }
+}
+
 async function markRead(id) {
     try {
         const response = await fetch(`/notifications/${id}/read`, {
@@ -121,6 +196,8 @@ export function initHeaderNotifications() {
     const stack = document.getElementById('splis-toast-stack');
     const wrap = document.querySelector('.splis-notify-wrap');
     const feedUrl = wrap?.dataset.notificationsFeedUrl ?? '/notifications';
+    const browserNotifyBtn = document.getElementById('splis-notify-browser-toggle');
+    const browserNotifyHint = document.getElementById('splis-notify-browser-hint');
 
     if (! badge || ! listEl) {
         return;
@@ -135,6 +212,73 @@ export function initHeaderNotifications() {
 
     const initialNotifications = JSON.parse(wrap?.dataset.initialNotifications ?? '[]');
     const initialCount = Number(wrap?.dataset.initialCount ?? 0);
+
+    function syncBrowserNotifyUi() {
+        if (! browserNotifyBtn) {
+            return;
+        }
+
+        if (! browserNotificationsSupported()) {
+            browserNotifyBtn.hidden = true;
+            if (browserNotifyHint) {
+                browserNotifyHint.hidden = false;
+                browserNotifyHint.textContent = 'Browser notifications are not supported in this browser.';
+            }
+            return;
+        }
+
+        browserNotifyBtn.hidden = false;
+        const permission = Notification.permission;
+        const preferred = browserNotificationsPreferred();
+
+        if (permission === 'granted' && preferred) {
+            browserNotifyBtn.textContent = 'Turn off browser notifications';
+            browserNotifyBtn.dataset.state = 'on';
+            if (browserNotifyHint) {
+                browserNotifyHint.hidden = true;
+            }
+            return;
+        }
+
+        if (permission === 'denied') {
+            browserNotifyBtn.textContent = 'Browser notifications blocked';
+            browserNotifyBtn.dataset.state = 'blocked';
+            browserNotifyBtn.disabled = true;
+            if (browserNotifyHint) {
+                browserNotifyHint.hidden = false;
+                browserNotifyHint.textContent = 'Allow notifications for this site in your browser settings, then reload.';
+            }
+            return;
+        }
+
+        browserNotifyBtn.disabled = false;
+        browserNotifyBtn.textContent = 'Allow browser notifications';
+        browserNotifyBtn.dataset.state = 'off';
+        if (browserNotifyHint) {
+            browserNotifyHint.hidden = false;
+            browserNotifyHint.textContent = 'Get alerts even when SPLIS is in another tab or minimized.';
+        }
+    }
+
+    browserNotifyBtn?.addEventListener('click', async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (! browserNotificationsSupported()) {
+            return;
+        }
+
+        if (Notification.permission === 'granted' && browserNotificationsPreferred()) {
+            setBrowserNotificationsPreferred(false);
+            syncBrowserNotifyUi();
+            return;
+        }
+
+        await ensureBrowserNotificationPermission();
+        syncBrowserNotifyUi();
+    });
+
+    syncBrowserNotifyUi();
 
     function setBadge(count) {
         const n = Number(count) || 0;
@@ -200,12 +344,17 @@ export function initHeaderNotifications() {
     }
 
     function showPopup(notification) {
-        if (! stack || popupSeen.has(notification.id)) {
+        if (popupSeen.has(notification.id)) {
             return;
         }
 
         popupSeen.add(notification.id);
         playNotificationSound();
+        showBrowserNotification(notification, feedUrl);
+
+        if (! stack) {
+            return;
+        }
 
         const toast = document.createElement('div');
         toast.className = 'splis-toast';

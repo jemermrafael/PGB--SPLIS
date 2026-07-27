@@ -22,7 +22,7 @@ class PageBackgroundFileController extends Controller
             $pageBackground->image_original_filename ?: 'background',
             [
                 'Content-Type' => $mime,
-                'Cache-Control' => 'private, max-age=3600',
+                'Cache-Control' => 'private, max-age=0, must-revalidate',
             ],
         );
     }

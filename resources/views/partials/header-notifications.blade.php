@@ -48,6 +48,12 @@
             <h3>Notifications</h3>
             <button type="button" id="splis-notify-mark-all" class="splis-notify-mark-all" @if ($headerNotificationCount <= 0) hidden @endif>Mark all read</button>
         </div>
+        <div class="splis-notify-browser-bar">
+            <button type="button" id="splis-notify-browser-toggle" class="splis-btn-secondary splis-notify-browser-toggle w-full !py-2 text-xs">
+                Allow browser notifications
+            </button>
+            <p id="splis-notify-browser-hint" class="splis-notify-browser-hint">Get alerts even when SPLIS is in another tab or minimized.</p>
+        </div>
         <div id="splis-notify-list" class="splis-notify-list">
             @if ($headerNotifications->isEmpty())
                 <p class="splis-notify-empty">No notifications yet.</p>

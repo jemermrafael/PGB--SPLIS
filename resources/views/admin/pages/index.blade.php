@@ -56,8 +56,6 @@
                     data-page-bg-form
                 >
                     @csrf
-                    @method('PUT')
-
                     <div>
                         <p class="splis-label mb-2">Background Type</p>
                         <div class="inline-flex overflow-hidden rounded-lg border border-slate-200 dark:border-slate-600">
