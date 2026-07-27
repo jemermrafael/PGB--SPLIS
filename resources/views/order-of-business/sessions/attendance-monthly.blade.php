@@ -9,6 +9,7 @@
             title="Monthly Attendance Report"
             subtitle="{{ \Carbon\Carbon::create($year, $month, 1)->format('F Y') }} · {{ $sessions->count() }} session(s)"
             icon="clipboard-check"
+            page="attendance_monthly"
         />
         <div class="flex flex-wrap gap-2">
             <a href="{{ route('ob.sessions.attendance.monthly.maker', ['year' => $year, 'month' => $month]) }}" class="splis-btn-secondary inline-flex items-center gap-2">

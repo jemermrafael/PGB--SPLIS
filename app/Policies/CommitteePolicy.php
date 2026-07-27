@@ -34,6 +34,6 @@ class CommitteePolicy
 
     public function manageIcon(User $user, Committee $committee): bool
     {
-        return $user->isSuperadmin();
+        return $user->canManageIconLibrary();
     }
 }

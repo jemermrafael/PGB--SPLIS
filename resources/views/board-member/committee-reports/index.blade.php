@@ -9,6 +9,7 @@
             title="Committee Reports"
             subtitle="Upload PDF reports, tag your Committee Agendas, and attach them to Session Committee Reports."
             icon="file-text"
+            page="board_member_committee_reports"
         />
         @can('create', App\Models\BoardMemberCommitteeReport::class)
             <a href="{{ route('board-member.committee-reports.create') }}" class="splis-btn-primary inline-flex items-center gap-2">

@@ -92,7 +92,7 @@
 </div>
 
 <p class="splis-admin-section-title">Built-in presets</p>
-<div class="splis-card p-6">
+<div class="mb-10 splis-card p-6">
     <p class="mb-4 text-sm text-slate-600 dark:text-slate-400">These SVG presets ship with the app and are always available in the committee icon chooser.</p>
     <ul class="admin-icon-library-grid">
         @foreach ($presetPaths as $key => $path)
@@ -106,5 +106,50 @@
             </li>
         @endforeach
     </ul>
+</div>
+
+<p class="splis-admin-section-title">Page title icons</p>
+<div class="splis-card p-6">
+    <h2 class="mb-1 text-lg font-semibold text-slate-900 dark:text-slate-100">Edit page icons</h2>
+    <p class="mb-4 text-sm text-slate-600 dark:text-slate-400">
+        Choose an uploaded library icon for each page heading. Leave as Default to keep the built-in SVG.
+    </p>
+
+    @if ($items->isEmpty())
+        <p class="text-sm text-slate-500">Upload icons above first, then assign them to pages here.</p>
+    @else
+        <form method="POST" action="{{ route('admin.icons.pages') }}" class="space-y-4">
+            @csrf
+            @method('PUT')
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                @foreach ($pageCatalog as $pageKey => $meta)
+                    @php
+                        $override = $pageOverrides->get($pageKey);
+                        $selectedId = old('pages.'.$pageKey, $override?->icon_library_id);
+                    @endphp
+                    <div class="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+                        <label class="splis-label" for="page-icon-{{ $pageKey }}">{{ $meta['label'] }}</label>
+                        <select
+                            name="pages[{{ $pageKey }}]"
+                            id="page-icon-{{ $pageKey }}"
+                            class="splis-select mt-1"
+                        >
+                            <option value="">Default ({{ str_replace('-', ' ', $meta['default_icon']) }})</option>
+                            @foreach ($items as $item)
+                                @continue(! $item->existsLocally())
+                                <option value="{{ $item->id }}" @selected((string) $selectedId === (string) $item->id)>
+                                    {{ $item->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endforeach
+            </div>
+            <button type="submit" class="splis-btn-primary inline-flex items-center gap-2">
+                <x-icon name="check-circle" class="h-4 w-4" />
+                Save page icons
+            </button>
+        </form>
+    @endif
 </div>
 @endsection

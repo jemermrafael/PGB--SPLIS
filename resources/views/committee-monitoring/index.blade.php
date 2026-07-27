@@ -16,6 +16,7 @@
             title="Committee Monitoring"
             subtitle="Referral tracking, committee schedules, and report/status monitoring for referred measures."
             icon="monitor"
+            page="committee_monitoring"
         />
     </div>
 

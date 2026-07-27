@@ -191,7 +191,7 @@ class CommitteeController extends Controller
      */
     protected function validated(Request $request, ?Committee $committee = null): array
     {
-        $canManageIcon = $request->user()?->isSuperadmin() === true;
+        $canManageIcon = $request->user()?->canManageIconLibrary() === true;
 
         if ($canManageIcon && $request->input('icon_key') === '') {
             $request->merge(['icon_key' => null]);

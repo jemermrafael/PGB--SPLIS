@@ -5,7 +5,8 @@
 @section('content')
 <div id="agenda-search" class="splis-agenda-index" data-search-url="{{ route('agenda.search') }}">
     <div class="splis-page-header">
-        <x-page-heading title="Agenda" icon="agenda">
+        <x-page-heading title="Agenda" icon="agenda"
+            page="agenda">
             Track Incoming Requests, Committee Referral, Deadlines, and Provincial Output —
             <span id="agenda-stat-total">{{ number_format($stats['total']) }}</span> items on file.
         </x-page-heading>

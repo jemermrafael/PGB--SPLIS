@@ -9,6 +9,7 @@
             title="Ordinances"
             subtitle="Search and browse provincial ordinances by series, subject, and enactment dates."
             icon="ordinances"
+            page="ordinances"
         />
         @can('create', App\Models\Ordinance::class)
             <a href="{{ route('ordinances.create') }}" class="splis-btn-primary inline-flex items-center gap-2">

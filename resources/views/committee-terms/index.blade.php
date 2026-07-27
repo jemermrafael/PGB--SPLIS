@@ -9,6 +9,7 @@
             title="Election Terms"
             subtitle="Track Committee rosters per election period. Mark one term as current for new assignments."
             icon="calendar"
+            page="committee_terms"
         />
         @can('create', App\Models\CommitteeTerm::class)
             <a href="{{ route('committee-terms.create') }}" class="splis-btn-primary inline-flex items-center gap-2">

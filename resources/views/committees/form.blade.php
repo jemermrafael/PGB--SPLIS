@@ -12,7 +12,7 @@
     $iconKeys = $iconKeys ?? \App\Support\CommitteeIcon::allowedKeys();
     $iconPaths = $iconPaths ?? \App\Support\CommitteeIcon::paths();
     $libraryIcons = $libraryIcons ?? collect();
-    $canManageIcon = auth()->user()?->isSuperadmin() === true;
+    $canManageIcon = auth()->user()?->canManageIconLibrary() === true;
 @endphp
 
 @section('title', ($isEdit ? 'Edit Committee' : 'New Committee').' — '.config('app.name'))

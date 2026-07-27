@@ -9,6 +9,7 @@
             title="Committees"
             subtitle="Sangguniang Panlalawigan standing committees — used for Agenda Referral and Order of Business grouping."
             icon="meeting"
+            page="committees"
         />
         @can('create', App\Models\Committee::class)
             <a href="{{ route('committees.create') }}" class="splis-btn-primary inline-flex items-center gap-2">

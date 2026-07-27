@@ -9,6 +9,7 @@
             title="Reference Materials"
             subtitle="Digital Compendium of Guidelines, Memoranda, Circulars, Issuances, Manuals, and Related References."
             icon="book"
+            page="references"
         />
         @can('create', App\Models\ReferenceMaterial::class)
             <a href="{{ route('references.create') }}" class="splis-btn-primary inline-flex items-center gap-2">

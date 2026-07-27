@@ -127,14 +127,13 @@
     (() => {
         const district = document.querySelector('[data-ex-officio-district]');
         const wrap = document.querySelector('[data-ex-officio-title-wrap]');
-        if (!district || !wrap) {
-            return;
+        if (district && wrap) {
+            const sync = () => {
+                wrap.classList.toggle('hidden', district.value !== 'Ex Officio');
+            };
+            district.addEventListener('change', sync);
+            sync();
         }
-        const sync = () => {
-            wrap.classList.toggle('hidden', district.value !== 'Ex Officio');
-        };
-        district.addEventListener('change', sync);
-        sync();
     })();
 </script>
 @endpush

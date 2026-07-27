@@ -9,6 +9,7 @@
             title="All Ordinances"
             subtitle="Provincial Ordinances and Appropriation Ordinances in one list."
             icon="ordinances"
+            page="board_member_ordinances_all"
         />
     </div>
 

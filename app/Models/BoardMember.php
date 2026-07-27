@@ -21,6 +21,7 @@ class BoardMember extends Model
         'district',
         'mobile_number',
         'photo_path',
+        'focal_persons',
         'is_active',
     ];
 
@@ -28,7 +29,36 @@ class BoardMember extends Model
     {
         return [
             'is_active' => 'boolean',
+            'focal_persons' => 'array',
         ];
+    }
+
+    /**
+     * @return list<array{name: string, emails: list<string>}>
+     */
+    public function focalPersonsList(): array
+    {
+        return collect($this->focal_persons ?? [])
+            ->map(function ($person): ?array {
+                $name = trim((string) ($person['name'] ?? ''));
+                $emails = collect($person['emails'] ?? [])
+                    ->map(fn ($email) => trim((string) $email))
+                    ->filter(fn (string $email) => $email !== '')
+                    ->values()
+                    ->all();
+
+                if ($name === '' && $emails === []) {
+                    return null;
+                }
+
+                return [
+                    'name' => $name,
+                    'emails' => $emails,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
     }
 
     /**

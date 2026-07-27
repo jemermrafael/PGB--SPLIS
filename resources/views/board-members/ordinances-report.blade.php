@@ -14,6 +14,7 @@
             title="Board Member Authored Ordinances"
             subtitle="Provincial Ordinances by Board Member — passed or pending."
             icon="ordinances"
+            page="board_member_ordinances_report"
         />
     </div>
 

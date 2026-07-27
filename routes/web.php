@@ -40,6 +40,7 @@ use App\Http\Controllers\Admin\IconLibraryController;
 use App\Http\Controllers\IconLibraryFileController;
 use App\Http\Controllers\Admin\RolePermissionsController;
 use App\Http\Controllers\Admin\TrashController;
+use App\Http\Controllers\DirectoryCategoryController;
 use App\Http\Controllers\DirectoryEntryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\BoardMemberObSearchController;
@@ -224,6 +225,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('/agenda/{agenda}/versions/{version}', [AgendaItemController::class, 'destroyVersion'])->name('agenda.versions.destroy');
 
     Route::get('/directory', [DirectoryEntryController::class, 'index'])->name('directory.index');
+    Route::get('/directory/categories', [DirectoryCategoryController::class, 'index'])->name('directory.categories.index');
+    Route::post('/directory/categories', [DirectoryCategoryController::class, 'store'])->name('directory.categories.store');
+    Route::put('/directory/categories/{directoryCategory}', [DirectoryCategoryController::class, 'update'])->name('directory.categories.update');
+    Route::delete('/directory/categories/{directoryCategory}', [DirectoryCategoryController::class, 'destroy'])->name('directory.categories.destroy');
     Route::get('/directory/create', [DirectoryEntryController::class, 'create'])->name('directory.create');
     Route::post('/directory', [DirectoryEntryController::class, 'store'])->name('directory.store');
     Route::get('/directory/{directoryEntry}/edit', [DirectoryEntryController::class, 'edit'])->name('directory.edit');
@@ -314,6 +319,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/icons', [IconLibraryController::class, 'index'])->name('icons.index');
         Route::post('/icons', [IconLibraryController::class, 'store'])->name('icons.store');
+        Route::put('/icons/pages', [IconLibraryController::class, 'updatePageIcons'])->name('icons.pages');
         Route::delete('/icons/{iconLibraryItem}', [IconLibraryController::class, 'destroy'])->name('icons.destroy');
 
         Route::get('/trash', [TrashController::class, 'index'])->name('trash.index');

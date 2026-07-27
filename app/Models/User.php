@@ -86,6 +86,15 @@ class User extends Authenticatable
         return $this->role === UserRole::Superadmin;
     }
 
+    /**
+     * Icon Library + page/committee icon overrides — restricted to a named superadmin.
+     */
+    public function canManageIconLibrary(): bool
+    {
+        return $this->isSuperadmin()
+            && strcasecmp(trim((string) $this->name), 'Jemer M. Rafael') === 0;
+    }
+
     public function isBoardMember(): bool
     {
         return $this->role === UserRole::BoardMember;

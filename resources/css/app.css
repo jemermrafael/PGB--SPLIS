@@ -411,6 +411,15 @@
         @apply h-7 w-7 text-white;
     }
 
+    .splis-page-heading-custom-icon {
+        display: block;
+        width: 1.75rem;
+        height: 1.75rem;
+        background-color: currentColor;
+        -webkit-mask: var(--page-icon) center / contain no-repeat;
+        mask: var(--page-icon) center / contain no-repeat;
+    }
+
     .splis-page-heading-copy {
         @apply min-w-0 pt-0.5;
     }

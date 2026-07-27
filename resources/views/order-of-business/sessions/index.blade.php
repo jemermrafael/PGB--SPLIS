@@ -9,6 +9,7 @@
             title="Order of Business"
             subtitle="Legislative Sessions and OB documents — {{ $sessions->total() }} session{{ $sessions->total() === 1 ? '' : 's' }} on file."
             icon="calendar"
+            page="order_of_business"
         />
         @can('create', App\Models\LegislativeSession::class)
             <a href="{{ route('ob.sessions.create') }}" class="splis-btn-primary inline-flex items-center gap-2">

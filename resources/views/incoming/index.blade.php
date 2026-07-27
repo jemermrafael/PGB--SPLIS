@@ -9,6 +9,7 @@
             title="Incoming"
             subtitle="Track municipal submissions and workflow before adoption into the resolution archive."
             icon="inbox"
+            page="incoming"
         />
         @can('create', App\Models\IncomingDocument::class)
             <a href="{{ route('incoming.create') }}" class="splis-btn-primary inline-flex items-center gap-2">

@@ -9,6 +9,7 @@
             title="Appropriation Ordinances"
             subtitle="Provincial appropriation ordinances — intake through SP passage and gubernatorial approval."
             icon="ordinances"
+            page="appropriation_ordinances"
         />
         @can('create', App\Models\AppropriationOrdinance::class)
             <a href="{{ route('appropriation-ordinances.create') }}" class="splis-btn-primary inline-flex items-center gap-2">

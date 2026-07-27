@@ -9,6 +9,7 @@
             title="All Resolutions"
             subtitle="Search and browse the adopted resolution archive."
             icon="file-text"
+            page="resolutions"
         />
         <div class="flex flex-wrap gap-2">
             @can('create', App\Models\Resolution::class)

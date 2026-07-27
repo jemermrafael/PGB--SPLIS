@@ -217,15 +217,17 @@ class BoardMemberController extends Controller
     {
         $districts = config('board_members.districts', []);
 
-        return $request->validate([
+        $data = $request->validate([
             'name' => ['required', 'string', 'max:200'],
             'honorific' => ['nullable', 'string', 'max:50'],
             'committee_term_id' => ['required', 'integer', 'exists:committee_terms,id'],
             'district' => ['nullable', 'string', Rule::in($districts)],
             'ex_officio_title' => ['nullable', 'string', 'max:150'],
             'is_active' => ['sometimes', 'boolean'],
-        ]) + [
-            'is_active' => $request->boolean('is_active'),
-        ];
+        ]);
+
+        $data['is_active'] = $request->boolean('is_active');
+
+        return $data;
     }
 }

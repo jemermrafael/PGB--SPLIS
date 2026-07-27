@@ -13,6 +13,7 @@
             title="Committee Reports"
             subtitle="Reports submitted by Board Members and staff. BM-submitted reports are view-only for encoders and admins."
             icon="file-text"
+            page="committee_reports"
         />
         @can('create', App\Models\BoardMemberCommitteeReport::class)
             <a href="{{ route('committee-reports.create') }}" class="splis-btn-primary inline-flex items-center gap-2">

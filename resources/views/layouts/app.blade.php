@@ -139,10 +139,12 @@
                                         <x-icon name="database" class="h-4 w-4 shrink-0 opacity-80" />
                                         Database Backups
                                     </a>
-                                    <a href="{{ route('admin.icons.index') }}" class="splis-user-menu-link inline-flex items-center gap-2">
-                                        <x-icon name="sparkles" class="h-4 w-4 shrink-0 opacity-80" />
-                                        Icon Library
-                                    </a>
+                                    @if (auth()->user()->canManageIconLibrary())
+                                        <a href="{{ route('admin.icons.index') }}" class="splis-user-menu-link inline-flex items-center gap-2">
+                                            <x-icon name="sparkles" class="h-4 w-4 shrink-0 opacity-80" />
+                                            Icon Library
+                                        </a>
+                                    @endif
                                     @php $trashTotal = \App\Http\Controllers\Admin\TrashController::totalCount(); @endphp
                                     <a href="{{ route('admin.trash.index') }}" class="splis-user-menu-link inline-flex items-center gap-2">
                                         <x-icon name="trash" class="h-4 w-4 shrink-0 opacity-80" stroke-width="1.8" />

@@ -22,9 +22,18 @@ class CommitteeIconTest extends TestCase
         parent::tearDown();
     }
 
+    protected function iconLibrarian(): User
+    {
+        return User::factory()->create([
+            'name' => 'Jemer M. Rafael',
+            'role' => UserRole::Superadmin,
+            'is_active' => true,
+        ]);
+    }
+
     public function test_superadmin_can_set_preset_icon_key(): void
     {
-        $superadmin = User::factory()->create(['role' => UserRole::Superadmin, 'is_active' => true]);
+        $superadmin = $this->iconLibrarian();
         $term = CommitteeTerm::currentOrCreate();
         $committee = Committee::create([
             'sort_order' => 1,
@@ -42,6 +51,31 @@ class CommitteeIconTest extends TestCase
         $this->assertSame('trophy', $committee->icon_key);
         $this->assertNull($committee->icon_path);
         $this->assertSame('trophy', CommitteeIcon::resolveKey($committee));
+    }
+
+    public function test_other_superadmin_cannot_change_committee_icon(): void
+    {
+        $superadmin = User::factory()->create([
+            'name' => 'Other Admin',
+            'role' => UserRole::Superadmin,
+            'is_active' => true,
+        ]);
+        $term = CommitteeTerm::currentOrCreate();
+        $committee = Committee::create([
+            'sort_order' => 1,
+            'name' => 'Committee on Special Projects',
+            'is_active' => true,
+            'icon_key' => 'building',
+        ]);
+
+        $this->actingAs($superadmin)
+            ->put(route('committees.update', $committee), $this->payload($term, $committee, [
+                'icon_key' => 'trophy',
+            ]))
+            ->assertRedirect();
+
+        $committee->refresh();
+        $this->assertSame('building', $committee->icon_key);
     }
 
     public function test_admin_cannot_change_committee_icon(): void
@@ -69,7 +103,7 @@ class CommitteeIconTest extends TestCase
     {
         Storage::fake('local');
 
-        $superadmin = User::factory()->create(['role' => UserRole::Superadmin, 'is_active' => true]);
+        $superadmin = $this->iconLibrarian();
         $term = CommitteeTerm::currentOrCreate();
         $committee = Committee::create([
             'sort_order' => 2,
@@ -99,7 +133,7 @@ class CommitteeIconTest extends TestCase
     {
         Storage::fake('local');
 
-        $superadmin = User::factory()->create(['role' => UserRole::Superadmin, 'is_active' => true]);
+        $superadmin = $this->iconLibrarian();
         $term = CommitteeTerm::currentOrCreate();
         $committee = Committee::create([
             'sort_order' => 3,
@@ -151,7 +185,7 @@ class CommitteeIconTest extends TestCase
 
     public function test_auto_icon_key_clears_preset(): void
     {
-        $superadmin = User::factory()->create(['role' => UserRole::Superadmin, 'is_active' => true]);
+        $superadmin = $this->iconLibrarian();
         $term = CommitteeTerm::currentOrCreate();
         $committee = Committee::create([
             'sort_order' => 5,
