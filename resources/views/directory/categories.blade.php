@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'Directory categories — '.config('app.name'))
+@section('title', 'Directory Categories — '.config('app.name'))
 
 @section('content')
 <div class="max-w-3xl">
     <div class="splis-page-header !mb-6">
         <div>
-            <h1 class="splis-page-title">Directory categories</h1>
-            <p class="splis-page-subtitle">Group directory entries by office or unit.</p>
+            <h1 class="splis-page-title">Directory Categories</h1>
+            <p class="splis-page-subtitle">Group Directory entries by Office or Unit.</p>
         </div>
         <a href="{{ route('directory.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
             <x-icon name="arrow-left" class="h-4 w-4" />
@@ -16,7 +16,7 @@
     </div>
 
     <div class="mb-6 splis-card splis-card-body">
-        <h2 class="mb-3 text-base font-semibold text-slate-900 dark:text-slate-100">Add category</h2>
+        <h2 class="mb-3 text-base font-semibold text-slate-900 dark:text-slate-100">Add Category</h2>
         <form method="POST" action="{{ route('directory.categories.store') }}" class="flex flex-col gap-3 sm:flex-row sm:items-end">
             @csrf
             <div class="min-w-0 flex-1">

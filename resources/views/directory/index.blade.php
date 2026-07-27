@@ -3,7 +3,7 @@
 @section('title', 'Staff Directory — '.config('app.name'))
 
 @section('content')
-<div class="max-w-5xl">
+<div class="w-full">
     <div class="splis-page-header">
         <x-page-heading
             title="Directory"
