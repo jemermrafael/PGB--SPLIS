@@ -14,7 +14,7 @@
                     Today’s briefing, Committee Agenda, and Order of Business.
                 </p>
             </div>
-            <a href="{{ route('admin.analytics.index') }}" class="splis-header-btn shrink-0">
+            <a href="{{ route('admin.analytics.index') }}" class="splis-header-btn shrink-0 align-self-middle">
                 <x-icon name="chart-bar" class="h-4 w-4" />
                 Executive Dashboard
             </a>

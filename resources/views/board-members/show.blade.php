@@ -15,7 +15,6 @@
                 <button
                     type="button"
                     class="splis-bm-photo-thumb"
-                    style="width:130px;height:130px;padding:0;border:0;border-radius:0;overflow:hidden;flex-shrink:0;cursor:pointer;background:transparent"
                     data-pdf-modal-open
                     data-pdf-viewer="image"
                     data-pdf-src="{{ route('board-members.photo', $boardMember) }}"
@@ -26,7 +25,6 @@
                     <img
                         src="{{ route('board-members.photo', $boardMember) }}"
                         alt="{{ $boardMember->displayName() }}"
-                        style="display:block;width:130px;height:130px;object-fit:cover;border-radius:0"
                     >
                 </button>
             @endif
