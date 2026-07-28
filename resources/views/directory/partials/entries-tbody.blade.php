@@ -23,7 +23,9 @@
                 <div class="space-y-1.5">
                     @foreach ($focalPersons as $person)
                         <div>
-                            <div class="text-sm font-medium text-slate-800 dark:text-slate-200">{{ $person['name'] !== '' ? $person['name'] : '—' }}</div>
+                            @if (($person['name'] ?? '') !== '')
+                                <div class="text-sm font-medium text-slate-800 dark:text-slate-200">{{ $person['name'] }}</div>
+                            @endif
                             @if (($person['emails'] ?? []) !== [])
                                 <div class="flex flex-col gap-0.5">
                                     @foreach ($person['emails'] as $email)
