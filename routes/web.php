@@ -36,6 +36,7 @@ use App\Http\Controllers\AdminAnalyticsMapController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin\DatabaseBackupController;
 use App\Http\Controllers\Admin\DataSyncController;
+use App\Http\Controllers\Admin\EmailNotificationSettingsController;
 use App\Http\Controllers\Admin\IconLibraryController;
 use App\Http\Controllers\Admin\PageBackgroundController;
 use App\Http\Controllers\IconLibraryFileController;
@@ -302,6 +303,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/{legislativeSession}/edit', [LegislativeSessionController::class, 'edit'])->name('sessions.edit');
         Route::put('/{legislativeSession}', [LegislativeSessionController::class, 'update'])->name('sessions.update');
         Route::delete('/{legislativeSession}', [LegislativeSessionController::class, 'destroy'])->name('sessions.destroy');
+    });
+
+    Route::middleware('role:admin,superadmin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/email-notifications', [EmailNotificationSettingsController::class, 'index'])->name('email-notifications.index');
+        Route::put('/email-notifications', [EmailNotificationSettingsController::class, 'update'])->name('email-notifications.update');
+        Route::post('/email-notifications/test', [EmailNotificationSettingsController::class, 'sendTest'])->name('email-notifications.test');
     });
 
     Route::middleware('role:superadmin')->prefix('admin')->name('admin.')->group(function () {

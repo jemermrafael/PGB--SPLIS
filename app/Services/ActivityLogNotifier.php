@@ -25,6 +25,10 @@ class ActivityLogNotifier
         'data_sync.resolutions_csv',
     ];
 
+    public function __construct(
+        protected EmailNotificationService $emails,
+    ) {}
+
     public function notify(ActivityLog $log): void
     {
         if (in_array($log->action, self::HIDDEN_ACTIONS, true)) {
@@ -47,7 +51,7 @@ class ActivityLogNotifier
         $link = ActivityLogPresenter::link($log);
 
         foreach ($admins as $admin) {
-            UserNotification::query()->firstOrCreate(
+            $notification = UserNotification::query()->firstOrCreate(
                 [
                     'user_id' => $admin->id,
                     'activity_log_id' => $log->id,
@@ -58,6 +62,17 @@ class ActivityLogNotifier
                     'body' => $body,
                     'link' => $link,
                 ],
+            );
+
+            $this->emails->sendForNotification(
+                $admin,
+                $notification,
+                EmailNotificationSettings::AUDIENCE_STAFF,
+                vars: [
+                    'title' => $title,
+                    'body' => $body,
+                ],
+                emailType: UserNotification::TYPE_ACTIVITY_LOG,
             );
         }
     }

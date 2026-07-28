@@ -95,6 +95,14 @@ class User extends Authenticatable
             && strcasecmp(trim((string) $this->name), 'Jemer M. Rafael') === 0;
     }
 
+    /**
+     * Settings: email notification types and SMTP — admin and superadmin.
+     */
+    public function canManageEmailNotifications(): bool
+    {
+        return $this->canAdmin();
+    }
+
     public function isBoardMember(): bool
     {
         return $this->role === UserRole::BoardMember;

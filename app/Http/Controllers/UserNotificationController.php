@@ -184,7 +184,7 @@ class UserNotificationController extends Controller
             UserNotification::TYPE_AGENDA_EXPIRING_SOON => str_contains((string) $notification->link, '/my-requests/')
                 ? 'View request'
                 : (str_contains((string) $notification->link, '/agenda/')
-                    ? 'View agenda'
+                    ? 'View Agenda'
                     : match (true) {
                         str_contains((string) $notification->link, '/resolutions/') => 'View resolution',
                         str_contains((string) $notification->link, '/ordinances/') => 'View ordinance',
@@ -194,13 +194,13 @@ class UserNotificationController extends Controller
             UserNotification::TYPE_SESSION_CREATED,
             UserNotification::TYPE_OB_DOCUMENT_CREATED => 'View session',
             default => match (true) {
-                str_contains((string) $notification->link, '/my-requests/') => 'View request',
-                str_contains((string) $notification->link, '/agenda/') => 'View agenda',
-                str_contains((string) $notification->link, '/resolutions/') => 'View resolution',
+                str_contains((string) $notification->link, '/my-requests/') => 'View Request',
+                str_contains((string) $notification->link, '/agenda/') => 'View Agenda',
+                str_contains((string) $notification->link, '/resolutions/') => 'View Resolution',
                 str_contains((string) $notification->link, '/incoming/') => 'View incoming',
                 str_contains((string) $notification->link, '/ordinances/') => 'View ordinance',
-                str_contains((string) $notification->link, '/order-of-business/') => 'View session',
-                str_contains((string) $notification->link, '/references/') => 'View reference',
+                str_contains((string) $notification->link, '/order-of-business/') => 'View Session',
+                str_contains((string) $notification->link, '/references/') => 'View Reference',
                 default => 'View details',
             },
         };

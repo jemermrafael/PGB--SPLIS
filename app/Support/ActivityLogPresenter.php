@@ -165,11 +165,11 @@ class ActivityLogPresenter
         }
 
         return match ($log->subject_type) {
-            AgendaItem::class => 'View agenda',
-            Resolution::class => 'View resolution',
+            AgendaItem::class => 'View Agenda',
+            Resolution::class => 'View Resolution',
             IncomingDocument::class => 'View incoming',
-            Ordinance::class => 'View ordinance',
-            ReferenceMaterial::class => 'View reference',
+            Ordinance::class => 'View Ordinance',
+            ReferenceMaterial::class => 'View Reference',
             default => 'View details',
         };
     }

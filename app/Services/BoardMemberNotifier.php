@@ -16,6 +16,10 @@ use Illuminate\Support\Collection;
 
 class BoardMemberNotifier
 {
+    public function __construct(
+        protected EmailNotificationService $emails,
+    ) {}
+
     public function notifyCommitteeReferral(AgendaItem $agenda): void
     {
         $referral = trim((string) ($agenda->committee_referred ?? ''));
@@ -30,14 +34,11 @@ class BoardMemberNotifier
             return;
         }
 
-        $body = sprintf(
-            '%s was referred to %s.',
-            $agenda->displayLabel(),
-            $committee->name,
-        );
+        $label = $agenda->displayLabel();
+        $body = sprintf('%s was referred to %s.', $label, $committee->name);
 
         foreach ($this->usersForAgendaCommittee($agenda) as $user) {
-            UserNotification::query()->firstOrCreate(
+            $notification = UserNotification::query()->firstOrCreate(
                 [
                     'user_id' => $user->id,
                     'agenda_item_id' => $agenda->id,
@@ -47,6 +48,16 @@ class BoardMemberNotifier
                     'title' => 'Agenda referred to your committee',
                     'body' => $body,
                     'link' => route('agenda.show', $agenda, absolute: false),
+                ],
+            );
+
+            $this->emails->sendForNotification(
+                $user,
+                $notification,
+                EmailNotificationSettings::AUDIENCE_BOARD_MEMBER,
+                vars: [
+                    'label' => $label,
+                    'committee' => $committee->name,
                 ],
             );
         }
@@ -66,14 +77,23 @@ class BoardMemberNotifier
             return;
         }
 
-        $body = sprintf(
-            '%s was published to %s.',
-            $agenda->displayLabel(),
+        $label = $agenda->displayLabel();
+        $body = sprintf('%s was published to %s.', $label, $target);
+        $number = trim((string) ($agenda->reso_ord_ao_no ?? ''));
+        $series = (int) ($agenda->reso_ord_ao_series ?? 0);
+        $numberSuffix = '';
+        if ($number !== '' && $series > 0) {
+            $numberSuffix = ' ('.$number.' s. '.$series.')';
+        } elseif ($number !== '') {
+            $numberSuffix = ' ('.$number.')';
+        }
+        $emailType = $this->emails->resolvePublishedEmailType(
+            EmailNotificationSettings::AUDIENCE_BOARD_MEMBER,
             $target,
         );
 
         foreach ($this->usersForAgendaCommittee($agenda) as $user) {
-            UserNotification::query()->firstOrCreate(
+            $notification = UserNotification::query()->firstOrCreate(
                 [
                     'user_id' => $user->id,
                     'agenda_item_id' => $agenda->id,
@@ -85,16 +105,26 @@ class BoardMemberNotifier
                     'link' => $agenda->publishedTargetRoute() ?? route('agenda.show', $agenda, absolute: false),
                 ],
             );
+
+            $this->emails->sendForNotification(
+                $user,
+                $notification,
+                EmailNotificationSettings::AUDIENCE_BOARD_MEMBER,
+                vars: [
+                    'label' => $label,
+                    'target' => $target,
+                    'number_suffix' => $numberSuffix,
+                ],
+                emailType: $emailType,
+            );
         }
     }
 
     public function notifyAgendaAddedToOb(AgendaItem $agenda, LegislativeSession $session, bool $reNotify = false): void
     {
-        $body = sprintf(
-            '%s was added to %s.',
-            $agenda->displayLabel(),
-            $session->displayTitle(),
-        );
+        $label = $agenda->displayLabel();
+        $sessionTitle = $session->displayTitle();
+        $body = sprintf('%s was added to %s.', $label, $sessionTitle);
 
         foreach ($this->usersForAgendaCommittee($agenda) as $user) {
             $attributes = [
@@ -107,7 +137,7 @@ class BoardMemberNotifier
                 $attributes['read_at'] = null;
             }
 
-            UserNotification::query()->updateOrCreate(
+            $notification = UserNotification::query()->updateOrCreate(
                 [
                     'user_id' => $user->id,
                     'agenda_item_id' => $agenda->id,
@@ -115,6 +145,17 @@ class BoardMemberNotifier
                     'type' => UserNotification::TYPE_AGENDA_ADDED_TO_OB,
                 ],
                 $attributes,
+            );
+
+            $this->emails->sendForNotification(
+                $user,
+                $notification,
+                EmailNotificationSettings::AUDIENCE_BOARD_MEMBER,
+                force: $reNotify,
+                vars: [
+                    'label' => $label,
+                    'session' => $sessionTitle,
+                ],
             );
         }
     }
@@ -125,10 +166,10 @@ class BoardMemberNotifier
             return;
         }
 
-        $body = $session->displayTitle();
+        $sessionTitle = $session->displayTitle();
 
         foreach ($this->allBoardMemberUsers() as $user) {
-            UserNotification::query()->firstOrCreate(
+            $notification = UserNotification::query()->firstOrCreate(
                 [
                     'user_id' => $user->id,
                     'legislative_session_id' => $session->id,
@@ -136,11 +177,30 @@ class BoardMemberNotifier
                 ],
                 [
                     'title' => 'New Session scheduled',
-                    'body' => $body,
+                    'body' => $sessionTitle,
                     'link' => route('ob.sessions.show', $session, absolute: false),
                 ],
             );
+
+            $this->emails->sendForNotification(
+                $user,
+                $notification,
+                EmailNotificationSettings::AUDIENCE_BOARD_MEMBER,
+                vars: [
+                    'session' => $sessionTitle,
+                ],
+            );
         }
+
+        $this->emails->notifyStaff(
+            UserNotification::TYPE_SESSION_CREATED,
+            [
+                'session' => $sessionTitle,
+                'title' => 'New Session scheduled',
+                'body' => $sessionTitle,
+            ],
+            route('ob.sessions.show', $session),
+        );
     }
 
     public function notifyObDocumentCreated(LegislativeSession $session, ObDocument $document): void
@@ -152,7 +212,7 @@ class BoardMemberNotifier
         }
 
         foreach ($this->allBoardMemberUsers() as $user) {
-            UserNotification::query()->firstOrCreate(
+            $notification = UserNotification::query()->firstOrCreate(
                 [
                     'user_id' => $user->id,
                     'legislative_session_id' => $session->id,
@@ -164,7 +224,28 @@ class BoardMemberNotifier
                     'link' => route('ob.sessions.show', $session, absolute: false),
                 ],
             );
+
+            $this->emails->sendForNotification(
+                $user,
+                $notification,
+                EmailNotificationSettings::AUDIENCE_BOARD_MEMBER,
+                vars: [
+                    'document_title' => (string) $document->title,
+                    'session' => $session->displayTitle(),
+                ],
+            );
         }
+
+        $this->emails->notifyStaff(
+            UserNotification::TYPE_OB_DOCUMENT_CREATED,
+            [
+                'document_title' => (string) $document->title,
+                'session' => $session->displayTitle(),
+                'title' => 'Order of Business created',
+                'body' => (string) $document->title,
+            ],
+            route('ob.sessions.show', $session),
+        );
     }
 
     public function notifyAgendaExpiringSoon(AgendaItem $agenda): void
@@ -174,19 +255,15 @@ class BoardMemberNotifier
         }
 
         $daysLeft = is_numeric($agenda->days_left_label) ? (int) $agenda->days_left_label : null;
-        $suffix = $daysLeft === null
+        $daysLeftSuffix = $daysLeft === null
             ? ''
             : ' ('.$daysLeft.' day'.($daysLeft === 1 ? '' : 's').' left)';
-
-        $body = sprintf(
-            '%s is due on %s%s.',
-            $agenda->displayLabel(),
-            $agenda->due_date?->format('F j, Y'),
-            $suffix,
-        );
+        $dueDate = $agenda->due_date?->format('F j, Y') ?? '';
+        $label = $agenda->displayLabel();
+        $body = sprintf('%s is due on %s%s.', $label, $dueDate, $daysLeftSuffix);
 
         foreach ($this->usersForAgendaCommittee($agenda) as $user) {
-            UserNotification::query()->firstOrCreate(
+            $notification = UserNotification::query()->firstOrCreate(
                 [
                     'user_id' => $user->id,
                     'agenda_item_id' => $agenda->id,
@@ -198,7 +275,30 @@ class BoardMemberNotifier
                     'link' => route('agenda.show', $agenda, absolute: false),
                 ],
             );
+
+            $this->emails->sendForNotification(
+                $user,
+                $notification,
+                EmailNotificationSettings::AUDIENCE_BOARD_MEMBER,
+                vars: [
+                    'label' => $label,
+                    'due_date' => $dueDate,
+                    'days_left_suffix' => $daysLeftSuffix,
+                ],
+            );
         }
+
+        $this->emails->notifyStaff(
+            UserNotification::TYPE_AGENDA_EXPIRING_SOON,
+            [
+                'label' => $label,
+                'due_date' => $dueDate,
+                'days_left_suffix' => $daysLeftSuffix,
+                'title' => 'Agenda deadline approaching',
+                'body' => $body,
+            ],
+            route('agenda.show', $agenda),
+        );
     }
 
     /** @return Collection<int, User> */

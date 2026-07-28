@@ -6,6 +6,7 @@ import { initAccessibility } from './accessibility';
 import { initComboboxes } from './combobox';
 import { initDashboardSearch } from './dashboard-search';
 import { initDirectorySearch } from './directory-search';
+import { initEmailNotificationSettings } from './email-notification-settings';
 import { initDropdowns } from './dropdown';
 import { initIncomingSearch } from './incoming-search';
 import { initKeywordTags } from './keyword-tags';
@@ -67,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initAgendaDeadlinePreview();
     initDashboardSearch();
     initDirectorySearch();
+    initEmailNotificationSettings();
     initOrdinancesSearch();
     initResolutionsSearch();
     initIncomingSearch();

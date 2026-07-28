@@ -13,6 +13,10 @@ use Illuminate\Support\Collection;
 
 class MunicipalNotifier
 {
+    public function __construct(
+        protected EmailNotificationService $emails,
+    ) {}
+
     public function notifyCommitteeReferral(AgendaItem $agenda): void
     {
         $referral = trim((string) ($agenda->committee_referred ?? ''));
@@ -21,14 +25,11 @@ class MunicipalNotifier
             return;
         }
 
-        $body = sprintf(
-            '%s was referred to %s.',
-            $agenda->displayLabel(),
-            $referral,
-        );
+        $label = $agenda->displayLabel();
+        $body = sprintf('%s was referred to %s.', $label, $referral);
 
         foreach ($this->usersForAgenda($agenda) as $user) {
-            UserNotification::query()->firstOrCreate(
+            $notification = UserNotification::query()->firstOrCreate(
                 [
                     'user_id' => $user->id,
                     'agenda_item_id' => $agenda->id,
@@ -38,6 +39,16 @@ class MunicipalNotifier
                     'title' => 'Your request was referred to a committee',
                     'body' => $body,
                     'link' => route('municipal.requests.show', $agenda, absolute: false),
+                ],
+            );
+
+            $this->emails->sendForNotification(
+                $user,
+                $notification,
+                EmailNotificationSettings::AUDIENCE_MUNICIPAL,
+                vars: [
+                    'label' => $label,
+                    'committee' => $referral,
                 ],
             );
         }
@@ -57,35 +68,65 @@ class MunicipalNotifier
             return;
         }
 
-        $body = sprintf(
-            '%s was published to %s.',
-            $agenda->displayLabel(),
+        $label = $agenda->displayLabel();
+        $emailType = $this->emails->resolvePublishedEmailType(
+            EmailNotificationSettings::AUDIENCE_MUNICIPAL,
             $target,
         );
+        $number = trim((string) ($agenda->reso_ord_ao_no ?? ''));
+        $series = (int) ($agenda->reso_ord_ao_series ?? 0);
+        $numberSuffix = '';
+        if ($number !== '' && $series > 0) {
+            $numberSuffix = ' ('.$number.' s. '.$series.')';
+        } elseif ($number !== '') {
+            $numberSuffix = ' ('.$number.')';
+        }
+
+        $title = match ($emailType) {
+            EmailNotificationSettings::TYPE_RESOLUTION_PUBLISHED => 'Agenda was published to resolution',
+            EmailNotificationSettings::TYPE_APPROPRIATION_ORDINANCE_PUBLISHED => 'New appropriation ordinance published',
+            default => 'New Ordinance published',
+        };
+
+        $body = match ($emailType) {
+            EmailNotificationSettings::TYPE_RESOLUTION_PUBLISHED => sprintf('%s was published as a Resolution%s.', $label, $numberSuffix),
+            EmailNotificationSettings::TYPE_APPROPRIATION_ORDINANCE_PUBLISHED => sprintf('%s was published as an Appropriation Ordinance%s.', $label, $numberSuffix),
+            default => sprintf('%s was published as %s%s.', $label, $target, $numberSuffix),
+        };
 
         foreach ($this->usersForAgenda($agenda) as $user) {
-            UserNotification::query()->firstOrCreate(
+            $notification = UserNotification::query()->firstOrCreate(
                 [
                     'user_id' => $user->id,
                     'agenda_item_id' => $agenda->id,
                     'type' => UserNotification::TYPE_AGENDA_PUBLISHED,
                 ],
                 [
-                    'title' => 'Your request was published',
+                    'title' => $title,
                     'body' => $body,
                     'link' => route('municipal.requests.show', $agenda, absolute: false),
                 ],
+            );
+
+            $this->emails->sendForNotification(
+                $user,
+                $notification,
+                EmailNotificationSettings::AUDIENCE_MUNICIPAL,
+                vars: [
+                    'label' => $label,
+                    'target' => $target,
+                    'number_suffix' => $numberSuffix,
+                ],
+                emailType: $emailType,
             );
         }
     }
 
     public function notifyAgendaAddedToOb(AgendaItem $agenda, LegislativeSession $session, bool $reNotify = false): void
     {
-        $body = sprintf(
-            '%s was added to %s.',
-            $agenda->displayLabel(),
-            $session->displayTitle(),
-        );
+        $label = $agenda->displayLabel();
+        $sessionTitle = $session->displayTitle();
+        $body = sprintf('%s was added to %s.', $label, $sessionTitle);
 
         foreach ($this->usersForAgenda($agenda) as $user) {
             $attributes = [
@@ -98,7 +139,7 @@ class MunicipalNotifier
                 $attributes['read_at'] = null;
             }
 
-            UserNotification::query()->updateOrCreate(
+            $notification = UserNotification::query()->updateOrCreate(
                 [
                     'user_id' => $user->id,
                     'agenda_item_id' => $agenda->id,
@@ -106,6 +147,17 @@ class MunicipalNotifier
                     'type' => UserNotification::TYPE_AGENDA_ADDED_TO_OB,
                 ],
                 $attributes,
+            );
+
+            $this->emails->sendForNotification(
+                $user,
+                $notification,
+                EmailNotificationSettings::AUDIENCE_MUNICIPAL,
+                force: $reNotify,
+                vars: [
+                    'label' => $label,
+                    'session' => $sessionTitle,
+                ],
             );
         }
     }
@@ -117,19 +169,15 @@ class MunicipalNotifier
         }
 
         $daysLeft = is_numeric($agenda->days_left_label) ? (int) $agenda->days_left_label : null;
-        $suffix = $daysLeft === null
+        $daysLeftSuffix = $daysLeft === null
             ? ''
             : ' ('.$daysLeft.' day'.($daysLeft === 1 ? '' : 's').' left)';
-
-        $body = sprintf(
-            '%s is due on %s%s.',
-            $agenda->displayLabel(),
-            $agenda->due_date?->format('F j, Y'),
-            $suffix,
-        );
+        $dueDate = $agenda->due_date?->format('F j, Y') ?? '';
+        $label = $agenda->displayLabel();
+        $body = sprintf('%s is due on %s%s.', $label, $dueDate, $daysLeftSuffix);
 
         foreach ($this->usersForAgenda($agenda) as $user) {
-            UserNotification::query()->firstOrCreate(
+            $notification = UserNotification::query()->firstOrCreate(
                 [
                     'user_id' => $user->id,
                     'agenda_item_id' => $agenda->id,
@@ -139,6 +187,17 @@ class MunicipalNotifier
                     'title' => 'Request deadline approaching',
                     'body' => $body,
                     'link' => route('municipal.requests.show', $agenda, absolute: false),
+                ],
+            );
+
+            $this->emails->sendForNotification(
+                $user,
+                $notification,
+                EmailNotificationSettings::AUDIENCE_MUNICIPAL,
+                vars: [
+                    'label' => $label,
+                    'due_date' => $dueDate,
+                    'days_left_suffix' => $daysLeftSuffix,
                 ],
             );
         }

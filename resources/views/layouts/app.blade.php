@@ -152,16 +152,24 @@
                                         Role permissions
                                     </a>
                                 @endif
-                                @if (auth()->user()->canManageIconLibrary())
+                                @if (auth()->user()->canManageEmailNotifications() || auth()->user()->canManageIconLibrary())
                                     <p class="splis-user-menu-section">Settings</p>
-                                    <a href="{{ route('admin.icons.index') }}" class="splis-user-menu-link splis-user-menu-link--nested inline-flex items-center gap-2">
-                                        <x-icon name="sparkles" class="h-4 w-4 shrink-0 opacity-80" />
-                                        Icon Library
-                                    </a>
-                                    <a href="{{ route('admin.pages.index') }}" class="splis-user-menu-link splis-user-menu-link--nested inline-flex items-center gap-2">
-                                        <x-icon name="image" class="h-4 w-4 shrink-0 opacity-80" />
-                                        Pages
-                                    </a>
+                                    @if (auth()->user()->canManageEmailNotifications())
+                                        <a href="{{ route('admin.email-notifications.index') }}" class="splis-user-menu-link splis-user-menu-link--nested inline-flex items-center gap-2">
+                                            <x-icon name="bell" class="h-4 w-4 shrink-0 opacity-80" />
+                                            Email notifications
+                                        </a>
+                                    @endif
+                                    @if (auth()->user()->canManageIconLibrary())
+                                        <a href="{{ route('admin.icons.index') }}" class="splis-user-menu-link splis-user-menu-link--nested inline-flex items-center gap-2">
+                                            <x-icon name="sparkles" class="h-4 w-4 shrink-0 opacity-80" />
+                                            Icon Library
+                                        </a>
+                                        <a href="{{ route('admin.pages.index') }}" class="splis-user-menu-link splis-user-menu-link--nested inline-flex items-center gap-2">
+                                            <x-icon name="image" class="h-4 w-4 shrink-0 opacity-80" />
+                                            Pages
+                                        </a>
+                                    @endif
                                 @endif
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf

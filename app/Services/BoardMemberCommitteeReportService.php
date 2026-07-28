@@ -25,6 +25,7 @@ class BoardMemberCommitteeReportService
         protected SessionCommitteeReportFileService $sessionCommitteeReports,
         protected AgendaLifecycleService $lifecycle,
         protected ObDocumentService $documentService,
+        protected EmailNotificationService $emails,
     ) {}
 
     /**
@@ -47,7 +48,7 @@ class BoardMemberCommitteeReportService
         $reportTitle = trim((string) $title) ?: null;
         $fileSize = $pdf->getSize() ?: strlen($contents);
 
-        return DB::transaction(function () use (
+        $report = DB::transaction(function () use (
             $user,
             $boardMemberId,
             $storedPath,
@@ -75,8 +76,12 @@ class BoardMemberCommitteeReportService
                 clearPrevious: false,
             );
 
-            return $report->fresh(['agendaItems']);
+            return $report->fresh(['agendaItems', 'boardMember']);
         });
+
+        $this->emails->notifyStaffOfCommitteeReport($report, $user);
+
+        return $report;
     }
 
     /**

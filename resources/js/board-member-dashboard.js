@@ -73,7 +73,7 @@ function renderCompactGridItem(item) {
                 <div><dt>Referred</dt><dd>${formatDate(item.date_of_referral)}</dd></div>
             </dl>
             <div class="mt-auto border-t border-slate-100 pt-3 dark:border-slate-700">
-                <a href="${escapeHtml(item.url)}" class="splis-doc-list-link text-xs font-semibold">View agenda</a>
+                <a href="${escapeHtml(item.url)}" class="splis-doc-list-link text-xs font-semibold">View Agenda</a>
             </div>
         </article>
     `;
