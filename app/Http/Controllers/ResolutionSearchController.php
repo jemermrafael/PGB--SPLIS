@@ -30,7 +30,14 @@ class ResolutionSearchController extends Controller
         $filters['document_type'] = DocumentType::RESOLUTION;
         $filters['page'] = $request->integer('page', 1);
 
-        $paginator = $repository->paginateDocuments($filters, config('resolutions.per_page'));
+        $allowedPerPage = config('resolutions.per_page_options', [15, 25, 50, 100]);
+        $defaultPerPage = (int) config('resolutions.per_page', 15);
+        $perPage = $request->integer('per_page', $defaultPerPage);
+        if (! in_array($perPage, $allowedPerPage, true)) {
+            $perPage = $defaultPerPage;
+        }
+
+        $paginator = $repository->paginateDocuments($filters, $perPage);
 
         return response()->json([
             'data' => collect($paginator->items())->map(fn ($item) => $repository->documentToArray($item))->values(),
@@ -39,6 +46,7 @@ class ResolutionSearchController extends Controller
                 'last_page' => $paginator->lastPage(),
                 'per_page' => $paginator->perPage(),
                 'total' => $paginator->total(),
+                'per_page_options' => $allowedPerPage,
             ],
         ]);
     }

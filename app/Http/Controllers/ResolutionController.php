@@ -16,6 +16,7 @@ use App\Support\IncomingFieldOptions;
 use App\Support\ResolutionFieldOptions;
 use App\Support\ResolutionLookupResolver;
 use App\Support\TrashActivity;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -36,6 +37,9 @@ class ResolutionController extends Controller
             'departments' => Department::orderBy('description')->get(),
             'municipalities' => Municipality::orderBy('description')->get(),
             'seriesYears' => SeriesYear::orderByDesc('year')->pluck('year'),
+            'canBulkDelete' => auth()->user()?->can('deleteAny', Resolution::class) ?? false,
+            'perPageOptions' => config('resolutions.per_page_options', [15, 25, 50, 100]),
+            'defaultPerPage' => (int) config('resolutions.per_page', 15),
         ]);
     }
 
@@ -143,6 +147,53 @@ class ResolutionController extends Controller
         return redirect()
             ->route(auth()->user()?->isSuperadmin() ? 'admin.trash.index' : 'resolutions.index', auth()->user()?->isSuperadmin() ? ['type' => 'resolutions'] : [])
             ->with('status', 'Resolution '.$resolution->series.'-'.$resolution->resolution_no.' moved to trash.');
+    }
+
+    public function bulkDestroy(Request $request): RedirectResponse|JsonResponse
+    {
+        $this->authorize('deleteAny', Resolution::class);
+
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:resolutions,id'],
+        ]);
+
+        $ids = array_values(array_unique(array_map('intval', $data['ids'])));
+
+        if ($ids === []) {
+            return response()->json([
+                'message' => 'No resolutions selected.',
+                'errors' => ['ids' => ['No resolutions selected.']],
+            ], 422);
+        }
+
+        $resolutions = Resolution::query()
+            ->whereIn('id', $ids)
+            ->get();
+
+        $deleted = 0;
+
+        foreach ($resolutions as $resolution) {
+            $this->authorize('delete', $resolution);
+            TrashActivity::record('resolution.trashed', $resolution, $this->resolutionLogProperties($resolution));
+            $resolution->delete();
+            $deleted++;
+        }
+
+        $message = $deleted === 1
+            ? 'Resolution moved to trash.'
+            : "{$deleted} resolutions moved to trash.";
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'deleted' => $deleted,
+                'message' => $message,
+            ]);
+        }
+
+        return redirect()
+            ->route('admin.trash.index', ['type' => 'resolutions'])
+            ->with('status', $message);
     }
 
     public function restore(Resolution $resolution): RedirectResponse

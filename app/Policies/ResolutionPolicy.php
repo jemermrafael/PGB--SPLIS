@@ -37,6 +37,11 @@ class ResolutionPolicy
         return $user->canEncode() && ! $resolution->trashed();
     }
 
+    public function deleteAny(User $user): bool
+    {
+        return $user->isSuperadmin();
+    }
+
     public function create(User $user): bool
     {
         return $user->canEncode();

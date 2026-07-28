@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Email notifications — '.config('app.name'))
+@section('title', 'Email Notifications — '.config('app.name'))
 
 @section('content')
 @php
@@ -10,7 +10,7 @@
 <div class="max-w-4xl" id="email-notification-settings" data-active-tab="{{ $tab }}">
     <div class="splis-page-header !mb-4">
         <div>
-            <h1 class="splis-page-title">Email notifications</h1>
+            <h1 class="splis-page-title">Email Notifications</h1>
             <p class="splis-page-subtitle">Configure important alerts, message templates, and SMTP delivery by user type.</p>
         </div>
     </div>

@@ -9,6 +9,7 @@ use App\Models\BoardMemberCommitteeReport;
 use App\Models\LegislativeSession;
 use App\Models\LegislativeSessionCommitteeReportFile;
 use App\Models\ObBlock;
+use App\Models\ObDocument;
 use App\Models\User;
 use App\Support\ObAgendaSnapshot;
 use Illuminate\Http\UploadedFile;
@@ -285,20 +286,7 @@ class BoardMemberCommitteeReportService
             return;
         }
 
-        $agendas = AgendaItem::query()
-            ->whereIn('id', $agendaItemIds)
-            ->orderBy('id')
-            ->get()
-            ->sortBy(function (AgendaItem $agenda): string {
-                $no = trim((string) $agenda->tracking_no);
-
-                if ($no !== '' && ctype_digit($no)) {
-                    return str_pad($no, 10, '0', STR_PAD_LEFT);
-                }
-
-                return $no !== '' ? $no : str_pad((string) $agenda->id, 10, '0', STR_PAD_LEFT);
-            })
-            ->values();
+        $agendas = $this->agendasSortedForFilename($agendaItemIds);
 
         // One shared file path for all tagged agendas (same local storage).
         $sharedPath = $report->pdf_path;
@@ -335,6 +323,8 @@ class BoardMemberCommitteeReportService
             'previous_ob_placements' => $previousPlacements,
         ])->save();
 
+        $this->syncSessionFileFilenamesForReport((int) $report->id, $filename);
+
         $this->attachSharedSessionFile(
             $agendaItemIds,
             $contents,
@@ -343,6 +333,107 @@ class BoardMemberCommitteeReportService
             $fileSize,
             $report->id,
         );
+    }
+
+    /**
+     * Refresh OB-style display filenames for BM reports placed under IV. Committee Report.
+     */
+    public function syncObStyleFilenamesForDocument(ObDocument $document): int
+    {
+        $agendaIds = ObBlock::query()
+            ->where('ob_document_id', $document->id)
+            ->where('type', ObBlockType::CommitteeReport)
+            ->get()
+            ->flatMap(function (ObBlock $block): array {
+                $ids = [];
+                if ($block->agenda_item_id !== null) {
+                    $ids[] = (int) $block->agenda_item_id;
+                }
+                foreach ($block->content['agenda_item_ids'] ?? [] as $id) {
+                    if (is_numeric($id)) {
+                        $ids[] = (int) $id;
+                    }
+                }
+
+                return $ids;
+            })
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($agendaIds === []) {
+            return 0;
+        }
+
+        $reports = BoardMemberCommitteeReport::query()
+            ->whereHas('agendaItems', fn ($query) => $query->whereIn('agenda_items.id', $agendaIds))
+            ->with('agendaItems')
+            ->get();
+
+        $updated = 0;
+        foreach ($reports as $report) {
+            if ($this->refreshObStyleFilename($report)) {
+                $updated++;
+            }
+        }
+
+        return $updated;
+    }
+
+    public function refreshObStyleFilename(BoardMemberCommitteeReport $report): bool
+    {
+        $agendaIds = $report->relationLoaded('agendaItems')
+            ? $report->agendaItems->pluck('id')->map(fn ($id) => (int) $id)->all()
+            : $report->agendaItems()->pluck('agenda_items.id')->map(fn ($id) => (int) $id)->all();
+
+        if ($agendaIds === []) {
+            return false;
+        }
+
+        $agendas = $this->agendasSortedForFilename($agendaIds);
+        $filename = $this->buildObStyleFilenameForAgendas($agendas);
+        $changed = $report->original_filename !== $filename;
+
+        if ($changed) {
+            $report->forceFill(['original_filename' => $filename])->save();
+        }
+
+        $this->syncSessionFileFilenamesForReport((int) $report->id, $filename);
+
+        return $changed;
+    }
+
+    /**
+     * @param  list<int>  $agendaItemIds
+     * @return Collection<int, AgendaItem>
+     */
+    protected function agendasSortedForFilename(array $agendaItemIds): Collection
+    {
+        return AgendaItem::query()
+            ->whereIn('id', $agendaItemIds)
+            ->orderBy('id')
+            ->get()
+            ->sortBy(function (AgendaItem $agenda): string {
+                $no = trim((string) $agenda->tracking_no);
+
+                if ($no !== '' && ctype_digit($no)) {
+                    return str_pad($no, 10, '0', STR_PAD_LEFT);
+                }
+
+                return $no !== '' ? $no : str_pad((string) $agenda->id, 10, '0', STR_PAD_LEFT);
+            })
+            ->values();
+    }
+
+    protected function syncSessionFileFilenamesForReport(int $reportId, string $filename): void
+    {
+        LegislativeSessionCommitteeReportFile::query()
+            ->where('board_member_committee_report_id', $reportId)
+            ->where(function ($query) use ($filename): void {
+                $query->whereNull('original_filename')
+                    ->orWhere('original_filename', '!=', $filename);
+            })
+            ->update(['original_filename' => $filename]);
     }
 
     /**

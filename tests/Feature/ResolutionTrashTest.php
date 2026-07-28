@@ -142,4 +142,63 @@ class ResolutionTrashTest extends TestCase
 
         $this->assertFalse($committee->fresh()->trashed());
     }
+
+    public function test_superadmin_can_bulk_delete_resolutions(): void
+    {
+        $superadmin = User::factory()->create(['role' => UserRole::Superadmin, 'is_active' => true]);
+        $encoder = User::factory()->create(['role' => UserRole::EncoderDelete, 'is_active' => true]);
+
+        $first = Resolution::create([
+            'resolution_no' => '101',
+            'resolution_title' => 'Bulk one',
+            'series' => 2026,
+            'status' => 'draft',
+            'created_by' => $encoder->id,
+        ]);
+        $second = Resolution::create([
+            'resolution_no' => '102',
+            'resolution_title' => 'Bulk two',
+            'series' => 2026,
+            'status' => 'draft',
+            'created_by' => $encoder->id,
+        ]);
+
+        $this->actingAs($encoder)
+            ->deleteJson(route('resolutions.bulk-destroy'), ['ids' => [$first->id]])
+            ->assertForbidden();
+
+        $this->actingAs($superadmin)
+            ->deleteJson(route('resolutions.bulk-destroy'), ['ids' => [$first->id, $second->id]])
+            ->assertOk()
+            ->assertJsonPath('deleted', 2);
+
+        $this->assertTrue($first->fresh()->trashed());
+        $this->assertTrue($second->fresh()->trashed());
+    }
+
+    public function test_resolutions_search_respects_per_page(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Encoder, 'is_active' => true]);
+
+        foreach (range(1, 20) as $number) {
+            Resolution::create([
+                'resolution_no' => (string) $number,
+                'resolution_title' => "Resolution {$number}",
+                'series' => 2026,
+                'status' => 'approved',
+                'created_by' => $user->id,
+            ]);
+        }
+
+        $this->actingAs($user)
+            ->getJson(route('resolutions.search', ['per_page' => 25]))
+            ->assertOk()
+            ->assertJsonPath('meta.per_page', 25)
+            ->assertJsonCount(20, 'data');
+
+        $this->actingAs($user)
+            ->getJson(route('resolutions.search', ['per_page' => 999]))
+            ->assertOk()
+            ->assertJsonPath('meta.per_page', 15);
+    }
 }

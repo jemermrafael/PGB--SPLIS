@@ -1132,7 +1132,7 @@ export function initObMaker() {
         });
     }
 
-    function setupSectionNavObserver(entries, tree) {
+    function setupSectionNavObserver(entries) {
         teardownSectionNavObserver();
 
         if (!sectionNavList || entries.length === 0) {
@@ -1173,11 +1173,7 @@ export function initObMaker() {
                     return;
                 }
 
-                if (ensureSectionNavAncestorsExpanded(tree, bestId)) {
-                    renderSectionNav();
-                    return;
-                }
-
+                // Do not auto-expand ancestors on scroll — that fights manual collapse.
                 setActiveSectionNavLink(bestId);
             },
             {
@@ -1274,12 +1270,11 @@ export function initObMaker() {
         const activeId = entries.some((entry) => entry.blockId === selectedBlockId)
             ? selectedBlockId
             : entries[0].blockId;
-        ensureSectionNavAncestorsExpanded(tree, activeId);
 
         sectionNavEl.classList.remove('hidden');
         sectionNavList.innerHTML = tree.map((node) => renderSectionNavNode(node)).join('');
 
-        setupSectionNavObserver(entries, tree);
+        setupSectionNavObserver(entries);
         setActiveSectionNavLink(activeId);
         syncSectionNavExpandToggle();
     }
@@ -1314,6 +1309,28 @@ export function initObMaker() {
             .join('');
 
         renderSectionNav();
+    }
+
+    /**
+     * Mark a block selected without rebuilding the editor DOM.
+     * Full re-renders wipe text carets/selections (e.g. first highlight-select).
+     */
+    function selectBlock(blockId, { syncPrevious = true } = {}) {
+        if (!Number.isFinite(blockId) || blockId === selectedBlockId) {
+            return;
+        }
+
+        if (syncPrevious && selectedBlockId !== null) {
+            syncBlockFromDom(selectedBlockId);
+        }
+
+        selectedBlockId = blockId;
+
+        blocksList?.querySelectorAll('.splis-ob-block.is-selected').forEach((el) => {
+            el.classList.remove('is-selected');
+        });
+        blocksList?.querySelector(`[data-block-id="${blockId}"]`)?.classList.add('is-selected');
+        setActiveSectionNavLink(blockId);
     }
 
     function collectBlockContent(blockEl, block) {
@@ -1384,21 +1401,29 @@ export function initObMaker() {
                 method: 'PUT',
                 body: JSON.stringify({ content }),
             });
+
+            // Sync local model only — do not rebuild the DOM here. Full re-renders
+            // steal focus/caret from rich-text editors (bold/underline/typing).
             if (data.blocks) {
                 blocks = normalizeBlocks(data.blocks).sort((a, b) => a.sort_order - b.sort_order);
-                const updated = blocks.find((item) => item.id === blockId);
-                if (updated) {
-                    selectedBlockId = updated.id;
-                }
-                renderBlocks();
-            } else {
+            } else if (data.block) {
                 const index = blocks.findIndex((item) => item.id === blockId);
-                blocks[index] = normalizeRomanBlock(data.block);
-                const numeralField = blockEl.querySelector('[data-field="numeral"]');
-                if (numeralField) {
-                    numeralField.value = blocks[index].content?.numeral ?? '';
+                if (index >= 0) {
+                    blocks[index] = normalizeRomanBlock(data.block);
+                }
+            } else {
+                block.content = content;
+            }
+
+            const updated = blocks.find((item) => item.id === blockId);
+            const numeralField = blockEl.querySelector('[data-field="numeral"]');
+            if (updated && numeralField && document.activeElement !== numeralField) {
+                const nextNumeral = updated.content?.numeral ?? '';
+                if (numeralField.value !== nextNumeral) {
+                    numeralField.value = nextNumeral;
                 }
             }
+
             setStatus('Saved');
         } catch (error) {
             setStatus(error.message, true);
@@ -2000,20 +2025,17 @@ export function initObMaker() {
             return;
         }
 
-        if (target.closest('input, textarea, select, label')) {
+        if (target.closest('input, textarea, select, label, [contenteditable="true"], [data-rich-title]')) {
+            const editingBlock = target.closest('[data-block-id]');
+            if (editingBlock) {
+                selectBlock(Number(editingBlock.dataset.blockId), { syncPrevious: false });
+            }
             return;
         }
 
         const blockArticle = target.closest('[data-block-id]');
         if (blockArticle) {
-            const newId = Number(blockArticle.dataset.blockId);
-            if (newId !== selectedBlockId) {
-                if (selectedBlockId !== null) {
-                    syncBlockFromDom(selectedBlockId);
-                }
-                selectedBlockId = newId;
-                renderBlocks();
-            }
+            selectBlock(Number(blockArticle.dataset.blockId));
         }
     });
 
@@ -2187,14 +2209,11 @@ export function initObMaker() {
             }
 
             const tree = buildSectionNavTree(sectionNavEntries());
-            if (sectionNavExpandedIds === null) {
-                // keep default expanded
-            } else {
-                ensureSectionNavAncestorsExpanded(tree, blockId);
+            if (sectionNavExpandedIds !== null && ensureSectionNavAncestorsExpanded(tree, blockId)) {
+                renderSectionNav();
             }
 
-            selectedBlockId = blockId;
-            renderBlocks();
+            selectBlock(blockId);
             requestAnimationFrame(() => {
                 scrollToObBlock(blockId);
                 setActiveSectionNavLink(blockId);

@@ -157,7 +157,7 @@
                                     @if (auth()->user()->canManageEmailNotifications())
                                         <a href="{{ route('admin.email-notifications.index') }}" class="splis-user-menu-link splis-user-menu-link--nested inline-flex items-center gap-2">
                                             <x-icon name="bell" class="h-4 w-4 shrink-0 opacity-80" />
-                                            Email notifications
+                                            Email Notifications
                                         </a>
                                     @endif
                                     @if (auth()->user()->canManageIconLibrary())

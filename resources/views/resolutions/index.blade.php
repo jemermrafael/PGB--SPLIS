@@ -3,7 +3,22 @@
 @section('title', 'Resolutions — '.config('app.name'))
 
 @section('content')
-<div id="resolutions-search" class="splis-resolutions-index" data-search-url="{{ route('resolutions.search') }}">
+@php
+    $canBulkDelete = $canBulkDelete ?? false;
+    $perPageOptions = $perPageOptions ?? [15, 25, 50, 100];
+    $defaultPerPage = $defaultPerPage ?? 15;
+@endphp
+<div
+    id="resolutions-search"
+    class="splis-resolutions-index"
+    data-search-url="{{ route('resolutions.search') }}"
+    data-can-bulk-delete="{{ $canBulkDelete ? '1' : '0' }}"
+    @if ($canBulkDelete)
+        data-bulk-destroy-url="{{ route('resolutions.bulk-destroy') }}"
+    @endif
+    data-per-page="{{ $defaultPerPage }}"
+    data-per-page-options='@json($perPageOptions)'
+>
     <div class="splis-page-header">
         <x-page-heading
             title="All Resolutions"
@@ -125,6 +140,29 @@
     </form>
 
     <div id="resolutions-search-results" class="transition-opacity">
+        @if ($canBulkDelete)
+            <div
+                id="resolutions-bulk-bar"
+                class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-900"
+            >
+                <label class="flex items-center gap-2.5 text-sm text-slate-700 dark:text-slate-300">
+                    <input type="checkbox" data-resolution-select-all class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+                    <span>Select all</span>
+                    <span class="text-slate-500" data-resolution-selected-count>None selected</span>
+                </label>
+                <button
+                    type="button"
+                    data-resolution-bulk-delete
+                    class="splis-btn-danger inline-flex items-center gap-2 text-sm"
+                    disabled
+                >
+                    <x-icon name="trash" class="h-4 w-4" />
+                    Delete
+                </button>
+            </div>
+            <p id="resolutions-bulk-status" class="mb-3 hidden text-sm text-emerald-700 dark:text-emerald-300" role="status"></p>
+        @endif
+
         <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p id="resolutions-search-meta" class="text-sm text-slate-500 dark:text-slate-400">Loading resolutions…</p>
             @include('partials.view-toggle', ['id' => 'resolutions-view-toggle'])
@@ -134,6 +172,11 @@
             <table class="splis-table">
                 <thead>
                     <tr>
+                        @if ($canBulkDelete)
+                            <th class="w-12">
+                                <span class="sr-only">Select</span>
+                            </th>
+                        @endif
                         <th class="w-12">PDF</th>
                         <th>Resolution No.</th>
                         <th class="min-w-[12rem] max-w-md">Title</th>

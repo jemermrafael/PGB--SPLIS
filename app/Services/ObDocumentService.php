@@ -149,6 +149,13 @@ class ObDocumentService
             $this->regroupUnfinishedBusiness($block->obDocument);
         }
 
+        if ($block->type === ObBlockType::CommitteeReport) {
+            $document = $block->obDocument ?? $block->load('obDocument')->obDocument;
+            if ($document !== null) {
+                $this->normalizeCommitteeReportSection($document);
+            }
+        }
+
         return $block->fresh(['agendaItem']);
     }
 
@@ -230,7 +237,7 @@ class ObDocumentService
         $this->reorderBlocks($document, array_merge($prefixIds, $middleIds, $suffixIds));
     }
 
-    public function deleteBlock(ObBlock $block, ?int $userId = null, string $source = 'manual'): void
+    public function deleteBlock(ObBlock $block, ?int $userId = null, string $source = 'manual', bool $normalizeCommitteeReports = true): void
     {
         $block->loadMissing(['obDocument.legislativeSession', 'agendaItem']);
         $document = $block->obDocument;
@@ -238,6 +245,7 @@ class ObDocumentService
         $agenda = $block->agendaItem;
         $session = $document?->legislativeSession;
         $section = $this->inferSectionFromBlock($block);
+        $wasCommitteeReport = $block->type === ObBlockType::CommitteeReport;
 
         $block->delete();
 
@@ -255,6 +263,10 @@ class ObDocumentService
                 'session_title' => $session->displayTitle(),
                 'session_date' => $session->session_date?->format('Y-m-d'),
             ]), $userId ?? auth()->id());
+        }
+
+        if ($wasCommitteeReport && $normalizeCommitteeReports && $document !== null) {
+            $this->normalizeCommitteeReportSection($document);
         }
     }
 
@@ -276,11 +288,102 @@ class ObDocumentService
             ]);
         }
 
+        $this->applyBlockOrder($document, $blockIds);
+        $this->normalizeCommitteeReportSection($document);
+    }
+
+    /**
+     * Sort IV. Committee Report rows by lowest agenda number, renumber row_no, and rename BM PDFs.
+     */
+    public function normalizeCommitteeReportSection(ObDocument $document): void
+    {
+        /** @var Collection<int, ObBlock> $blocks */
+        $blocks = $document->blocks()->orderBy('sort_order')->get()->values();
+        $reportBlocks = $blocks
+            ->filter(fn (ObBlock $block) => $block->type === ObBlockType::CommitteeReport)
+            ->values();
+
+        if ($reportBlocks->isEmpty()) {
+            return;
+        }
+
+        $sortedReports = $reportBlocks
+            ->sortBy([
+                fn (ObBlock $block) => $this->committeeReportSortKey($block),
+                fn (ObBlock $block) => (int) $block->id,
+            ])
+            ->values();
+
+        $sortedReportIds = $sortedReports->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $reportSlot = 0;
+        $newOrder = [];
+
+        foreach ($blocks as $block) {
+            if ($block->type === ObBlockType::CommitteeReport) {
+                $newOrder[] = $sortedReportIds[$reportSlot];
+                $reportSlot++;
+            } else {
+                $newOrder[] = (int) $block->id;
+            }
+        }
+
+        $currentOrder = $blocks->pluck('id')->map(fn ($id) => (int) $id)->all();
+        if ($newOrder !== $currentOrder) {
+            $this->applyBlockOrder($document, $newOrder);
+            $sortedReports = ObBlock::query()
+                ->whereIn('id', $sortedReportIds)
+                ->get()
+                ->sortBy(fn (ObBlock $block) => array_search((int) $block->id, $sortedReportIds, true))
+                ->values();
+        }
+
+        foreach ($sortedReports as $index => $block) {
+            $rowNo = $index + 1;
+            $content = $block->content ?? [];
+            if ((int) ($content['row_no'] ?? 0) === $rowNo) {
+                continue;
+            }
+
+            $content['row_no'] = $rowNo;
+            $block->update(['content' => $content]);
+        }
+
+        app(BoardMemberCommitteeReportService::class)->syncObStyleFilenamesForDocument($document->fresh() ?? $document);
+    }
+
+    /**
+     * @param  list<int>  $blockIds
+     */
+    protected function applyBlockOrder(ObDocument $document, array $blockIds): void
+    {
         DB::transaction(function () use ($blockIds): void {
             foreach ($blockIds as $index => $blockId) {
                 ObBlock::whereKey($blockId)->update(['sort_order' => $index + 1]);
             }
         });
+    }
+
+    protected function committeeReportSortKey(ObBlock $block): string
+    {
+        $nos = ObAgendaSnapshot::agendaNosFromContent($block->content ?? []);
+        $numeric = [];
+
+        foreach ($nos as $no) {
+            $digits = preg_replace('/\D+/', '', trim((string) $no)) ?? '';
+            if ($digits !== '' && ctype_digit($digits)) {
+                $numeric[] = (int) $digits;
+            }
+        }
+
+        if ($numeric !== []) {
+            return str_pad((string) min($numeric), 10, '0', STR_PAD_LEFT);
+        }
+
+        if ($nos !== []) {
+            return (string) min($nos);
+        }
+
+        return 'zzzz'.str_pad((string) $block->id, 10, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -430,6 +533,11 @@ class ObDocumentService
                     ]), $placedBy);
                 }
             }
+        }
+
+        if ($section === 'committee_reports'
+            || collect($created)->contains(fn (ObBlock $block) => $block->type === ObBlockType::CommitteeReport)) {
+            $this->normalizeCommitteeReportSection($document);
         }
 
         return $created;
@@ -769,9 +877,11 @@ class ObDocumentService
         string $source = 'automatic',
     ): void {
         $blocks = $this->findBlocksForAgenda($document, $agenda->id);
+        $touchedCommitteeReport = false;
 
         foreach ($blocks as $block) {
             if ($block->type === ObBlockType::CommitteeReport) {
+                $touchedCommitteeReport = true;
                 $ids = collect($block->content['agenda_item_ids'] ?? [])
                     ->map(fn ($id) => (int) $id)
                     ->filter(fn (int $id) => $id > 0)
@@ -785,7 +895,7 @@ class ObDocumentService
                 $remaining = $ids->reject(fn (int $id) => $id === $agenda->id)->values();
 
                 if ($remaining->isEmpty()) {
-                    $this->deleteBlock($block, $userId, $source);
+                    $this->deleteBlock($block, $userId, $source, normalizeCommitteeReports: false);
                 } else {
                     $content = $block->content ?? [];
                     $content['agenda_item_ids'] = $remaining->all();
@@ -797,6 +907,10 @@ class ObDocumentService
             }
 
             $this->deleteBlock($block, $userId, $source);
+        }
+
+        if ($touchedCommitteeReport) {
+            $this->normalizeCommitteeReportSection($document);
         }
     }
 

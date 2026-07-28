@@ -144,6 +144,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/resolutions/keywords', IncomingKeywordController::class)->name('resolutions.keywords');
     Route::get('/resolutions/create', [ResolutionController::class, 'create'])->name('resolutions.create');
     Route::post('/resolutions', [ResolutionController::class, 'store'])->name('resolutions.store');
+    Route::delete('/resolutions/bulk', [ResolutionController::class, 'bulkDestroy'])->name('resolutions.bulk-destroy');
     Route::get('/resolutions/trash', fn () => redirect()->route('admin.trash.index', ['type' => 'resolutions']))
         ->name('resolutions.trash');
     Route::get('/resolutions/legacy/{id}', [ResolutionController::class, 'showLegacy'])->name('resolutions.show-legacy');

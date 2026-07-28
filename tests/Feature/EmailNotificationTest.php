@@ -39,7 +39,7 @@ class EmailNotificationTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.email-notifications.index'))
             ->assertOk()
-            ->assertSee('Email notifications', false)
+            ->assertSee('Email Notifications', false)
             ->assertSee('Board Members', false)
             ->assertSee('Municipal Accounts', false)
             ->assertSee('Agenda was published to Resolution', false)

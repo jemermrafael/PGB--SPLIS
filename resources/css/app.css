@@ -2008,6 +2008,18 @@
         @apply text-xs text-slate-500;
     }
 
+    .splis-pagination-per-page {
+        @apply inline-flex items-center gap-2 text-xs text-slate-500;
+    }
+
+    .splis-pagination-per-page-label {
+        @apply whitespace-nowrap font-medium;
+    }
+
+    .splis-pagination-per-page-select {
+        @apply !w-auto min-w-[4.5rem] !py-1.5 !text-xs;
+    }
+
     .splis-detail-nav {
         @apply mt-8 grid grid-cols-1 gap-3 border-t border-slate-200 pt-6 sm:grid-cols-2;
     }

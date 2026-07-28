@@ -589,6 +589,127 @@ class BoardMemberCommitteeReportTest extends TestCase
             ->assertJsonPath('data.0.title', 'Chair open agenda');
     }
 
+    public function test_committee_reports_auto_sort_by_agenda_number_and_rename_files(): void
+    {
+        Storage::fake('local');
+
+        [$user, $housing, $term, $boardMember] = $this->linkedBoardMemberWithCommittee();
+
+        $finance = Committee::query()->create([
+            'name' => 'Finance, Budget, Appropriations and Ways and Means',
+            'is_active' => true,
+            'sort_order' => 2,
+        ]);
+
+        CommitteeMembership::query()->create([
+            'committee_id' => $finance->id,
+            'board_member_id' => $boardMember->id,
+            'committee_term_id' => $term->id,
+            'role' => CommitteeMembershipRole::Chair,
+            'sort_order' => 0,
+        ]);
+
+        $agenda310 = AgendaItem::query()->create([
+            'tracking_no' => '310',
+            'title' => 'Finance report agenda',
+            'committee_referred' => $finance->name,
+            'status' => AgendaItem::STATUS_PENDING,
+            'date_of_referral' => now()->toDateString(),
+            'prescribed_days' => 0,
+            'created_by' => $user->id,
+        ]);
+
+        $agenda309 = AgendaItem::query()->create([
+            'tracking_no' => '309',
+            'title' => 'Housing report agenda',
+            'committee_referred' => $housing->name,
+            'status' => AgendaItem::STATUS_PENDING,
+            'date_of_referral' => now()->toDateString(),
+            'prescribed_days' => 0,
+            'created_by' => $user->id,
+        ]);
+
+        $session = LegislativeSession::query()->create([
+            'session_number' => '9',
+            'session_kind' => 'regular',
+            'session_date' => now()->addDays(8)->toDateString(),
+            'status' => 'scheduled',
+            'created_by' => $user->id,
+        ]);
+
+        $document = ObDocument::query()->create([
+            'legislative_session_id' => $session->id,
+            'title' => 'OB sort',
+            'status' => ObDocument::STATUS_DRAFT,
+            'created_by' => $user->id,
+        ]);
+
+        app(ObDocumentTemplateService::class)->seedDefaultBlocks($document);
+
+        $this->actingAs($user)
+            ->post(route('board-member.committee-reports.store'), [
+                'title' => 'Finance first',
+                'pdf' => UploadedFile::fake()->create('finance.pdf', 100, 'application/pdf'),
+                'agenda_item_ids' => [$agenda310->id],
+            ])
+            ->assertRedirect(route('board-member.committee-reports.index'));
+
+        $report310 = \App\Models\BoardMemberCommitteeReport::query()
+            ->whereHas('agendaItems', fn ($query) => $query->where('agenda_items.id', $agenda310->id))
+            ->firstOrFail();
+
+        $this->assertSame(
+            '1. FINANCE, BUDGET, APPROPRIATIONS AND WAYS AND MEANS-Agenda 310.pdf',
+            $report310->original_filename,
+        );
+
+        $this->actingAs($user)
+            ->post(route('board-member.committee-reports.store'), [
+                'title' => 'Housing second but lower agenda no',
+                'pdf' => UploadedFile::fake()->create('housing.pdf', 100, 'application/pdf'),
+                'agenda_item_ids' => [$agenda309->id],
+            ])
+            ->assertRedirect(route('board-member.committee-reports.index'));
+
+        $report310->refresh();
+        $report309 = \App\Models\BoardMemberCommitteeReport::query()
+            ->whereHas('agendaItems', fn ($query) => $query->where('agenda_items.id', $agenda309->id))
+            ->firstOrFail();
+
+        $rows = ObBlock::query()
+            ->where('ob_document_id', $document->id)
+            ->where('type', ObBlockType::CommitteeReport)
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn (ObBlock $block) => [
+                'row_no' => (int) ($block->content['row_no'] ?? 0),
+                'agenda_nos' => \App\Support\ObAgendaSnapshot::agendaNosFromContent($block->content ?? []),
+            ])
+            ->all();
+
+        $this->assertSame([
+            ['row_no' => 1, 'agenda_nos' => ['309']],
+            ['row_no' => 2, 'agenda_nos' => ['310']],
+        ], $rows);
+
+        $this->assertSame('1. HOUSING AND LAND USE-Agenda 309.pdf', $report309->original_filename);
+        $this->assertSame(
+            '2. FINANCE, BUDGET, APPROPRIATIONS AND WAYS AND MEANS-Agenda 310.pdf',
+            $report310->original_filename,
+        );
+
+        $sessionFilenames = LegislativeSessionCommitteeReportFile::query()
+            ->where('legislative_session_id', $session->id)
+            ->orderBy('id')
+            ->pluck('original_filename')
+            ->all();
+
+        $this->assertEqualsCanonicalizing([
+            '1. HOUSING AND LAND USE-Agenda 309.pdf',
+            '2. FINANCE, BUDGET, APPROPRIATIONS AND WAYS AND MEANS-Agenda 310.pdf',
+        ], $sessionFilenames);
+    }
+
     /**
      * @return array{0: User, 1: Committee, 2: CommitteeTerm, 3: BoardMember}
      */
