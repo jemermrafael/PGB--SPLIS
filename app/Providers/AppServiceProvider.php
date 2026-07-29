@@ -17,6 +17,7 @@ use App\Models\ObDocument;
 use App\Models\Ordinance;
 use App\Models\OrdinanceVersion;
 use App\Models\Resolution;
+use App\Models\ResolutionVersion;
 use App\Models\User;
 use App\Policies\ActivityLogPolicy;
 use App\Policies\AppropriationOrdinancePolicy;
@@ -33,6 +34,7 @@ use App\Policies\ObDocumentPolicy;
 use App\Policies\OrdinancePolicy;
 use App\Policies\OrdinanceVersionPolicy;
 use App\Policies\ResolutionPolicy;
+use App\Policies\ResolutionVersionPolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
@@ -49,6 +51,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(ActivityLog::class, ActivityLogPolicy::class);
         Gate::policy(Resolution::class, ResolutionPolicy::class);
+        Gate::policy(ResolutionVersion::class, ResolutionVersionPolicy::class);
         Gate::policy(IncomingDocument::class, IncomingDocumentPolicy::class);
         Gate::policy(AgendaItem::class, AgendaItemPolicy::class);
         Gate::policy(AgendaItemVersion::class, AgendaItemVersionPolicy::class);

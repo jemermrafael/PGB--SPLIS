@@ -28,7 +28,7 @@
 @endphp
 
 <div class="splis-card mt-6">
-    <div class="splis-card-header flex flex-wrap items-center justify-between gap-3">
+    <div class="splis-card-header flex flex-wrap items-center justify-between gap-3 !border-b-0">
         <div>
             <h2 class="splis-card-title">Version History</h2>
             <p class="splis-card-subtitle">Current version: v{{ $agenda->current_version_no }}</p>

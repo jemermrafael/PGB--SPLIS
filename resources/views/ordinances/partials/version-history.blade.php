@@ -5,7 +5,7 @@
 @endphp
 
 <div class="splis-card mt-6">
-    <div class="splis-card-header">
+    <div class="splis-card-header !border-b-0">
         <div>
             <h2 class="splis-card-title">Version History</h2>
             <p class="splis-card-subtitle">Title and PDF changes — current version: v{{ $ordinance->current_version_no }}</p>

@@ -155,6 +155,24 @@ class PdfAttachmentService
         return $relative;
     }
 
+    /**
+     * Store under a unique path so previous version files remain on disk.
+     */
+    public function storeVersioned(UploadedFile $file, Resolution $resolution): string
+    {
+        $relative = sprintf(
+            'resolutions/%d/versions/%s.pdf',
+            $resolution->id,
+            strtolower((string) \Illuminate\Support\Str::ulid()),
+        );
+
+        $dir = storage_path('app/'.dirname($relative));
+        File::ensureDirectoryExists($dir);
+        $file->move($dir, basename($relative));
+
+        return $relative;
+    }
+
     public function stream(int $series, string $resolutionNo, ?string $pdfPath = null): StreamedResponse
     {
         $path = $this->resolvePath($series, $resolutionNo, $pdfPath);

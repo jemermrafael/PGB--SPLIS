@@ -72,6 +72,10 @@ class AgendaOutputPublisher
         $resolution = $agenda->resolution;
         $resolutionNo = trim((string) ($agenda->reso_ord_ao_no ?? ''));
 
+        $before = collect(ResolutionVersionService::VERSIONED_FIELDS)
+            ->mapWithKeys(fn (string $field) => [$field => $resolution->getAttribute($field)])
+            ->all();
+
         $resolution->update([
             'resolution_no' => $resolutionNo !== '' ? Str::limit($resolutionNo, 50, '') : $resolution->resolution_no,
             'resolution_title' => $agenda->resolution_title ?: $agenda->title,
@@ -82,6 +86,14 @@ class AgendaOutputPublisher
             'status' => ($agenda->date_passed ?? $agenda->date_signed_by_gov) ? 'approved' : $resolution->status,
             'sp_pdf_url' => $agenda->reso_ord_ao_url ?? $resolution->sp_pdf_url,
         ]);
+
+        $resolution->refresh();
+        app(ResolutionVersionService::class)->recordVersionIfChanged(
+            $resolution,
+            $before,
+            null,
+            'published_from_agenda',
+        );
 
         return true;
     }
@@ -139,6 +151,12 @@ class AgendaOutputPublisher
             'sp_pdf_url' => $agenda->reso_ord_ao_url,
             'created_by' => $userId,
         ]);
+
+        app(ResolutionVersionService::class)->recordInitialVersion(
+            $resolution,
+            $userId,
+            'published_from_agenda',
+        );
 
         $agenda->forceFill([
             'resolution_id' => $resolution->id,

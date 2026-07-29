@@ -13,6 +13,7 @@ use App\Services\IncomingDocumentLinker;
 use App\Services\IncomingDocumentPublisher;
 use App\Services\PdfAttachmentService;
 use App\Services\ResolutionLinkSearch;
+use App\Services\ResolutionVersionService;
 use App\Support\ActivityChangeRecorder;
 use App\Support\DocumentType;
 use App\Support\IncomingFieldOptions;
@@ -27,6 +28,7 @@ class IncomingDocumentController extends Controller
 {
     public function __construct(
         protected PdfAttachmentService $pdfService,
+        protected ResolutionVersionService $versionService,
     ) {}
 
     public function index(): View
@@ -181,9 +183,15 @@ class IncomingDocumentController extends Controller
 
         if ($request->hasFile('pdf')) {
             $resolution->update([
-                'pdf_path' => $this->pdfService->store($request->file('pdf'), $resolution->series, $resolution->resolution_no),
+                'pdf_path' => $this->pdfService->storeVersioned($request->file('pdf'), $resolution),
             ]);
         }
+
+        $this->versionService->recordInitialVersion(
+            $resolution,
+            $request->user()->id,
+            'published_from_incoming',
+        );
 
         $linker->link($incoming, $resolution);
 

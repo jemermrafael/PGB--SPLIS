@@ -8,9 +8,11 @@ use App\Models\Category;
 use App\Models\Department;
 use App\Models\Municipality;
 use App\Models\Resolution;
+use App\Models\ResolutionVersion;
 use App\Models\SeriesYear;
 use App\Services\PdfAttachmentService;
 use App\Services\ResolutionRepository;
+use App\Services\ResolutionVersionService;
 use App\Support\DocumentType;
 use App\Support\IncomingFieldOptions;
 use App\Support\ResolutionFieldOptions;
@@ -26,6 +28,7 @@ class ResolutionController extends Controller
     public function __construct(
         protected ResolutionRepository $repository,
         protected PdfAttachmentService $pdfService,
+        protected ResolutionVersionService $versionService,
     ) {}
 
     public function index(): View
@@ -63,7 +66,17 @@ class ResolutionController extends Controller
     {
         $this->authorize('view', $resolution);
 
-        $resolution->load(['department', 'category', 'category2', 'category3', 'category4', 'municipality', 'creator', 'publishedFromAgenda']);
+        $resolution->load([
+            'department',
+            'category',
+            'category2',
+            'category3',
+            'category4',
+            'municipality',
+            'creator',
+            'publishedFromAgenda',
+            'versions.creator',
+        ]);
         $pdfUrl = $this->pdfService->publicUrl($resolution);
         $hasPdf = $pdfUrl !== null;
         $hasLocalPdf = filled($resolution->pdf_path) && $this->pdfService->existsFor($resolution);
@@ -99,9 +112,11 @@ class ResolutionController extends Controller
 
         if ($request->hasFile('pdf')) {
             $resolution->update([
-                'pdf_path' => $this->pdfService->store($request->file('pdf'), $resolution->series, $resolution->resolution_no),
+                'pdf_path' => $this->pdfService->storeVersioned($request->file('pdf'), $resolution),
             ]);
         }
+
+        $this->versionService->recordInitialVersion($resolution, $request->user()->id);
 
         ActivityLog::record('resolution.created', $resolution, $this->resolutionLogProperties($resolution));
         IncomingFieldOptions::forgetKeywordCache();
@@ -123,18 +138,49 @@ class ResolutionController extends Controller
         $data = $this->validated($request);
         $data = ResolutionLookupResolver::apply($data);
         $data['document_type'] = DocumentType::infer($data['resolution_no'], $data['resolution_title']);
+
+        $before = collect(ResolutionVersionService::VERSIONED_FIELDS)
+            ->mapWithKeys(fn (string $field) => [$field => $resolution->getAttribute($field)])
+            ->all();
+
+        if ($request->hasFile('pdf')) {
+            $this->versionService->preservePdfInCurrentVersion($resolution, $request->user()->id);
+        }
+
         $resolution->update($data);
 
         if ($request->hasFile('pdf')) {
             $resolution->update([
-                'pdf_path' => $this->pdfService->store($request->file('pdf'), $resolution->series, $resolution->resolution_no),
+                'pdf_path' => $this->pdfService->storeVersioned($request->file('pdf'), $resolution),
             ]);
         }
+
+        $resolution->refresh();
+        $this->versionService->recordVersionIfChanged($resolution, $before, $request->user()->id);
 
         ActivityLog::record('resolution.updated', $resolution);
         IncomingFieldOptions::forgetKeywordCache();
 
         return redirect()->route('resolutions.show', $resolution)->with('status', 'Resolution updated.');
+    }
+
+    public function destroyVersion(
+        Resolution $resolution,
+        ResolutionVersion $version,
+    ): RedirectResponse {
+        abort_unless($version->resolution_id === $resolution->id, 404);
+
+        $this->authorize('delete', $version);
+
+        try {
+            $this->versionService->deleteVersion($version);
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['version' => $e->getMessage()]);
+        }
+
+        return redirect()
+            ->route('resolutions.show', $resolution)
+            ->with('status', 'Version v'.$version->version_no.' deleted.');
     }
 
     public function destroy(Resolution $resolution): RedirectResponse

@@ -10,13 +10,13 @@ use App\Models\Department;
 use App\Models\Municipality;
 use App\Models\Resolution;
 use App\Models\SeriesYear;
+use App\Services\ResolutionVersionService;
 use App\Support\DocumentType;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 
 class ResolutionCsvImporter
-{
-    protected CsvExportReader $csv;
+{    protected CsvExportReader $csv;
 
     /** @var array<int, int> */
     protected array $categoryCache = [];
@@ -143,15 +143,34 @@ class ResolutionCsvImporter
             if ($dryRun) {
                 $stats[$exists ? 'updated' : 'created']++;
             } else {
-                $resolution = Resolution::query()->updateOrCreate(
-                    ['legacy_sp_id' => $legacyId],
-                    $payload,
-                );
+                $existing = Resolution::query()->where('legacy_sp_id', $legacyId)->first();
 
-                if ($resolution->wasRecentlyCreated) {
-                    $stats['created']++;
-                } else {
+                if ($existing !== null) {
+                    $before = collect(ResolutionVersionService::VERSIONED_FIELDS)
+                        ->mapWithKeys(fn (string $field) => [$field => $existing->getAttribute($field)])
+                        ->all();
+
+                    $existing->update($payload);
+                    $existing->refresh();
+
+                    if ($existing->versions()->doesntExist()) {
+                        app(ResolutionVersionService::class)->recordInitialVersion($existing, null, 'imported');
+                    } else {
+                        app(ResolutionVersionService::class)->recordVersionIfChanged(
+                            $existing,
+                            $before,
+                            null,
+                            'imported',
+                        );
+                    }
+
                     $stats['updated']++;
+                } else {
+                    $resolution = Resolution::query()->create(array_merge($payload, [
+                        'legacy_sp_id' => $legacyId,
+                    ]));
+                    app(ResolutionVersionService::class)->recordInitialVersion($resolution, null, 'imported');
+                    $stats['created']++;
                 }
             }
 

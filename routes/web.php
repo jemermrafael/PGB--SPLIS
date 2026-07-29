@@ -60,6 +60,7 @@ use App\Http\Controllers\OrdinanceVersionPdfController;
 use App\Http\Controllers\ResolutionController;
 use App\Http\Controllers\ResolutionPdfController;
 use App\Http\Controllers\ResolutionSearchController;
+use App\Http\Controllers\ResolutionVersionPdfController;
 use App\Http\Controllers\ReferenceMaterialController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\BoardMemberController;
@@ -152,6 +153,8 @@ Route::middleware('auth')->group(function () {
         ->where('resolutionNo', '.*')
         ->name('resolutions.pdf');
     Route::get('/resolutions/{resolution}', [ResolutionController::class, 'show'])->name('resolutions.show')->withTrashed();
+    Route::get('/resolutions/{resolution}/versions/{version}/file', ResolutionVersionPdfController::class)->name('resolutions.versions.file')->withTrashed();
+    Route::delete('/resolutions/{resolution}/versions/{version}', [ResolutionController::class, 'destroyVersion'])->name('resolutions.versions.destroy');
     Route::get('/resolutions/{resolution}/edit', [ResolutionController::class, 'edit'])->name('resolutions.edit');
     Route::put('/resolutions/{resolution}', [ResolutionController::class, 'update'])->name('resolutions.update');
     Route::delete('/resolutions/{resolution}', [ResolutionController::class, 'destroy'])->name('resolutions.destroy');

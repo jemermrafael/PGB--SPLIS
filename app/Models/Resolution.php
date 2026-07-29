@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\HasActivityLogs;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -31,6 +32,7 @@ class Resolution extends Model
         'mun_pdf_url',
         'resolution_no',
         'resolution_title',
+        'current_version_no',
         'document_type',
         'pdf_path',
         'series',
@@ -94,6 +96,11 @@ class Resolution extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function versions(): HasMany
+    {
+        return $this->hasMany(ResolutionVersion::class)->orderByDesc('version_no');
     }
 
     public function incomingDocument(): BelongsTo

@@ -114,6 +114,8 @@
         ])
     @endif
 
+    @include('resolutions.partials.version-history', ['resolution' => $resolution])
+
     @if (! $resolution->trashed())
         @include('partials.detail-prev-next', [
             'previous' => $previousResolution,
