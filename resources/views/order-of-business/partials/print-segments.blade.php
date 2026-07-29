@@ -5,7 +5,7 @@
                 <tbody>
                     <tr>
                         <td class="ob-print-roman">{{ \App\Support\ObRomanNumeral::display($segment['numeral'] ?? '') }}</td>
-                        <td class="ob-print-roman-label">
+                        <td class="ob-print-roman-label{{ filled($segment['body_html'] ?? null) ? ' ob-print-roman-label--section-three' : '' }}">
                             @if (filled($segment['body_html'] ?? null))
                                 {!! nl2br($segment['body_html']) !!}
                             @elseif (filled($segment['title'] ?? null))

@@ -113,37 +113,53 @@ class ObSectionThreeGenerator
             ) ?? $html;
         }
 
-        $prior = $session->priorSession;
-        $highlights = [];
+        // Red underline only the variable prior-session pieces.
+        // Keep "HELD ON" and "AT" plain (not red / not underlined).
+        if (preg_match('/^(.*?MINUTES(?:<\/a>)? OF THE )(.+?)( HELD ON )(.+?)( AT )(.+)$/us', $html, $parts) === 1) {
+            $html = $parts[1]
+                .'<span class="ob-print-section-three-highlight">'.$parts[2].'</span>'
+                .$parts[3]
+                .'<span class="ob-print-section-three-highlight">'.$parts[4].'</span>'
+                .$parts[5]
+                .'<span class="ob-print-section-three-highlight">'.$parts[6].'</span>';
+        } elseif (preg_match('/^(.*?MINUTES(?:<\/a>)? OF THE )(.+?)( AT )(.+)$/us', $html, $parts) === 1) {
+            $html = $parts[1]
+                .'<span class="ob-print-section-three-highlight">'.$parts[2].'</span>'
+                .$parts[3]
+                .'<span class="ob-print-section-three-highlight">'.$parts[4].'</span>';
+        } else {
+            $prior = $session->priorSession;
+            $highlights = [];
 
-        if ($prior !== null) {
-            $highlights = array_filter([
-                $this->sessionLabel($prior),
-                $this->sessionDate($prior),
-                $this->sessionVenue($prior),
-            ]);
-        }
-
-        if (preg_match('/\bHELD ON ([A-Z]+ \d{1,2}, \d{4})\b/u', $body, $dateMatch) === 1) {
-            $highlights[] = $dateMatch[1];
-        }
-
-        foreach (array_unique($highlights) as $highlight) {
-            $escaped = e($highlight);
-
-            if ($escaped === '' || ! str_contains($html, $escaped)) {
-                continue;
+            if ($prior !== null) {
+                $highlights = array_filter([
+                    $this->sessionLabel($prior),
+                    $this->sessionDate($prior),
+                    $this->sessionVenue($prior),
+                ]);
             }
 
-            if (str_contains($html, '<span class="ob-print-section-three-highlight">'.$escaped.'</span>')) {
-                continue;
+            if (preg_match('/\bHELD ON ([A-Z]+ \d{1,2}, \d{4})\b/u', $body, $dateMatch) === 1) {
+                $highlights[] = $dateMatch[1];
             }
 
-            $html = str_replace(
-                $escaped,
-                '<span class="ob-print-section-three-highlight">'.$escaped.'</span>',
-                $html,
-            );
+            foreach (array_unique($highlights) as $highlight) {
+                $escaped = e($highlight);
+
+                if ($escaped === '' || ! str_contains($html, $escaped)) {
+                    continue;
+                }
+
+                if (str_contains($html, '<span class="ob-print-section-three-highlight">'.$escaped.'</span>')) {
+                    continue;
+                }
+
+                $html = str_replace(
+                    $escaped,
+                    '<span class="ob-print-section-three-highlight">'.$escaped.'</span>',
+                    $html,
+                );
+            }
         }
 
         $html = preg_replace(

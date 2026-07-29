@@ -3208,6 +3208,10 @@
         padding-bottom: 0.6em;
     }
 
+    .ob-print-roman-label--section-three {
+        @apply text-left;
+    }
+
     .ob-print-announce-date {
         @apply w-2/5 text-sm;
     }
