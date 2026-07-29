@@ -7,6 +7,7 @@ use App\Models\ActivityLog;
 use App\Services\AgendaCsvImporter;
 use App\Services\DataSyncCsvStorage;
 use App\Services\DriveFileMirrorQueueService;
+use App\Services\DriveMirrorQueueSettings;
 use App\Services\OrdinanceCsvImporter;
 use App\Services\ResolutionCsvImporter;
 use App\Services\ResolutionPdfLinkService;
@@ -18,8 +19,10 @@ use Illuminate\View\View;
 
 class DataSyncController extends Controller
 {
-    public function index(DriveFileMirrorQueueService $driveMirrorQueue): View
-    {
+    public function index(
+        DriveFileMirrorQueueService $driveMirrorQueue,
+        DriveMirrorQueueSettings $driveMirrorSettings,
+    ): View {
         $recentLogs = ActivityLog::query()
             ->whereIn('action', [
                 'data_sync.resolutions_csv',
@@ -30,6 +33,7 @@ class DataSyncController extends Controller
                 'data_sync.link_pdfs',
                 'data_sync.drive_mirror_rebuild',
                 'data_sync.drive_mirror_process',
+                'data_sync.drive_mirror_auto',
             ])
             ->with('user')
             ->latest('created_at')
@@ -41,6 +45,8 @@ class DataSyncController extends Controller
             'driveMirrorStats' => $driveMirrorQueue->stats(),
             'driveMirrorItems' => $driveMirrorQueue->listItems(50),
             'driveMirrorFailedItems' => $driveMirrorQueue->failedItems(50),
+            'driveMirrorAutoEnabled' => $driveMirrorSettings->isAutoEnabled(),
+            'driveMirrorPerMinute' => $driveMirrorSettings->perMinute(),
         ]);
     }
 
@@ -280,6 +286,10 @@ class DataSyncController extends Controller
             'result' => $result,
         ]);
 
+        if (! empty($result['skipped_locked'])) {
+            return back()->with('error', 'Drive mirror is already running. Try again in a moment.');
+        }
+
         if ($result['processed'] === 0) {
             return back()->with('status', 'No pending Drive mirror items in the queue.');
         }
@@ -290,6 +300,31 @@ class DataSyncController extends Controller
             $result['succeeded'],
             $result['failed'],
         ));
+    }
+
+    public function updateDriveMirrorAuto(
+        Request $request,
+        DriveMirrorQueueSettings $settings,
+    ): RedirectResponse {
+        $request->validate([
+            'auto_enabled' => ['required', 'boolean'],
+        ]);
+
+        $enabled = $request->boolean('auto_enabled');
+
+        $settings->update([
+            'auto_enabled' => $enabled,
+            'per_minute' => DriveMirrorQueueSettings::DEFAULT_PER_MINUTE,
+        ]);
+
+        ActivityLogger::log('data_sync.drive_mirror_auto', null, [
+            'auto_enabled' => $enabled,
+            'per_minute' => DriveMirrorQueueSettings::DEFAULT_PER_MINUTE,
+        ]);
+
+        return back()->with('status', $enabled
+            ? 'Automatic Drive PDF mirror started — up to 5 PDFs per minute while the Laravel scheduler is running. Stop anytime from this page.'
+            : 'Automatic Drive PDF mirror stopped. Pending items remain in the queue.');
     }
 
     protected function storeUpload(?UploadedFile $file, DataSyncCsvStorage $uploads): ?string

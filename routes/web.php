@@ -320,6 +320,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/data-sync/link-pdfs', [DataSyncController::class, 'linkPdfs'])->name('data-sync.link-pdfs');
         Route::post('/data-sync/drive-mirror/rebuild', [DataSyncController::class, 'rebuildDriveMirrorQueue'])->name('data-sync.drive-mirror.rebuild');
         Route::post('/data-sync/drive-mirror/process', [DataSyncController::class, 'processDriveMirrorQueue'])->name('data-sync.drive-mirror.process');
+        Route::post('/data-sync/drive-mirror/auto', [DataSyncController::class, 'updateDriveMirrorAuto'])->name('data-sync.drive-mirror.auto');
 
         Route::get('/backups', [DatabaseBackupController::class, 'index'])->name('backups.index');
         Route::post('/backups/settings', [DatabaseBackupController::class, 'updateSettings'])->name('backups.settings');

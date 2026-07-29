@@ -158,8 +158,8 @@ class PageBackgrounds
         }
 
         if (
-            request()->routeIs('committees.show', 'committees.edit')
-            || in_array($routeName, ['committees.show', 'committees.edit'], true)
+            request()->routeIs('committees.show', 'committees.edit', 'board-member.committees.show')
+            || in_array($routeName, ['committees.show', 'committees.edit', 'board-member.committees.show'], true)
         ) {
             $committee = request()->route('committee');
             if ($committee instanceof \App\Models\Committee) {

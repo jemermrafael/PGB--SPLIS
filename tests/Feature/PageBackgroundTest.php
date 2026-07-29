@@ -247,6 +247,7 @@ class PageBackgroundTest extends TestCase
             ->get(route('committees.show', ['committee' => $alpha, 'term' => $term->id]))
             ->assertOk()
             ->assertSee('splis-main--custom-bg', false)
+            ->assertSee('splis-main--committee-bg', false)
             ->assertSee(route('page-backgrounds.show', $alphaBg), false)
             ->assertDontSee(route('page-backgrounds.show', $betaBg), false);
 
@@ -258,11 +259,73 @@ class PageBackgroundTest extends TestCase
             ->assertDontSee(route('page-backgrounds.show', $alphaBg), false);
     }
 
+    public function test_board_member_my_committee_show_uses_same_background_as_committee_show(): void
+    {
+        Storage::fake('local');
+
+        $admin = $this->settingsAdmin();
+        $term = \App\Models\CommitteeTerm::currentOrCreate();
+
+        $committee = \App\Models\Committee::query()->create([
+            'name' => 'Shared Background Committee',
+            'is_active' => true,
+            'sort_order' => 1,
+        ]);
+
+        $boardMember = \App\Models\BoardMember::query()->create([
+            'name' => 'Background Tester',
+            'honorific' => 'Hon.',
+            'is_active' => true,
+        ]);
+
+        \App\Models\CommitteeMembership::query()->create([
+            'committee_id' => $committee->id,
+            'board_member_id' => $boardMember->id,
+            'committee_term_id' => $term->id,
+            'role' => \App\Enums\CommitteeMembershipRole::Member,
+            'sort_order' => 0,
+        ]);
+
+        $bmUser = User::factory()->create([
+            'role' => UserRole::BoardMember,
+            'is_active' => true,
+            'board_member_id' => $boardMember->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.pages.update', PageBackgrounds::committeePageKey($committee->id)), [
+                'background_type' => 'classic',
+                'color' => '#abcdef',
+                'image' => UploadedFile::fake()->image('shared.jpg', 400, 300),
+                'position' => 'center center',
+                'attachment' => 'scroll',
+                'repeat' => 'no-repeat',
+                'size' => 'cover',
+            ])
+            ->assertRedirect();
+
+        $background = PageBackground::query()
+            ->where('page_key', PageBackgrounds::committeePageKey($committee->id))
+            ->first();
+
+        $this->assertNotNull($background);
+        $this->assertTrue($background->hasImage());
+
+        $this->actingAs($bmUser)
+            ->get(route('board-member.committees.show', ['committee' => $committee, 'term' => $term->id]))
+            ->assertOk()
+            ->assertSee('splis-main--custom-bg', false)
+            ->assertSee('splis-main--committee-bg', false)
+            ->assertSee(route('page-backgrounds.show', $background), false)
+            ->assertSee('#abcdef', false);
+    }
+
     public function test_dashboard_and_committee_list_resolve_their_page_keys(): void
     {
         $this->assertSame('dashboard', PageBackgrounds::resolvePageKey('dashboard'));
         $this->assertSame('dashboard', PageBackgrounds::resolvePageKey('dashboard.documents.search'));
         $this->assertSame('committees', PageBackgrounds::resolvePageKey('committees.index'));
         $this->assertSame('committees', PageBackgrounds::resolvePageKey('committees.create'));
+        $this->assertSame('my_committees', PageBackgrounds::resolvePageKey('board-member.committees.index'));
     }
 }

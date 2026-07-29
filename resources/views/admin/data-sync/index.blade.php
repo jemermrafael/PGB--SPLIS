@@ -25,6 +25,7 @@
                             @case('data_sync.link_pdfs') PDF path backfill @break
                             @case('data_sync.drive_mirror_rebuild') Drive mirror queue rebuild @break
                             @case('data_sync.drive_mirror_process') Drive mirror queue process @break
+                            @case('data_sync.drive_mirror_auto') Drive mirror auto {{ ($log->properties['auto_enabled'] ?? false) ? 'started' : 'stopped' }} @break
                             @default {{ $log->action }}
                         @endswitch
                     </span>
@@ -126,12 +127,18 @@
 <p class="mb-4 text-sm text-slate-600 dark:text-slate-400">
     Automatically download Google Drive links into private storage for ordinances, appropriation ordinances, and agenda items.
     Rebuild scans all records with a URL but no local file; process downloads pending items.
+    Safe auto mode runs up to {{ $driveMirrorPerMinute }} PDFs per minute via the Laravel scheduler (no overlapping batches).
 </p>
 
 <div class="mb-10 splis-card p-6">
     <div class="mb-4 flex flex-wrap items-center gap-2">
         <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Mirror queue</h2>
         <x-risk-badge level="maintenance" label="Maintenance" />
+        @if ($driveMirrorAutoEnabled)
+            <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">Auto: {{ $driveMirrorPerMinute }}/min</span>
+        @else
+            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">Auto: off</span>
+        @endif
     </div>
 
     <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -153,6 +160,31 @@
         </div>
     </div>
 
+    <div class="mb-6 rounded-lg border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-900/40">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0">
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Automatic processing</h3>
+                <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                    @if ($driveMirrorAutoEnabled)
+                        Running — processes up to {{ $driveMirrorPerMinute }} pending PDFs each minute until the queue is empty or you stop it.
+                    @else
+                        Off by default. Start to process pending items at {{ $driveMirrorPerMinute }} PDFs per minute (safe for Google Drive).
+                    @endif
+                    Requires the app scheduler (<code class="text-xs">php artisan schedule:run</code> / Herd scheduled tasks).
+                </p>
+            </div>
+            <form method="POST" action="{{ route('admin.data-sync.drive-mirror.auto') }}">
+                @csrf
+                <input type="hidden" name="auto_enabled" value="{{ $driveMirrorAutoEnabled ? '0' : '1' }}">
+                @if ($driveMirrorAutoEnabled)
+                    <button type="submit" class="splis-btn-secondary">Stop auto ({{ $driveMirrorPerMinute }}/min)</button>
+                @else
+                    <button type="submit" class="splis-btn-primary">Start auto ({{ $driveMirrorPerMinute }}/min)</button>
+                @endif
+            </form>
+        </div>
+    </div>
+
     <div class="mb-6 flex flex-wrap gap-3">
         <form method="POST" action="{{ route('admin.data-sync.drive-mirror.rebuild') }}">
             @csrf
@@ -161,12 +193,12 @@
         <form method="POST" action="{{ route('admin.data-sync.drive-mirror.process') }}" class="flex flex-wrap items-center gap-2">
             @csrf
             <input type="hidden" name="limit" value="5">
-            <button type="submit" class="splis-btn-primary">Process next 5</button>
+            <button type="submit" class="splis-btn-secondary">Process next 5 now</button>
         </form>
         <form method="POST" action="{{ route('admin.data-sync.drive-mirror.process') }}">
             @csrf
             <input type="hidden" name="limit" value="20">
-            <button type="submit" class="splis-btn-secondary">Process next 20</button>
+            <button type="submit" class="splis-btn-secondary">Process next 20 now</button>
         </form>
     </div>
 
@@ -249,6 +281,7 @@
     <details class="mt-4 text-xs text-slate-500">
         <summary class="cursor-pointer">CLI</summary>
         <code class="mt-1 block">php artisan pdf-mirror:process-queue --rebuild --limit=5</code>
+        <code class="mt-1 block">php artisan schedule:list</code>
         <code class="mt-1 block">php artisan agenda:mirror-pdfs --limit=5</code>
     </details>
 </div>

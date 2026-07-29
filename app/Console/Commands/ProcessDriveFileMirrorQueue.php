@@ -48,10 +48,17 @@ class ProcessDriveFileMirrorQueue extends Command
 
         $result = $queue->processBatch($limit);
 
+        if (! empty($result['skipped_locked'])) {
+            $this->warn('Skipped — another mirror process is already running.');
+
+            return self::SUCCESS;
+        }
+
         $this->table(['Metric', 'Count'], [
             ['Processed', $result['processed']],
             ['Succeeded', $result['succeeded']],
             ['Failed', $result['failed']],
+            ['Reclaimed stuck', $result['reclaimed'] ?? 0],
         ]);
 
         return $result['failed'] > 0 && $result['succeeded'] === 0

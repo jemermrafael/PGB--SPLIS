@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\BackupSettings;
+use App\Services\DriveMirrorQueueSettings;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -24,3 +25,12 @@ Schedule::command('splis:prune-notifications')
     ->dailyAt('03:15')
     ->withoutOverlapping()
     ->onOneServer();
+
+Schedule::command('pdf-mirror:process-queue', [
+    '--limit' => app(DriveMirrorQueueSettings::class)->perMinute(),
+])
+    ->everyMinute()
+    ->when(fn () => app(DriveMirrorQueueSettings::class)->isAutoEnabled())
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->appendOutputTo(storage_path('logs/drive-mirror-queue.log'));

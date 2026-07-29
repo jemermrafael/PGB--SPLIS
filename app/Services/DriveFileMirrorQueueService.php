@@ -10,9 +10,15 @@ use App\Support\AgendaPdfSlot;
 use App\Support\DriveMirrorEntity;
 use App\Support\OrdinancePdfType;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class DriveFileMirrorQueueService
 {
+    public const PROCESS_LOCK_KEY = 'drive-file-mirror-queue-process';
+
+    /** Minutes before a stuck "processing" row is returned to pending. */
+    public const STUCK_PROCESSING_MINUTES = 15;
+
     public function __construct(
         protected OrdinancePdfService $ordinancePdfs,
         protected AppropriationOrdinancePdfService $appropriationPdfs,
@@ -132,50 +138,86 @@ class DriveFileMirrorQueueService
     }
 
     /**
-     * @return array{processed: int, succeeded: int, failed: int}
+     * @return array{processed: int, succeeded: int, failed: int, skipped_locked?: bool, reclaimed?: int}
      */
     public function processBatch(int $limit = 5): array
     {
-        $processed = 0;
-        $succeeded = 0;
-        $failed = 0;
+        $lock = Cache::lock(self::PROCESS_LOCK_KEY, 600);
 
-        $items = DriveFileMirrorQueue::query()
-            ->where('status', DriveFileMirrorQueue::STATUS_PENDING)
-            ->orderBy('id')
-            ->limit($limit)
-            ->get();
-
-        foreach ($items as $item) {
-            $item->update([
-                'status' => DriveFileMirrorQueue::STATUS_PROCESSING,
-                'started_at' => now(),
-                'attempts' => $item->attempts + 1,
-            ]);
-
-            $result = $this->processItem($item);
-
-            if ($result['ok']) {
-                $item->update([
-                    'status' => DriveFileMirrorQueue::STATUS_COMPLETED,
-                    'result_path' => $result['path'] ?? $item->result_path,
-                    'error_message' => null,
-                    'completed_at' => now(),
-                ]);
-                $succeeded++;
-            } else {
-                $item->update([
-                    'status' => DriveFileMirrorQueue::STATUS_FAILED,
-                    'error_message' => $result['message'],
-                    'completed_at' => now(),
-                ]);
-                $failed++;
-            }
-
-            $processed++;
+        if (! $lock->get()) {
+            return [
+                'processed' => 0,
+                'succeeded' => 0,
+                'failed' => 0,
+                'skipped_locked' => true,
+                'reclaimed' => 0,
+            ];
         }
 
-        return compact('processed', 'succeeded', 'failed');
+        try {
+            $reclaimed = $this->reclaimStuckProcessing();
+
+            $processed = 0;
+            $succeeded = 0;
+            $failed = 0;
+
+            $items = DriveFileMirrorQueue::query()
+                ->where('status', DriveFileMirrorQueue::STATUS_PENDING)
+                ->orderBy('id')
+                ->limit(max(0, $limit))
+                ->get();
+
+            foreach ($items as $item) {
+                $item->update([
+                    'status' => DriveFileMirrorQueue::STATUS_PROCESSING,
+                    'started_at' => now(),
+                    'attempts' => $item->attempts + 1,
+                ]);
+
+                $result = $this->processItem($item);
+
+                if ($result['ok']) {
+                    $item->update([
+                        'status' => DriveFileMirrorQueue::STATUS_COMPLETED,
+                        'result_path' => $result['path'] ?? $item->result_path,
+                        'error_message' => null,
+                        'completed_at' => now(),
+                    ]);
+                    $succeeded++;
+                } else {
+                    $item->update([
+                        'status' => DriveFileMirrorQueue::STATUS_FAILED,
+                        'error_message' => $result['message'],
+                        'completed_at' => now(),
+                    ]);
+                    $failed++;
+                }
+
+                $processed++;
+            }
+
+            return compact('processed', 'succeeded', 'failed', 'reclaimed');
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
+     * Return rows stuck in "processing" (e.g. killed worker) back to pending.
+     */
+    public function reclaimStuckProcessing(): int
+    {
+        return DriveFileMirrorQueue::query()
+            ->where('status', DriveFileMirrorQueue::STATUS_PROCESSING)
+            ->where(function ($query): void {
+                $query->whereNull('started_at')
+                    ->orWhere('started_at', '<=', now()->subMinutes(self::STUCK_PROCESSING_MINUTES));
+            })
+            ->update([
+                'status' => DriveFileMirrorQueue::STATUS_PENDING,
+                'error_message' => null,
+                'started_at' => null,
+            ]);
     }
 
     /**

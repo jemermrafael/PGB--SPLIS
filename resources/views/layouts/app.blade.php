@@ -412,6 +412,8 @@
             @class([
                 'splis-main flex-1',
                 'splis-main--custom-bg' => $pageBackground !== null,
+                'splis-main--committee-bg' => $pageBackground !== null
+                    && \App\Support\PageBackgrounds::committeeIdFromPageKey((string) $pageBackground->page_key) !== null,
             ])
             @if ($pageBackground)
                 style="{{ \App\Support\PageBackgrounds::cssStyle($pageBackground) }}"
