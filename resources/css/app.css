@@ -825,16 +825,28 @@
 
     .splis-dashboard-hero {
         @apply relative mb-8 w-full overflow-hidden rounded-2xl border-2 border-brand-gold/40 px-6 py-7 shadow-xl sm:px-8;
-        background-image: linear-gradient(125deg, var(--color-brand-950) 0%, var(--color-brand-800) 45%, var(--color-brand-700) 100%);
+        background-color: var(--color-brand-950);
+        background-image:
+            linear-gradient(
+                90deg,
+                rgb(6 21 37 / 0.72) 0%,
+                rgb(12 35 64 / 0.45) 34%,
+                rgb(12 35 64 / 0.18) 58%,
+                transparent 78%
+            ),
+            url('/images/dashboard-hero-bg.png');
+        background-position: center, right center;
+        background-size: cover, contain;
+        background-repeat: no-repeat;
     }
 
     .splis-dashboard-hero-glow {
-        @apply pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full opacity-50;
-        background: radial-gradient(circle, rgb(212 168 67 / 0.55) 0%, transparent 70%);
+        @apply pointer-events-none absolute -right-10 -top-14 h-44 w-44 rounded-full opacity-35;
+        background: radial-gradient(circle, rgb(212 168 67 / 0.4) 0%, transparent 70%);
     }
 
     .splis-dashboard-hero-content {
-        @apply relative z-10 w-full max-w-none;
+        @apply relative z-10 w-full max-w-3xl;
     }
 
     .splis-dashboard-hero-eyebrow {

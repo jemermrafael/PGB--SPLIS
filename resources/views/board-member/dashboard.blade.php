@@ -6,7 +6,7 @@
 <div class="splis-dashboard w-full">
     <div class="splis-dashboard-hero mb-8">
         <div class="splis-dashboard-hero-glow" aria-hidden="true"></div>
-        <div class="splis-dashboard-hero-content flex flex-wrap items-start justify-between gap-4">
+        <div class="splis-dashboard-hero-content !max-w-none flex flex-wrap items-center justify-between gap-4">
             <div class="min-w-0">
                 <p class="splis-dashboard-hero-eyebrow">Board Member Portal</p>
                 <h1 class="splis-page-title text-white">Welcome, Hon. {{ $user->name }}</h1>
@@ -14,7 +14,7 @@
                     Today’s briefing, Committee Agenda, and Order of Business.
                 </p>
             </div>
-            <a href="{{ route('admin.analytics.index') }}" class="splis-header-btn shrink-0 align-self-middle">
+            <a href="{{ route('admin.analytics.index') }}" class="splis-header-btn ml-auto shrink-0 self-center">
                 <x-icon name="chart-bar" class="h-4 w-4" />
                 Executive Dashboard
             </a>
