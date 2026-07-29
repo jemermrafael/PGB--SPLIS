@@ -18,7 +18,7 @@
                 $showIconKey = \App\Support\CommitteeIcon::resolveKey($committee);
                 $showIconPath = \App\Support\CommitteeIcon::pathFor($showIconKey);
             @endphp
-            <span class="mt-0.5 inline-flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-800 dark:bg-brand-900/40 dark:text-brand-100" aria-hidden="true">
+            <span class="splis-committee-icon-frame" aria-hidden="true">
                 @if ($showCustomUrl)
                     <span class="splis-list-committee-icon-glyph splis-list-committee-icon-glyph--lg" style="--committee-icon: url('{{ $showCustomUrl }}')"></span>
                 @else

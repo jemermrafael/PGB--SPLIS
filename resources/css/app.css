@@ -1303,6 +1303,27 @@
         height: 4rem;
     }
 
+    .splis-committee-icon-frame {
+        @apply mt-0.5 inline-flex h-20 w-20 shrink-0 items-center justify-center text-brand-800;
+        --tw-border-style: solid;
+        --tw-shadow-color: #cad5e266;
+        --tw-shadow: 0 4px 6px -1px var(--tw-shadow-color, #0000001a), 0 2px 4px -2px var(--tw-shadow-color, #0000001a);
+        border-radius: var(--radius-2xl, 1rem);
+        border-style: var(--tw-border-style);
+        border-width: 1px;
+        border-color: var(--color-slate-300);
+        background-color: var(--color-white);
+        box-shadow: var(--tw-inset-shadow, 0 0 #0000), var(--tw-inset-ring-shadow, 0 0 #0000), var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+        overflow: hidden;
+    }
+
+    html.dark .splis-committee-icon-frame {
+        @apply text-brand-100;
+        border-color: var(--color-slate-600);
+        background-color: var(--color-slate-900);
+        --tw-shadow-color: rgb(15 23 42 / 0.45);
+    }
+
     .admin-icon-library-grid {
         display: grid;
         gap: 0.5rem;
