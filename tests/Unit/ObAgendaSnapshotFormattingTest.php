@@ -123,6 +123,67 @@ class ObAgendaSnapshotFormattingTest extends TestCase
         );
     }
 
+    public function test_share_agenda_no_link_collapses_per_agenda_urls_for_whole_label(): void
+    {
+        $shared = ObAgendaSnapshot::shareAgendaNoLinkAcrossRow([
+            'agenda_nos' => ['324', '325', '329', '334'],
+            'agenda_no_links' => [
+                '334' => 'https://example.test/agenda/2026-334/file/committee_report',
+                '324' => 'https://example.test/agenda/2026-324/file/committee_report',
+                '325' => 'https://example.test/agenda/2026-325/file/committee_report',
+                '329' => 'https://example.test/agenda/2026-329/file/committee_report',
+            ],
+        ]);
+
+        $this->assertSame(
+            'https://example.test/agenda/2026-324/file/committee_report',
+            $shared['agenda_no_links']['334'],
+        );
+        $this->assertSame(
+            '<a href="https://example.test/agenda/2026-324/file/committee_report" class="ob-print-link" target="_blank" rel="noopener">Agenda Nos. 324, 325, 329, 334</a>',
+            ObAgendaSnapshot::displayAgendaNosLabelHtml($shared),
+        );
+    }
+
+    public function test_merging_rows_keeps_links_keyed_by_agenda_no(): void
+    {
+        $merged = ObAgendaSnapshot::mergeCommitteeReportRows(
+            [
+                'agenda_nos' => ['334'],
+                'agenda_no_links' => ['334' => 'https://example.test/report.pdf'],
+            ],
+            [
+                'agenda_nos' => ['324', '329'],
+                'agenda_no_links' => [
+                    '324' => 'https://example.test/report.pdf',
+                    '329' => 'https://example.test/report.pdf',
+                ],
+            ],
+        );
+
+        $this->assertSame(['324', '329', '334'], $merged['agenda_nos']);
+        $this->assertSame(
+            ['334', '324', '329'],
+            array_map('strval', array_keys($merged['agenda_no_links'])),
+        );
+
+        $this->assertSame(
+            '<a href="https://example.test/report.pdf" class="ob-print-link" target="_blank" rel="noopener">Agenda Nos. 324, 329, 334</a>',
+            ObAgendaSnapshot::displayAgendaNosLabelHtml($merged),
+        );
+    }
+
+    public function test_merging_rows_sorts_agenda_nos_numerically(): void
+    {
+        $merged = ObAgendaSnapshot::mergeCommitteeReportRows(
+            ['agenda_nos' => ['1005', '58']],
+            ['agenda_nos' => ['267', 'Unnumbered']],
+        );
+
+        $this->assertSame(['58', '267', '1005', 'Unnumbered'], $merged['agenda_nos']);
+        $this->assertSame('58', $merged['agenda_no']);
+    }
+
     public function test_different_committee_report_urls_link_each_agenda_no(): void
     {
         $html = ObAgendaSnapshot::displayAgendaNosLabelHtml([

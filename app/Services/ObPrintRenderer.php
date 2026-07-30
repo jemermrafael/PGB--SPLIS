@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\ObBlockType;
 use App\Models\AgendaItem;
+use App\Models\BoardMemberCommitteeReport;
 use App\Models\LegislativeSession;
 use App\Models\ObBlock;
 use App\Support\CommitteeLookup;
@@ -18,10 +19,14 @@ class ObPrintRenderer
     /** @var Collection<int, AgendaItem> */
     protected Collection $agendaItemsById;
 
+    /** @var Collection<int, int> Agenda item id => committee report id */
+    protected Collection $committeeReportIdsByAgendaId;
+
     public function __construct(
         protected ObSectionThreeGenerator $sectionThreeGenerator,
     ) {
         $this->agendaItemsById = collect();
+        $this->committeeReportIdsByAgendaId = collect();
     }
 
     /**
@@ -31,6 +36,7 @@ class ObPrintRenderer
     public function segments(Collection $blocks, ?LegislativeSession $session = null): array
     {
         $this->agendaItemsById = $this->loadAgendaItems($blocks);
+        $this->committeeReportIdsByAgendaId = $this->loadCommitteeReportIds($this->agendaItemsById);
         $segments = [];
         $buffer = null;
         $announcementsOpen = false;
@@ -55,17 +61,11 @@ class ObPrintRenderer
             if ($type === ObBlockType::CommitteeReport) {
                 if (($buffer['type'] ?? null) !== 'committee_reports_table') {
                     $flush();
-                    $buffer = ['type' => 'committee_reports_table', 'rows' => []];
+                    $buffer = ['type' => 'committee_reports_table', 'rows' => [], 'row_keys' => []];
                 }
                 $row = ObAgendaSnapshot::enrichCommitteeReportRow($block->content ?? []);
-                $row = $this->enrichCommitteeReportRowLinks($block, $row);
-                $rows = &$buffer['rows'];
-                if ($rows !== []
-                    && ObAgendaSnapshot::committeeReportKey((array) end($rows)) === ObAgendaSnapshot::committeeReportKey($row)) {
-                    $rows[array_key_last($rows)] = ObAgendaSnapshot::mergeCommitteeReportRows((array) end($rows), $row);
-                } else {
-                    $rows[] = $row;
-                }
+                $buffer['rows'][] = $this->enrichCommitteeReportRowLinks($block, $row);
+                $buffer['row_keys'][] = $this->committeeReportGroupKey($block, $row);
 
                 continue;
             }
@@ -348,8 +348,10 @@ class ObPrintRenderer
 
         $flush();
 
-        return $this->mergeAdjacentAnnouncementsSegments(
-            $this->mergeAdjacentCommitteeReportSegments($segments),
+        return $this->groupCommitteeReportRows(
+            $this->mergeAdjacentAnnouncementsSegments(
+                $this->mergeAdjacentCommitteeReportSegments($segments),
+            ),
         );
     }
 
@@ -384,6 +386,37 @@ class ObPrintRenderer
         }
 
         return AgendaItem::query()->whereIn('id', $ids)->get()->keyBy('id');
+    }
+
+    /**
+     * @param  Collection<int, AgendaItem>  $agendaItems
+     * @return Collection<int, int>
+     */
+    protected function loadCommitteeReportIds(Collection $agendaItems): Collection
+    {
+        if ($agendaItems->isEmpty()) {
+            return collect();
+        }
+
+        $ids = $agendaItems->keys()->all();
+
+        $reports = BoardMemberCommitteeReport::query()
+            ->whereHas('agendaItems', fn ($query) => $query->whereIn('agenda_items.id', $ids))
+            ->with('agendaItems:id')
+            ->orderBy('id')
+            ->get();
+
+        $map = collect();
+
+        foreach ($reports as $report) {
+            foreach ($report->agendaItems as $agenda) {
+                if (! $map->has((int) $agenda->id)) {
+                    $map->put((int) $agenda->id, (int) $report->id);
+                }
+            }
+        }
+
+        return $map;
     }
 
     /**
@@ -568,6 +601,7 @@ class ObPrintRenderer
                 && is_array($previous)
                 && ($previous['type'] ?? '') === 'committee_reports_table') {
                 $previous['rows'] = array_merge($previous['rows'] ?? [], $segment['rows'] ?? []);
+                $previous['row_keys'] = array_merge($previous['row_keys'] ?? [], $segment['row_keys'] ?? []);
                 $merged[array_key_last($merged)] = $previous;
 
                 continue;
@@ -577,6 +611,80 @@ class ObPrintRenderer
         }
 
         return $merged;
+    }
+
+    /**
+     * Agendas covered by one committee report belong on a single row, even when
+     * their blocks are not next to each other in the document.
+     *
+     * @param  list<array<string, mixed>>  $segments
+     * @return list<array<string, mixed>>
+     */
+    protected function groupCommitteeReportRows(array $segments): array
+    {
+        foreach ($segments as $index => $segment) {
+            if (($segment['type'] ?? '') !== 'committee_reports_table') {
+                continue;
+            }
+
+            $keys = $segment['row_keys'] ?? [];
+            $rows = [];
+            $rowIndexByKey = [];
+            $keyByRowIndex = [];
+
+            foreach ($segment['rows'] ?? [] as $position => $row) {
+                $key = (string) ($keys[$position] ?? ObAgendaSnapshot::committeeReportKey((array) $row));
+                $existing = $rowIndexByKey[$key] ?? null;
+
+                if ($existing !== null) {
+                    $rows[$existing] = ObAgendaSnapshot::mergeCommitteeReportRows($rows[$existing], (array) $row);
+
+                    continue;
+                }
+
+                $rows[] = (array) $row;
+                $rowIndex = array_key_last($rows);
+                $rowIndexByKey[$key] = $rowIndex;
+                $keyByRowIndex[$rowIndex] = $key;
+            }
+
+            foreach ($rows as $position => $row) {
+                if (str_starts_with((string) ($keyByRowIndex[$position] ?? ''), 'report:')) {
+                    $row = ObAgendaSnapshot::shareAgendaNoLinkAcrossRow($row);
+                }
+
+                $row['row_no'] = $position + 1;
+                $rows[$position] = $row;
+            }
+
+            unset($segment['row_keys']);
+            $segment['rows'] = $rows;
+            $segments[$index] = $segment;
+        }
+
+        return $segments;
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     */
+    protected function committeeReportGroupKey(ObBlock $block, array $row): string
+    {
+        $reportIds = [];
+
+        foreach ($this->agendaIdsForBlock($block) as $id) {
+            $reportId = $this->committeeReportIdsByAgendaId->get($id);
+
+            if ($reportId !== null) {
+                $reportIds[(int) $reportId] = true;
+            }
+        }
+
+        if (count($reportIds) === 1) {
+            return 'report:'.array_key_first($reportIds);
+        }
+
+        return ObAgendaSnapshot::committeeReportKey($row);
     }
 
     /**

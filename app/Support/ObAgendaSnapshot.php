@@ -144,13 +144,35 @@ class ObAgendaSnapshot
     }
 
     /**
+     * Ascending, with plain numbers ordered numerically.
+     *
+     * @param  array<int, string>  $nos
+     * @return list<string>
+     */
+    public static function sortAgendaNos(array $nos): array
+    {
+        $nos = array_values($nos);
+
+        usort($nos, fn (string $a, string $b): int => self::agendaNoSortKey($a) <=> self::agendaNoSortKey($b));
+
+        return $nos;
+    }
+
+    protected static function agendaNoSortKey(string $no): string
+    {
+        $no = trim($no);
+
+        return ctype_digit($no) ? str_pad($no, 10, '0', STR_PAD_LEFT) : $no;
+    }
+
+    /**
      * @param  array<string, mixed>  $existing
      * @param  array<string, mixed>  $incoming
      * @return array<string, mixed>
      */
     public static function mergeCommitteeReportRows(array $existing, array $incoming): array
     {
-        $nos = array_values(array_unique(array_merge(
+        $nos = self::sortAgendaNos(array_unique(array_merge(
             self::agendaNosFromContent($existing),
             self::agendaNosFromContent($incoming),
         )));
@@ -163,16 +185,69 @@ class ObAgendaSnapshot
 
         $existingLinks = is_array($existing['agenda_no_links'] ?? null) ? $existing['agenda_no_links'] : [];
         $incomingLinks = is_array($incoming['agenda_no_links'] ?? null) ? $incoming['agenda_no_links'] : [];
-        $mergedLinks = array_filter(
-            array_merge($existingLinks, $incomingLinks),
-            fn ($url) => filled($url),
-        );
+
+        // Keys are agenda numbers, so array_merge() would renumber them.
+        $mergedLinks = [];
+        foreach ([$existingLinks, $incomingLinks] as $links) {
+            foreach ($links as $no => $url) {
+                if (filled($url)) {
+                    $mergedLinks[$no] = $url;
+                }
+            }
+        }
 
         if ($mergedLinks !== []) {
             $existing['agenda_no_links'] = $mergedLinks;
         }
 
+        $ids = array_values(array_unique(array_merge(
+            array_map('intval', $existing['agenda_item_ids'] ?? []),
+            array_map('intval', $incoming['agenda_item_ids'] ?? []),
+        )));
+        $ids = array_values(array_filter($ids, fn (int $id) => $id > 0));
+
+        if ($ids !== []) {
+            $existing['agenda_item_ids'] = $ids;
+        }
+
         return $existing;
+    }
+
+    /**
+     * When every agenda no links to the same shared report file, force one URL so
+     * the print view can wrap the whole "Agenda Nos. …" label in a single <a>.
+     *
+     * @param  array<string, mixed>  $content
+     * @return array<string, mixed>
+     */
+    public static function shareAgendaNoLinkAcrossRow(array $content): array
+    {
+        $nos = self::agendaNosFromContent($content);
+        $links = is_array($content['agenda_no_links'] ?? null) ? $content['agenda_no_links'] : [];
+
+        if ($nos === []) {
+            return $content;
+        }
+
+        $canonical = null;
+
+        foreach ($nos as $no) {
+            $url = $links[$no] ?? null;
+
+            if (! filled($url)) {
+                return $content;
+            }
+
+            $canonical ??= (string) $url;
+        }
+
+        foreach ($nos as $no) {
+            $links[$no] = $canonical;
+        }
+
+        $content['agenda_no_links'] = $links;
+
+        return $content;
     }
 
     /**
