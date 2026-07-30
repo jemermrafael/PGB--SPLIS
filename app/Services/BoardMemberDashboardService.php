@@ -12,6 +12,7 @@ use App\Models\CommitteeTerm;
 use App\Models\LegislativeSession;
 use App\Models\User;
 use App\Support\AgendaDeadline;
+use App\Support\CommitteeLookup;
 use App\Support\CommitteeTermSelection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -206,8 +207,10 @@ class BoardMemberDashboardService
     {
         abort_unless($this->membershipForCommittee($user, $committee, $term) !== null, 403);
 
-        return AgendaItem::query()
-            ->where('committee_referred', 'like', '%'.$committee->name.'%');
+        $query = AgendaItem::query();
+        CommitteeLookup::applyAgendaCommitteeFilter($query, $committee);
+
+        return $query;
     }
 
     /**
@@ -267,18 +270,7 @@ class BoardMemberDashboardService
      */
     public function committeeAgendaQueryFor(User $user): Builder
     {
-        $committees = $this->committeesFor($user);
-
-        if ($committees->isEmpty()) {
-            return AgendaItem::query()->whereRaw('0 = 1');
-        }
-
-        return AgendaItem::query()
-            ->where(function (Builder $query) use ($committees): void {
-                foreach ($committees as $committee) {
-                    $query->orWhere('committee_referred', 'like', '%'.$committee->name.'%');
-                }
-            });
+        return $this->agendaQueryForCommittees($this->committeesFor($user));
     }
 
     /**
@@ -296,8 +288,17 @@ class BoardMemberDashboardService
      */
     public function chairmanshipAgendaQueryForBoardMember(int $boardMemberId): Builder
     {
-        $committees = $this->chairCommitteesForBoardMember($boardMemberId);
+        return $this->agendaQueryForCommittees($this->chairCommitteesForBoardMember($boardMemberId));
+    }
 
+    /**
+     * Agendas whose referral text points at any of the given committees.
+     *
+     * @param  Collection<int, Committee>  $committees
+     * @return Builder<AgendaItem>
+     */
+    protected function agendaQueryForCommittees(Collection $committees): Builder
+    {
         if ($committees->isEmpty()) {
             return AgendaItem::query()->whereRaw('0 = 1');
         }
@@ -305,7 +306,9 @@ class BoardMemberDashboardService
         return AgendaItem::query()
             ->where(function (Builder $query) use ($committees): void {
                 foreach ($committees as $committee) {
-                    $query->orWhere('committee_referred', 'like', '%'.$committee->name.'%');
+                    $query->orWhere(function (Builder $nested) use ($committee): void {
+                        CommitteeLookup::applyAgendaCommitteeFilter($nested, $committee);
+                    });
                 }
             });
     }

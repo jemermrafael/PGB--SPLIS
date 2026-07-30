@@ -8,6 +8,7 @@ use App\Models\Committee;
 use App\Models\User;
 use App\Services\BoardMemberCommitteeReportService;
 use App\Services\BoardMemberDashboardService;
+use App\Support\CommitteeLookup;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -286,7 +287,7 @@ class BoardMemberCommitteeReportController extends Controller
             ->orderByDesc('id');
 
         if ($committee !== null) {
-            $agendaQuery->where('committee_referred', 'like', '%'.$committee->name.'%');
+            CommitteeLookup::applyAgendaCommitteeFilter($agendaQuery, $committee);
         }
 
         if ($q !== '') {

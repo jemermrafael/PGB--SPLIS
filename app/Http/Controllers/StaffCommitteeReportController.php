@@ -11,6 +11,7 @@ use App\Models\CommitteeMembership;
 use App\Models\User;
 use App\Services\BoardMemberCommitteeReportService;
 use App\Services\BoardMemberDashboardService;
+use App\Support\CommitteeLookup;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -71,7 +72,7 @@ class StaffCommitteeReportController extends Controller
             $committee = Committee::query()->find($committeeId);
             if ($committee !== null) {
                 $query->whereHas('agendaItems', function (Builder $agenda) use ($committee): void {
-                    $agenda->where('committee_referred', 'like', '%'.$committee->name.'%');
+                    CommitteeLookup::applyAgendaCommitteeFilter($agenda, $committee);
                 });
             }
         }
@@ -388,7 +389,7 @@ class StaffCommitteeReportController extends Controller
             ->orderByDesc('id');
 
         if ($committee !== null) {
-            $agendaQuery->where('committee_referred', 'like', '%'.$committee->name.'%');
+            CommitteeLookup::applyAgendaCommitteeFilter($agendaQuery, $committee);
         }
 
         if ($q !== '') {

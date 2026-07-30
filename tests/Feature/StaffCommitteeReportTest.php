@@ -72,6 +72,54 @@ class StaffCommitteeReportTest extends TestCase
             ->assertJsonPath('meta.total', 0);
     }
 
+    public function test_taggable_agendas_match_ampersand_referrals_to_committee_name(): void
+    {
+        $encoder = User::factory()->create(['role' => UserRole::Encoder]);
+        [$bmUser, , $term, $boardMember] = $this->linkedBoardMemberWithCommittee();
+
+        $committee = Committee::query()->create([
+            'name' => 'Peace and Order and Public Safety',
+            'is_active' => true,
+            'sort_order' => 2,
+        ]);
+
+        CommitteeMembership::query()->create([
+            'committee_id' => $committee->id,
+            'board_member_id' => $boardMember->id,
+            'committee_term_id' => $term->id,
+            'role' => CommitteeMembershipRole::Chair,
+            'sort_order' => 1,
+        ]);
+
+        $agenda = AgendaItem::query()->create([
+            'tracking_no' => '311',
+            'title' => 'Curfew ordinance review',
+            'committee_referred' => 'Peace and Order & Public Safety',
+            'status' => AgendaItem::STATUS_PENDING,
+            'date_of_referral' => now()->toDateString(),
+            'prescribed_days' => 0,
+            'created_by' => $bmUser->id,
+        ]);
+
+        $this->actingAs($encoder)
+            ->getJson(route('committee-reports.agendas', [
+                'board_member_id' => $boardMember->id,
+                'committee_id' => $committee->id,
+            ]))
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.id', $agenda->id)
+            ->assertJsonPath('data.0.number', '311');
+
+        $this->actingAs($encoder)
+            ->get(route('committee-reports.create', [
+                'board_member_id' => $boardMember->id,
+                'committee_id' => $committee->id,
+            ]))
+            ->assertOk()
+            ->assertSee('Curfew ordinance review');
+    }
+
     public function test_encoder_can_submit_report_on_behalf_of_chair(): void
     {
         Storage::fake('local');
