@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\NavigatesById;
 use App\Services\AgendaPublishedOutputService;
 use App\Services\AppropriationOrdinancePdfService;
+use App\Support\Permalink;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -66,6 +67,48 @@ class AppropriationOrdinance extends Model
     public function displayNumber(): string
     {
         return 'Appro. Ord. No. '.str_pad((string) $this->ordinance_no, 2, '0', STR_PAD_LEFT);
+    }
+
+    public function permalinkYear(): int
+    {
+        return (int) ($this->series_year ?: $this->created_at?->year ?: now()->year);
+    }
+
+    public function getRouteKey(): string
+    {
+        return Permalink::yearAndNumber($this->permalinkYear(), (int) $this->ordinance_no);
+    }
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->resolvePermalinkBinding($this->newQuery(), (string) $value);
+    }
+
+    public function resolveSoftDeletableRouteBinding($value, $field = null)
+    {
+        return $this->resolvePermalinkBinding(static::withTrashed(), (string) $value);
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     */
+    protected function resolvePermalinkBinding(Builder $query, string $value): ?self
+    {
+        if (Permalink::isLegacyNumericId($value)) {
+            return $query->whereKey((int) $value)->first();
+        }
+
+        $parsed = Permalink::parseYearAndNumber($value);
+
+        if ($parsed === null) {
+            return null;
+        }
+
+        return $query
+            ->where('series_year', $parsed['year'])
+            ->where('ordinance_no', $parsed['number'])
+            ->orderByDesc($this->getKeyName())
+            ->first();
     }
 
     public function displaySeries(): string

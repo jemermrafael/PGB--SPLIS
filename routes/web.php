@@ -318,6 +318,16 @@ Route::middleware('auth')->group(function () {
         Route::get('/email-notifications', [EmailNotificationSettingsController::class, 'index'])->name('email-notifications.index');
         Route::put('/email-notifications', [EmailNotificationSettingsController::class, 'update'])->name('email-notifications.update');
         Route::post('/email-notifications/test', [EmailNotificationSettingsController::class, 'sendTest'])->name('email-notifications.test');
+
+        Route::get('/icons', [IconLibraryController::class, 'index'])->name('icons.index');
+        Route::post('/icons', [IconLibraryController::class, 'store'])->name('icons.store');
+        Route::put('/icons/pages', [IconLibraryController::class, 'updatePageIcons'])->name('icons.pages');
+        Route::delete('/icons/{iconLibraryItem}', [IconLibraryController::class, 'destroy'])->name('icons.destroy');
+
+        Route::get('/pages', [PageBackgroundController::class, 'index'])->name('pages.index');
+        Route::match(['post', 'put'], '/pages/{pageKey}', [PageBackgroundController::class, 'update'])
+            ->where('pageKey', '[a-z0-9_]+')
+            ->name('pages.update');
     });
 
     Route::middleware('role:superadmin')->prefix('admin')->name('admin.')->group(function () {
@@ -338,16 +348,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/backups/{filename}', [DatabaseBackupController::class, 'download'])
             ->where('filename', 'splis-\d{4}-\d{2}-\d{2}-\d{6}\.sql\.gz')
             ->name('backups.download');
-
-        Route::get('/icons', [IconLibraryController::class, 'index'])->name('icons.index');
-        Route::post('/icons', [IconLibraryController::class, 'store'])->name('icons.store');
-        Route::put('/icons/pages', [IconLibraryController::class, 'updatePageIcons'])->name('icons.pages');
-        Route::delete('/icons/{iconLibraryItem}', [IconLibraryController::class, 'destroy'])->name('icons.destroy');
-
-        Route::get('/pages', [PageBackgroundController::class, 'index'])->name('pages.index');
-        Route::match(['post', 'put'], '/pages/{pageKey}', [PageBackgroundController::class, 'update'])
-            ->where('pageKey', '[a-z0-9_]+')
-            ->name('pages.update');
 
         Route::get('/trash', [TrashController::class, 'index'])->name('trash.index');
         Route::post('/trash/{type}/{id}/restore', [TrashController::class, 'restore'])

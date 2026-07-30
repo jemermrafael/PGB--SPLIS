@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Middleware\EnsureIncomingEnabled;
+use App\Http\Middleware\EnsureUserRole;
+use App\Http\Middleware\RedirectToCanonicalPermalink;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -15,8 +18,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
 
         $middleware->alias([
-            'role' => \App\Http\Middleware\EnsureUserRole::class,
-            'incoming.enabled' => \App\Http\Middleware\EnsureIncomingEnabled::class,
+            'role' => EnsureUserRole::class,
+            'incoming.enabled' => EnsureIncomingEnabled::class,
+            'permalink' => RedirectToCanonicalPermalink::class,
+        ]);
+
+        $middleware->web(append: [
+            RedirectToCanonicalPermalink::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -37,7 +37,7 @@ class EmailNotificationTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->get(route('admin.email-notifications.index'))
+            ->get(route('admin.email-notifications.index', ['tab' => 'board_member']))
             ->assertOk()
             ->assertSee('Email Notifications', false)
             ->assertSee('Board Members', false)
@@ -47,7 +47,14 @@ class EmailNotificationTest extends TestCase
             ->assertSee('New Appropriation Ordinance published', false)
             ->assertSee('Activity log events', false)
             ->assertSee('Use Gmail preset', false)
-            ->assertSee('SMTP', false);
+            ->assertSee('SMTP', false)
+            ->assertSee('data-email-rich-editor', false)
+            ->assertSee('data-email-preview', false)
+            ->assertSee('email-template-preview-modal', false)
+            ->assertSee('Body formatting', false)
+            ->assertSee('Legislative Information System', false)
+            ->assertSee('Sangguniang Panlalawigan', false)
+            ->assertSee('splis-email-message-card', false);
 
         $defaults = app(EmailNotificationSettings::class)->get();
         $this->assertFalse($defaults['types'][EmailNotificationSettings::AUDIENCE_BOARD_MEMBER][EmailNotificationSettings::TYPE_RESOLUTION_PUBLISHED]);
@@ -147,10 +154,15 @@ class EmailNotificationTest extends TestCase
         );
 
         Mail::assertSent(SystemNotificationMail::class, function (SystemNotificationMail $mail) use ($user) {
+            $html = $mail->render();
+
             return $mail->hasTo($user->email)
                 && $mail->notificationTitle === 'Agenda referred to your Committee'
                 && str_contains($mail->notificationBody, 'Agenda #1')
-                && str_contains($mail->notificationBody, 'Ways and Means');
+                && str_contains($mail->notificationBody, 'Ways and Means')
+                && str_contains($html, 'Legislative Information System')
+                && str_contains($html, 'Sangguniang Panlalawigan')
+                && str_contains($html, 'bataan-seal.png');
         });
     }
 

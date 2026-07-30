@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
-use App\Models\ActivityLog;
 use App\Models\Committee;
 use App\Models\Resolution;
 use App\Models\User;
@@ -75,7 +74,7 @@ class ResolutionTrashTest extends TestCase
             ->first();
 
         $this->assertNotNull($notification);
-        $this->assertSame('/resolutions/'.$resolution->id, parse_url((string) $notification->link, PHP_URL_PATH) ?: $notification->link);
+        $this->assertSame('/resolutions/'.$resolution->resolution_no, parse_url((string) $notification->link, PHP_URL_PATH) ?: $notification->link);
     }
 
     public function test_restore_and_force_delete_flow(): void

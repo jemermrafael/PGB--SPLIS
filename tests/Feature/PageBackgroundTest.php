@@ -24,13 +24,12 @@ class PageBackgroundTest extends TestCase
     protected function settingsAdmin(): User
     {
         return User::factory()->create([
-            'name' => 'Jemer M. Rafael',
             'role' => UserRole::Superadmin,
             'is_active' => true,
         ]);
     }
 
-    public function test_named_superadmin_can_open_pages_settings(): void
+    public function test_superadmin_can_open_pages_settings(): void
     {
         $this->actingAs($this->settingsAdmin())
             ->get(route('admin.pages.index'))
@@ -40,20 +39,33 @@ class PageBackgroundTest extends TestCase
             ->assertSee('Directory', false);
     }
 
-    public function test_other_superadmin_cannot_open_pages_settings(): void
+    public function test_any_superadmin_can_open_pages_settings(): void
     {
         $user = User::factory()->create([
-            'name' => 'Other Admin',
+            'name' => 'Other Superadmin',
             'role' => UserRole::Superadmin,
             'is_active' => true,
         ]);
 
         $this->actingAs($user)
             ->get(route('admin.pages.index'))
-            ->assertForbidden();
+            ->assertOk();
     }
 
-    public function test_named_superadmin_can_save_classic_background_with_image(): void
+    public function test_admin_can_open_pages_settings(): void
+    {
+        $user = User::factory()->create([
+            'role' => UserRole::Admin,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('admin.pages.index'))
+            ->assertOk()
+            ->assertSee('Pages', false);
+    }
+
+    public function test_superadmin_can_save_classic_background_with_image(): void
     {
         Storage::fake('local');
 
@@ -155,7 +167,7 @@ class PageBackgroundTest extends TestCase
         $this->assertDatabaseMissing('page_backgrounds', ['page_key' => 'directory']);
     }
 
-    public function test_user_menu_shows_settings_group_for_named_superadmin(): void
+    public function test_user_menu_shows_settings_group_for_superadmin(): void
     {
         $this->actingAs($this->settingsAdmin())
             ->get(route('dashboard'))

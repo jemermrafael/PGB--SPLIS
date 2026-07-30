@@ -25,7 +25,6 @@ class CommitteeIconTest extends TestCase
     protected function iconLibrarian(): User
     {
         return User::factory()->create([
-            'name' => 'Jemer M. Rafael',
             'role' => UserRole::Superadmin,
             'is_active' => true,
         ]);
@@ -53,10 +52,10 @@ class CommitteeIconTest extends TestCase
         $this->assertSame('trophy', CommitteeIcon::resolveKey($committee));
     }
 
-    public function test_other_superadmin_cannot_change_committee_icon(): void
+    public function test_any_superadmin_can_change_committee_icon(): void
     {
         $superadmin = User::factory()->create([
-            'name' => 'Other Admin',
+            'name' => 'Other Superadmin',
             'role' => UserRole::Superadmin,
             'is_active' => true,
         ]);
@@ -75,10 +74,10 @@ class CommitteeIconTest extends TestCase
             ->assertRedirect();
 
         $committee->refresh();
-        $this->assertSame('building', $committee->icon_key);
+        $this->assertSame('trophy', $committee->icon_key);
     }
 
-    public function test_admin_cannot_change_committee_icon(): void
+    public function test_admin_can_change_committee_icon(): void
     {
         $admin = User::factory()->create(['role' => UserRole::Admin, 'is_active' => true]);
         $term = CommitteeTerm::currentOrCreate();
@@ -96,7 +95,7 @@ class CommitteeIconTest extends TestCase
             ->assertRedirect();
 
         $committee->refresh();
-        $this->assertSame('building', $committee->icon_key);
+        $this->assertSame('trophy', $committee->icon_key);
     }
 
     public function test_uploaded_icon_overrides_preset_key(): void

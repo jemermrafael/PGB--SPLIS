@@ -135,15 +135,49 @@
                                                 value="{{ $template['subject'] ?? '' }}"
                                             >
                                         </div>
-                                        <div class="sm:col-span-2">
-                                            <label class="splis-label !mb-0.5 !text-xs" for="tpl-{{ $audience }}-{{ $type }}-body">Body (HTML allowed)</label>
+                                        <div class="sm:col-span-2" data-email-rich-wrap>
+                                            <div class="mb-1 flex flex-wrap items-center justify-between gap-2">
+                                                <label class="splis-label !mb-0 !text-xs" for="tpl-{{ $audience }}-{{ $type }}-body-editor">Body</label>
+                                                <div class="flex flex-wrap items-center gap-1">
+                                                    <div class="splis-email-rich-toolbar" role="toolbar" aria-label="Body formatting">
+                                                        <button type="button" class="splis-email-rich-btn" data-email-rich-command="bold" title="Bold" aria-label="Bold"><strong>B</strong></button>
+                                                        <button type="button" class="splis-email-rich-btn" data-email-rich-command="italic" title="Italic" aria-label="Italic"><em>I</em></button>
+                                                        <button type="button" class="splis-email-rich-btn" data-email-rich-command="underline" title="Underline" aria-label="Underline"><span class="underline">U</span></button>
+                                                        <button type="button" class="splis-email-rich-btn" data-email-rich-command="insertUnorderedList" title="Bullet list" aria-label="Bullet list">• List</button>
+                                                        <button type="button" class="splis-email-rich-btn" data-email-rich-command="insertOrderedList" title="Numbered list" aria-label="Numbered list">1. List</button>
+                                                        <button type="button" class="splis-email-rich-btn" data-email-rich-command="createLink" title="Insert link" aria-label="Insert link">Link</button>
+                                                        <button type="button" class="splis-email-rich-btn" data-email-rich-command="removeFormat" title="Clear formatting" aria-label="Clear formatting">Clear</button>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        class="splis-btn-secondary !px-2 !py-1 text-xs"
+                                                        data-email-preview
+                                                        data-preview-subject="#tpl-{{ $audience }}-{{ $type }}-subject"
+                                                        data-preview-body="#tpl-{{ $audience }}-{{ $type }}-body"
+                                                        data-preview-action="#tpl-{{ $audience }}-{{ $type }}-action"
+                                                        data-preview-title="{{ $typeLabels[$type] ?? $type }}"
+                                                    >Preview</button>
+                                                </div>
+                                            </div>
+                                            <div class="splis-email-rich-shell">
+                                                <div
+                                                    id="tpl-{{ $audience }}-{{ $type }}-body-editor"
+                                                    class="splis-email-rich-editor"
+                                                    contenteditable="true"
+                                                    role="textbox"
+                                                    aria-multiline="true"
+                                                    data-email-rich-editor
+                                                ></div>
+                                            </div>
                                             <textarea
                                                 id="tpl-{{ $audience }}-{{ $type }}-body"
                                                 name="templates[{{ $audience }}][{{ $type }}][body]"
-                                                class="splis-input min-h-[6.5rem] font-mono text-xs leading-5"
+                                                class="hidden"
                                                 rows="6"
+                                                data-email-rich-input
                                                 spellcheck="false"
                                             >{{ $template['body'] ?? '' }}</textarea>
+                                            <p class="mt-1 text-[11px] text-slate-500">Placeholders like <code class="text-[10px]">@{{title}}</code> stay as text until send. Use Preview to check the result.</p>
                                         </div>
                                         <div class="sm:col-span-2">
                                             <label class="splis-label !mb-0.5 !text-xs" for="tpl-{{ $audience }}-{{ $type }}-action">Button label</label>
@@ -162,17 +196,8 @@
                     </div>
 
                     <div class="border-t border-slate-200 px-3 py-2 text-[11px] leading-relaxed text-slate-500 dark:border-slate-700">
-                        <p class="font-medium text-slate-600 dark:text-slate-400">HTML tips</p>
-                        <p>
-                            Use tags like
-                            <code class="text-[10px]">&lt;p&gt;</code>,
-                            <code class="text-[10px]">&lt;strong&gt;</code>,
-                            <code class="text-[10px]">&lt;em&gt;</code>,
-                            <code class="text-[10px]">&lt;ul&gt;</code>,
-                            <code class="text-[10px]">&lt;a href="…"&gt;</code>,
-                            <code class="text-[10px]">&lt;img src="https://…" alt="…" width="240"&gt;</code>.
-                            Images need a public <code class="text-[10px]">https://</code> URL (or data URI).
-                        </p>
+                        <p class="font-medium text-slate-600 dark:text-slate-400">Tips</p>
+                        <p>Use the toolbar for formatting. You can also paste HTML. Images need a public <code class="text-[10px]">https://</code> URL.</p>
                         <p class="mt-1">Placeholders: {{ implode(', ', $placeholders) }}</p>
                     </div>
                 </div>
@@ -270,5 +295,60 @@
             <button type="submit" class="splis-btn-secondary">Send test</button>
         </div>
     </form>
+</div>
+
+<div id="email-template-preview-modal" class="splis-modal" hidden>
+    <div class="splis-modal-backdrop" data-email-preview-close tabindex="-1" aria-hidden="true"></div>
+    <div class="splis-modal-panel !max-w-2xl" role="dialog" aria-modal="true" aria-labelledby="email-template-preview-title">
+        <div class="splis-modal-header">
+            <h3 id="email-template-preview-title" class="splis-modal-title">Email preview</h3>
+            <button type="button" class="splis-modal-close" data-email-preview-close aria-label="Close">×</button>
+        </div>
+        <div class="splis-modal-body space-y-3">
+            <p class="text-xs text-slate-500">Shows how the message will look in an inbox. Sample placeholder values are filled in for preview only.</p>
+
+            <div class="splis-email-client-chrome">
+                <div class="splis-email-client-meta">
+                    <div class="splis-email-client-row">
+                        <span class="splis-email-client-label">From</span>
+                        <span class="splis-email-client-value">{{ $settings['smtp']['from_name'] ?: config('app.name') }} &lt;{{ $settings['smtp']['from_address'] ?: 'noreply@'.parse_url((string) config('app.url'), PHP_URL_HOST) }}&gt;</span>
+                    </div>
+                    <div class="splis-email-client-row">
+                        <span class="splis-email-client-label">Subject</span>
+                        <span id="email-template-preview-subject" class="splis-email-client-value font-semibold text-slate-900"></span>
+                    </div>
+                </div>
+
+                <div class="splis-email-client-canvas">
+                    <div class="splis-email-message-card">
+                        <div class="splis-email-brand-header">
+                            <img
+                                src="{{ asset('images/bataan-seal.png') }}"
+                                width="48"
+                                height="48"
+                                alt="Province of Bataan official seal"
+                                class="splis-email-brand-seal"
+                            >
+                            <div>
+                                <p class="splis-email-brand-eyebrow">Legislative Information System</p>
+                                <p class="splis-email-brand-title">Sangguniang Panlalawigan</p>
+                            </div>
+                        </div>
+
+                        <h2 id="email-template-preview-heading" class="splis-email-message-heading"></h2>
+                        <div id="email-template-preview-body" class="splis-email-preview-body"></div>
+
+                        <div id="email-template-preview-action-wrap" class="hidden">
+                            <a id="email-template-preview-action" href="#" class="splis-email-preview-button" onclick="return false;">View details</a>
+                        </div>
+
+                        <p class="splis-email-message-thanks">
+                            Thanks,<br>{{ config('app.name') }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection

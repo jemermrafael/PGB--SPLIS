@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasActivityLogs;
+use App\Services\AgendaPublishedOutputService;
+use App\Support\Permalink;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -113,6 +116,113 @@ class Resolution extends Model
         return $this->hasOne(AgendaItem::class, 'resolution_id')->withTrashed();
     }
 
+    public function permalinkYear(): int
+    {
+        return (int) ($this->series ?: $this->created_at?->year ?: now()->year);
+    }
+
+    public function getRouteKey(): string
+    {
+        $number = trim((string) ($this->resolution_no ?? ''));
+
+        if ($number === '') {
+            return Permalink::yearAndId($this->permalinkYear(), $this->getKey());
+        }
+
+        if ($this->hasDuplicateResolutionNo()) {
+            $legacySpId = $this->legacy_sp_id;
+
+            if ($legacySpId !== null && $legacySpId !== '') {
+                return Permalink::resolutionDuplicateKey($number, $legacySpId);
+            }
+
+            return Permalink::resolutionDuplicateKey($number, $this->getKey());
+        }
+
+        return $number;
+    }
+
+    public function hasDuplicateResolutionNo(): bool
+    {
+        $number = trim((string) ($this->resolution_no ?? ''));
+
+        if ($number === '') {
+            return false;
+        }
+
+        static $duplicateCache = [];
+
+        if (! array_key_exists($number, $duplicateCache)) {
+            $duplicateCache[$number] = static::withTrashed()
+                ->where('resolution_no', $number)
+                ->limit(2)
+                ->pluck($this->getKeyName())
+                ->count() > 1;
+        }
+
+        return $duplicateCache[$number];
+    }
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->resolvePermalinkBinding($this->newQuery(), (string) $value);
+    }
+
+    public function resolveSoftDeletableRouteBinding($value, $field = null)
+    {
+        return $this->resolvePermalinkBinding(static::withTrashed(), (string) $value);
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     */
+    protected function resolvePermalinkBinding(Builder $query, string $value): ?self
+    {
+        $duplicate = Permalink::parseResolutionDuplicateKey($value);
+
+        if ($duplicate !== null) {
+            $byLegacy = (clone $query)
+                ->where('resolution_no', $duplicate['resolution_no'])
+                ->where('legacy_sp_id', $duplicate['legacy_sp_id'])
+                ->orderByDesc($this->getKeyName())
+                ->first();
+
+            if ($byLegacy !== null) {
+                return $byLegacy;
+            }
+
+            $byIdSuffix = (clone $query)
+                ->where('resolution_no', $duplicate['resolution_no'])
+                ->whereKey($duplicate['legacy_sp_id'])
+                ->first();
+
+            if ($byIdSuffix !== null) {
+                return $byIdSuffix;
+            }
+        }
+
+        $byNumber = (clone $query)
+            ->where('resolution_no', $value)
+            ->orderByDesc($this->getKeyName())
+            ->first();
+
+        if ($byNumber !== null) {
+            return $byNumber;
+        }
+
+        if (Permalink::isLegacyNumericId($value)) {
+            return $query->whereKey((int) $value)->first();
+        }
+
+        $parsed = Permalink::parseYearAndId($value);
+
+        if ($parsed === null) {
+            return null;
+        }
+
+        return $query->whereKey($parsed['id'])->first();
+    }
+
     public function previousInList(): ?self
     {
         return static::query()
@@ -132,7 +242,7 @@ class Resolution extends Model
     protected static function booted(): void
     {
         static::forceDeleting(function (Resolution $resolution): void {
-            app(\App\Services\AgendaPublishedOutputService::class)->clearFromDeletedResolution($resolution);
+            app(AgendaPublishedOutputService::class)->clearFromDeletedResolution($resolution);
         });
     }
 }

@@ -87,12 +87,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Settings: Icon Library, page backgrounds, committee icon overrides — named superadmin only.
+     * Settings: Icon Library, page backgrounds, committee icon overrides — admin and superadmin.
      */
     public function canManageIconLibrary(): bool
     {
-        return $this->isSuperadmin()
-            && strcasecmp(trim((string) $this->name), 'Jemer M. Rafael') === 0;
+        return $this->canAdmin();
     }
 
     /**

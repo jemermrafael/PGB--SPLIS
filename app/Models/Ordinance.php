@@ -5,7 +5,11 @@ namespace App\Models;
 use App\Enums\OrdinanceBoardMemberRole;
 use App\Enums\OrdinancePublicationStatus;
 use App\Models\Concerns\NavigatesById;
+use App\Services\AgendaPublishedOutputService;
+use App\Services\OrdinancePdfService;
 use App\Support\OrdinanceNumberParser;
+use App\Support\OrdinancePdfType;
+use App\Support\Permalink;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -231,6 +235,48 @@ class Ordinance extends Model
         return 'Ord. No. '.str_pad((string) $this->ordinance_no, 2, '0', STR_PAD_LEFT);
     }
 
+    public function permalinkYear(): int
+    {
+        return (int) ($this->series_year ?: $this->created_at?->year ?: now()->year);
+    }
+
+    public function getRouteKey(): string
+    {
+        return Permalink::yearAndNumber($this->permalinkYear(), (int) $this->ordinance_no);
+    }
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->resolvePermalinkBinding($this->newQuery(), (string) $value);
+    }
+
+    public function resolveSoftDeletableRouteBinding($value, $field = null)
+    {
+        return $this->resolvePermalinkBinding(static::withTrashed(), (string) $value);
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     */
+    protected function resolvePermalinkBinding(Builder $query, string $value): ?self
+    {
+        if (Permalink::isLegacyNumericId($value)) {
+            return $query->whereKey((int) $value)->first();
+        }
+
+        $parsed = Permalink::parseYearAndNumber($value);
+
+        if ($parsed === null) {
+            return null;
+        }
+
+        return $query
+            ->where('series_year', $parsed['year'])
+            ->where('ordinance_no', $parsed['number'])
+            ->orderByDesc($this->getKeyName())
+            ->first();
+    }
+
     public function displaySeries(): string
     {
         return 'Series of '.($this->series_year ?: now()->year);
@@ -301,52 +347,52 @@ class Ordinance extends Model
 
     public function hasLocalPdf(): bool
     {
-        return $this->hasLocalPdfType(\App\Support\OrdinancePdfType::MAIN);
+        return $this->hasLocalPdfType(OrdinancePdfType::MAIN);
     }
 
     public function hasLocalPdfType(string $type): bool
     {
-        return app(\App\Services\OrdinancePdfService::class)->existsFor($this, $type);
+        return app(OrdinancePdfService::class)->existsFor($this, $type);
     }
 
     public function pdfPublicUrl(): ?string
     {
-        return app(\App\Services\OrdinancePdfService::class)->publicUrl($this);
+        return app(OrdinancePdfService::class)->publicUrl($this);
     }
 
     public function pdfViewerMode(): ?string
     {
-        return app(\App\Services\OrdinancePdfService::class)->viewerMode($this);
+        return app(OrdinancePdfService::class)->viewerMode($this);
     }
 
     public function movBulletinPdfPublicUrl(): ?string
     {
-        return app(\App\Services\OrdinancePdfService::class)->publicUrl($this, \App\Support\OrdinancePdfType::BULLETIN);
+        return app(OrdinancePdfService::class)->publicUrl($this, OrdinancePdfType::BULLETIN);
     }
 
     public function movBulletinViewerMode(): ?string
     {
-        return app(\App\Services\OrdinancePdfService::class)->viewerMode($this, \App\Support\OrdinancePdfType::BULLETIN);
+        return app(OrdinancePdfService::class)->viewerMode($this, OrdinancePdfType::BULLETIN);
     }
 
     public function movCertificationPdfPublicUrl(): ?string
     {
-        return app(\App\Services\OrdinancePdfService::class)->publicUrl($this, \App\Support\OrdinancePdfType::CERTIFICATION);
+        return app(OrdinancePdfService::class)->publicUrl($this, OrdinancePdfType::CERTIFICATION);
     }
 
     public function movCertificationViewerMode(): ?string
     {
-        return app(\App\Services\OrdinancePdfService::class)->viewerMode($this, \App\Support\OrdinancePdfType::CERTIFICATION);
+        return app(OrdinancePdfService::class)->viewerMode($this, OrdinancePdfType::CERTIFICATION);
     }
 
     public function movNewspaperPdfPublicUrl(): ?string
     {
-        return app(\App\Services\OrdinancePdfService::class)->publicUrl($this, \App\Support\OrdinancePdfType::NEWSPAPER);
+        return app(OrdinancePdfService::class)->publicUrl($this, OrdinancePdfType::NEWSPAPER);
     }
 
     public function movNewspaperViewerMode(): ?string
     {
-        return app(\App\Services\OrdinancePdfService::class)->viewerMode($this, \App\Support\OrdinancePdfType::NEWSPAPER);
+        return app(OrdinancePdfService::class)->viewerMode($this, OrdinancePdfType::NEWSPAPER);
     }
 
     /**
@@ -354,13 +400,13 @@ class Ordinance extends Model
      */
     public function missingPdfMirrorTypes(): array
     {
-        return app(\App\Services\OrdinancePdfService::class)->missingMirrorTypes($this);
+        return app(OrdinancePdfService::class)->missingMirrorTypes($this);
     }
 
     protected static function booted(): void
     {
         static::deleting(function (Ordinance $ordinance): void {
-            app(\App\Services\AgendaPublishedOutputService::class)->clearFromDeletedOrdinance($ordinance);
+            app(AgendaPublishedOutputService::class)->clearFromDeletedOrdinance($ordinance);
         });
     }
 }

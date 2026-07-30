@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\NavigatesById;
+use App\Support\Permalink;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -172,6 +173,38 @@ class BoardMember extends Model
     public function displayName(): string
     {
         return $this->formattedName($this->honorific);
+    }
+
+    public function getRouteKey(): string
+    {
+        return Permalink::boardMemberSlug($this->name);
+    }
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->resolvePermalinkBinding($this->newQuery(), (string) $value);
+    }
+
+    public function resolveSoftDeletableRouteBinding($value, $field = null)
+    {
+        return $this->resolvePermalinkBinding(static::withTrashed(), (string) $value);
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     */
+    protected function resolvePermalinkBinding(Builder $query, string $value): ?self
+    {
+        if (Permalink::isLegacyNumericId($value)) {
+            return $query->whereKey((int) $value)->first();
+        }
+
+        $slug = Permalink::boardMemberSlug($value);
+
+        return $query
+            ->orderByDesc($this->getKeyName())
+            ->get()
+            ->first(fn (self $member) => Permalink::boardMemberSlug($member->name) === $slug);
     }
 
     public function officialName(): string

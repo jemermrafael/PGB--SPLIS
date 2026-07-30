@@ -2988,6 +2988,115 @@
         @apply px-3 pb-2;
     }
 
+    .splis-email-rich-toolbar {
+        @apply flex flex-wrap items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-slate-800;
+    }
+
+    .splis-email-rich-btn {
+        @apply inline-flex h-7 min-w-7 items-center justify-center rounded px-1.5 text-xs font-medium text-slate-700 transition hover:bg-white hover:shadow-sm dark:text-slate-200 dark:hover:bg-slate-700;
+    }
+
+    .splis-email-rich-shell {
+        @apply overflow-hidden rounded-lg border border-slate-300 bg-white focus-within:border-brand-700 focus-within:ring-2 focus-within:ring-brand-700/20 dark:border-slate-600 dark:bg-slate-900;
+    }
+
+    .splis-email-rich-editor {
+        @apply min-h-[7rem] max-h-64 overflow-y-auto px-3 py-2 text-sm leading-6 text-slate-900 outline-none dark:text-slate-100;
+    }
+
+    .splis-email-rich-editor:empty::before {
+        content: 'Write the email body…';
+        @apply pointer-events-none text-slate-400;
+    }
+
+    .splis-email-rich-editor ul {
+        @apply list-disc pl-5;
+    }
+
+    .splis-email-rich-editor ol {
+        @apply list-decimal pl-5;
+    }
+
+    .splis-email-rich-editor a {
+        @apply text-brand-700 underline;
+    }
+
+    .splis-email-preview-body ul {
+        @apply list-disc pl-5;
+    }
+
+    .splis-email-preview-body ol {
+        @apply list-decimal pl-5;
+    }
+
+    .splis-email-preview-body a {
+        @apply text-[#3869d4] underline;
+    }
+
+    .splis-email-preview-body p {
+        @apply mb-4 last:mb-0;
+    }
+
+    .splis-email-client-chrome {
+        @apply overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm;
+    }
+
+    .splis-email-client-meta {
+        @apply space-y-1.5 border-b border-slate-200 bg-slate-50 px-4 py-3;
+    }
+
+    .splis-email-client-row {
+        @apply flex gap-3 text-sm;
+    }
+
+    .splis-email-client-label {
+        @apply w-14 shrink-0 pt-px text-[11px] font-semibold uppercase tracking-wide text-slate-500;
+    }
+
+    .splis-email-client-value {
+        @apply min-w-0 break-words text-slate-700;
+    }
+
+    .splis-email-client-canvas {
+        @apply bg-[#edf2f7] px-4 py-6 sm:px-6;
+    }
+
+    .splis-email-message-card {
+        @apply mx-auto max-w-[570px] rounded-lg bg-white px-6 py-6 shadow-sm sm:px-8;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        color: #3d4852;
+        font-size: 16px;
+        line-height: 1.5;
+    }
+
+    .splis-email-brand-header {
+        @apply mb-6 flex items-center gap-3 border-b border-[#e8e5ef] pb-4;
+    }
+
+    .splis-email-brand-seal {
+        @apply h-12 w-12 shrink-0 rounded-full object-cover;
+    }
+
+    .splis-email-brand-eyebrow {
+        @apply text-[11px] font-medium uppercase tracking-wide text-slate-500;
+    }
+
+    .splis-email-brand-title {
+        @apply text-base font-semibold text-slate-800;
+    }
+
+    .splis-email-message-heading {
+        @apply mb-4 text-[18px] font-bold leading-snug text-[#3d4852];
+    }
+
+    .splis-email-preview-button {
+        @apply mt-2 inline-block rounded bg-[#2d3748] px-5 py-2.5 text-center text-sm font-bold text-white no-underline;
+    }
+
+    .splis-email-message-thanks {
+        @apply mt-6 text-[#3d4852];
+    }
+
     body.splis-ob-dialog-open {
         @apply overflow-hidden;
     }

@@ -140,11 +140,26 @@ class ActivityLogPresenter
             return null;
         }
 
+        if ($log->subject_type === Resolution::class) {
+            $model = Resolution::withTrashed()->find($log->subject_id);
+
+            return $model ? route('resolutions.show', $model, absolute: false) : null;
+        }
+
+        if ($log->subject_type === AgendaItem::class) {
+            $model = AgendaItem::withTrashed()->find($log->subject_id);
+
+            return $model ? route('agenda.show', $model, absolute: false) : null;
+        }
+
+        if ($log->subject_type === Ordinance::class) {
+            $model = Ordinance::withTrashed()->find($log->subject_id);
+
+            return $model ? route('ordinances.show', $model, absolute: false) : null;
+        }
+
         return match ($log->subject_type) {
-            Resolution::class => route('resolutions.show', $log->subject_id, absolute: false),
             IncomingDocument::class => route('incoming.show', $log->subject_id, absolute: false),
-            AgendaItem::class => route('agenda.show', $log->subject_id, absolute: false),
-            Ordinance::class => route('ordinances.show', $log->subject_id, absolute: false),
             ReferenceMaterial::class => route('references.show', $log->subject_id, absolute: false),
             default => null,
         };

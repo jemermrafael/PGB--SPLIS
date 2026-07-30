@@ -30,13 +30,12 @@ class IconLibraryTest extends TestCase
     protected function iconLibrarian(): User
     {
         return User::factory()->create([
-            'name' => 'Jemer M. Rafael',
             'role' => UserRole::Superadmin,
             'is_active' => true,
         ]);
     }
 
-    public function test_named_superadmin_can_open_icon_library_page(): void
+    public function test_superadmin_can_open_icon_library_page(): void
     {
         $this->actingAs($this->iconLibrarian())
             ->get(route('admin.icons.index'))
@@ -46,29 +45,45 @@ class IconLibraryTest extends TestCase
             ->assertSee('Built-in presets', false);
     }
 
-    public function test_other_superadmin_cannot_open_icon_library_page(): void
+    public function test_any_superadmin_sees_settings_links_in_nav(): void
     {
         $superadmin = User::factory()->create([
-            'name' => 'Other Admin',
+            'name' => 'Other Superadmin',
             'role' => UserRole::Superadmin,
             'is_active' => true,
         ]);
 
         $this->actingAs($superadmin)
-            ->get(route('admin.icons.index'))
-            ->assertForbidden();
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Email Notifications', false)
+            ->assertSee('Icon Library', false)
+            ->assertSee('Pages', false)
+            ->assertSee(route('admin.email-notifications.index'), false)
+            ->assertSee(route('admin.icons.index'), false)
+            ->assertSee(route('admin.pages.index'), false);
     }
 
-    public function test_admin_cannot_open_icon_library_page(): void
+    public function test_admin_can_open_icon_library_and_sees_settings_links(): void
     {
         $admin = User::factory()->create(['role' => UserRole::Admin, 'is_active' => true]);
 
         $this->actingAs($admin)
             ->get(route('admin.icons.index'))
-            ->assertForbidden();
+            ->assertOk()
+            ->assertSee('Icon Library', false);
+
+        $this->actingAs($admin)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Email Notifications', false)
+            ->assertSee('Icon Library', false)
+            ->assertSee('Pages', false)
+            ->assertSee(route('admin.icons.index'), false)
+            ->assertSee(route('admin.pages.index'), false);
     }
 
-    public function test_named_superadmin_can_upload_and_delete_library_icon(): void
+    public function test_superadmin_can_upload_and_delete_library_icon(): void
     {
         Storage::fake('local');
 
@@ -99,7 +114,7 @@ class IconLibraryTest extends TestCase
         Storage::disk('local')->assertMissing($item->stored_path);
     }
 
-    public function test_named_superadmin_can_upload_multiple_library_icons(): void
+    public function test_superadmin_can_upload_multiple_library_icons(): void
     {
         Storage::fake('local');
 
@@ -119,7 +134,7 @@ class IconLibraryTest extends TestCase
         $this->assertTrue(IconLibraryItem::query()->where('name', 'gamma')->exists());
     }
 
-    public function test_named_superadmin_can_assign_library_icon_to_committee(): void
+    public function test_superadmin_can_assign_library_icon_to_committee(): void
     {
         Storage::fake('local');
 
@@ -157,7 +172,7 @@ class IconLibraryTest extends TestCase
         $this->assertSame(route('icon-library.show', $item), CommitteeIcon::customUrl($committee));
     }
 
-    public function test_named_superadmin_can_assign_page_title_icon(): void
+    public function test_superadmin_can_assign_page_title_icon(): void
     {
         Storage::fake('local');
 
@@ -191,7 +206,7 @@ class IconLibraryTest extends TestCase
             ->assertSee(route('icon-library.show', $item), false);
     }
 
-    public function test_named_superadmin_can_clear_page_title_icon(): void
+    public function test_superadmin_can_clear_page_title_icon(): void
     {
         Storage::fake('local');
 

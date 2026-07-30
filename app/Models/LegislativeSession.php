@@ -3,13 +3,16 @@
 namespace App\Models;
 
 use App\Services\SessionPdfService;
+use App\Support\Permalink;
 use App\Support\SessionPdfSlot;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class LegislativeSession extends Model
 {
@@ -139,6 +142,70 @@ class LegislativeSession extends Model
         return $parts !== [] ? implode(' — ', $parts) : 'Legislative session #'.$this->id;
     }
 
+    public function permalinkYear(): int
+    {
+        return (int) ($this->session_date?->year ?: $this->created_at?->year ?: now()->year);
+    }
+
+    public function permalinkOrdinal(): ?string
+    {
+        return Permalink::ordinalFromSessionNumber($this->session_number);
+    }
+
+    public function getRouteKey(): string
+    {
+        $ordinal = $this->permalinkOrdinal();
+
+        if ($ordinal !== null) {
+            return Permalink::yearAndOrdinal($this->permalinkYear(), $ordinal);
+        }
+
+        return Permalink::yearAndId($this->permalinkYear(), $this->getKey());
+    }
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->resolvePermalinkBinding($this->newQuery(), (string) $value);
+    }
+
+    public function resolveSoftDeletableRouteBinding($value, $field = null)
+    {
+        return $this->resolvePermalinkBinding(static::withTrashed(), (string) $value);
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     */
+    protected function resolvePermalinkBinding(Builder $query, string $value): ?self
+    {
+        if (Permalink::isLegacyNumericId($value)) {
+            return $query->whereKey((int) $value)->first();
+        }
+
+        $ordinal = Permalink::parseYearAndOrdinal($value);
+
+        if ($ordinal !== null) {
+            $match = $query
+                ->whereNotNull('session_date')
+                ->whereYear('session_date', $ordinal['year'])
+                ->orderByDesc($this->getKeyName())
+                ->get()
+                ->first(fn (self $session) => $session->permalinkOrdinal() === $ordinal['ordinal']);
+
+            if ($match !== null) {
+                return $match;
+            }
+        }
+
+        $parsed = Permalink::parseYearAndId($value);
+
+        if ($parsed === null) {
+            return null;
+        }
+
+        return $query->whereKey($parsed['id'])->first();
+    }
+
     public function isPastSessionDate(): bool
     {
         return $this->session_date !== null
@@ -161,7 +228,7 @@ class LegislativeSession extends Model
             return null;
         }
 
-        return \Illuminate\Support\Str::of($this->session_time)->substr(0, 5);
+        return Str::of($this->session_time)->substr(0, 5);
     }
 
     public function formattedSessionTimeForPrint(): ?string
@@ -170,7 +237,7 @@ class LegislativeSession extends Model
             return null;
         }
 
-        $formatted = \Carbon\Carbon::parse($this->session_time)->format('g:i A');
+        $formatted = Carbon::parse($this->session_time)->format('g:i A');
 
         return str_replace(['AM', 'PM'], ['A.M.', 'P.M.'], $formatted);
     }

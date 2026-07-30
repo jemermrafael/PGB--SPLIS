@@ -24,5 +24,6 @@ class ResolutionItem
         public ?string $pdfUrl = null,
         public ?string $pdfStatus = null,
         public ?string $status = null,
+        public ?string $permalink = null,
     ) {}
 }

@@ -9,6 +9,7 @@ use App\Support\AgendaDeadline;
 use App\Support\AgendaMeasureType;
 use App\Support\AgendaPdfSlot;
 use App\Support\OrdinanceNumberParser;
+use App\Support\Permalink;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -207,6 +208,56 @@ class AgendaItem extends Model
         }
 
         return $this->placeholderLabel();
+    }
+
+    public function permalinkYear(): int
+    {
+        return (int) (
+            $this->date_received?->year
+            ?: $this->reso_ord_ao_series
+            ?: $this->created_at?->year
+            ?: now()->year
+        );
+    }
+
+    public function getRouteKey(): string
+    {
+        return Permalink::agendaKey($this->permalinkYear(), $this->tracking_no, $this->getKey());
+    }
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->resolvePermalinkBinding($this->newQuery(), (string) $value);
+    }
+
+    public function resolveSoftDeletableRouteBinding($value, $field = null)
+    {
+        return $this->resolvePermalinkBinding(static::withTrashed(), (string) $value);
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     */
+    protected function resolvePermalinkBinding(Builder $query, string $value): ?self
+    {
+        if (Permalink::isLegacyNumericId($value)) {
+            return $query->whereKey((int) $value)->first();
+        }
+
+        $parsed = Permalink::parseAgendaKey($value);
+
+        if ($parsed === null) {
+            return null;
+        }
+
+        if (isset($parsed['unnumbered_id'])) {
+            return $query->whereKey($parsed['unnumbered_id'])->first();
+        }
+
+        return $query
+            ->where('tracking_no', $parsed['tracking_no'])
+            ->orderByDesc($this->getKeyName())
+            ->first();
     }
 
     public function listNumberLabel(): string

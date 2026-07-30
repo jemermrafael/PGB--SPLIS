@@ -9,9 +9,10 @@ use App\Models\Legacy\LegacyCategory3;
 use App\Models\Legacy\LegacyCategory4;
 use App\Models\Legacy\LegacyDepartment;
 use App\Models\Legacy\LegacyMunicipality;
-use App\Models\Municipality;
 use App\Models\Legacy\SpResolution;
+use App\Models\Municipality;
 use App\Models\Resolution;
+use App\Support\CommitteeIcon;
 use App\Support\DocumentType;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -45,7 +46,7 @@ class ResolutionRepository
             'title' => $item->resolutionTitle,
             'author' => $item->sponsoredBy,
             'committee' => $item->committee,
-            ...\App\Support\CommitteeIcon::listIconFields($item->committee),
+            ...CommitteeIcon::listIconFields($item->committee),
             'keyword' => $item->keyword,
             'date' => $item->dateApproved,
             'series' => $item->series,
@@ -58,7 +59,7 @@ class ResolutionRepository
             'document_type_badge_class' => $item->documentTypeBadgeClass ?? DocumentType::badgeClass($item->documentType),
             'has_pdf' => $item->hasPdf,
             'pdf_status' => $item->pdfStatus,
-            'url' => route('resolutions.show', $item->id),
+            'url' => route('resolutions.show', $item->permalink ?: (filled($item->resolutionNo) ? $item->resolutionNo : $item->id)),
             'pdf_url' => $item->pdfUrl,
         ];
     }
@@ -279,6 +280,7 @@ class ResolutionRepository
             pdfUrl: $this->pdfService->publicUrl($r),
             pdfStatus: $this->pdfService->linkStatus($r),
             status: $r->status,
+            permalink: $r->getRouteKey(),
         );
     }
 
