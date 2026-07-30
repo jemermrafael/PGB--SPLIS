@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Models\AgendaItem;
 use App\Models\Resolution;
+use App\Models\User;
 use App\Services\AgendaOutputLinker;
 use App\Support\AgendaMeasureType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -71,9 +72,29 @@ class AgendaOutputLinkerTest extends TestCase
         $this->assertSame($alive->id, $agenda->resolution_id);
     }
 
+    public function test_ordinance_style_number_cannot_be_linked_to_a_resolution(): void
+    {
+        $agenda = AgendaItem::query()->create([
+            'title' => 'Rice subsidy program',
+            'status' => AgendaItem::STATUS_DONE,
+            'reso_ord_ao_no' => 'Ord. No. 22',
+            'reso_ord_ao_series' => 2026,
+        ]);
+
+        $resolution = Resolution::query()->create([
+            'resolution_no' => 'Ord. No. 22',
+            'series' => 2026,
+            'resolution_title' => 'Bogus resolution',
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+
+        app(AgendaOutputLinker::class)->linkManual($agenda, AgendaMeasureType::RESOLUTION, $resolution->id);
+    }
+
     public function test_done_agenda_cannot_add_to_order_of_business_via_policy(): void
     {
-        $user = \App\Models\User::factory()->create(['role' => 'encoder']);
+        $user = User::factory()->create(['role' => 'encoder']);
         $agenda = new AgendaItem(['status' => AgendaItem::STATUS_DONE]);
 
         $this->assertFalse($user->can('addToOrderOfBusiness', $agenda));

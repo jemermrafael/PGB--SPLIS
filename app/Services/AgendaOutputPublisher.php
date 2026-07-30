@@ -24,19 +24,16 @@ class AgendaOutputPublisher
         }
 
         if ($agenda->isPublished()) {
-            if ($this->syncPublishedOutput($agenda, $userId)) {
-                return true;
-            }
+            return $agenda->outputWasPublished()
+                ? $this->syncPublishedOutput($agenda, $userId)
+                : false;
         }
 
         if ($this->linker->linkExistingIfPossible($agenda)) {
-            $agenda->refresh();
-
-            return $this->syncPublishedOutput($agenda, $userId);
+            return true;
         }
 
-        $measureType = $agenda->reso_ord_ao_type
-            ?? AgendaItem::inferMeasureType($agenda->resolution_title ?? $agenda->title);
+        $measureType = $agenda->effectiveMeasureType();
 
         if ($measureType === null) {
             return false;
@@ -116,6 +113,10 @@ class AgendaOutputPublisher
     {
         $appropriation = $agenda->appropriationOrdinance;
 
+        $before = collect(AppropriationOrdinanceVersionService::VERSIONED_FIELDS)
+            ->mapWithKeys(fn (string $field) => [$field => $appropriation->getAttribute($field)])
+            ->all();
+
         $appropriation->update([
             'subject' => $agenda->resolution_title ?: $agenda->title,
             'date_passed' => $agenda->date_passed ?? $appropriation->date_passed,
@@ -123,12 +124,20 @@ class AgendaOutputPublisher
             'pdf_url' => $agenda->reso_ord_ao_url ?? $appropriation->pdf_url,
         ]);
 
+        $appropriation->refresh();
+        app(AppropriationOrdinanceVersionService::class)->recordVersionIfChanged(
+            $appropriation,
+            $before,
+            null,
+            'published_from_agenda',
+        );
+
         return true;
     }
 
     protected function publishResolution(AgendaItem $agenda, ?int $userId): bool
     {
-        if ($agenda->resolution_id) {
+        if ($agenda->resolution_id || $this->linker->blocksResolutionOutput($agenda)) {
             return false;
         }
 
@@ -161,6 +170,7 @@ class AgendaOutputPublisher
         $agenda->forceFill([
             'resolution_id' => $resolution->id,
             'published_at' => now(),
+            'output_connection_type' => AgendaItem::OUTPUT_CONNECTION_PUBLISHED,
         ])->save();
 
         return true;
@@ -194,6 +204,7 @@ class AgendaOutputPublisher
         $agenda->forceFill([
             'ordinance_id' => $ordinance->id,
             'published_at' => now(),
+            'output_connection_type' => AgendaItem::OUTPUT_CONNECTION_PUBLISHED,
         ])->save();
 
         return true;
@@ -225,9 +236,16 @@ class AgendaOutputPublisher
             'created_by' => $userId,
         ]);
 
+        app(AppropriationOrdinanceVersionService::class)->recordInitialVersion(
+            $appropriation,
+            $userId,
+            'published_from_agenda',
+        );
+
         $agenda->forceFill([
             'appropriation_ordinance_id' => $appropriation->id,
             'published_at' => now(),
+            'output_connection_type' => AgendaItem::OUTPUT_CONNECTION_PUBLISHED,
         ])->save();
 
         return true;

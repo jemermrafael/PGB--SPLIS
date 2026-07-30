@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AgendaItem;
 use App\Models\AgendaItemVersion;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class AgendaVersionService
@@ -94,7 +95,7 @@ class AgendaVersionService
         }
 
         if ($field === 'time_received') {
-            return \Illuminate\Support\Carbon::parse($value)->format('g:i A');
+            return Carbon::parse($value)->format('g:i A');
         }
 
         if (in_array($field, [
@@ -104,7 +105,7 @@ class AgendaVersionService
             'date_passed',
             'date_signed_by_gov',
         ], true)) {
-            return \Illuminate\Support\Carbon::parse($value)->format('M j, Y');
+            return Carbon::parse($value)->format('M j, Y');
         }
 
         if ($field === 'request_pdf_path') {
@@ -210,6 +211,25 @@ class AgendaVersionService
     public function recordInitialVersion(AgendaItem $agenda, ?int $userId = null): AgendaItemVersion
     {
         return $this->createVersion($agenda, 'encoded', $userId);
+    }
+
+    /**
+     * Wipe prior versions and record a single v1 "imported" snapshot after CSV sync.
+     */
+    public function resetToImportedVersion(AgendaItem $agenda, ?int $userId = null): AgendaItemVersion
+    {
+        return DB::transaction(function () use ($agenda, $userId): AgendaItemVersion {
+            $agenda->versions()->delete();
+            $agenda->forceFill(['current_version_no' => 1])->saveQuietly();
+
+            return AgendaItemVersion::create([
+                'agenda_item_id' => $agenda->id,
+                'version_no' => 1,
+                'change_reason' => 'imported',
+                'snapshot' => $this->snapshotFrom($agenda),
+                'created_by' => $userId,
+            ]);
+        });
     }
 
     /**

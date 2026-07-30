@@ -40,4 +40,18 @@ class OrdinanceNumberParser
         return preg_match('/ord\.?\s*no\.?/i', $value) === 1
             || preg_match('/\bno\.?\s*#?\s*\d+/i', $value) === 1;
     }
+
+    /**
+     * True when the value clearly refers to an ordinance (e.g. "Ord. No. 22", "Ord 5").
+     */
+    public static function looksLikeOrdinanceReference(?string $value): bool
+    {
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return false;
+        }
+
+        return preg_match('/\bord\.?\b/i', $value) === 1;
+    }
 }

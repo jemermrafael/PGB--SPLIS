@@ -37,9 +37,44 @@ class AgendaOutputLinker
 
         if (! $agenda->resolution_id && ! $agenda->ordinance_id && ! $agenda->appropriation_ordinance_id) {
             $agenda->published_at = null;
+            $agenda->output_connection_type = null;
         }
 
         $agenda->save();
+
+        return true;
+    }
+
+    /**
+     * Drop all provincial-output links so import / re-link can match from scratch.
+     */
+    public function clearOutputLinks(AgendaItem $agenda, bool $clearBackReference = false): bool
+    {
+        if (
+            $agenda->resolution_id === null
+            && $agenda->ordinance_id === null
+            && $agenda->appropriation_ordinance_id === null
+            && $agenda->published_at === null
+            && $agenda->output_connection_type === null
+        ) {
+            return false;
+        }
+
+        if (
+            $clearBackReference
+            && $agenda->appropriationOrdinance
+            && $agenda->appropriationOrdinance->agenda_item_id === $agenda->id
+        ) {
+            $agenda->appropriationOrdinance->forceFill(['agenda_item_id' => null])->save();
+        }
+
+        $agenda->forceFill([
+            'resolution_id' => null,
+            'ordinance_id' => null,
+            'appropriation_ordinance_id' => null,
+            'published_at' => null,
+            'output_connection_type' => null,
+        ])->save();
 
         return true;
     }
@@ -117,6 +152,12 @@ class AgendaOutputLinker
     {
         $this->clearDanglingOutputLinks($agenda);
         $agenda->refresh();
+
+        if ($type === AgendaMeasureType::RESOLUTION && $this->blocksResolutionOutput($agenda)) {
+            throw new \RuntimeException(
+                'Output no. "'.trim((string) $agenda->reso_ord_ao_no).'" refers to an ordinance, so it cannot be linked to a resolution.'
+            );
+        }
 
         return match ($type) {
             AgendaMeasureType::RESOLUTION => $this->attachResolution($agenda, Resolution::query()->findOrFail($id)),
@@ -355,14 +396,27 @@ class AgendaOutputLinker
         return $appropriation ? $this->attachAppropriationOrdinance($agenda, $appropriation) : false;
     }
 
+    /**
+     * Numbers written as "Ord. No. 22" belong to ordinances, never resolutions.
+     */
+    public function blocksResolutionOutput(AgendaItem $agenda): bool
+    {
+        return OrdinanceNumberParser::looksLikeOrdinanceReference($agenda->reso_ord_ao_no);
+    }
+
     protected function attachResolution(AgendaItem $agenda, Resolution $resolution): bool
     {
+        if ($this->blocksResolutionOutput($agenda)) {
+            return false;
+        }
+
         $agenda->forceFill([
             'resolution_id' => $resolution->id,
             'ordinance_id' => null,
             'appropriation_ordinance_id' => null,
             'reso_ord_ao_type' => AgendaMeasureType::RESOLUTION,
             'published_at' => $agenda->published_at ?? now(),
+            'output_connection_type' => AgendaItem::OUTPUT_CONNECTION_LINKED,
         ])->save();
 
         return true;
@@ -376,6 +430,7 @@ class AgendaOutputLinker
             'appropriation_ordinance_id' => null,
             'reso_ord_ao_type' => AgendaMeasureType::ORDINANCE,
             'published_at' => $agenda->published_at ?? now(),
+            'output_connection_type' => AgendaItem::OUTPUT_CONNECTION_LINKED,
         ])->save();
 
         return true;
@@ -389,11 +444,8 @@ class AgendaOutputLinker
             'ordinance_id' => null,
             'reso_ord_ao_type' => AgendaMeasureType::APPROPRIATION_ORDINANCE,
             'published_at' => $agenda->published_at ?? now(),
+            'output_connection_type' => AgendaItem::OUTPUT_CONNECTION_LINKED,
         ])->save();
-
-        if ($appropriation->agenda_item_id !== $agenda->id) {
-            $appropriation->update(['agenda_item_id' => $agenda->id]);
-        }
 
         return true;
     }

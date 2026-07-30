@@ -66,6 +66,10 @@
         'embedTitle' => $appropriationOrdinance->displayNumber().' PDF',
     ])
 
+    @include('appropriation-ordinances.partials.version-history', [
+        'appropriationOrdinance' => $appropriationOrdinance,
+    ])
+
     @include('partials.detail-prev-next', [
         'previous' => $previousAppropriationOrdinance ?? null,
         'next' => $nextAppropriationOrdinance ?? null,

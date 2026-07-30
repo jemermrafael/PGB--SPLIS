@@ -16,6 +16,7 @@ use App\Http\Controllers\MyOrdinanceController;
 use App\Http\Controllers\AppropriationOrdinanceController;
 use App\Http\Controllers\AppropriationOrdinancePdfController;
 use App\Http\Controllers\AppropriationOrdinancePdfMirrorController;
+use App\Http\Controllers\AppropriationOrdinanceVersionPdfController;
 use App\Http\Controllers\BoardMemberOrdinanceReportController;
 use App\Http\Controllers\CommitteeController;
 use App\Http\Controllers\CommitteeIconController;
@@ -206,6 +207,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/appropriation-ordinances/create', [AppropriationOrdinanceController::class, 'create'])->name('appropriation-ordinances.create');
     Route::post('/appropriation-ordinances', [AppropriationOrdinanceController::class, 'store'])->name('appropriation-ordinances.store');
     Route::get('/appropriation-ordinances/{appropriationOrdinance}', [AppropriationOrdinanceController::class, 'show'])->name('appropriation-ordinances.show')->withTrashed();
+    Route::get('/appropriation-ordinances/{appropriationOrdinance}/versions/{version}/file', AppropriationOrdinanceVersionPdfController::class)->name('appropriation-ordinances.versions.file')->withTrashed();
+    Route::delete('/appropriation-ordinances/{appropriationOrdinance}/versions/{version}', [AppropriationOrdinanceController::class, 'destroyVersion'])->name('appropriation-ordinances.versions.destroy');
     Route::get('/appropriation-ordinances/{appropriationOrdinance}/pdf', AppropriationOrdinancePdfController::class)->name('appropriation-ordinances.pdf')->withTrashed();
     Route::post('/appropriation-ordinances/{appropriationOrdinance}/mirror-pdf', AppropriationOrdinancePdfMirrorController::class)->name('appropriation-ordinances.mirror-pdf');
     Route::get('/appropriation-ordinances/{appropriationOrdinance}/edit', [AppropriationOrdinanceController::class, 'edit'])->name('appropriation-ordinances.edit');

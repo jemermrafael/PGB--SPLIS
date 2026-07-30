@@ -186,3 +186,7 @@ export function initAgendaVersionCompare() {
 export function initResolutionVersionCompare() {
     initVersionCompare('resolution-version-compare');
 }
+
+export function initAppropriationOrdinanceVersionCompare() {
+    initVersionCompare('appropriation-ordinance-version-compare');
+}

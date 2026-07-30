@@ -195,7 +195,7 @@
                 </div>
                 @if ($isEdit && $agenda->isPublished() && $agenda->publishedTargetRoute())
                     <a href="{{ $agenda->publishedTargetRoute() }}" class="splis-badge-linked shrink-0">
-                        Linked to {{ $agenda->publishedTargetLabel() }}
+                        {{ $agenda->outputConnectionLabel() }} {{ $agenda->publishedTargetLabel() }}
                     </a>
                 @endif
             </div>

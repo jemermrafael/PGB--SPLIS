@@ -4,8 +4,11 @@ namespace App\Models;
 
 use App\Models\Concerns\HasActivityLogs;
 use App\Models\Concerns\NavigatesById;
+use App\Services\AgendaPdfService;
 use App\Support\AgendaDeadline;
 use App\Support\AgendaMeasureType;
+use App\Support\AgendaPdfSlot;
+use App\Support\OrdinanceNumberParser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -33,6 +36,10 @@ class AgendaItem extends Model
     public const STATUS_DONE = 'done';
 
     public const STATUS_LAPSED = 'lapsed';
+
+    public const OUTPUT_CONNECTION_LINKED = 'linked';
+
+    public const OUTPUT_CONNECTION_PUBLISHED = 'published';
 
     protected $fillable = [
         'current_version_no',
@@ -66,6 +73,7 @@ class AgendaItem extends Model
         'ordinance_id',
         'appropriation_ordinance_id',
         'published_at',
+        'output_connection_type',
         'resolution_title',
         'journal_url',
         'journal_pdf_path',
@@ -242,36 +250,21 @@ class AgendaItem extends Model
     }
 
     /**
-     * Display number for Provincial Output, preferring linked SPLIS documents.
-     * Resolutions use series-number style (e.g. 2026-301).
+     * Display number for Provincial Output from the agenda's own fields.
+     * Linked SPLIS documents are shown under Connections, not here.
      */
     public function provincialOutputNumberDisplay(): ?string
     {
-        if ($this->resolution_id && $this->resolution && filled($this->resolution->resolution_no)) {
-            return trim((string) $this->resolution->resolution_no);
-        }
-
-        if ($this->ordinance_id && $this->ordinance) {
-            $no = str_pad((string) $this->ordinance->ordinance_no, 2, '0', STR_PAD_LEFT);
-
-            return $this->ordinance->series_year
-                ? $this->ordinance->series_year.'-'.$no
-                : $no;
-        }
-
-        if ($this->appropriation_ordinance_id && $this->appropriationOrdinance) {
-            $no = str_pad((string) $this->appropriationOrdinance->ordinance_no, 2, '0', STR_PAD_LEFT);
-
-            return $this->appropriationOrdinance->series_year
-                ? $this->appropriationOrdinance->series_year.'-'.$no
-                : $no;
-        }
-
         if (! filled($this->reso_ord_ao_no)) {
             return null;
         }
 
         $no = trim((string) $this->reso_ord_ao_no);
+
+        // Keep imported text like "Ord. No. 22" / "Appro. Ord. No. 51" as-is.
+        if (! preg_match('/^\d+$/', $no)) {
+            return $no;
+        }
 
         if (str_contains($no, '-')) {
             return $no;
@@ -390,7 +383,7 @@ class AgendaItem extends Model
 
     public function hasAnyPdf(): bool
     {
-        foreach (\App\Support\AgendaPdfSlot::all() as $slot) {
+        foreach (AgendaPdfSlot::all() as $slot) {
             if ($this->pdfPublicUrlFor($slot) !== null) {
                 return true;
             }
@@ -401,17 +394,17 @@ class AgendaItem extends Model
 
     public function pdfPublicUrlFor(string $slot): ?string
     {
-        return app(\App\Services\AgendaPdfService::class)->publicUrl($this, $slot);
+        return app(AgendaPdfService::class)->publicUrl($this, $slot);
     }
 
     public function pdfViewerModeFor(string $slot): ?string
     {
-        return app(\App\Services\AgendaPdfService::class)->viewerMode($this, $slot);
+        return app(AgendaPdfService::class)->viewerMode($this, $slot);
     }
 
     public function hasLocalPdfFor(string $slot): bool
     {
-        return app(\App\Services\AgendaPdfService::class)->existsFor($this, $slot);
+        return app(AgendaPdfService::class)->existsFor($this, $slot);
     }
 
     /**
@@ -419,7 +412,7 @@ class AgendaItem extends Model
      */
     public function missingPdfMirrorSlots(): array
     {
-        return app(\App\Services\AgendaPdfService::class)->missingMirrorSlots($this);
+        return app(AgendaPdfService::class)->missingMirrorSlots($this);
     }
 
     public function outputPdfUrl(): ?string
@@ -456,12 +449,47 @@ class AgendaItem extends Model
         return null;
     }
 
+    public function outputConnectionLabel(): string
+    {
+        return $this->output_connection_type === self::OUTPUT_CONNECTION_PUBLISHED
+            ? 'Published to'
+            : 'Linked to';
+    }
+
+    public function outputWasPublished(): bool
+    {
+        return $this->output_connection_type === self::OUTPUT_CONNECTION_PUBLISHED;
+    }
+
+    public function outputConnectionKey(): ?string
+    {
+        if ($this->resolution_id !== null) {
+            return AgendaMeasureType::RESOLUTION.':'.$this->resolution_id;
+        }
+
+        if ($this->ordinance_id !== null) {
+            return AgendaMeasureType::ORDINANCE.':'.$this->ordinance_id;
+        }
+
+        if ($this->appropriation_ordinance_id !== null) {
+            return AgendaMeasureType::APPROPRIATION_ORDINANCE.':'.$this->appropriation_ordinance_id;
+        }
+
+        return null;
+    }
+
     /**
-     * Stored measure type, or inferred from a linked SPLIS output / title.
+     * Stored measure type, or inferred from a linked SPLIS output / number / title.
      */
     public function effectiveMeasureType(): ?string
     {
         if (filled($this->reso_ord_ao_type)) {
+            // Number text like "Ord. No. 22" wins over a mis-stored resolution type.
+            if ($this->reso_ord_ao_type === AgendaMeasureType::RESOLUTION
+                && OrdinanceNumberParser::looksLikeOrdinanceReference($this->reso_ord_ao_no)) {
+                return AgendaMeasureType::ORDINANCE;
+            }
+
             return $this->reso_ord_ao_type;
         }
 
@@ -477,7 +505,7 @@ class AgendaItem extends Model
             return AgendaMeasureType::APPROPRIATION_ORDINANCE;
         }
 
-        return self::inferMeasureType($this->resolution_title);
+        return self::inferMeasureType($this->resolution_title, $this->reso_ord_ao_no);
     }
 
     public function publishedTargetRoute(): ?string
@@ -514,8 +542,12 @@ class AgendaItem extends Model
         return $this->hasProvincialOutputFields() && ! $this->isPublished();
     }
 
-    public static function inferMeasureType(?string $resolutionTitle): ?string
+    public static function inferMeasureType(?string $resolutionTitle, ?string $outputNo = null): ?string
     {
+        if (OrdinanceNumberParser::looksLikeOrdinanceReference($outputNo)) {
+            return AgendaMeasureType::ORDINANCE;
+        }
+
         $title = strtoupper(trim($resolutionTitle ?? ''));
 
         if ($title === '') {

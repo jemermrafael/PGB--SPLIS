@@ -7,6 +7,7 @@ use App\Support\MediaType;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AppropriationOrdinancePdfService
@@ -87,6 +88,32 @@ class AppropriationOrdinancePdfService
             $ordinanceNo,
             $media['extension'],
         );
+    }
+
+    /**
+     * Store under a unique path so previous version files remain on disk.
+     */
+    public function storeVersioned(UploadedFile $file, AppropriationOrdinance $record): string
+    {
+        $media = MediaType::fromUploadedMime(
+            (string) $file->getMimeType(),
+            $file->getClientOriginalExtension(),
+        );
+
+        $relative = sprintf(
+            'appropriation-ordinances/%d/versions/%s.%s',
+            $record->id,
+            strtolower((string) Str::ulid()),
+            $media['extension'],
+        );
+
+        Storage::disk('local')->makeDirectory(dirname($relative));
+        Storage::disk('local')->put(
+            $relative,
+            (string) file_get_contents($file->getRealPath()),
+        );
+
+        return $relative;
     }
 
     public function storeBytes(string $contents, int $seriesYear, int $ordinanceNo, string $extension = 'pdf'): string

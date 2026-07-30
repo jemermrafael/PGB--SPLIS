@@ -56,6 +56,7 @@ class AgendaPublishedOutputService
             'ordinance_id' => null,
             'appropriation_ordinance_id' => null,
             'published_at' => null,
+            'output_connection_type' => null,
         ]))->saveQuietly();
     }
 }

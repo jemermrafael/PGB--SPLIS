@@ -9,12 +9,13 @@ class AppropriationOrdinanceCsvImporter
 {
     public function __construct(
         protected CsvExportReader $csv,
+        protected AppropriationOrdinanceVersionService $versions,
     ) {}
 
     /**
      * @return array{processed: int, created: int, updated: int, skipped: int}
      */
-    public function import(string $path, bool $dryRun = false, ?int $seriesYear = null): array
+    public function import(string $path, bool $dryRun = false, ?int $seriesYear = null, ?int $userId = null): array
     {
         if (! is_file($path)) {
             throw new \RuntimeException("CSV not found: {$path}");
@@ -46,6 +47,8 @@ class AppropriationOrdinanceCsvImporter
                 ],
                 $payload,
             );
+
+            $this->versions->resetToImportedVersion($record, $userId ?? $record->created_by);
 
             if ($record->wasRecentlyCreated) {
                 $stats['created']++;

@@ -37,19 +37,19 @@
             @endif
             @if ($agenda->resolution)
                 <a href="{{ route('resolutions.show', $agenda->resolution) }}" class="splis-badge-linked whitespace-nowrap">
-                    Published to Resolution No.: {{ $agenda->resolution->resolution_no }} · Series {{ $agenda->resolution->series }}
+                    {{ $agenda->outputConnectionLabel() }} Resolution No.: {{ $agenda->resolution->resolution_no }} · Series {{ $agenda->resolution->series }}
                 </a>
             @endif
             @if ($agenda->ordinance)
                 <a href="{{ route('ordinances.show', $agenda->ordinance) }}" class="splis-badge-linked whitespace-nowrap">
-                    Published to {{ $agenda->ordinance->displayNumber() }} · Series {{ $agenda->ordinance->series_year }}
+                    {{ $agenda->outputConnectionLabel() }} {{ $agenda->ordinance->displayNumber() }} · Series {{ $agenda->ordinance->series_year }}
                 </a>
             @endif
             @if ($agenda->appropriationOrdinance)
-                <a href="{{ route('appropriation-ordinances.show', $agenda->appropriationOrdinance) }}" class="splis-badge-linked whitespace-nowrap">Published to Appropriation Ordinance</a>
+                <a href="{{ route('appropriation-ordinances.show', $agenda->appropriationOrdinance) }}" class="splis-badge-linked whitespace-nowrap">{{ $agenda->outputConnectionLabel() }} Appropriation Ordinance</a>
             @endif
             @if ($agenda->publishedTargetLabel() && ! $agenda->resolution && ! $agenda->ordinance && ! $agenda->appropriationOrdinance)
-                <span class="splis-badge-linked">Published to {{ $agenda->publishedTargetLabel() }}</span>
+                <span class="splis-badge-linked">{{ $agenda->outputConnectionLabel() }} {{ $agenda->publishedTargetLabel() }}</span>
             @endif
         </x-slot:badges>
         <x-slot:meta>
@@ -247,7 +247,7 @@
                         @if ($agenda->resolution)
                             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
-                                    <p class="splis-detail-label">Published to:</p>
+                                    <p class="splis-detail-label">{{ $agenda->outputConnectionLabel() }}:</p>
                                     <a href="{{ route('resolutions.show', $agenda->resolution) }}" class="font-medium text-brand-700 hover:underline dark:text-brand-200">
                                         Resolution {{ $agenda->resolution->resolution_no }}
                                     </a>
@@ -270,7 +270,7 @@
                         @if ($agenda->ordinance)
                             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
-                                    <p class="splis-detail-label">Ordinance</p>
+                                    <p class="splis-detail-label">{{ $agenda->outputConnectionLabel() }}:</p>
                                     <a href="{{ route('ordinances.show', $agenda->ordinance) }}" class="font-medium text-brand-700 hover:underline dark:text-brand-200">
                                         {{ $agenda->ordinance->displayNumber() }} ({{ $agenda->ordinance->series_year }})
                                     </a>
@@ -280,7 +280,7 @@
                         @if ($agenda->appropriationOrdinance)
                             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
-                                    <p class="splis-detail-label">Appropriation Ordinance</p>
+                                    <p class="splis-detail-label">{{ $agenda->outputConnectionLabel() }}:</p>
                                     <a href="{{ route('appropriation-ordinances.show', $agenda->appropriationOrdinance) }}" class="font-medium text-brand-700 hover:underline dark:text-brand-200">
                                         {{ $agenda->appropriationOrdinance->displayNumber() }} ({{ $agenda->appropriationOrdinance->series_year }})
                                     </a>

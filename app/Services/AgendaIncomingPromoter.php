@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AgendaItem;
 use App\Models\IncomingDocument;
 use App\Models\Resolution;
+use App\Support\OrdinanceNumberParser;
 use Illuminate\Support\Facades\DB;
 
 class AgendaIncomingPromoter
@@ -39,7 +40,10 @@ class AgendaIncomingPromoter
 
             $agenda->update(['incoming_document_id' => $incoming->id]);
 
-            if ($agenda->reso_ord_ao_no && $agenda->reso_ord_ao_series && ! $agenda->resolution_id) {
+            if ($agenda->reso_ord_ao_no
+                && $agenda->reso_ord_ao_series
+                && ! $agenda->resolution_id
+                && ! OrdinanceNumberParser::looksLikeOrdinanceReference($agenda->reso_ord_ao_no)) {
                 $resolution = Resolution::query()
                     ->where('resolution_no', $agenda->reso_ord_ao_no)
                     ->where('series', $agenda->reso_ord_ao_series)

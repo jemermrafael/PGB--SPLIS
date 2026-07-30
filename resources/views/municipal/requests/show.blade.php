@@ -26,16 +26,16 @@
                 @endif
                 @if ($agenda->resolution)
                     <a href="{{ route('resolutions.show', $agenda->resolution) }}" class="splis-badge-linked whitespace-nowrap">
-                        Published to Resolution No.: {{ $agenda->resolution->resolution_no }} · Series {{ $agenda->resolution->series }}
+                        {{ $agenda->outputConnectionLabel() }} Resolution No.: {{ $agenda->resolution->resolution_no }} · Series {{ $agenda->resolution->series }}
                     </a>
                 @endif
                 @if ($agenda->ordinance)
                     <a href="{{ route('ordinances.show', $agenda->ordinance) }}" class="splis-badge-linked whitespace-nowrap">
-                        Published to {{ $agenda->ordinance->displayNumber() }} · Series {{ $agenda->ordinance->series_year }}
+                        {{ $agenda->outputConnectionLabel() }} {{ $agenda->ordinance->displayNumber() }} · Series {{ $agenda->ordinance->series_year }}
                     </a>
                 @endif
                 @if ($agenda->appropriationOrdinance)
-                    <a href="{{ route('appropriation-ordinances.show', $agenda->appropriationOrdinance) }}" class="splis-badge-linked whitespace-nowrap">Published to Appropriation Ordinance</a>
+                    <a href="{{ route('appropriation-ordinances.show', $agenda->appropriationOrdinance) }}" class="splis-badge-linked whitespace-nowrap">{{ $agenda->outputConnectionLabel() }} Appropriation Ordinance</a>
                 @endif
             </div>
             <h1 class="splis-page-title">Request {{ $agenda->displayLabel() }}</h1>

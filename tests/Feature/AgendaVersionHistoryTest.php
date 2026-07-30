@@ -29,7 +29,55 @@ class AgendaVersionHistoryTest extends TestCase
         $this->assertNotNull($agenda);
         $this->assertSame(1, $agenda->versions()->count());
         $this->assertSame(1, $agenda->current_version_no);
-        $this->assertSame('encoded', $agenda->versions()->first()->change_reason);
+        $this->assertSame('imported', $agenda->versions()->first()->change_reason);
+    }
+
+    public function test_csv_reimport_resets_version_history_to_imported_v1(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Encoder]);
+        $agenda = AgendaItem::query()->create([
+            'tracking_no' => '334',
+            'sender' => 'Balanga',
+            'title' => 'Pre-import title',
+            'status' => AgendaItem::STATUS_PENDING,
+            'created_by' => $user->id,
+        ]);
+
+        $versions = app(AgendaVersionService::class);
+        $versions->recordInitialVersion($agenda, $user->id);
+        $agenda->update(['title' => 'Edited after encoding']);
+        $versions->recordVersionIfChanged(
+            $agenda->fresh(),
+            ['title' => 'Pre-import title', 'status' => AgendaItem::STATUS_PENDING],
+            $user->id,
+        );
+
+        $agenda->refresh();
+        $this->assertSame(2, $agenda->versions()->count());
+        $this->assertSame(2, $agenda->current_version_no);
+
+        $csv = $this->writeCsv([
+            [' ', 'Request PDF', 'Date Received', 'Sender', 'Title', 'Status', 'Prescribed Dates'],
+            ['334', '', '2026-06-01', 'Balanga', 'CSV reimported title', 'Pending', '30'],
+        ]);
+
+        app(AgendaCsvImporter::class)->sync(
+            $csv,
+            linksPath: $this->missingLinksPath(),
+            dryRun: false,
+            userId: $user->id,
+        );
+
+        $agenda->refresh();
+        $this->assertSame('CSV reimported title', $agenda->title);
+        $this->assertSame(1, $agenda->versions()->count());
+        $this->assertSame(1, $agenda->current_version_no);
+
+        $version = $agenda->versions()->first();
+        $this->assertSame('imported', $version->change_reason);
+        $this->assertSame(1, $version->version_no);
+        $this->assertSame('CSV reimported title', $version->snapshotValue('title'));
+        $this->assertSame($user->id, $version->created_by);
     }
 
     public function test_backfill_creates_versions_for_items_without_history(): void

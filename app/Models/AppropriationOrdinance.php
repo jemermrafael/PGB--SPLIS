@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Models\Concerns\NavigatesById;
+use App\Services\AgendaPublishedOutputService;
+use App\Services\AppropriationOrdinancePdfService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,6 +19,7 @@ class AppropriationOrdinance extends Model
     protected $fillable = [
         'date_received',
         'subject',
+        'current_version_no',
         'ordinance_no',
         'series_year',
         'date_passed',
@@ -35,6 +38,7 @@ class AppropriationOrdinance extends Model
             'date_approved' => 'date',
             'ordinance_no' => 'integer',
             'series_year' => 'integer',
+            'current_version_no' => 'integer',
         ];
     }
 
@@ -46,6 +50,17 @@ class AppropriationOrdinance extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function versions(): HasMany
+    {
+        return $this->hasMany(AppropriationOrdinanceVersion::class)->orderByDesc('version_no');
+    }
+
+    public function currentVersion(): ?AppropriationOrdinanceVersion
+    {
+        return $this->versions()->where('version_no', $this->current_version_no)->first()
+            ?? $this->versions()->first();
     }
 
     public function displayNumber(): string
@@ -102,28 +117,28 @@ class AppropriationOrdinance extends Model
     protected static function booted(): void
     {
         static::deleting(function (AppropriationOrdinance $appropriationOrdinance): void {
-            app(\App\Services\AgendaPublishedOutputService::class)
+            app(AgendaPublishedOutputService::class)
                 ->clearFromDeletedAppropriationOrdinance($appropriationOrdinance);
         });
     }
 
     public function hasLocalPdf(): bool
     {
-        return app(\App\Services\AppropriationOrdinancePdfService::class)->existsFor($this);
+        return app(AppropriationOrdinancePdfService::class)->existsFor($this);
     }
 
     public function pdfPublicUrl(): ?string
     {
-        return app(\App\Services\AppropriationOrdinancePdfService::class)->publicUrl($this);
+        return app(AppropriationOrdinancePdfService::class)->publicUrl($this);
     }
 
     public function pdfViewerMode(): ?string
     {
-        return app(\App\Services\AppropriationOrdinancePdfService::class)->viewerMode($this);
+        return app(AppropriationOrdinancePdfService::class)->viewerMode($this);
     }
 
     public function needsPdfMirror(): bool
     {
-        return app(\App\Services\AppropriationOrdinancePdfService::class)->needsMirror($this);
+        return app(AppropriationOrdinancePdfService::class)->needsMirror($this);
     }
 }

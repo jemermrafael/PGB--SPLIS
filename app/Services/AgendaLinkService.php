@@ -50,9 +50,13 @@ class AgendaLinkService
         $incoming = $agenda->incomingDocument;
 
         DB::transaction(function () use ($agenda, $resolution, $incoming) {
-            $agenda->update(['resolution_id' => null]);
+            $agenda->forceFill([
+                'resolution_id' => null,
+                'published_at' => null,
+                'output_connection_type' => null,
+            ])->save();
 
-        if ($incoming && $resolution && $incoming->resolution_id === $resolution->id) {
+            if ($incoming && $resolution && $incoming->resolution_id === $resolution->id) {
                 if ($incoming->isLinked()) {
                     $this->incomingLinker->unlink($incoming);
                 } else {

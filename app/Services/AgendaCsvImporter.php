@@ -11,6 +11,7 @@ class AgendaCsvImporter
     public function __construct(
         protected CsvExportReader $csv,
         protected AgendaVersionService $versions,
+        protected AgendaOutputLinker $linker,
     ) {}
 
     /**
@@ -29,6 +30,7 @@ class AgendaCsvImporter
         ?string $linksPath = null,
         bool $dryRun = false,
         bool $allowConfiguredLinksFallback = true,
+        ?int $userId = null,
     ): array {
         $csvPath = $csvPath ?: config('agenda.csv_path');
 
@@ -81,17 +83,11 @@ class AgendaCsvImporter
                         // Older exports often blank PDF columns; keep existing Drive links.
                         $updatePayload = $this->preserveExistingUrls($existing, $updatePayload);
 
-                        $before = collect(AgendaVersionService::VERSIONED_FIELDS)
-                            ->mapWithKeys(fn (string $field) => [$field => $existing->getAttribute($field)])
-                            ->all();
-
-                        if ($existing->versions()->doesntExist()) {
-                            $this->versions->recordInitialVersion($existing, $existing->created_by);
-                        }
-
                         $existing->update($updatePayload);
                         $existing->refresh();
-                        $this->versions->recordVersionIfChanged($existing, $before, $existing->created_by);
+                        $this->relinkProvincialOutput($existing);
+                        $existing->refresh();
+                        $this->versions->resetToImportedVersion($existing, $userId ?? $existing->created_by);
                     }
                     $updated++;
                 } else {
@@ -103,7 +99,9 @@ class AgendaCsvImporter
                         }
 
                         $created = AgendaItem::create($createPayload);
-                        $this->versions->recordInitialVersion($created, $created->created_by);
+                        $this->relinkProvincialOutput($created);
+                        $created->refresh();
+                        $this->versions->resetToImportedVersion($created, $userId ?? $created->created_by);
                     }
                     $imported++;
                 }
@@ -126,9 +124,9 @@ class AgendaCsvImporter
     /**
      * @return array{imported: int, updated: int, skipped: int, total: int, urgent: int}
      */
-    public function import(?string $csvPath = null, ?string $linksPath = null): array
+    public function import(?string $csvPath = null, ?string $linksPath = null, ?int $userId = null): array
     {
-        $stats = $this->sync($csvPath, $linksPath);
+        $stats = $this->sync($csvPath, $linksPath, dryRun: false, userId: $userId);
 
         return [
             'imported' => $stats['imported'],
@@ -137,6 +135,25 @@ class AgendaCsvImporter
             'total' => $stats['total'],
             'urgent' => $stats['urgent'],
         ];
+    }
+
+    /**
+     * Clear prior SPLIS output links, then link an existing matching output.
+     *
+     * CSV import must never create or update a Resolution, Ordinance, or
+     * Appropriation Ordinance.
+     */
+    protected function relinkProvincialOutput(AgendaItem $agenda): void
+    {
+        $this->linker->clearOutputLinks($agenda);
+        $agenda->forceFill([
+            'reso_ord_ao_type' => AgendaItem::inferMeasureType(
+                $agenda->resolution_title,
+                $agenda->reso_ord_ao_no,
+            ),
+        ])->save();
+        $agenda->refresh();
+        $this->linker->linkExistingIfPossible($agenda);
     }
 
     /**

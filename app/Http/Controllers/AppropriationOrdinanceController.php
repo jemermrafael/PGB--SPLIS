@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\AppropriationOrdinance;
-use App\Models\BoardMember;
-use App\Models\Ordinance;
+use App\Models\AppropriationOrdinanceVersion;
 use App\Services\AppropriationOrdinancePdfService;
+use App\Services\AppropriationOrdinanceVersionService;
 use App\Support\TrashActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,6 +16,7 @@ class AppropriationOrdinanceController extends Controller
 {
     public function __construct(
         protected AppropriationOrdinancePdfService $pdfService,
+        protected AppropriationOrdinanceVersionService $versionService,
     ) {}
 
     public function index(Request $request): View
@@ -48,6 +49,8 @@ class AppropriationOrdinanceController extends Controller
     {
         $this->authorize('view', $appropriationOrdinance);
 
+        $appropriationOrdinance->load(['versions.creator']);
+
         return view('appropriation-ordinances.show', [
             'appropriationOrdinance' => $appropriationOrdinance,
             'previousAppropriationOrdinance' => $appropriationOrdinance->trashed() ? null : $appropriationOrdinance->previousInList(),
@@ -75,6 +78,7 @@ class AppropriationOrdinanceController extends Controller
             ['created_by' => $request->user()->id],
         ));
         $this->storeUploadedPdf($request, $appropriationOrdinance);
+        $this->versionService->recordInitialVersion($appropriationOrdinance, $request->user()->id);
 
         return redirect()
             ->route('appropriation-ordinances.show', $appropriationOrdinance)
@@ -94,12 +98,44 @@ class AppropriationOrdinanceController extends Controller
     {
         $this->authorize('update', $appropriationOrdinance);
 
+        $before = collect(AppropriationOrdinanceVersionService::VERSIONED_FIELDS)
+            ->mapWithKeys(fn (string $field) => [$field => $appropriationOrdinance->getAttribute($field)])
+            ->all();
+
+        if ($request->hasFile('pdf')) {
+            $this->versionService->preservePdfInCurrentVersion($appropriationOrdinance, $request->user()->id);
+        }
+
         $appropriationOrdinance->update($this->validated($request, $appropriationOrdinance));
         $this->storeUploadedPdf($request, $appropriationOrdinance);
+        $appropriationOrdinance->refresh();
+        $this->versionService->recordVersionIfChanged(
+            $appropriationOrdinance,
+            $before,
+            $request->user()->id,
+        );
 
         return redirect()
             ->route('appropriation-ordinances.show', $appropriationOrdinance)
             ->with('status', 'Appropriation Ordinance updated.');
+    }
+
+    public function destroyVersion(
+        AppropriationOrdinance $appropriationOrdinance,
+        AppropriationOrdinanceVersion $version,
+    ): RedirectResponse {
+        abort_unless($version->appropriation_ordinance_id === $appropriationOrdinance->id, 404);
+        $this->authorize('delete', $version);
+
+        try {
+            $this->versionService->deleteVersion($version);
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['version' => $e->getMessage()]);
+        }
+
+        return redirect()
+            ->route('appropriation-ordinances.show', $appropriationOrdinance)
+            ->with('status', 'Version v'.$version->version_no.' deleted.');
     }
 
     public function destroy(AppropriationOrdinance $appropriationOrdinance): RedirectResponse
@@ -151,11 +187,7 @@ class AppropriationOrdinanceController extends Controller
             return;
         }
 
-        $path = $this->pdfService->store(
-            $request->file('pdf'),
-            (int) $record->series_year,
-            (int) $record->ordinance_no,
-        );
+        $path = $this->pdfService->storeVersioned($request->file('pdf'), $record);
 
         $record->update(['pdf_path' => $path]);
     }

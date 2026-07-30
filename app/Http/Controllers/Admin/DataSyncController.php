@@ -172,6 +172,7 @@ class DataSyncController extends Controller
                 linksPath: null,
                 dryRun: $dryRun,
                 allowConfiguredLinksFallback: false,
+                userId: $request->user()?->id,
             );
         } catch (\Throwable $e) {
             return back()->with('error', $e->getMessage());

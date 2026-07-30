@@ -32,6 +32,7 @@ class AgendaItemController extends Controller
     public function __construct(
         protected AgendaPdfService $agendaPdfService,
     ) {}
+
     public function index(AgendaItemRepository $repository): View
     {
         $this->authorize('viewAny', AgendaItem::class);
@@ -76,7 +77,7 @@ class AgendaItemController extends Controller
             'sender' => $agenda->sender,
         ]);
 
-        $outputHandled = $this->afterAgendaSave($agenda, $request, $notifier, $publisher, false);
+        $outputHandled = $this->afterAgendaSave($agenda, $request, $notifier, $publisher);
 
         $changedFields = array_values(array_filter([
             filled($agenda->committee_referred) ? 'committee_referred' : null,
@@ -86,7 +87,7 @@ class AgendaItemController extends Controller
 
         return redirect()
             ->route('agenda.show', $agenda)
-            ->with('status', $this->statusMessage('created', $agenda, false, $outputHandled));
+            ->with('status', $this->statusMessage('created', $agenda, $outputHandled));
     }
 
     public function show(Request $request, AgendaItem $agenda, AgendaOutputLinker $linker): View|RedirectResponse
@@ -169,6 +170,7 @@ class AgendaItemController extends Controller
         Request $request,
         AgendaItem $agenda,
         BoardMemberNotifier $notifier,
+        AgendaOutputLinker $outputLinker,
         AgendaOutputPublisher $publisher,
         AgendaVersionService $versions,
         AgendaLifecycleService $lifecycle,
@@ -179,7 +181,7 @@ class AgendaItemController extends Controller
             ->mapWithKeys(fn (string $field) => [$field => $agenda->getAttribute($field)])
             ->all();
 
-        $wasPublished = $agenda->isPublished();
+        $previousOutputConnection = $agenda->outputConnectionKey();
 
         if ($request->hasFile('request_pdf')) {
             $versions->preserveRequestPdfInCurrentVersion($agenda, $request->user()->id);
@@ -192,27 +194,35 @@ class AgendaItemController extends Controller
 
         $versions->recordVersionIfChanged($agenda, $before, $request->user()->id);
 
-        $outputHandled = $this->afterAgendaSave($agenda, $request, $notifier, $publisher, $wasPublished);
+        if ($previousOutputConnection !== null && $this->outputIdentityChanged($before, $agenda)) {
+            $outputLinker->clearOutputLinks($agenda, clearBackReference: true);
+            $agenda->refresh();
+        }
+
+        $outputHandled = $this->afterAgendaSave(
+            $agenda,
+            $request,
+            $notifier,
+            $publisher,
+            $previousOutputConnection,
+        );
 
         $lifecycle->handleAgendaSaved($agenda, $changedFields, $request->user()->id);
 
         return redirect()
             ->route('agenda.show', $agenda)
-            ->with('status', $this->statusMessage('updated', $agenda, $wasPublished, $outputHandled));
+            ->with('status', $this->statusMessage('updated', $agenda, outputHandled: $outputHandled));
     }
 
     protected function statusMessage(
         string $action,
         AgendaItem $agenda,
-        bool $wasPublished = false,
         bool $outputHandled = false,
     ): string {
         $message = $action === 'created' ? 'Agenda item created.' : 'Agenda item updated.';
 
         if ($outputHandled && $agenda->isPublished()) {
-            $message .= $wasPublished
-                ? ' Output synced to '.$agenda->publishedTargetLabel().'.'
-                : ' Published to '.$agenda->publishedTargetLabel().'.';
+            $message .= ' '.$agenda->outputConnectionLabel().' '.$agenda->publishedTargetLabel().'.';
         }
 
         return $message;
@@ -223,7 +233,7 @@ class AgendaItemController extends Controller
         Request $request,
         BoardMemberNotifier $notifier,
         AgendaOutputPublisher $publisher,
-        bool $wasPublishedBefore = false,
+        ?string $previousOutputConnection = null,
     ): bool {
         $agenda->refresh();
 
@@ -237,7 +247,10 @@ class AgendaItemController extends Controller
         if ($publisher->publishIfDone($agenda, $request->user()->id)) {
             $agenda->refresh();
 
-            if (! $wasPublishedBefore && $agenda->isPublished()) {
+            if (
+                $agenda->outputWasPublished()
+                && $previousOutputConnection !== $agenda->outputConnectionKey()
+            ) {
                 $notifier->notifyAgendaPublished($agenda);
                 app(MunicipalNotifier::class)->notifyAgendaPublished($agenda);
 
@@ -249,6 +262,23 @@ class AgendaItemController extends Controller
             }
 
             return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  array<string, mixed>  $before
+     */
+    protected function outputIdentityChanged(array $before, AgendaItem $after): bool
+    {
+        foreach (['reso_ord_ao_no', 'reso_ord_ao_series', 'reso_ord_ao_type'] as $field) {
+            $previous = trim((string) ($before[$field] ?? ''));
+            $current = trim((string) ($after->getAttribute($field) ?? ''));
+
+            if ($previous !== $current) {
+                return true;
+            }
         }
 
         return false;

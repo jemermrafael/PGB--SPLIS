@@ -25,6 +25,10 @@ const MEASURE_LABELS = {
     },
 };
 
+function looksLikeOrdinanceNumber(value) {
+    return /\bord\.?\b/i.test(String(value || '').trim());
+}
+
 function setLabel(forId, text) {
     const input = document.getElementById(forId);
     if (!input) {
@@ -45,6 +49,7 @@ export function initAgendaForm() {
 
     const statusSelect = document.getElementById('status');
     const typeSelect = document.getElementById('reso_ord_ao_type');
+    const numberInput = document.getElementById('reso_ord_ao_no');
     const panels = outputRoot.querySelectorAll('[data-measure-panel]');
     const resolutionOnly = outputRoot.querySelector('[data-resolution-only]');
 
@@ -70,6 +75,21 @@ export function initAgendaForm() {
         setLabel('reso_ord_ao_url', labels.pdf);
     }
 
+    function syncTypeFromNumber() {
+        if (!typeSelect || !numberInput) {
+            return;
+        }
+
+        if (!looksLikeOrdinanceNumber(numberInput.value)) {
+            return;
+        }
+
+        if (typeSelect.value === '' || typeSelect.value === 'resolution') {
+            typeSelect.value = 'ordinance';
+            applyMeasureType('ordinance');
+        }
+    }
+
     function scrollToOutput() {
         outputRoot.scrollIntoView({ behavior: 'smooth', block: 'start' });
         window.setTimeout(() => {
@@ -81,12 +101,17 @@ export function initAgendaForm() {
         applyMeasureType(typeSelect.value);
     });
 
+    numberInput?.addEventListener('input', () => {
+        syncTypeFromNumber();
+    });
+
     statusSelect?.addEventListener('change', () => {
         if (statusSelect.value === 'done') {
             scrollToOutput();
         }
     });
 
+    syncTypeFromNumber();
     applyMeasureType(typeSelect?.value || '');
 
     if (statusSelect?.value === 'done' && !typeSelect?.value) {

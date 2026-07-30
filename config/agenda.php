@@ -20,6 +20,7 @@ return [
 
     'version_reasons' => [
         'encoded' => 'Initial encoding',
+        'imported' => 'Imported',
         'referral' => 'Committee Referral',
         'committee_meeting' => 'Committee Meeting update',
         'session' => 'Session / Hearing update',
