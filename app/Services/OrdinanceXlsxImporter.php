@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\OrdinancePublicationStatus;
 use App\Models\Ordinance;
+use App\Support\DateRange;
 use App\Support\XlsxSheetReader;
 use Carbon\Carbon;
 
@@ -86,6 +87,8 @@ class OrdinanceXlsxImporter
             return null;
         }
 
+        $newspaperRange = DateRange::parse($row[5] ?? null);
+
         return [
             'ordinance_no' => $ordinanceNo,
             'series_year' => $seriesYear,
@@ -95,7 +98,8 @@ class OrdinanceXlsxImporter
             'date_enacted' => $this->parseDate($row[2] ?? null),
             'date_approved' => $this->parseDate($row[3] ?? null),
             'date_posted' => $this->parseDate($row[4] ?? null),
-            'date_published_newspaper' => $this->parseDate($row[5] ?? null),
+            'date_published_newspaper' => $newspaperRange[0],
+            'date_published_newspaper_end' => $newspaperRange[1],
             'effectivity_date' => $this->parseDate($row[6] ?? null),
             'mov_bulletin' => $this->nullableText($row[7] ?? null),
             'mov_bulletin_url' => $this->hyperlink($hyperlinks, "H{$excelRow}"),

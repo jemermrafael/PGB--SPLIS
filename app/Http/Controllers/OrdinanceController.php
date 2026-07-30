@@ -221,6 +221,11 @@ class OrdinanceController extends Controller
             'date_approved' => ['nullable', 'date'],
             'date_posted' => ['nullable', 'date'],
             'date_published_newspaper' => ['nullable', 'date'],
+            'date_published_newspaper_end' => [
+                'nullable',
+                'date',
+                'after_or_equal:date_published_newspaper',
+            ],
             'effectivity_date' => ['nullable', 'date'],
             'mov_bulletin' => ['nullable', 'string'],
             'mov_bulletin_url' => ['nullable', 'string', 'max:500'],

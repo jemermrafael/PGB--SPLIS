@@ -67,7 +67,7 @@
             </div>
             <div>
                 <dt class="splis-label">Published in newspaper</dt>
-                <dd class="mt-1 text-slate-900 dark:text-slate-100">{{ $ordinance->date_published_newspaper?->format('F j, Y') ?: '—' }}</dd>
+                <dd class="mt-1 text-slate-900 dark:text-slate-100">{{ $ordinance->newspaperPublicationPeriodDisplay() ?: '—' }}</dd>
             </div>
             <div>
                 <dt class="splis-label">Effectivity date</dt>

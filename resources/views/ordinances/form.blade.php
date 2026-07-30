@@ -145,8 +145,12 @@
                     <input type="date" name="date_posted" id="date_posted" value="{{ old('date_posted', $ordinance->date_posted?->format('Y-m-d')) }}" class="splis-input">
                 </div>
                 <div>
-                    <label class="splis-label" for="date_published_newspaper">Published in newspaper</label>
+                    <label class="splis-label" for="date_published_newspaper">Published in newspaper (from)</label>
                     <input type="date" name="date_published_newspaper" id="date_published_newspaper" value="{{ old('date_published_newspaper', $ordinance->date_published_newspaper?->format('Y-m-d')) }}" class="splis-input">
+                </div>
+                <div>
+                    <label class="splis-label" for="date_published_newspaper_end">Published in newspaper (to)</label>
+                    <input type="date" name="date_published_newspaper_end" id="date_published_newspaper_end" value="{{ old('date_published_newspaper_end', $ordinance->date_published_newspaper_end?->format('Y-m-d')) }}" class="splis-input">
                 </div>
                 <div>
                     <label class="splis-label" for="effectivity_date">Effectivity date</label>

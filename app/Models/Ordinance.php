@@ -7,6 +7,7 @@ use App\Enums\OrdinancePublicationStatus;
 use App\Models\Concerns\NavigatesById;
 use App\Services\AgendaPublishedOutputService;
 use App\Services\OrdinancePdfService;
+use App\Support\DateRange;
 use App\Support\OrdinanceNumberParser;
 use App\Support\OrdinancePdfType;
 use App\Support\Permalink;
@@ -36,6 +37,7 @@ class Ordinance extends Model
         'date_approved',
         'date_posted',
         'date_published_newspaper',
+        'date_published_newspaper_end',
         'effectivity_date',
         'mov_bulletin',
         'mov_bulletin_url',
@@ -63,6 +65,7 @@ class Ordinance extends Model
             'date_approved' => 'date',
             'date_posted' => 'date',
             'date_published_newspaper' => 'date',
+            'date_published_newspaper_end' => 'date',
             'effectivity_date' => 'date',
         ];
     }
@@ -146,6 +149,14 @@ class Ordinance extends Model
         ]));
 
         return $parts === [] ? null : implode(' | ', $parts);
+    }
+
+    public function newspaperPublicationPeriodDisplay(): ?string
+    {
+        return DateRange::format(
+            $this->date_published_newspaper,
+            $this->date_published_newspaper_end,
+        );
     }
 
     protected function roleMembersDisplay(OrdinanceBoardMemberRole $role): ?string

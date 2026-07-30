@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\OrdinancePublicationStatus;
 use App\Models\Ordinance;
+use App\Support\DateRange;
 use Carbon\Carbon;
 
 class OrdinanceCsvImporter
@@ -328,7 +329,9 @@ class OrdinanceCsvImporter
         $dateEnacted = $this->parseDate($columns[$map['date_enacted']] ?? null);
         $dateApproved = $this->parseDate($columns[$map['date_approved']] ?? null);
         $datePosted = $this->parseDate($columns[$map['date_posted']] ?? null);
-        $datePublishedNewspaper = $this->parseDate($columns[$map['date_published_newspaper']] ?? null);
+        [$datePublishedNewspaper, $datePublishedNewspaperEnd] = DateRange::parse(
+            $columns[$map['date_published_newspaper']] ?? null,
+        );
         $effectivityDate = $this->parseDate($columns[$map['effectivity_date']] ?? null);
 
         $seriesYear = $defaultSeriesYear
@@ -344,6 +347,7 @@ class OrdinanceCsvImporter
             'date_approved' => $dateApproved,
             'date_posted' => $datePosted,
             'date_published_newspaper' => $datePublishedNewspaper,
+            'date_published_newspaper_end' => $datePublishedNewspaperEnd,
             'effectivity_date' => $effectivityDate,
             'mov_bulletin' => $this->nullableText($columns[$map['mov_bulletin']] ?? null),
             'mov_bulletin_url' => $this->nullableUrl($columns[$map['mov_bulletin_url']] ?? null),

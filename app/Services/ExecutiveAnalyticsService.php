@@ -823,8 +823,12 @@ class ExecutiveAnalyticsService
             ->whereBetween('series_year', [$yearFrom, $yearTo])
             ->whereNotNull('date_enacted')
             ->whereNotNull('date_published_newspaper')
-            ->get(['date_enacted', 'date_published_newspaper'])
-            ->map(fn (Ordinance $o) => max(0, $o->date_enacted->diffInDays($o->date_published_newspaper)))
+            ->get(['date_enacted', 'date_published_newspaper', 'date_published_newspaper_end'])
+            ->map(function (Ordinance $o) {
+                $published = $o->date_published_newspaper_end ?? $o->date_published_newspaper;
+
+                return max(0, $o->date_enacted->diffInDays($published));
+            })
             ->filter();
 
         $effectivityHeatmap = Ordinance::query()
