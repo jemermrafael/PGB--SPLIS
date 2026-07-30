@@ -153,6 +153,24 @@
                             Has remarks
                         </label>
                     </div>
+                    @if (auth()->user()?->isSuperadmin())
+                        <div>
+                            <label class="splis-label" for="agenda-filter-output-connection">Provincial output</label>
+                            <select name="output_connection" id="agenda-filter-output-connection" class="splis-select">
+                                <option value="">All connections</option>
+                                <option value="any">Linked or published</option>
+                                <option value="linked">Linked (any)</option>
+                                <option value="published">Published (any)</option>
+                                <option value="linked_resolution">Linked to Resolution</option>
+                                <option value="published_resolution">Published to Resolution</option>
+                                <option value="linked_ordinance">Linked to Ordinance</option>
+                                <option value="published_ordinance">Published to Ordinance</option>
+                                <option value="linked_appropriation_ordinance">Linked to Appropriation Ordinance</option>
+                                <option value="published_appropriation_ordinance">Published to Appropriation Ordinance</option>
+                                <option value="none">Not connected</option>
+                            </select>
+                        </div>
+                    @endif
                 </div>
             </div>
         </details>

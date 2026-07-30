@@ -484,7 +484,11 @@ class AgendaItem extends Model
     public function effectiveMeasureType(): ?string
     {
         if (filled($this->reso_ord_ao_type)) {
-            // Number text like "Ord. No. 22" wins over a mis-stored resolution type.
+            // Number text wins over a mis-stored measure type.
+            if (OrdinanceNumberParser::looksLikeAppropriationOrdinanceReference($this->reso_ord_ao_no)) {
+                return AgendaMeasureType::APPROPRIATION_ORDINANCE;
+            }
+
             if ($this->reso_ord_ao_type === AgendaMeasureType::RESOLUTION
                 && OrdinanceNumberParser::looksLikeOrdinanceReference($this->reso_ord_ao_no)) {
                 return AgendaMeasureType::ORDINANCE;
@@ -544,6 +548,10 @@ class AgendaItem extends Model
 
     public static function inferMeasureType(?string $resolutionTitle, ?string $outputNo = null): ?string
     {
+        if (OrdinanceNumberParser::looksLikeAppropriationOrdinanceReference($outputNo)) {
+            return AgendaMeasureType::APPROPRIATION_ORDINANCE;
+        }
+
         if (OrdinanceNumberParser::looksLikeOrdinanceReference($outputNo)) {
             return AgendaMeasureType::ORDINANCE;
         }

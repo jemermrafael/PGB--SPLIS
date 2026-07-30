@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AgendaItem;
 use App\Support\AgendaDeadline;
+use App\Support\CommitteeIcon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -55,7 +56,7 @@ class AgendaItemRepository
             'sender' => $item->sender,
             'title' => $item->title,
             'committee' => $item->committee_referred,
-            ...\App\Support\CommitteeIcon::listIconFields($item->committee_referred),
+            ...CommitteeIcon::listIconFields($item->committee_referred),
             'due_date' => $item->due_date?->format('Y-m-d'),
             'days_left_label' => $item->days_left_label,
             'days_left_tone' => AgendaDeadline::toneForItem($item),
@@ -133,6 +134,43 @@ class AgendaItemRepository
             $query->whereNotNull('remarks')->where('remarks', '!=', '');
         }
 
+        if (! empty($filters['output_connection'])) {
+            $this->applyOutputConnectionFilter($query, (string) $filters['output_connection']);
+        }
+
         return $query;
+    }
+
+    protected function applyOutputConnectionFilter(Builder $query, string $filter): void
+    {
+        $hasAnyOutput = function (Builder $builder): void {
+            $builder->whereNotNull('resolution_id')
+                ->orWhereNotNull('ordinance_id')
+                ->orWhereNotNull('appropriation_ordinance_id');
+        };
+
+        match ($filter) {
+            'any' => $query->where($hasAnyOutput),
+            'none' => $query->whereNull('resolution_id')
+                ->whereNull('ordinance_id')
+                ->whereNull('appropriation_ordinance_id'),
+            'linked' => $query->where('output_connection_type', AgendaItem::OUTPUT_CONNECTION_LINKED)
+                ->where($hasAnyOutput),
+            'published' => $query->where('output_connection_type', AgendaItem::OUTPUT_CONNECTION_PUBLISHED)
+                ->where($hasAnyOutput),
+            'linked_resolution' => $query->where('output_connection_type', AgendaItem::OUTPUT_CONNECTION_LINKED)
+                ->whereNotNull('resolution_id'),
+            'published_resolution' => $query->where('output_connection_type', AgendaItem::OUTPUT_CONNECTION_PUBLISHED)
+                ->whereNotNull('resolution_id'),
+            'linked_ordinance' => $query->where('output_connection_type', AgendaItem::OUTPUT_CONNECTION_LINKED)
+                ->whereNotNull('ordinance_id'),
+            'published_ordinance' => $query->where('output_connection_type', AgendaItem::OUTPUT_CONNECTION_PUBLISHED)
+                ->whereNotNull('ordinance_id'),
+            'linked_appropriation_ordinance' => $query->where('output_connection_type', AgendaItem::OUTPUT_CONNECTION_LINKED)
+                ->whereNotNull('appropriation_ordinance_id'),
+            'published_appropriation_ordinance' => $query->where('output_connection_type', AgendaItem::OUTPUT_CONNECTION_PUBLISHED)
+                ->whereNotNull('appropriation_ordinance_id'),
+            default => null,
+        };
     }
 }

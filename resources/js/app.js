@@ -12,6 +12,7 @@ import { initIncomingSearch } from './incoming-search';
 import { initKeywordTags } from './keyword-tags';
 import { initMemberMultiSelect, initOrdinanceAttributionMode } from './member-multi-select';
 import { initOrdinancesSearch } from './ordinances-search';
+import { initAppropriationOrdinancesSearch } from './appropriation-ordinances-search';
 import { initResolutionsSearch } from './resolutions-search';
 
 import { initAgendaVersionCompare, initAppropriationOrdinanceVersionCompare, initResolutionVersionCompare } from './agenda-version-compare';
@@ -72,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initDirectorySearch();
     initEmailNotificationSettings();
     initOrdinancesSearch();
+    initAppropriationOrdinancesSearch();
     initResolutionsSearch();
     initIncomingSearch();
     initHeaderNotifications();

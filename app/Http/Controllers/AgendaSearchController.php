@@ -23,7 +23,12 @@ class AgendaSearchController extends Controller
             'due_soon',
             'has_incoming',
             'has_remarks',
+            'output_connection',
         ]);
+
+        if (! empty($filters['output_connection']) && ! $request->user()?->isSuperadmin()) {
+            unset($filters['output_connection']);
+        }
 
         $filters['page'] = $request->integer('page', 1);
 

@@ -25,8 +25,22 @@ const MEASURE_LABELS = {
     },
 };
 
+function looksLikeAppropriationOrdinanceNumber(value) {
+    const text = String(value || '').trim();
+
+    return /\bappro(?:priation)?\.?\s*ord\.?\b/i.test(text)
+        || /\bapp\.?\s*ord\.?\b/i.test(text)
+        || /\ba\.?\s*o\.?\b/i.test(text);
+}
+
 function looksLikeOrdinanceNumber(value) {
-    return /\bord\.?\b/i.test(String(value || '').trim());
+    const text = String(value || '').trim();
+
+    if (looksLikeAppropriationOrdinanceNumber(text)) {
+        return false;
+    }
+
+    return /\bord\.?\b/i.test(text);
 }
 
 function setLabel(forId, text) {
@@ -77,6 +91,15 @@ export function initAgendaForm() {
 
     function syncTypeFromNumber() {
         if (!typeSelect || !numberInput) {
+            return;
+        }
+
+        if (looksLikeAppropriationOrdinanceNumber(numberInput.value)) {
+            if (typeSelect.value !== 'appropriation_ordinance') {
+                typeSelect.value = 'appropriation_ordinance';
+                applyMeasureType('appropriation_ordinance');
+            }
+
             return;
         }
 

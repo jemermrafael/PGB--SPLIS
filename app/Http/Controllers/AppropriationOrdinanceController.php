@@ -19,19 +19,9 @@ class AppropriationOrdinanceController extends Controller
         protected AppropriationOrdinanceVersionService $versionService,
     ) {}
 
-    public function index(Request $request): View
+    public function index(): View
     {
         $this->authorize('viewAny', AppropriationOrdinance::class);
-
-        $query = AppropriationOrdinance::query()->ordered();
-
-        if ($request->filled('q')) {
-            $query->search($request->string('q'));
-        }
-
-        if ($request->filled('series')) {
-            $query->where('series_year', (int) $request->input('series'));
-        }
 
         $seriesYears = AppropriationOrdinance::query()
             ->select('series_year')
@@ -41,7 +31,6 @@ class AppropriationOrdinanceController extends Controller
 
         return view('appropriation-ordinances.index', [
             'seriesYears' => $seriesYears,
-            'records' => $query->paginate(config('appropriation_ordinances.per_page', 15))->withQueryString(),
         ]);
     }
 
