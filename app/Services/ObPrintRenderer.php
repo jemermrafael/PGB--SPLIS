@@ -349,8 +349,10 @@ class ObPrintRenderer
         $flush();
 
         return $this->groupCommitteeReportRows(
-            $this->mergeAdjacentAnnouncementsSegments(
-                $this->mergeAdjacentCommitteeReportSegments($segments),
+            $this->groupUnfinishedSegments(
+                $this->mergeAdjacentAnnouncementsSegments(
+                    $this->mergeAdjacentCommitteeReportSegments($segments),
+                ),
             ),
         );
     }
@@ -611,6 +613,50 @@ class ObPrintRenderer
         }
 
         return $merged;
+    }
+
+    /**
+     * A committee heads one Unfinished Business group, even when its agenda blocks
+     * are scattered through the section. Only merges within a run of groups so
+     * items can never cross a section divider.
+     *
+     * @param  list<array<string, mixed>>  $segments
+     * @return list<array<string, mixed>>
+     */
+    protected function groupUnfinishedSegments(array $segments): array
+    {
+        $grouped = [];
+        $indexByCommittee = [];
+
+        foreach ($segments as $segment) {
+            if (($segment['type'] ?? '') !== 'unfinished_group') {
+                $indexByCommittee = [];
+                $grouped[] = $segment;
+
+                continue;
+            }
+
+            $committee = (string) ($segment['committee_name'] ?? '');
+            $existing = $indexByCommittee[$committee] ?? null;
+
+            if ($existing !== null) {
+                $grouped[$existing]['items'] = array_merge(
+                    $grouped[$existing]['items'] ?? [],
+                    $segment['items'] ?? [],
+                );
+
+                if (blank($grouped[$existing]['chair_name'] ?? null)) {
+                    $grouped[$existing]['chair_name'] = $segment['chair_name'] ?? '';
+                }
+
+                continue;
+            }
+
+            $grouped[] = $segment;
+            $indexByCommittee[$committee] = array_key_last($grouped);
+        }
+
+        return $grouped;
     }
 
     /**

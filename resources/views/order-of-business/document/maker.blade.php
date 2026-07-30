@@ -99,14 +99,24 @@
                     <p class="splis-card-subtitle">Click a block to select · edits save automatically</p>
                 </div>
                 @if ($canEdit)
-                    <button
-                        type="button"
-                        id="ob-sync-agendas"
-                        class="splis-btn-secondary shrink-0"
-                        title="Place eligible agendas using lifecycle rules"
-                    >
-                        Auto-place Agendas
-                    </button>
+                    <div class="flex flex-wrap justify-end gap-2">
+                        <button
+                            type="button"
+                            id="ob-regroup-unfinished"
+                            class="splis-btn-secondary shrink-0"
+                            title="Group fragmented Unfinished Business agendas under one header per committee"
+                        >
+                            Regroup Unfinished Business
+                        </button>
+                        <button
+                            type="button"
+                            id="ob-sync-agendas"
+                            class="splis-btn-secondary shrink-0"
+                            title="Place eligible agendas using lifecycle rules"
+                        >
+                            Auto-place Agendas
+                        </button>
+                    </div>
                 @endif
             </div>
             <div id="ob-blocks-list" class="splis-card-body space-y-3"></div>

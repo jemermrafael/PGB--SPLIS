@@ -295,6 +295,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/{legislativeSession}/document/blocks/reorder', [ObDocumentController::class, 'reorderBlocks'])->name('document.blocks.reorder');
         Route::post('/{legislativeSession}/document/blocks/from-agenda', [ObDocumentController::class, 'addFromAgenda'])->name('document.blocks.from-agenda');
         Route::post('/{legislativeSession}/document/sync-agendas', [ObDocumentController::class, 'syncAgendas'])->name('document.sync-agendas');
+        Route::post('/{legislativeSession}/document/regroup-unfinished', [ObDocumentController::class, 'regroupUnfinished'])->name('document.regroup-unfinished');
         Route::put('/{legislativeSession}/document/blocks/{block}', [ObDocumentController::class, 'updateBlock'])->name('document.blocks.update');
         Route::post('/{legislativeSession}/document/blocks/{block}/move-section', [ObDocumentController::class, 'moveBlockToSection'])->name('document.blocks.move-section');
         Route::delete('/{legislativeSession}/document/blocks/{block}', [ObDocumentController::class, 'destroyBlock'])->name('document.blocks.destroy');

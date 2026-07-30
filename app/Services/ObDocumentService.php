@@ -26,6 +26,7 @@ class ObDocumentService
         private AgendaObPlacementService $placements,
         private BoardMemberNotifier $boardMemberNotifier,
         private MunicipalNotifier $municipalNotifier,
+        private ObCommitteeReportConsolidator $committeeReports,
     ) {}
 
     /**
@@ -503,6 +504,15 @@ class ObDocumentService
             if ($section === 'committee_reports') {
                 $lastCommitteeReportBlock = $block;
             }
+        }
+
+        if ($section === 'committee_reports' && $this->committeeReports->consolidate($document) > 0) {
+            $created = collect($created)
+                ->filter(fn (ObBlock $block) => $block->exists && ObBlock::query()->whereKey($block->id)->exists())
+                ->map(fn (ObBlock $block) => $block->fresh(['agendaItem']))
+                ->filter()
+                ->values()
+                ->all();
         }
 
         $document->loadMissing('legislativeSession');

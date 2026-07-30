@@ -8,6 +8,7 @@ use App\Models\ObBlock;
 use App\Models\ObDocument;
 use App\Services\AgendaLifecycleService;
 use App\Services\ObAgendaPoolService;
+use App\Services\ObCommitteeReportConsolidator;
 use App\Services\ObDocumentService;
 use App\Services\ObPrintRenderer;
 use App\Services\ObSectionThreeSyncService;
@@ -19,13 +20,18 @@ use Illuminate\View\View;
 
 class ObDocumentController extends Controller
 {
-    public function maker(LegislativeSession $legislativeSession, ObDocumentService $service, ObSectionThreeSyncService $sectionThreeSync): View
-    {
+    public function maker(
+        LegislativeSession $legislativeSession,
+        ObDocumentService $service,
+        ObSectionThreeSyncService $sectionThreeSync,
+        ObCommitteeReportConsolidator $committeeReports,
+    ): View {
         $document = $this->documentFor($legislativeSession);
         $this->authorize('update', $document);
 
         $legislativeSession->load('priorSession');
         $sectionThreeSync->syncForSession($legislativeSession);
+        $committeeReports->consolidate($document);
         $document->refresh();
 
         $session = $legislativeSession;
@@ -41,6 +47,7 @@ class ObDocumentController extends Controller
                     'reorder' => route('ob.document.blocks.reorder', $session),
                     'fromAgenda' => route('ob.document.blocks.from-agenda', $session),
                     'syncAgendas' => route('ob.document.sync-agendas', $session),
+                    'regroupUnfinished' => route('ob.document.regroup-unfinished', $session),
                     'agendaPool' => route('ob.document.agenda-pool', $session),
                     'updateBlock' => route('ob.document.blocks.update', [$session, '__BLOCK__']),
                     'deleteBlock' => route('ob.document.blocks.destroy', [$session, '__BLOCK__']),
@@ -70,13 +77,18 @@ class ObDocumentController extends Controller
         ]);
     }
 
-    public function print(LegislativeSession $legislativeSession, ObPrintRenderer $renderer, ObSectionThreeSyncService $sectionThreeSync): View
-    {
+    public function print(
+        LegislativeSession $legislativeSession,
+        ObPrintRenderer $renderer,
+        ObSectionThreeSyncService $sectionThreeSync,
+        ObCommitteeReportConsolidator $committeeReports,
+    ): View {
         $document = $this->documentFor($legislativeSession);
         $this->authorize('view', $document);
 
         $legislativeSession->load(['priorSession', 'obDocument.blocks']);
         $sectionThreeSync->syncForSession($legislativeSession);
+        $committeeReports->consolidate($document);
         $document->refresh();
 
         $blocks = $document->blocks()->with('agendaItem')->orderBy('sort_order')->get();
@@ -269,6 +281,22 @@ class ObDocumentController extends Controller
         return response()->json([
             'added' => $result['added'],
             'relocated' => $result['relocated'],
+            'blocks' => $service->blocksPayload($document),
+            'document' => $service->documentPayload($document),
+        ]);
+    }
+
+    public function regroupUnfinished(
+        LegislativeSession $legislativeSession,
+        ObDocumentService $service,
+    ): JsonResponse {
+        $document = $this->documentFor($legislativeSession);
+        $this->authorize('update', $document);
+
+        $service->regroupUnfinishedBusiness($document);
+        $document = $document->fresh();
+
+        return response()->json([
             'blocks' => $service->blocksPayload($document),
             'document' => $service->documentPayload($document),
         ]);

@@ -1871,6 +1871,38 @@ export function initObMaker() {
         }
     }
 
+    async function regroupUnfinishedBusiness() {
+        if (!canEdit || !urls.regroupUnfinished) {
+            return;
+        }
+
+        const confirmed = await confirmAction({
+            title: 'Regroup Unfinished Business?',
+            message:
+                'Remove duplicate committee headers and place all fragmented Unfinished Business agendas under one header per committee. Agenda details and links will be preserved.',
+            confirmLabel: 'Regroup',
+            danger: false,
+        });
+
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            setStatus('Regrouping Unfinished Business…');
+            const data = await api(urls.regroupUnfinished, { method: 'POST', body: '{}' });
+            blocks = normalizeBlocks(data.blocks ?? blocks).sort((a, b) => a.sort_order - b.sort_order);
+            documentState = data.document ?? documentState;
+            if (selectedBlockId && !blocks.some((block) => block.id === selectedBlockId)) {
+                selectedBlockId = blocks[0]?.id ?? null;
+            }
+            renderBlocks();
+            setStatus('Unfinished Business regrouped by committee.');
+        } catch (error) {
+            setStatus(error.message, true);
+        }
+    }
+
     const saveDocumentMeta = debounce(async () => {
         if (!canEdit) {
             return;
@@ -1980,6 +2012,11 @@ export function initObMaker() {
 
         if (target.matches('#ob-sync-agendas')) {
             syncAgendas();
+            return;
+        }
+
+        if (target.matches('#ob-regroup-unfinished')) {
+            regroupUnfinishedBusiness();
             return;
         }
 
