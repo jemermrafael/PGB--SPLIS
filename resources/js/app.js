@@ -14,7 +14,7 @@ import { initMemberMultiSelect, initOrdinanceAttributionMode } from './member-mu
 import { initOrdinancesSearch } from './ordinances-search';
 import { initResolutionsSearch } from './resolutions-search';
 
-import { initAgendaVersionCompare } from './agenda-version-compare';
+import { initAgendaVersionCompare, initResolutionVersionCompare } from './agenda-version-compare';
 import { initHeaderNav } from './header-nav';
 import { initHeaderNotifications } from './header-notifications';
 import { initNotificationsFeed } from './notifications-feed';
@@ -61,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initBoardMemberBulkDelete();
     initAgendaForm();
     initAgendaVersionCompare();
+    initResolutionVersionCompare();
     initMemberMultiSelect();
     initOrdinanceAttributionMode();
     initKeywordTags();

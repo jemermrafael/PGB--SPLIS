@@ -2,16 +2,44 @@
     use App\Services\ResolutionVersionService;
 
     $versionService = app(ResolutionVersionService::class);
+    $fieldLabels = ResolutionVersionService::fieldLabels();
     $sortedVersions = $resolution->versions->sortByDesc('version_no')->values();
-    $previousByNo = $resolution->versions->sortBy('version_no')->values()->keyBy('version_no');
+    $ascendingVersions = $resolution->versions->sortBy('version_no')->values();
+    $previousByNo = $ascendingVersions->keyBy('version_no');
+
+    $compareVersions = $ascendingVersions->map(fn ($version) => [
+        'version_no' => $version->version_no,
+        'label' => sprintf(
+            'v%s — %s · %s',
+            $version->version_no,
+            $version->changeReasonLabel(),
+            $version->created_at?->format('M j, Y g:i A') ?? 'Unknown date',
+        ),
+        'snapshot' => $version->snapshot ?? [],
+    ])->values();
+
+    $formattedByVersion = $ascendingVersions->mapWithKeys(function ($version) use ($versionService, $fieldLabels) {
+        $values = [];
+
+        foreach (array_keys($fieldLabels) as $field) {
+            $values[$field] = $versionService->formatSnapshotDisplayValue($field, $version->snapshotValue($field));
+        }
+
+        return [$version->version_no => $values];
+    });
 @endphp
 
 <div class="splis-card mt-6">
-    <div class="splis-card-header !border-b-0">
+    <div class="splis-card-header flex flex-wrap items-center justify-between gap-3 !border-b-0">
         <div>
             <h2 class="splis-card-title">Version History</h2>
             <p class="splis-card-subtitle">Current version: v{{ $resolution->current_version_no }}</p>
         </div>
+        @if ($ascendingVersions->count() >= 2)
+            <button type="button" id="resolution-version-compare-open" class="splis-btn-secondary text-sm">
+                Compare versions
+            </button>
+        @endif
     </div>
 
     @if ($errors->has('version'))
@@ -110,3 +138,36 @@
         </table>
     </div>
 </div>
+
+@if ($ascendingVersions->count() >= 2)
+    <div
+        id="resolution-version-compare"
+        data-versions='@json($compareVersions)'
+        data-field-labels='@json($fieldLabels)'
+        data-formatted='@json($formattedByVersion)'
+        hidden
+    ></div>
+
+    <div id="resolution-version-compare-modal" class="splis-modal" hidden>
+        <div class="splis-modal-backdrop" data-modal-close tabindex="-1" aria-hidden="true"></div>
+        <div class="splis-modal-panel" role="dialog" aria-modal="true" aria-labelledby="resolution-version-compare-title">
+            <div class="splis-modal-header">
+                <h3 id="resolution-version-compare-title" class="splis-modal-title">Compare versions</h3>
+                <button type="button" class="splis-modal-close" data-modal-close aria-label="Close">×</button>
+            </div>
+            <div class="splis-modal-body">
+                <div id="resolution-version-compare-selectors" class="splis-version-compare-selectors">
+                    <label class="splis-version-compare-select">
+                        <span class="splis-label">Left version</span>
+                        <select id="resolution-version-compare-left" class="splis-select"></select>
+                    </label>
+                    <label class="splis-version-compare-select">
+                        <span class="splis-label">Right version</span>
+                        <select id="resolution-version-compare-right" class="splis-select"></select>
+                    </label>
+                </div>
+                <div id="resolution-version-compare-results" class="splis-version-compare-results"></div>
+            </div>
+        </div>
+    </div>
+@endif

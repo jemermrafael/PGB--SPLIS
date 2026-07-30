@@ -68,6 +68,7 @@ class DataSyncController extends Controller
                 includeLookups: false,
                 dryRun: $dryRun,
                 spFilePath: $uploadedPath,
+                userId: $request->user()?->id,
             );
         } catch (\Throwable $e) {
             return back()->with('error', $e->getMessage());
@@ -106,16 +107,50 @@ class DataSyncController extends Controller
         $parts = [];
 
         if (($stats['csv_duplicate_legacy'] ?? 0) > 0) {
-            $parts[] = sprintf('%d duplicate legacy ID(s) in CSV', $stats['csv_duplicate_legacy']);
+            $parts[] = sprintf(
+                '%d duplicate legacy ID(s) in CSV%s',
+                $stats['csv_duplicate_legacy'],
+                $this->formatDetailList($stats['duplicate_legacy_ids'] ?? []),
+            );
         }
         if (($stats['csv_duplicate_number_series'] ?? 0) > 0) {
-            $parts[] = sprintf('%d duplicate series/number pair(s) in CSV', $stats['csv_duplicate_number_series']);
+            $parts[] = sprintf(
+                '%d duplicate series/number pair(s) in CSV%s',
+                $stats['csv_duplicate_number_series'],
+                $this->formatDetailList($stats['duplicate_number_series_pairs'] ?? []),
+            );
         }
         if (($stats['conflicting_active_number'] ?? 0) > 0) {
-            $parts[] = sprintf('%d row(s) conflict with a different active resolution number', $stats['conflicting_active_number']);
+            $parts[] = sprintf(
+                '%d row(s) conflict with a different active resolution number%s',
+                $stats['conflicting_active_number'],
+                $this->formatDetailList($stats['conflicting_active_number_details'] ?? []),
+            );
         }
 
-        return $parts === [] ? '' : ' Duplicates: '.implode('; ', $parts).'.';
+        return $parts === [] ? '' : ' Issues: '.implode('; ', $parts).'.';
+    }
+
+    /**
+     * @param  list<string>|array<int|string, string>  $items
+     */
+    protected function formatDetailList(array $items, int $limit = 15): string
+    {
+        $items = array_values(array_filter(array_map('strval', $items), fn (string $item) => $item !== ''));
+
+        if ($items === []) {
+            return '';
+        }
+
+        $shown = array_slice($items, 0, $limit);
+        $extra = count($items) - count($shown);
+        $text = implode(', ', $shown);
+
+        if ($extra > 0) {
+            $text .= ', +'.$extra.' more';
+        }
+
+        return ' ['.$text.']';
     }
 
     public function syncAgenda(

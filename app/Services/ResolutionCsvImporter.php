@@ -10,13 +10,14 @@ use App\Models\Department;
 use App\Models\Municipality;
 use App\Models\Resolution;
 use App\Models\SeriesYear;
-use App\Services\ResolutionVersionService;
 use App\Support\DocumentType;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ResolutionCsvImporter
-{    protected CsvExportReader $csv;
+{
+    protected CsvExportReader $csv;
 
     /** @var array<int, int> */
     protected array $categoryCache = [];
@@ -36,8 +37,13 @@ class ResolutionCsvImporter
     /** @var array<int, int> */
     protected array $municipalityCache = [];
 
-    public function __construct(CsvExportReader $csv)
-    {
+    /** @var array<string, int> */
+    protected array $municipalityNameCache = [];
+
+    public function __construct(
+        CsvExportReader $csv,
+        protected ResolutionVersionService $versions,
+    ) {
         $this->csv = $csv;
     }
 
@@ -57,6 +63,7 @@ class ResolutionCsvImporter
         bool $includeLookups = false,
         bool $dryRun = false,
         ?string $spFilePath = null,
+        ?int $userId = null,
     ): array {
         if ($spFilePath !== null) {
             if (! is_file($spFilePath)) {
@@ -99,6 +106,9 @@ class ResolutionCsvImporter
             'csv_duplicate_legacy' => 0,
             'csv_duplicate_number_series' => 0,
             'conflicting_active_number' => 0,
+            'duplicate_legacy_ids' => [],
+            'duplicate_number_series_pairs' => [],
+            'conflicting_active_number_details' => [],
             'lookups_imported' => $includeLookups,
         ];
 
@@ -118,23 +128,39 @@ class ResolutionCsvImporter
 
             if (isset($seenLegacy[$legacyId])) {
                 $stats['csv_duplicate_legacy']++;
+                $stats['duplicate_legacy_ids'][$legacyId] = (string) $legacyId;
             }
             $seenLegacy[$legacyId] = true;
 
             $numberKey = $series.'|'.$resolutionNo;
+            $numberLabel = $series.'/'.$resolutionNo;
             if (isset($seenNumberSeries[$numberKey])) {
                 $stats['csv_duplicate_number_series']++;
+                $stats['duplicate_number_series_pairs'][$numberKey] = $numberLabel;
             }
             $seenNumberSeries[$numberKey] = true;
 
-            if (Resolution::query()
+            $conflict = Resolution::query()
                 ->where('series', $series)
                 ->where('resolution_no', $resolutionNo)
                 ->where(function ($query) use ($legacyId) {
                     $query->whereNull('legacy_sp_id')->orWhere('legacy_sp_id', '!=', $legacyId);
                 })
-                ->exists()) {
+                ->first(['id', 'legacy_sp_id', 'series', 'resolution_no']);
+
+            if ($conflict !== null) {
                 $stats['conflicting_active_number']++;
+                $conflictKey = $numberKey.'|'.$legacyId;
+                $legacyLabel = $conflict->legacy_sp_id
+                    ? 'legacy ID '.$conflict->legacy_sp_id
+                    : 'no legacy ID';
+                $stats['conflicting_active_number_details'][$conflictKey] = sprintf(
+                    '%s (CSV ID %d vs resolution #%d, %s)',
+                    $numberLabel,
+                    $legacyId,
+                    $conflict->id,
+                    $legacyLabel,
+                );
             }
 
             $payload = $this->buildPayload($row, $series);
@@ -146,36 +172,30 @@ class ResolutionCsvImporter
                 $existing = Resolution::query()->where('legacy_sp_id', $legacyId)->first();
 
                 if ($existing !== null) {
-                    $before = collect(ResolutionVersionService::VERSIONED_FIELDS)
-                        ->mapWithKeys(fn (string $field) => [$field => $existing->getAttribute($field)])
-                        ->all();
-
-                    $existing->update($payload);
-                    $existing->refresh();
-
-                    if ($existing->versions()->doesntExist()) {
-                        app(ResolutionVersionService::class)->recordInitialVersion($existing, null, 'imported');
-                    } else {
-                        app(ResolutionVersionService::class)->recordVersionIfChanged(
-                            $existing,
-                            $before,
-                            null,
-                            'imported',
-                        );
-                    }
+                    DB::transaction(function () use ($existing, $payload, $userId): void {
+                        $existing->update($payload);
+                        $existing->refresh();
+                        $this->versions->resetToImportedVersion($existing, $userId);
+                    });
 
                     $stats['updated']++;
                 } else {
-                    $resolution = Resolution::query()->create(array_merge($payload, [
-                        'legacy_sp_id' => $legacyId,
-                    ]));
-                    app(ResolutionVersionService::class)->recordInitialVersion($resolution, null, 'imported');
+                    DB::transaction(function () use ($payload, $legacyId, $userId): void {
+                        $resolution = Resolution::query()->create(array_merge($payload, [
+                            'legacy_sp_id' => $legacyId,
+                        ]));
+                        $this->versions->resetToImportedVersion($resolution, $userId);
+                    });
                     $stats['created']++;
                 }
             }
 
             $stats['processed']++;
         }
+
+        $stats['duplicate_legacy_ids'] = array_values($stats['duplicate_legacy_ids']);
+        $stats['duplicate_number_series_pairs'] = array_values($stats['duplicate_number_series_pairs']);
+        $stats['conflicting_active_number_details'] = array_values($stats['conflicting_active_number_details']);
 
         return $stats;
     }
@@ -292,16 +312,27 @@ class ResolutionCsvImporter
             'series' => $series,
             'department_id' => $this->departmentId($row['Office'] ?? null),
             'date_approved' => $this->parseDate($row['Date_App_En'] ?? null, $series),
-            'sponsored_by' => $row['Sponsored_By'] ? Str::limit($row['Sponsored_By'], 100, '') : null,
+            'sponsored_by' => ($row['Sponsored_By'] ?? null)
+                ? Str::limit((string) $row['Sponsored_By'], 100, '')
+                : null,
             'category_id' => $this->categoryId($row['Category'] ?? null),
             'category2_id' => $this->category2Id($row['Sub_Cat1'] ?? null),
             'category3_id' => $this->category3Id($row['Sub_Cat2'] ?? null),
             'category4_id' => $this->category4Id($row['Sub_Cat3'] ?? null),
-            'keyword' => $row['Keyword'] ? Str::limit($row['Keyword'], 100, '') : null,
-            'committee' => $row['Comittee'] ? Str::limit($row['Comittee'], 100, '') : null,
-            'app_ord_no' => $row['App_Ord_No'] ? Str::limit((string) $row['App_Ord_No'], 20, '') : null,
+            'keyword' => ($row['Keyword'] ?? null)
+                ? Str::limit((string) $row['Keyword'], 100, '')
+                : null,
+            'committee' => ($row['Comittee'] ?? null)
+                ? Str::limit((string) $row['Comittee'], 100, '')
+                : null,
+            'app_ord_no' => ($row['App_Ord_No'] ?? null)
+                ? Str::limit((string) $row['App_Ord_No'], 20, '')
+                : null,
             'amount' => $this->parseAmount($row['Amount'] ?? null),
-            'municipality_id' => $this->municipalityId($row['Municipality'] ?? null),
+            'municipality_id' => $this->municipalityId(
+                $row['MunCode'] ?? $row['Municipality'] ?? null,
+                $row['Municipality'] ?? null,
+            ),
             'province' => $this->parseBool($row['Province'] ?? null),
             'status' => 'approved',
             'created_by' => null,
@@ -316,6 +347,12 @@ class ResolutionCsvImporter
         $this->category4Cache = Category4::pluck('id', 'legacy_id')->all();
         $this->departmentCache = Department::pluck('id', 'code')->all();
         $this->municipalityCache = Municipality::pluck('id', 'code')->all();
+        $this->municipalityNameCache = Municipality::query()
+            ->get(['id', 'description'])
+            ->mapWithKeys(fn (Municipality $municipality) => [
+                $this->normalizeMunicipalityName($municipality->description) => (int) $municipality->id,
+            ])
+            ->all();
     }
 
     protected function categoryId(?string $legacyId): ?int
@@ -347,15 +384,27 @@ class ResolutionCsvImporter
         return $this->departmentCache[(int) $code] ?? null;
     }
 
-    protected function municipalityId(mixed $code): ?int
+    protected function municipalityId(mixed $code, mixed $name = null): ?int
     {
-        if ($code === null || $code === '') {
+        if ($code !== null && trim((string) $code) !== '') {
+            $numericCode = (int) $code;
+
+            if ($numericCode > 0 && isset($this->municipalityCache[$numericCode])) {
+                return $this->municipalityCache[$numericCode];
+            }
+        }
+
+        $name = trim((string) $name);
+        if ($name === '') {
             return null;
         }
 
-        $code = (int) $code;
+        return $this->municipalityNameCache[$this->normalizeMunicipalityName($name)] ?? null;
+    }
 
-        return $code > 0 ? ($this->municipalityCache[$code] ?? null) : null;
+    protected function normalizeMunicipalityName(string $name): string
+    {
+        return mb_strtoupper(preg_replace('/\s+/', ' ', trim($name)) ?? trim($name), 'UTF-8');
     }
 
     protected function parseAmount(?string $value): ?int

@@ -168,12 +168,20 @@ class ResolutionVersionHistoryTest extends TestCase
             'created_by' => $user->id,
         ]);
         app(ResolutionVersionService::class)->recordInitialVersion($resolution, $user->id);
+        $resolution->update(['resolution_title' => 'Updated history title']);
+        app(ResolutionVersionService::class)->recordVersionIfChanged(
+            $resolution->fresh(),
+            ['resolution_title' => 'Show history'],
+            $user->id,
+        );
 
         $this->actingAs($user)
             ->get(route('resolutions.show', $resolution))
             ->assertOk()
             ->assertSee('Version History', false)
             ->assertSee('Initial encoding', false)
-            ->assertSee('v1', false);
+            ->assertSee('v1', false)
+            ->assertSee('Compare versions', false)
+            ->assertSee('resolution-version-compare', false);
     }
 }

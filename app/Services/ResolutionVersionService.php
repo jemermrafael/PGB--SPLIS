@@ -162,6 +162,22 @@ class ResolutionVersionService
         return $this->createVersion($resolution, $reason, $userId);
     }
 
+    public function resetToImportedVersion(Resolution $resolution, ?int $userId = null): ResolutionVersion
+    {
+        return DB::transaction(function () use ($resolution, $userId): ResolutionVersion {
+            $resolution->versions()->delete();
+            $resolution->forceFill(['current_version_no' => 1])->saveQuietly();
+
+            return ResolutionVersion::create([
+                'resolution_id' => $resolution->id,
+                'version_no' => 1,
+                'change_reason' => 'imported',
+                'snapshot' => $this->snapshotFrom($resolution),
+                'created_by' => $userId,
+            ]);
+        });
+    }
+
     /**
      * @param  array<string, mixed>  $originalAttributes
      */

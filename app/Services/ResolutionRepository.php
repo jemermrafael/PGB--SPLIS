@@ -194,6 +194,10 @@ class ResolutionRepository
             });
         }
 
+        if (! empty($filters['from_agenda'])) {
+            $query->whereHas('publishedFromAgenda');
+        }
+
         return $query;
     }
 

@@ -141,6 +141,7 @@ const ADVANCED_FILTER_FIELDS = [
     'date_to',
     'status',
     'has_pdf',
+    'from_agenda',
     'category_id',
     'department_id',
     'municipality_id',

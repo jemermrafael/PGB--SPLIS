@@ -25,7 +25,12 @@ class ResolutionSearchController extends Controller
             'municipality_id',
             'status',
             'has_pdf',
+            'from_agenda',
         ]);
+
+        if (! empty($filters['from_agenda']) && ! $request->user()?->isSuperadmin()) {
+            unset($filters['from_agenda']);
+        }
 
         $filters['document_type'] = DocumentType::RESOLUTION;
         $filters['page'] = $request->integer('page', 1);

@@ -129,6 +129,14 @@
                             Has PDF only
                         </label>
                     </div>
+                    @if (auth()->user()?->isSuperadmin())
+                        <div class="flex items-end">
+                            <label class="splis-filter-check">
+                                <input type="checkbox" name="from_agenda" value="1" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+                                Published from agenda
+                            </label>
+                        </div>
+                    @endif
                 </div>
             </div>
         </details>

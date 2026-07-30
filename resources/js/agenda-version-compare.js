@@ -82,18 +82,18 @@ function renderDiff(container, leftVersion, rightVersion, fieldLabels, formatted
     `;
 }
 
-export function initAgendaVersionCompare() {
-    const root = document.getElementById('agenda-version-compare');
+export function initVersionCompare(prefix) {
+    const root = document.getElementById(prefix);
     if (! root) {
         return;
     }
 
-    const modal = document.getElementById('agenda-version-compare-modal');
-    const openBtn = document.getElementById('agenda-version-compare-open');
-    const leftSelect = document.getElementById('agenda-version-compare-left');
-    const rightSelect = document.getElementById('agenda-version-compare-right');
-    const selectorsWrap = document.getElementById('agenda-version-compare-selectors');
-    const results = document.getElementById('agenda-version-compare-results');
+    const modal = document.getElementById(`${prefix}-modal`);
+    const openBtn = document.getElementById(`${prefix}-open`);
+    const leftSelect = document.getElementById(`${prefix}-left`);
+    const rightSelect = document.getElementById(`${prefix}-right`);
+    const selectorsWrap = document.getElementById(`${prefix}-selectors`);
+    const results = document.getElementById(`${prefix}-results`);
 
     if (! modal || ! openBtn || ! leftSelect || ! rightSelect || ! results) {
         return;
@@ -177,4 +177,12 @@ export function initAgendaVersionCompare() {
             closeModal();
         }
     });
+}
+
+export function initAgendaVersionCompare() {
+    initVersionCompare('agenda-version-compare');
+}
+
+export function initResolutionVersionCompare() {
+    initVersionCompare('resolution-version-compare');
 }
