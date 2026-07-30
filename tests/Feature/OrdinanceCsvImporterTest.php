@@ -104,4 +104,34 @@ CSV;
             'publication_status' => 'for_publication',
         ]);
     }
+
+    public function test_converts_windows_1252_exports_to_utf8(): void
+    {
+        // Legacy exports use CP1252 curly quotes, which utf8mb4 columns reject.
+        $subject = "An ordinance institutionalizing the \x93Galing! Bataan Awards\x94 \x96 phase 2.";
+
+        $csv = "ORD NO.,GDrive,Publish Status,SUBJECT,DATE ENACTED,DATE APPROVED,POSTED IN CONSPICUOUS PLACES,PUBLISHED IN NEWSPAPER,EFFECTIVITY DATE,BULLETIN,BULLETIN,CERTIFICATION,CERTIFICATION GDrive,NEWSPAPER,NEWSPAPER  Gdrive,IMPLEMENTING BODIES/DEPT./AGENCIES/OFFICES,PERSPECTIVE CLASSIFICATION,MANDATE/PPA,REMARKS\n"
+            ."7,,PUBLISHED,\"{$subject}\",2/2/2026,2/10/2026,,,,,,,,,,,Citizen,PPA,\n";
+
+        $path = storage_path('framework/testing/ordinances-cp1252.csv');
+        if (! is_dir(dirname($path))) {
+            mkdir(dirname($path), 0777, true);
+        }
+        file_put_contents($path, $csv);
+
+        app(\App\Services\OrdinanceCsvImporter::class)->sync(
+            dryRun: false,
+            csvFilePath: $path,
+            seriesYear: 2026,
+        );
+
+        $ordinance = Ordinance::query()->where('ordinance_no', 7)->where('series_year', 2026)->first();
+
+        $this->assertNotNull($ordinance);
+        $this->assertTrue(mb_check_encoding($ordinance->subject, 'UTF-8'));
+        $this->assertSame(
+            'An ordinance institutionalizing the “Galing! Bataan Awards” – phase 2.',
+            $ordinance->subject,
+        );
+    }
 }

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\OrdinancePublicationStatus;
 use App\Models\Ordinance;
+use App\Support\CsvText;
 use App\Support\DateRange;
 use Carbon\Carbon;
 
@@ -299,6 +300,8 @@ class OrdinanceCsvImporter
 
     protected function normalizeHeader(string $header): string
     {
+        $header = CsvText::toUtf8($header);
+
         return strtolower(trim(preg_replace('/\s+/', ' ', $header) ?? ''));
     }
 

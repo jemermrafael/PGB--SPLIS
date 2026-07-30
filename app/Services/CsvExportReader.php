@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\CsvText;
 use Illuminate\Support\Facades\File;
 
 class CsvExportReader
@@ -57,7 +58,7 @@ class CsvExportReader
             return;
         }
 
-        $headers = array_map(fn ($h) => trim((string) $h, '"'), $headers);
+        $headers = array_map(fn ($h) => trim(CsvText::toUtf8((string) $h), '"'), $headers);
 
         while (($row = fgetcsv($handle)) !== false) {
             if ($row === [null] || $row === []) {
@@ -84,7 +85,7 @@ class CsvExportReader
 
     protected function cleanValue(string $value): ?string
     {
-        $value = trim($value);
+        $value = trim(CsvText::toUtf8($value));
 
         return $value === '' ? null : $value;
     }
