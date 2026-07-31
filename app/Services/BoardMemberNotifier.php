@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\UserNotification;
 use App\Support\AgendaDeadline;
 use App\Support\CommitteeLookup;
+use App\Support\ObAgendaAddedDigest;
 use Illuminate\Support\Collection;
 
 class BoardMemberNotifier
@@ -120,18 +121,19 @@ class BoardMemberNotifier
         }
     }
 
-    public function notifyAgendaAddedToOb(AgendaItem $agenda, LegislativeSession $session, bool $reNotify = false): void
+    public function notifyAgendaAddedToOb(AgendaItem $agenda, LegislativeSession $session): void
     {
-        $this->notifyAgendasAddedToOb([$agenda], $session, $reNotify);
+        $this->notifyAgendasAddedToOb([$agenda], $session);
     }
 
     /**
      * One in-app notification + email per board member for agendas in this batch.
      * Later batches for the same session create a new notification (not merged).
+     * Agendas already covered by a prior digest for this user/session are skipped.
      *
      * @param  iterable<int, AgendaItem>  $agendas
      */
-    public function notifyAgendasAddedToOb(iterable $agendas, LegislativeSession $session, bool $reNotify = false): void
+    public function notifyAgendasAddedToOb(iterable $agendas, LegislativeSession $session): void
     {
         $session->loadMissing('obDocument');
 
@@ -162,9 +164,13 @@ class BoardMemberNotifier
             /** @var User $user */
             $user = $entry['user'];
             /** @var Collection<int, AgendaItem> $userAgendas */
-            $userAgendas = $entry['agendas']
-                ->sortBy(fn (AgendaItem $agenda) => [(int) preg_replace('/\D+/', '', (string) $agenda->tracking_no), $agenda->id])
-                ->values();
+            $userAgendas = ObAgendaAddedDigest::filterUnnotified(
+                $user,
+                $session,
+                $entry['agendas']
+                    ->sortBy(fn (AgendaItem $agenda) => [(int) preg_replace('/\D+/', '', (string) $agenda->tracking_no), $agenda->id])
+                    ->values(),
+            );
             $labels = $userAgendas
                 ->map(fn (AgendaItem $agenda) => $agenda->displayLabel())
                 ->filter()
@@ -178,25 +184,6 @@ class BoardMemberNotifier
             $title = 'Agenda added to Order of Business';
             $labelList = implode(', ', $labels);
             $summary = sprintf('%s was added to %s.', $labelList, $sessionTitle);
-
-            if ($reNotify) {
-                UserNotification::query()
-                    ->where('user_id', $user->id)
-                    ->where('legislative_session_id', $session->id)
-                    ->where('type', UserNotification::TYPE_AGENDA_ADDED_TO_OB)
-                    ->delete();
-            } else {
-                $alreadyNotified = UserNotification::query()
-                    ->where('user_id', $user->id)
-                    ->where('legislative_session_id', $session->id)
-                    ->where('type', UserNotification::TYPE_AGENDA_ADDED_TO_OB)
-                    ->where('body', $summary)
-                    ->exists();
-
-                if ($alreadyNotified) {
-                    continue;
-                }
-            }
 
             $notification = UserNotification::query()->create([
                 'user_id' => $user->id,

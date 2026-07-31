@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\UserNotification;
 use App\Support\AgendaDeadline;
 use App\Support\MunicipalRequestAccess;
+use App\Support\ObAgendaAddedDigest;
 use Illuminate\Support\Collection;
 
 class MunicipalNotifier
@@ -122,18 +123,19 @@ class MunicipalNotifier
         }
     }
 
-    public function notifyAgendaAddedToOb(AgendaItem $agenda, LegislativeSession $session, bool $reNotify = false): void
+    public function notifyAgendaAddedToOb(AgendaItem $agenda, LegislativeSession $session): void
     {
-        $this->notifyAgendasAddedToOb([$agenda], $session, $reNotify);
+        $this->notifyAgendasAddedToOb([$agenda], $session);
     }
 
     /**
      * One in-app notification + email per municipal user for agendas in this batch.
      * Later batches for the same session create a new notification (not merged).
+     * Agendas already covered by a prior digest for this user/session are skipped.
      *
      * @param  iterable<int, AgendaItem>  $agendas
      */
-    public function notifyAgendasAddedToOb(iterable $agendas, LegislativeSession $session, bool $reNotify = false): void
+    public function notifyAgendasAddedToOb(iterable $agendas, LegislativeSession $session): void
     {
         $session->loadMissing('obDocument');
 
@@ -164,9 +166,13 @@ class MunicipalNotifier
             /** @var User $user */
             $user = $entry['user'];
             /** @var Collection<int, AgendaItem> $userAgendas */
-            $userAgendas = $entry['agendas']
-                ->sortBy(fn (AgendaItem $agenda) => [(int) preg_replace('/\D+/', '', (string) $agenda->tracking_no), $agenda->id])
-                ->values();
+            $userAgendas = ObAgendaAddedDigest::filterUnnotified(
+                $user,
+                $session,
+                $entry['agendas']
+                    ->sortBy(fn (AgendaItem $agenda) => [(int) preg_replace('/\D+/', '', (string) $agenda->tracking_no), $agenda->id])
+                    ->values(),
+            );
             $labels = $userAgendas
                 ->map(fn (AgendaItem $agenda) => $agenda->displayLabel())
                 ->filter()
@@ -183,25 +189,6 @@ class MunicipalNotifier
             $link = count($labels) === 1
                 ? route('municipal.requests.show', $userAgendas->first(), absolute: false)
                 : route('municipal.requests.index', absolute: false);
-
-            if ($reNotify) {
-                UserNotification::query()
-                    ->where('user_id', $user->id)
-                    ->where('legislative_session_id', $session->id)
-                    ->where('type', UserNotification::TYPE_AGENDA_ADDED_TO_OB)
-                    ->delete();
-            } else {
-                $alreadyNotified = UserNotification::query()
-                    ->where('user_id', $user->id)
-                    ->where('legislative_session_id', $session->id)
-                    ->where('type', UserNotification::TYPE_AGENDA_ADDED_TO_OB)
-                    ->where('body', $summary)
-                    ->exists();
-
-                if ($alreadyNotified) {
-                    continue;
-                }
-            }
 
             $notification = UserNotification::query()->create([
                 'user_id' => $user->id,

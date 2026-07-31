@@ -741,8 +741,8 @@ class ObDocumentService
             ->whereIn('id', $agendaIds)
             ->get()
             ->pipe(function ($items) use ($session): void {
-                $this->boardMemberNotifier->notifyAgendasAddedToOb($items, $session, reNotify: true);
-                $this->municipalNotifier->notifyAgendasAddedToOb($items, $session, reNotify: true);
+                $this->boardMemberNotifier->notifyAgendasAddedToOb($items, $session);
+                $this->municipalNotifier->notifyAgendasAddedToOb($items, $session);
             });
     }
 

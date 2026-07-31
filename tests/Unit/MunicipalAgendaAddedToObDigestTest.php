@@ -131,6 +131,47 @@ class MunicipalAgendaAddedToObDigestTest extends TestCase
         Mail::assertNothingSent();
     }
 
+    public function test_re_finalize_style_batch_skips_already_notified_agendas(): void
+    {
+        Mail::fake();
+
+        [$user, $session, $sender] = $this->municipalUserWithFinalScheduledSession();
+        $notifier = app(MunicipalNotifier::class);
+
+        $first = $this->agendaForSender($sender, $user->id, '349', 'A');
+        $second = $this->agendaForSender($sender, $user->id, '350', 'B');
+        $third = $this->agendaForSender($sender, $user->id, '351', 'C');
+
+        $notifier->notifyAgendasAddedToOb([$first, $second], $session);
+
+        $firstNotification = UserNotification::query()
+            ->where('user_id', $user->id)
+            ->where('type', UserNotification::TYPE_AGENDA_ADDED_TO_OB)
+            ->first();
+        $this->assertNotNull($firstNotification);
+        $firstNotification->forceFill(['read_at' => now()])->save();
+
+        $notifier->notifyAgendasAddedToOb([$first, $second, $third], $session);
+
+        $notifications = UserNotification::query()
+            ->where('user_id', $user->id)
+            ->where('type', UserNotification::TYPE_AGENDA_ADDED_TO_OB)
+            ->orderBy('id')
+            ->get();
+
+        $this->assertCount(2, $notifications);
+        $this->assertNotNull($notifications[0]->fresh()->read_at);
+        $this->assertSame(
+            '#349, #350 was added to '.$session->displayTitle().'.',
+            $notifications[0]->body
+        );
+        $this->assertSame(
+            '#351 was added to '.$session->displayTitle().'.',
+            $notifications[1]->body
+        );
+        Mail::assertSent(SystemNotificationMail::class, 2);
+    }
+
     /** @return array{0: User, 1: LegislativeSession, 2: string} */
     protected function municipalUserWithFinalScheduledSession(): array
     {
