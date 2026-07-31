@@ -47,7 +47,6 @@ class ObDocumentController extends Controller
                     'reorder' => route('ob.document.blocks.reorder', $session),
                     'fromAgenda' => route('ob.document.blocks.from-agenda', $session),
                     'syncAgendas' => route('ob.document.sync-agendas', $session),
-                    'regroupUnfinished' => route('ob.document.regroup-unfinished', $session),
                     'agendaPool' => route('ob.document.agenda-pool', $session),
                     'updateBlock' => route('ob.document.blocks.update', [$session, '__BLOCK__']),
                     'deleteBlock' => route('ob.document.blocks.destroy', [$session, '__BLOCK__']),

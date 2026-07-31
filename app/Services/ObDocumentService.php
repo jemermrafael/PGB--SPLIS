@@ -1243,20 +1243,104 @@ class ObDocumentService
             return;
         }
 
-        $block = $document->blocks
-            ->first(function (ObBlock $block): bool {
-                if ($block->type !== ObBlockType::RomanSection) {
-                    return false;
-                }
-
-                return $this->isAppearanceGuestsSection($block->content ?? []);
-            });
+        $block = $this->appearanceGuestsBlock($document);
 
         if ($block === null) {
             return;
         }
 
         $this->mergeAppearanceGuestsIntoSession($session, $block->content['guests'] ?? []);
+    }
+
+    /**
+     * Save attendance guests and mirror removals of official OB Section II names back to the Maker.
+     *
+     * @param  list<array{name?: string, remarks?: string, source?: string}>  $submittedGuests
+     */
+    public function applyAttendanceGuestsUpdate(LegislativeSession $session, array $submittedGuests): void
+    {
+        $session->loadMissing('obDocument.blocks');
+
+        $normalized = collect($submittedGuests)
+            ->filter(fn ($guest) => is_array($guest))
+            ->map(fn (array $guest) => [
+                'name' => trim((string) ($guest['name'] ?? '')),
+                'remarks' => trim((string) ($guest['remarks'] ?? '')),
+            ])
+            ->filter(fn (array $guest) => $guest['name'] !== '' || $guest['remarks'] !== '')
+            ->values();
+
+        $submittedNames = $normalized
+            ->map(fn (array $guest) => mb_strtolower($guest['name']))
+            ->filter(fn (string $name) => $name !== '')
+            ->unique()
+            ->values()
+            ->all();
+
+        $block = $session->obDocument
+            ? $this->appearanceGuestsBlock($session->obDocument)
+            : null;
+
+        $obNamesBefore = $block === null
+            ? []
+            : collect($block->content['guests'] ?? [])
+                ->filter(fn ($guest) => is_array($guest))
+                ->map(fn (array $guest) => trim((string) ($guest['name'] ?? '')))
+                ->filter(fn (string $name) => $name !== '')
+                ->values();
+
+        $obNamesBeforeKeys = $obNamesBefore
+            ->map(fn (string $name) => mb_strtolower($name))
+            ->all();
+
+        $removedOfficialNames = $obNamesBefore
+            ->reject(fn (string $name) => in_array(mb_strtolower($name), $submittedNames, true))
+            ->values();
+
+        if ($block !== null && $removedOfficialNames->isNotEmpty()) {
+            $content = $block->content ?? [];
+            $content['guests'] = collect($content['guests'] ?? [])
+                ->filter(fn ($guest) => is_array($guest))
+                ->reject(function (array $guest) use ($removedOfficialNames): bool {
+                    $name = mb_strtolower(trim((string) ($guest['name'] ?? '')));
+
+                    return $removedOfficialNames
+                        ->map(fn (string $removed) => mb_strtolower($removed))
+                        ->contains($name);
+                })
+                ->values()
+                ->all();
+
+            $block->update(['content' => $this->normalizeAppearanceGuestsContent($content)]);
+            $block->refresh();
+        }
+
+        $obNamesAfter = $block === null
+            ? $obNamesBeforeKeys
+            : collect($block->content['guests'] ?? [])
+                ->filter(fn ($guest) => is_array($guest))
+                ->map(fn (array $guest) => mb_strtolower(trim((string) ($guest['name'] ?? ''))))
+                ->filter(fn (string $name) => $name !== '')
+                ->unique()
+                ->values()
+                ->all();
+
+        $guests = $normalized
+            ->filter(fn (array $guest) => $guest['name'] !== '')
+            ->unique(fn (array $guest) => mb_strtolower($guest['name']))
+            ->map(fn (array $guest) => [
+                'name' => $guest['name'],
+                'remarks' => $guest['remarks'],
+                'source' => in_array(mb_strtolower($guest['name']), $obNamesAfter, true)
+                    ? 'ob'
+                    : 'attendance',
+            ])
+            ->values()
+            ->all();
+
+        $session->forceFill([
+            'guests' => $guests !== [] ? $guests : null,
+        ])->save();
     }
 
     /**
@@ -1284,6 +1368,7 @@ class ObDocumentService
                 return [
                     'name' => $name,
                     'remarks' => trim((string) ($prior['remarks'] ?? '')),
+                    'source' => 'ob',
                 ];
             });
 
@@ -1291,15 +1376,44 @@ class ObDocumentService
             ->map(fn (array $guest) => mb_strtolower($guest['name']))
             ->all();
 
-        $extras = $existing
-            ->filter(function (array $guest) use ($obNames): bool {
-                $name = trim((string) ($guest['name'] ?? ''));
+        $referenceNames = $existing
+            ->map(fn (array $guest) => mb_strtolower(trim((string) ($guest['name'] ?? ''))))
+            ->filter(fn (string $name) => $name !== '')
+            ->merge($obNames)
+            ->unique()
+            ->values()
+            ->all();
 
-                return $name !== '' && ! in_array(mb_strtolower($name), $obNames, true);
+        // Attendance-only guests are informational. Former OB names (source=ob) that
+        // are no longer on Section II are dropped so the official list stays in sync.
+        $extras = $existing
+            ->filter(function (array $guest) use ($obNames, $referenceNames): bool {
+                $name = trim((string) ($guest['name'] ?? ''));
+                if ($name === '') {
+                    return false;
+                }
+
+                $key = mb_strtolower($name);
+                if (in_array($key, $obNames, true)) {
+                    return false;
+                }
+
+                $source = (string) ($guest['source'] ?? '');
+                if ($source === 'ob') {
+                    return false;
+                }
+
+                $remarks = trim((string) ($guest['remarks'] ?? ''));
+                if ($remarks === '' && $this->isIncompleteGuestNamePrefix($key, $referenceNames)) {
+                    return false;
+                }
+
+                return true;
             })
             ->map(fn (array $guest) => [
                 'name' => trim((string) ($guest['name'] ?? '')),
                 'remarks' => trim((string) ($guest['remarks'] ?? '')),
+                'source' => 'attendance',
             ])
             ->values();
 
@@ -1308,5 +1422,31 @@ class ObDocumentService
         $session->forceFill([
             'guests' => $merged !== [] ? $merged : null,
         ])->save();
+    }
+
+    protected function appearanceGuestsBlock(ObDocument $document): ?ObBlock
+    {
+        return $document->blocks
+            ->first(function (ObBlock $block): bool {
+                if ($block->type !== ObBlockType::RomanSection) {
+                    return false;
+                }
+
+                return $this->isAppearanceGuestsSection($block->content ?? []);
+            });
+    }
+
+    /**
+     * @param  list<string>  $referenceNames  Lowercased names.
+     */
+    protected function isIncompleteGuestNamePrefix(string $candidate, array $referenceNames): bool
+    {
+        foreach ($referenceNames as $reference) {
+            if ($reference !== $candidate && str_starts_with($reference, $candidate)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

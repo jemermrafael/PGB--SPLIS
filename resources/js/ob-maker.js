@@ -240,6 +240,10 @@ export function initObMaker() {
     let poolMeta = { last_page: 1, current_page: 1, total: 0 };
     let poolLoading = false;
     let poolObserver = null;
+    const dirtyBlockIds = new Set();
+    let documentMetaDirty = false;
+    let isSaving = false;
+    let suppressLeavePrompt = false;
 
     const blocksList = document.getElementById('ob-blocks-list');
     const blocksEmpty = document.getElementById('ob-blocks-empty');
@@ -258,6 +262,8 @@ export function initObMaker() {
     let sectionNavDragState = null;
     let sectionNavResizeState = null;
     const saveStatus = document.getElementById('ob-save-status');
+    const saveDocumentBtn = document.getElementById('ob-save-document');
+    const discardChangesBtn = document.getElementById('ob-discard-changes');
     const titleInput = document.getElementById('ob-doc-title');
     const statusSelect = document.getElementById('ob-doc-status');
     const agendaPoolEl = document.getElementById('ob-agenda-pool');
@@ -278,6 +284,70 @@ export function initObMaker() {
         saveStatus.textContent = message;
         saveStatus.classList.toggle('text-red-600', isError);
         saveStatus.classList.toggle('text-slate-500', !isError);
+    }
+
+    function isDirty() {
+        return documentMetaDirty || dirtyBlockIds.size > 0;
+    }
+
+    function updateSaveButtons() {
+        const dirty = isDirty();
+        if (saveDocumentBtn) {
+            saveDocumentBtn.disabled = !canEdit || !dirty || isSaving;
+            saveDocumentBtn.textContent = isSaving ? 'Saving…' : 'Save';
+        }
+        if (discardChangesBtn) {
+            discardChangesBtn.disabled = !canEdit || !dirty || isSaving;
+        }
+        root.classList.toggle('has-unsaved-changes', dirty);
+    }
+
+    function updateSaveUi(statusMessage = null) {
+        updateSaveButtons();
+
+        if (statusMessage !== null) {
+            setStatus(statusMessage);
+        } else if (!canEdit) {
+            setStatus('');
+        } else if (isSaving) {
+            setStatus('Saving…');
+        } else if (isDirty()) {
+            setStatus('Unsaved changes');
+        } else {
+            setStatus('All changes saved');
+        }
+    }
+
+    function markBlockDirty(blockId) {
+        if (!canEdit || !Number.isFinite(blockId)) {
+            return;
+        }
+        dirtyBlockIds.add(blockId);
+        updateSaveUi();
+    }
+
+    function markDocumentMetaDirty() {
+        if (!canEdit) {
+            return;
+        }
+        documentMetaDirty = true;
+        updateSaveUi();
+    }
+
+    function clearDirtyState() {
+        dirtyBlockIds.clear();
+        documentMetaDirty = false;
+        updateSaveButtons();
+    }
+
+    function syncAllBlocksFromDom() {
+        blocksList?.querySelectorAll('[data-block-id]').forEach((blockEl) => {
+            const blockId = Number(blockEl.dataset.blockId);
+            if (!Number.isFinite(blockId)) {
+                return;
+            }
+            syncBlockFromDom(blockId);
+        });
     }
 
     async function api(url, options = {}) {
@@ -1432,50 +1502,139 @@ export function initObMaker() {
         block.content = collectBlockContent(blockEl, block);
     }
 
-    const saveBlock = debounce(async (blockId) => {
-        const block = blocks.find((item) => item.id === blockId);
-        const blockEl = blocksList?.querySelector(`[data-block-id="${blockId}"]`);
-        if (!block || !blockEl || !canEdit) {
+    async function persistBlockContent(blockId, content) {
+        const data = await api(blockUrl(urls.updateBlock, blockId), {
+            method: 'PUT',
+            body: JSON.stringify({ content }),
+        });
+
+        // Prefer the single-block payload during multi-block saves so other
+        // dirty in-memory contents are not wiped by a full document snapshot.
+        if (data.block) {
+            const index = blocks.findIndex((item) => item.id === blockId);
+            if (index >= 0) {
+                blocks[index] = normalizeRomanBlock(data.block);
+            }
+        } else if (data.blocks) {
+            blocks = normalizeBlocks(data.blocks).sort((a, b) => a.sort_order - b.sort_order);
+        } else {
+            const block = blocks.find((item) => item.id === blockId);
+            if (block) {
+                block.content = content;
+            }
+        }
+
+        return data;
+    }
+
+    async function persistDocumentMeta() {
+        const data = await api(urls.updateDocument, {
+            method: 'PUT',
+            body: JSON.stringify({
+                title: titleInput?.value ?? documentState.title,
+                status: statusSelect?.value ?? documentState.status,
+            }),
+        });
+        documentState = data.document;
+        return data;
+    }
+
+    async function saveAll({ reason = 'manual' } = {}) {
+        if (!canEdit) {
+            return true;
+        }
+
+        if (isSaving) {
+            return false;
+        }
+
+        syncAllBlocksFromDom();
+
+        const blockIds = [...dirtyBlockIds];
+        const saveMeta = documentMetaDirty;
+
+        if (!saveMeta && blockIds.length === 0) {
+            updateSaveUi('All changes saved');
+            return true;
+        }
+
+        isSaving = true;
+        updateSaveButtons();
+        setStatus('Saving…');
+
+        try {
+            if (saveMeta) {
+                await persistDocumentMeta();
+            }
+
+            for (const blockId of blockIds) {
+                const block = blocks.find((item) => item.id === blockId);
+                if (!block) {
+                    dirtyBlockIds.delete(blockId);
+                    continue;
+                }
+
+                const blockEl = blocksList?.querySelector(`[data-block-id="${blockId}"]`);
+                const content = blockEl
+                    ? collectBlockContent(blockEl, block)
+                    : (block.content ?? {});
+                block.content = content;
+                await persistBlockContent(blockId, content);
+                dirtyBlockIds.delete(blockId);
+            }
+
+            if (saveMeta) {
+                documentMetaDirty = false;
+            }
+
+            clearDirtyState();
+            setStatus(reason === 'leave' ? 'Saved' : 'All changes saved');
+            return true;
+        } catch (error) {
+            setStatus(error.message, true);
+            updateSaveButtons();
+            return false;
+        } finally {
+            isSaving = false;
+            updateSaveButtons();
+        }
+    }
+
+    async function ensureSavedBeforeMutation() {
+        if (!isDirty()) {
+            return true;
+        }
+
+        // Never silently flush mid-edit guests/fields — that reintroduced incomplete
+        // attendance names when a structural action ran after a typing pause.
+        const choice = await promptUnsavedChanges({
+            title: 'Save changes first?',
+            message: 'You have unsaved Order of Business edits. Save them before continuing, discard them, or cancel.',
+        });
+
+        if (choice === 'cancel') {
+            return false;
+        }
+
+        if (choice === 'discard') {
+            clearDirtyState();
+            setStatus('Local edits discarded for this action');
+            return true;
+        }
+
+        return saveAll({ reason: 'before-mutation' });
+    }
+
+    function discardLocalChanges() {
+        suppressLeavePrompt = true;
+        window.location.reload();
+    }
+
+    async function persistOrder() {
+        if (! (await ensureSavedBeforeMutation())) {
             return;
         }
 
-        try {
-            setStatus('Saving…');
-            const content = collectBlockContent(blockEl, block);
-            const data = await api(blockUrl(urls.updateBlock, blockId), {
-                method: 'PUT',
-                body: JSON.stringify({ content }),
-            });
-
-            // Sync local model only — do not rebuild the DOM here. Full re-renders
-            // steal focus/caret from rich-text editors (bold/underline/typing).
-            if (data.blocks) {
-                blocks = normalizeBlocks(data.blocks).sort((a, b) => a.sort_order - b.sort_order);
-            } else if (data.block) {
-                const index = blocks.findIndex((item) => item.id === blockId);
-                if (index >= 0) {
-                    blocks[index] = normalizeRomanBlock(data.block);
-                }
-            } else {
-                block.content = content;
-            }
-
-            const updated = blocks.find((item) => item.id === blockId);
-            const numeralField = blockEl.querySelector('[data-field="numeral"]');
-            if (updated && numeralField && document.activeElement !== numeralField) {
-                const nextNumeral = updated.content?.numeral ?? '';
-                if (numeralField.value !== nextNumeral) {
-                    numeralField.value = nextNumeral;
-                }
-            }
-
-            setStatus('Saved');
-        } catch (error) {
-            setStatus(error.message, true);
-        }
-    }, 600);
-
-    async function persistOrder() {
         const order = blocks.map((block) => block.id);
         const data = await api(urls.reorder, {
             method: 'PUT',
@@ -1487,6 +1646,10 @@ export function initObMaker() {
 
     async function addBlock(type, afterBlockId = null) {
         try {
+            if (! (await ensureSavedBeforeMutation())) {
+                return;
+            }
+
             setStatus('Adding block…');
             const data = await api(urls.storeBlock, {
                 method: 'POST',
@@ -1573,9 +1736,14 @@ export function initObMaker() {
         }
 
         try {
+            if (! (await ensureSavedBeforeMutation())) {
+                return;
+            }
+
             setStatus('Deleting…');
             const deletedBlock = blocks.find((block) => block.id === blockId);
             const data = await api(blockUrl(urls.deleteBlock, blockId), { method: 'DELETE' });
+            dirtyBlockIds.delete(blockId);
             blocks = normalizeBlocks(data.blocks ?? blocks.filter((block) => block.id !== blockId)).sort((a, b) => a.sort_order - b.sort_order);
             if (selectedBlockId === blockId) {
                 selectedBlockId = blocks[0]?.id ?? null;
@@ -1607,11 +1775,16 @@ export function initObMaker() {
         }
 
         try {
+            if (! (await ensureSavedBeforeMutation())) {
+                return;
+            }
+
             setStatus('Moving to section…');
             const data = await api(blockUrl(urls.moveSection, blockId), {
                 method: 'POST',
                 body: JSON.stringify({ section }),
             });
+            dirtyBlockIds.delete(blockId);
             blocks = normalizeBlocks(data.blocks ?? []).sort((a, b) => a.sort_order - b.sort_order);
             documentState = data.document ?? documentState;
 
@@ -1840,6 +2013,10 @@ export function initObMaker() {
         const section = agendaSectionSelect?.value ?? 'unassigned_regular';
 
         try {
+            if (! (await ensureSavedBeforeMutation())) {
+                return;
+            }
+
             setStatus('Adding agenda items…');
             const data = await api(urls.fromAgenda, {
                 method: 'POST',
@@ -1875,10 +2052,10 @@ export function initObMaker() {
         }
 
         const confirmed = await confirmAction({
-            title: 'Auto-place Agendas?',
+            title: 'Auto-place and sort Agendas?',
             message:
-                'Place eligible agendas into this Order of Business using lifecycle rules (unassigned, unfinished, or committee reports). Manually moved items are left as-is. Items already in the correct section are skipped.',
-            confirmLabel: 'Auto-place',
+                'Place eligible agendas into this Order of Business using lifecycle rules (unassigned, unfinished, or committee reports), then sort sections by Agenda No. and regroup Unfinished Business by committee. Manually moved items are left as-is. Items already in the correct section are skipped.',
+            confirmLabel: 'Auto-place and sort',
             danger: false,
         });
 
@@ -1887,7 +2064,11 @@ export function initObMaker() {
         }
 
         try {
-            setStatus('Auto-placing agendas…');
+            if (! (await ensureSavedBeforeMutation())) {
+                return;
+            }
+
+            setStatus('Auto-placing and sorting agendas…');
             const data = await api(urls.syncAgendas, { method: 'POST', body: '{}' });
             blocks = normalizeBlocks(data.blocks ?? blocks).sort((a, b) => a.sort_order - b.sort_order);
             documentState = data.document ?? documentState;
@@ -1900,7 +2081,7 @@ export function initObMaker() {
             const added = Number(data.added ?? 0);
             const relocated = Number(data.relocated ?? 0);
             if (added === 0 && relocated === 0) {
-                setStatus('No eligible agendas to place or move.');
+                setStatus('No eligible agendas to place or move. Sections were re-sorted.');
             } else {
                 const parts = [];
                 if (added > 0) {
@@ -1909,65 +2090,12 @@ export function initObMaker() {
                 if (relocated > 0) {
                     parts.push(`${relocated} moved`);
                 }
-                setStatus(`Auto-place complete: ${parts.join(', ')}.`);
+                setStatus(`Auto-place and sort complete: ${parts.join(', ')}.`);
             }
         } catch (error) {
             setStatus(error.message, true);
         }
     }
-
-    async function regroupUnfinishedBusiness() {
-        if (!canEdit || !urls.regroupUnfinished) {
-            return;
-        }
-
-        const confirmed = await confirmAction({
-            title: 'Regroup Unfinished Business?',
-            message:
-                'Remove duplicate committee headers and place all fragmented Unfinished Business agendas under one header per committee. Agenda details and links will be preserved.',
-            confirmLabel: 'Regroup',
-            danger: false,
-        });
-
-        if (!confirmed) {
-            return;
-        }
-
-        try {
-            setStatus('Regrouping Unfinished Business…');
-            const data = await api(urls.regroupUnfinished, { method: 'POST', body: '{}' });
-            blocks = normalizeBlocks(data.blocks ?? blocks).sort((a, b) => a.sort_order - b.sort_order);
-            documentState = data.document ?? documentState;
-            if (selectedBlockId && !blocks.some((block) => block.id === selectedBlockId)) {
-                selectedBlockId = blocks[0]?.id ?? null;
-            }
-            renderBlocks();
-            setStatus('Unfinished Business regrouped by committee.');
-        } catch (error) {
-            setStatus(error.message, true);
-        }
-    }
-
-    const saveDocumentMeta = debounce(async () => {
-        if (!canEdit) {
-            return;
-        }
-
-        try {
-            setStatus('Saving document…');
-            const data = await api(urls.updateDocument, {
-                method: 'PUT',
-                body: JSON.stringify({
-                    title: titleInput?.value ?? documentState.title,
-                    status: statusSelect?.value ?? documentState.status,
-                }),
-            });
-            documentState = data.document;
-            setStatus('Document saved');
-        } catch (error) {
-            setStatus(error.message, true);
-        }
-    }, 500);
 
     root.addEventListener('mousedown', (event) => {
         if (event.target.closest('[data-ob-rich-command]')) {
@@ -2023,7 +2151,7 @@ export function initObMaker() {
             guests.push({ name: '' });
             block.content = { ...(block.content ?? {}), guests };
             renderBlocks();
-            saveBlock(blockId);
+            markBlockDirty(blockId);
             return;
         }
 
@@ -2046,7 +2174,25 @@ export function initObMaker() {
             }
             block.content = { ...(block.content ?? {}), guests };
             renderBlocks();
-            saveBlock(blockId);
+            markBlockDirty(blockId);
+            return;
+        }
+
+        if (target.matches('#ob-save-document')) {
+            saveAll({ reason: 'manual' });
+            return;
+        }
+
+        if (target.matches('#ob-discard-changes')) {
+            confirmAction({
+                title: 'Discard unsaved changes?',
+                message: 'Reload the last saved Order of Business and lose local edits?',
+                confirmLabel: 'Discard',
+            }).then((confirmed) => {
+                if (confirmed) {
+                    discardLocalChanges();
+                }
+            });
             return;
         }
 
@@ -2057,11 +2203,6 @@ export function initObMaker() {
 
         if (target.matches('#ob-sync-agendas')) {
             syncAgendas();
-            return;
-        }
-
-        if (target.matches('#ob-regroup-unfinished')) {
-            regroupUnfinishedBusiness();
             return;
         }
 
@@ -2089,7 +2230,7 @@ export function initObMaker() {
             const headers = block.content?.headers ?? [];
             block.content.rows = [...(block.content.rows ?? []), headers.map(() => '')];
             renderBlocks();
-            saveBlock(blockId);
+            markBlockDirty(blockId);
             return;
         }
 
@@ -2103,7 +2244,7 @@ export function initObMaker() {
             }
             block.content.rows.splice(rowIndex, 1);
             renderBlocks();
-            saveBlock(blockId);
+            markBlockDirty(blockId);
             return;
         }
 
@@ -2176,19 +2317,24 @@ export function initObMaker() {
 
     root.addEventListener('input', (event) => {
         const target = event.target;
+        if (target.matches('#ob-doc-title, #ob-doc-status')) {
+            markDocumentMetaDirty();
+            return;
+        }
+
         const blockEl = target.closest('[data-block-id]');
         if (!blockEl) {
             return;
         }
         const blockId = Number(blockEl.dataset.blockId);
         syncBlockFromDom(blockId);
-        saveBlock(blockId);
+        markBlockDirty(blockId);
     });
 
     root.addEventListener('change', (event) => {
         const target = event.target;
         if (target.matches('#ob-doc-title, #ob-doc-status')) {
-            saveDocumentMeta();
+            markDocumentMetaDirty();
             return;
         }
 
@@ -2207,7 +2353,8 @@ export function initObMaker() {
             const blockEl = target.closest('[data-block-id]');
             const blockId = Number(blockEl?.dataset.blockId);
             if (blockId) {
-                saveBlock(blockId);
+                syncBlockFromDom(blockId);
+                markBlockDirty(blockId);
             }
             return;
         }
@@ -2224,7 +2371,7 @@ export function initObMaker() {
                     }
                 }
                 syncBlockFromDom(blockId);
-                saveBlock(blockId);
+                markBlockDirty(blockId);
             }
             return;
         }
@@ -2644,8 +2791,170 @@ export function initObMaker() {
     bindSectionNavResize();
     restoreSectionNavLayout();
 
+    const unsavedDialog = document.getElementById('ob-unsaved-dialog');
+    let unsavedResolve = null;
+
+    function closeUnsavedDialog(result) {
+        if (!unsavedDialog) {
+            return;
+        }
+        unsavedDialog.classList.remove('is-open');
+        unsavedDialog.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('splis-ob-dialog-open');
+        if (unsavedResolve) {
+            unsavedResolve(result);
+            unsavedResolve = null;
+        }
+    }
+
+    function promptUnsavedChanges({
+        title = 'Unsaved changes',
+        message = 'You have unsaved edits in the Order of Business Maker. Save them, discard them, or stay on this page.',
+    } = {}) {
+        if (!unsavedDialog) {
+            const stay = !window.confirm(`${message}\n\nLeave without saving?`);
+            return Promise.resolve(stay ? 'cancel' : 'discard');
+        }
+
+        const titleEl = document.getElementById('ob-unsaved-title');
+        const messageEl = document.getElementById('ob-unsaved-message');
+        if (titleEl) {
+            titleEl.textContent = title;
+        }
+        if (messageEl) {
+            messageEl.textContent = message;
+        }
+
+        return new Promise((resolve) => {
+            unsavedResolve = resolve;
+            unsavedDialog.classList.add('is-open');
+            unsavedDialog.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('splis-ob-dialog-open');
+            document.getElementById('ob-unsaved-save')?.focus();
+        });
+    }
+
+    if (unsavedDialog) {
+        unsavedDialog.querySelectorAll('[data-ob-unsaved-cancel]').forEach((el) => {
+            el.addEventListener('click', () => closeUnsavedDialog('cancel'));
+        });
+        unsavedDialog.querySelectorAll('[data-ob-unsaved-discard]').forEach((el) => {
+            el.addEventListener('click', () => closeUnsavedDialog('discard'));
+        });
+        document.getElementById('ob-unsaved-save')?.addEventListener('click', () => closeUnsavedDialog('save'));
+        unsavedDialog.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeUnsavedDialog('cancel');
+            }
+        });
+    }
+
+    async function handleLeaveAttempt(navigate) {
+        if (suppressLeavePrompt || !isDirty()) {
+            navigate();
+            return;
+        }
+
+        const choice = await promptUnsavedChanges();
+        if (choice === 'cancel') {
+            return;
+        }
+        if (choice === 'discard') {
+            suppressLeavePrompt = true;
+            navigate();
+            return;
+        }
+
+        const saved = await saveAll({ reason: 'leave' });
+        if (!saved) {
+            return;
+        }
+        suppressLeavePrompt = true;
+        navigate();
+    }
+
+    window.addEventListener('beforeunload', (event) => {
+        if (suppressLeavePrompt || !isDirty()) {
+            return;
+        }
+        event.preventDefault();
+        event.returnValue = '';
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!canEdit || suppressLeavePrompt || !isDirty()) {
+            return;
+        }
+
+        const link = event.target.closest('a[href]');
+        if (!link || event.defaultPrevented || event.button !== 0) {
+            return;
+        }
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+            return;
+        }
+        if (link.target === '_blank' || link.hasAttribute('download')) {
+            return;
+        }
+        if (link.hasAttribute('data-pdf-modal-open')) {
+            return;
+        }
+
+        const href = link.getAttribute('href');
+        if (!href || href.startsWith('#') || href.startsWith('javascript:')) {
+            return;
+        }
+
+        let url;
+        try {
+            url = new URL(link.href, window.location.href);
+        } catch {
+            return;
+        }
+
+        if (url.origin !== window.location.origin) {
+            return;
+        }
+        if (url.pathname === window.location.pathname && url.search === window.location.search) {
+            return;
+        }
+
+        event.preventDefault();
+        handleLeaveAttempt(() => {
+            window.location.assign(url.href);
+        });
+    }, true);
+
+    document.addEventListener('submit', (event) => {
+        if (!canEdit || suppressLeavePrompt || !isDirty()) {
+            return;
+        }
+        if (root.contains(event.target)) {
+            return;
+        }
+
+        event.preventDefault();
+        const form = event.target;
+        handleLeaveAttempt(() => {
+            suppressLeavePrompt = true;
+            form.submit();
+        });
+    }, true);
+
+    window.addEventListener('keydown', (event) => {
+        if (!canEdit || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 's') {
+            return;
+        }
+        if (!root.contains(event.target) && event.target !== document.body) {
+            // Still allow Ctrl+S anywhere on the maker page.
+        }
+        event.preventDefault();
+        saveAll({ reason: 'manual' });
+    });
+
     renderAddBlockButtons();
     renderBlocks();
+    updateSaveUi(canEdit ? 'All changes saved' : '');
     if (canEdit) {
         loadAgendaPool(1, false);
     }

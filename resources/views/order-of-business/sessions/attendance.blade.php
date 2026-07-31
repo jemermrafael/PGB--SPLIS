@@ -118,7 +118,8 @@
                 <div>
                     <p class="splis-detail-label mb-0">Guests</p>
                     <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        Guests from OB Section II (Appearance of Guest/s) appear here after the board member list. You can add more guests below.
+                        Official guests come from OB Maker (Section II). Names added here are for information only.
+                        Removing an official guest here also removes them from OB Maker.
                     </p>
                 </div>
                 <button type="button" class="splis-btn-secondary text-sm" data-guest-add>Add Guest</button>
@@ -128,7 +129,12 @@
                 @foreach (old('guests', $session->guestsList()) as $index => $guest)
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto]" data-guest-row>
                         <div>
-                            <label class="splis-label">Name</label>
+                            <label class="splis-label">
+                                Name
+                                @if (($guest['source'] ?? '') === 'ob')
+                                    <span class="ml-1 font-normal text-xs text-slate-500 dark:text-slate-400">(OB official)</span>
+                                @endif
+                            </label>
                             <input
                                 type="text"
                                 name="guests[{{ $index }}][name]"

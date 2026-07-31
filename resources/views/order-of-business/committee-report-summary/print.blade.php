@@ -73,6 +73,11 @@
         width: 100%;
         border-collapse: collapse;
         border: 1.5pt solid #000;
+        margin-bottom: 0.85rem;
+    }
+
+    .scr-print-table:last-of-type {
+        margin-bottom: 0;
     }
 
     .scr-print-table td {
@@ -221,9 +226,9 @@
         @endif
     </div>
 
-    <table class="scr-print-table">
-        <tbody>
-            @forelse ($groups as $index => $group)
+    @forelse ($groups as $index => $group)
+        <table class="scr-print-table">
+            <tbody>
                 {{-- Row 1: number | committee + chair --}}
                 <tr>
                     <td class="scr-print-col-no">{{ $index + 1 }}.</td>
@@ -264,13 +269,17 @@
                         @endforeach
                     </td>
                 </tr>
-            @empty
+            </tbody>
+        </table>
+    @empty
+        <table class="scr-print-table">
+            <tbody>
                 <tr>
                     <td colspan="2" style="padding: 1rem; text-align: center;">No committee report items.</td>
                 </tr>
-            @endforelse
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    @endforelse
 
     <div class="scr-print-signatories">
         <div>

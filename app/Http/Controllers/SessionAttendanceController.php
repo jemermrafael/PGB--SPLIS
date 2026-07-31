@@ -37,7 +37,7 @@ class SessionAttendanceController extends Controller
         ]);
     }
 
-    public function update(Request $request, LegislativeSession $legislativeSession): RedirectResponse
+    public function update(Request $request, LegislativeSession $legislativeSession, ObDocumentService $obDocuments): RedirectResponse
     {
         abort_unless($request->user()?->canRecordAttendance(), 403);
 
@@ -68,18 +68,7 @@ class SessionAttendanceController extends Controller
             $notes,
         );
 
-        $guests = collect($validated['guests'] ?? [])
-            ->map(fn (array $guest) => [
-                'name' => trim((string) ($guest['name'] ?? '')),
-                'remarks' => trim((string) ($guest['remarks'] ?? '')),
-            ])
-            ->filter(fn (array $guest) => $guest['name'] !== '' || $guest['remarks'] !== '')
-            ->values()
-            ->all();
-
-        $legislativeSession->update([
-            'guests' => $guests !== [] ? $guests : null,
-        ]);
+        $obDocuments->applyAttendanceGuestsUpdate($legislativeSession, $validated['guests'] ?? []);
 
         return redirect()
             ->route('ob.sessions.attendance', $legislativeSession)

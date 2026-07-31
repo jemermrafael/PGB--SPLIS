@@ -53,16 +53,10 @@
         @if ($canEdit)
             <aside class="splis-ob-maker-sidebar splis-card">
                 <div class="splis-card-header">
-                    <h2 class="splis-card-title">Add content</h2>
+                    <h2 class="splis-card-title">From Agenda</h2>
                 </div>
                 <div class="splis-card-body space-y-4">
                     <div>
-                        <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Block type</p>
-                        <div id="ob-add-block-types" class="flex flex-wrap gap-2"></div>
-                    </div>
-                    <hr class="border-slate-200 dark:border-slate-700">
-                    <div>
-                        <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">From Agenda</p>
                         <input type="search" id="ob-agenda-search" class="splis-input mb-2" placeholder="Search title, tracking no., sender…">
                         <label class="splis-label" for="ob-agenda-section">Add to section</label>
                         <select id="ob-agenda-section" class="splis-select mb-2">
@@ -82,32 +76,42 @@
             <div class="splis-card-header flex items-center justify-between gap-3">
                 <div>
                     <h2 class="splis-card-title">Document</h2>
-                    <p class="splis-card-subtitle">Editable content saves automatically · permanent section headers are locked</p>
+                    <p class="splis-card-subtitle">Edit freely, then Save · permanent section headers are locked</p>
                 </div>
                 @if ($canEdit)
                     <div class="flex flex-wrap justify-end gap-2">
                         <button
                             type="button"
-                            id="ob-regroup-unfinished"
+                            id="ob-discard-changes"
                             class="splis-btn-secondary shrink-0"
-                            title="Group fragmented Unfinished Business agendas under one header per committee"
+                            disabled
+                            title="Reload the last saved document and discard local edits"
                         >
-                            Regroup Unfinished Business
+                            Discard
+                        </button>
+                        <button
+                            type="button"
+                            id="ob-save-document"
+                            class="splis-btn-primary shrink-0"
+                            disabled
+                            title="Save all changes (Ctrl+S)"
+                        >
+                            Save
                         </button>
                         <button
                             type="button"
                             id="ob-sync-agendas"
                             class="splis-btn-secondary shrink-0"
-                            title="Place eligible agendas using lifecycle rules"
+                            title="Place eligible agendas using lifecycle rules, then sort and regroup sections"
                         >
-                            Auto-place Agendas
+                            Auto-place and sort Agendas
                         </button>
                     </div>
                 @endif
             </div>
             <div id="ob-blocks-list" class="splis-card-body space-y-3"></div>
             <div id="ob-blocks-empty" class="hidden splis-card-body text-center text-slate-500">
-                No blocks yet. Add content from the sidebar.
+                No blocks yet. Add agendas from the sidebar.
             </div>
         </div>
     </div>
@@ -202,6 +206,19 @@
             <div class="splis-ob-dialog-actions">
                 <button type="button" class="splis-btn-secondary" data-ob-confirm-cancel>Cancel</button>
                 <button type="button" id="ob-confirm-ok" class="splis-btn-danger">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="ob-unsaved-dialog" class="splis-ob-dialog" aria-hidden="true">
+        <div class="splis-ob-dialog-backdrop" data-ob-unsaved-cancel tabindex="-1"></div>
+        <div class="splis-ob-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="ob-unsaved-title">
+            <h3 id="ob-unsaved-title" class="splis-ob-dialog-title">Unsaved changes</h3>
+            <p id="ob-unsaved-message" class="splis-ob-dialog-message">You have unsaved edits in the Order of Business Maker. Save them, discard them, or stay on this page.</p>
+            <div class="splis-ob-dialog-actions">
+                <button type="button" class="splis-btn-secondary" data-ob-unsaved-discard>Discard</button>
+                <button type="button" class="splis-btn-secondary" data-ob-unsaved-cancel>Cancel</button>
+                <button type="button" id="ob-unsaved-save" class="splis-btn-primary">Save</button>
             </div>
         </div>
     </div>

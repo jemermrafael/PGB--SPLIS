@@ -57,11 +57,14 @@ class LegislativeSession extends Model
             ->map(fn (array $guest) => [
                 'name' => trim((string) ($guest['name'] ?? '')),
                 'remarks' => trim((string) ($guest['remarks'] ?? '')),
+                'source' => in_array(($guest['source'] ?? ''), ['ob', 'attendance'], true)
+                    ? (string) $guest['source']
+                    : 'attendance',
             ])
             ->values()
             ->all();
 
-        return $guests !== [] ? $guests : [['name' => '', 'remarks' => '']];
+        return $guests !== [] ? $guests : [['name' => '', 'remarks' => '', 'source' => 'attendance']];
     }
 
     public function priorSession(): BelongsTo

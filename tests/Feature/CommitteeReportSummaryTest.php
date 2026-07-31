@@ -130,6 +130,48 @@ class CommitteeReportSummaryTest extends TestCase
             ->assertSee('MARY ANN R. DE JESUS, MPA');
     }
 
+    public function test_print_renders_a_separate_table_per_committee(): void
+    {
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'is_active' => true]);
+        [$session] = $this->seedCommitteeReportsOnSession($admin);
+
+        $document = $session->obDocument;
+        $second = AgendaItem::query()->create([
+            'tracking_no' => '502',
+            'title' => 'Health referral',
+            'committee_referred' => 'Health and Sanitation',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 0,
+            'created_by' => $admin->id,
+        ]);
+
+        ObBlock::query()->create([
+            'ob_document_id' => $document->id,
+            'type' => ObBlockType::CommitteeReport,
+            'sort_order' => 41,
+            'agenda_item_id' => $second->id,
+            'content' => [
+                'committee_name' => 'Health and Sanitation',
+                'chair_name' => 'BM Health Chair',
+                'agenda_no' => '502',
+                'agenda_item_ids' => [$second->id],
+            ],
+        ]);
+
+        app(CommitteeReportSummaryService::class)->ensureForSession($session->fresh(), $admin->id);
+
+        $html = $this->actingAs($admin)
+            ->get(route('ob.sessions.committee-report-summary.print', $session))
+            ->assertOk()
+            ->assertSee('COMMITTEE ON FINANCE', false)
+            ->assertSee('COMMITTEE ON HEALTH', false)
+            ->assertSee('Agenda No. 501')
+            ->assertSee('Agenda No. 502')
+            ->getContent();
+
+        $this->assertSame(2, substr_count($html, 'class="scr-print-table"'));
+    }
+
     public function test_sync_preserves_existing_recommendations(): void
     {
         $admin = User::factory()->create(['role' => UserRole::Admin, 'is_active' => true]);
