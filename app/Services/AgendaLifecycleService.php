@@ -106,31 +106,46 @@ class AgendaLifecycleService
 
         AgendaItem::query()
             ->where('status', '!=', AgendaItem::STATUS_DONE)
-            ->whereNotNull('committee_referred')
-            ->where('committee_referred', '!=', '')
-            ->with(['lastObSyncedSession', 'obPlacements.legislativeSession'])
+            ->where(function ($query): void {
+                $query->where(function ($committee): void {
+                    $committee->whereNotNull('committee_referred')
+                        ->where('committee_referred', '!=', '');
+                })
+                    ->orWhereNotNull('committee_report_url')
+                    ->orWhereNotNull('committee_report_pdf_path')
+                    ->orWhereHas('boardMemberCommitteeReports');
+            })
+            ->with(['lastObSyncedSession', 'obPlacements.legislativeSession', 'boardMemberCommitteeReports:id'])
             ->orderBy('id')
             ->chunkById(100, function ($agendas) use ($session, $userId, $clearManualOverrides, &$added, &$relocated): void {
                 foreach ($agendas as $agenda) {
-                    if (! $this->prescribedDaysPermit($agenda)) {
+                    if ($agenda->status === AgendaItem::STATUS_LAPSED) {
                         continue;
                     }
 
-                    if ($agenda->isObLifecycleResolved() || blank($agenda->committee_referred)) {
+                    $hasCommitteeReport = $this->hasCommitteeReport($agenda);
+
+                    // Filed committee reports still belong in IV even when prescription days have elapsed.
+                    if (! $hasCommitteeReport && ! $this->prescribedDaysPermit($agenda)) {
                         continue;
                     }
 
-                    $fresh = $agenda->fresh(['lastObSyncedSession', 'obPlacements.legislativeSession']);
+                    if ($agenda->isObLifecycleResolved()
+                        || (blank($agenda->committee_referred) && ! $hasCommitteeReport)) {
+                        continue;
+                    }
+
+                    $fresh = $agenda->fresh([
+                        'lastObSyncedSession',
+                        'obPlacements.legislativeSession',
+                        'boardMemberCommitteeReports:id',
+                    ]);
 
                     if ($fresh === null) {
                         continue;
                     }
 
                     if ($this->isAgendaInSession($fresh, $session)) {
-                        if ($fresh->hasObManualOverride() && ! $clearManualOverrides) {
-                            continue;
-                        }
-
                         $targetSection = $this->resolveTargetSection($fresh, $session);
 
                         if ($targetSection === null) {
@@ -146,7 +161,14 @@ class AgendaLifecycleService
                             continue;
                         }
 
-                        if ($clearManualOverrides) {
+                        $forceCommitteeReportRelocate = $targetSection === 'committee_reports'
+                            && $this->hasCommitteeReport($fresh);
+
+                        if ($fresh->hasObManualOverride() && ! $clearManualOverrides && ! $forceCommitteeReportRelocate) {
+                            continue;
+                        }
+
+                        if ($clearManualOverrides || $forceCommitteeReportRelocate) {
                             $fresh->forceFill(['ob_manual_override_at' => null])->saveQuietly();
                             $fresh->refresh();
                         }
@@ -172,6 +194,8 @@ class AgendaLifecycleService
                     }
                 }
             });
+
+        $this->documentService->normalizeAgendaSections($session->obDocument);
 
         return compact('added', 'relocated');
     }
@@ -214,7 +238,9 @@ class AgendaLifecycleService
 
     public function resolveTargetSection(AgendaItem $agenda, LegislativeSession $session): ?string
     {
-        if (! filled($agenda->committee_referred) || ! $this->prescribedDaysPermit($agenda)) {
+        $hasCommitteeReport = $this->hasCommitteeReport($agenda);
+
+        if (! filled($agenda->committee_referred) && ! $hasCommitteeReport) {
             return null;
         }
 
@@ -222,8 +248,12 @@ class AgendaLifecycleService
             return null;
         }
 
-        if ($this->hasCommitteeReport($agenda)) {
+        if ($hasCommitteeReport) {
             return 'committee_reports';
+        }
+
+        if (! $this->prescribedDaysPermit($agenda)) {
+            return null;
         }
 
         if (! $this->agendaWasPlacedBefore($agenda, $session)) {
@@ -576,6 +606,18 @@ class AgendaLifecycleService
 
     protected function hasCommitteeReport(AgendaItem $agenda): bool
     {
-        return filled($agenda->committee_report_url) || filled($agenda->committee_report_pdf_path);
+        if (filled($agenda->committee_report_url) || filled($agenda->committee_report_pdf_path)) {
+            return true;
+        }
+
+        if ($agenda->relationLoaded('boardMemberCommitteeReports')) {
+            return $agenda->boardMemberCommitteeReports->isNotEmpty();
+        }
+
+        if (! $agenda->exists) {
+            return false;
+        }
+
+        return $agenda->boardMemberCommitteeReports()->exists();
     }
 }

@@ -13,6 +13,7 @@ use App\Support\Permalink;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -163,6 +164,16 @@ class AgendaItem extends Model
     public function obPlacements(): HasMany
     {
         return $this->hasMany(AgendaObPlacement::class)->orderByDesc('created_at');
+    }
+
+    public function boardMemberCommitteeReports(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            BoardMemberCommitteeReport::class,
+            'board_member_committee_report_agenda_item',
+            'agenda_item_id',
+            'board_member_committee_report_id',
+        );
     }
 
     public function finalObPlacements(): HasMany

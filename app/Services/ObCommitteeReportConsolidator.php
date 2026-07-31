@@ -33,7 +33,7 @@ class ObCommitteeReportConsolidator
             return 0;
         }
 
-        return DB::transaction(function () use ($document, $blocks): int {
+        $absorbedCount = DB::transaction(function () use ($document, $blocks): int {
             $reportIds = $this->reportIdsByAgendaId($blocks);
             $primaryByReport = [];
             $absorbed = [];
@@ -57,12 +57,16 @@ class ObCommitteeReportConsolidator
 
             if ($absorbed !== []) {
                 ObBlock::query()->whereIn('id', $absorbed)->delete();
+                $this->compactSortOrders($document);
             }
-
-            $this->renumberRows($document);
 
             return count($absorbed);
         });
+
+        // Normalize after commit so row sorting sees the merged JSON content.
+        app(ObDocumentService::class)->normalizeCommitteeReportSection($document);
+
+        return $absorbedCount;
     }
 
     /**
@@ -93,8 +97,9 @@ class ObCommitteeReportConsolidator
 
         $primary->update(['content' => $content]);
 
-        // The redundant block's placements cascade away with it.
-        $agendas = AgendaItem::query()->whereIn('id', $this->agendaIds($redundant))->get();
+        // Re-record every merged agenda onto the surviving block before the
+        // redundant block (and its cascaded placements) is deleted.
+        $agendas = AgendaItem::query()->whereIn('id', $ids)->get();
 
         foreach ($agendas as $agenda) {
             $this->placements->record($agenda, $primary, $document, 'committee_reports');
@@ -152,6 +157,20 @@ class ObCommitteeReportConsolidator
         return $map;
     }
 
+    protected function compactSortOrders(ObDocument $document): void
+    {
+        $ids = ObBlock::query()
+            ->where('ob_document_id', $document->id)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->pluck('id')
+            ->all();
+
+        foreach ($ids as $index => $id) {
+            ObBlock::whereKey($id)->update(['sort_order' => $index + 1]);
+        }
+    }
+
     /**
      * @return list<int>
      */
@@ -170,22 +189,5 @@ class ObCommitteeReportConsolidator
         }
 
         return array_values(array_unique(array_filter($ids, fn (int $id) => $id > 0)));
-    }
-
-    protected function renumberRows(ObDocument $document): void
-    {
-        $rowNo = 0;
-
-        foreach ($this->committeeReportBlocks($document) as $block) {
-            $content = $block->content ?? [];
-            $expected = ++$rowNo;
-
-            if ((int) ($content['row_no'] ?? 0) === $expected) {
-                continue;
-            }
-
-            $content['row_no'] = $expected;
-            $block->update(['content' => $content]);
-        }
     }
 }

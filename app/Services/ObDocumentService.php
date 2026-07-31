@@ -93,17 +93,51 @@ class ObDocumentService
         ?int $afterBlockId = null,
         ?int $agendaItemId = null,
     ): ObBlock {
+        $content ??= ObBlockDefaults::empty($type);
+        $anchoredBySection = $afterBlockId === null;
+        $afterBlockId ??= $this->sectionAnchorBlockId($document, $type, $content);
         $sortOrder = $this->nextSortOrder($document, $afterBlockId);
 
         $this->shiftBlocksDown($document, $sortOrder);
 
-        return ObBlock::create([
+        $block = ObBlock::create([
             'ob_document_id' => $document->id,
             'type' => $type,
             'sort_order' => $sortOrder,
-            'content' => $content ?? ObBlockDefaults::empty($type),
+            'content' => $content,
             'agenda_item_id' => $agendaItemId,
         ]);
+
+        if ($anchoredBySection && $type === ObBlockType::CommitteeReport) {
+            $this->normalizeCommitteeReportSection($document);
+            $block->refresh();
+        }
+
+        return $block;
+    }
+
+    /**
+     * Keep section-bound rows inside their own section when the caller has no reference block.
+     *
+     * @param  array<string, mixed>  $content
+     */
+    protected function sectionAnchorBlockId(ObDocument $document, ObBlockType $type, array $content): ?int
+    {
+        $section = match ($type) {
+            ObBlockType::CommitteeReport => 'committee_reports',
+            ObBlockType::UnfinishedCommittee, ObBlockType::UnfinishedAgenda => 'unfinished',
+            ObBlockType::ReadingAgenda => ($content['reading'] ?? '2nd') === '3rd'
+                ? 'business_3rd'
+                : 'business_2nd',
+            ObBlockType::UnassignedAgenda => ($content['kind'] ?? 'regular') === 'urgent'
+                ? 'unassigned_urgent'
+                : 'unassigned_regular',
+            default => null,
+        };
+
+        return $section === null
+            ? null
+            : ObSectionPlacement::insertAfterBlockId($document, $section);
     }
 
     /**
@@ -196,30 +230,37 @@ class ObDocumentService
             ->delete();
 
         if ($agendas->isEmpty()) {
+            $this->reorderBlocks($document, array_merge($prefixIds, $suffixIds));
+
             return;
         }
 
         $groups = [];
-        $groupOrder = [];
 
         foreach ($agendas as $agendaBlock) {
             $key = $this->unfinishedCommitteeKey($agendaBlock->content ?? []);
 
             if (! array_key_exists($key, $groups)) {
                 $groups[$key] = [];
-                $groupOrder[$key] = $agendaBlock->sort_order;
             }
 
             $groups[$key][] = $agendaBlock;
         }
 
-        uasort($groupOrder, fn (int $a, int $b) => $a <=> $b);
+        foreach ($groups as &$items) {
+            usort($items, fn (ObBlock $a, ObBlock $b): int => $this->agendaBlockSortKey($a) <=> $this->agendaBlockSortKey($b));
+        }
+        unset($items);
+
+        uksort($groups, function (string $a, string $b) use ($groups): int {
+            $byLowestAgenda = $this->agendaBlockSortKey($groups[$a][0]) <=> $this->agendaBlockSortKey($groups[$b][0]);
+
+            return $byLowestAgenda !== 0 ? $byLowestAgenda : $a <=> $b;
+        });
 
         $middleIds = [];
 
-        foreach (array_keys($groupOrder) as $key) {
-            $items = $groups[$key];
-
+        foreach ($groups as $key => $items) {
             if ($key !== '') {
                 $header = ObBlock::create([
                     'ob_document_id' => $document->id,
@@ -236,6 +277,19 @@ class ObDocumentService
         }
 
         $this->reorderBlocks($document, array_merge($prefixIds, $middleIds, $suffixIds));
+    }
+
+    /**
+     * Keep every agenda-bearing OB section in ascending Agenda No. order.
+     */
+    public function normalizeAgendaSections(ObDocument $document): void
+    {
+        $this->regroupUnfinishedBusiness($document);
+        $this->normalizeCommitteeReportSection($document);
+
+        foreach (['business_2nd', 'business_3rd', 'unassigned_urgent', 'unassigned_regular'] as $section) {
+            $this->normalizeAgendaSection($document, $section);
+        }
     }
 
     public function deleteBlock(ObBlock $block, ?int $userId = null, string $source = 'manual', bool $normalizeCommitteeReports = true): void
@@ -308,23 +362,43 @@ class ObDocumentService
             return;
         }
 
+        // Laravel Collection::sortBy([cb, cb]) can invert order when keys differ;
+        // a single callback that returns [primary, tie-break] sorts correctly.
         $sortedReports = $reportBlocks
-            ->sortBy([
-                fn (ObBlock $block) => $this->committeeReportSortKey($block),
-                fn (ObBlock $block) => (int) $block->id,
+            ->sortBy(fn (ObBlock $block) => [
+                $this->committeeReportSortKey($block),
+                (int) $block->id,
             ])
             ->values();
 
         $sortedReportIds = $sortedReports->pluck('id')->map(fn ($id) => (int) $id)->all();
-        $reportSlot = 0;
+        $anchorIndex = ObSectionPlacement::committeeReportAnchorIndex($blocks);
         $newOrder = [];
 
-        foreach ($blocks as $block) {
-            if ($block->type === ObBlockType::CommitteeReport) {
-                $newOrder[] = $sortedReportIds[$reportSlot];
-                $reportSlot++;
-            } else {
+        if ($anchorIndex !== null) {
+            // Rows added without a section anchor land at the end of the document,
+            // which prints an empty IV and a stray table after the closing.
+            foreach ($blocks as $index => $block) {
+                if ($block->type === ObBlockType::CommitteeReport) {
+                    continue;
+                }
+
                 $newOrder[] = (int) $block->id;
+
+                if ($index === $anchorIndex) {
+                    array_push($newOrder, ...$sortedReportIds);
+                }
+            }
+        } else {
+            $reportSlot = 0;
+
+            foreach ($blocks as $block) {
+                if ($block->type === ObBlockType::CommitteeReport) {
+                    $newOrder[] = $sortedReportIds[$reportSlot];
+                    $reportSlot++;
+                } else {
+                    $newOrder[] = (int) $block->id;
+                }
             }
         }
 
@@ -548,6 +622,10 @@ class ObDocumentService
         if ($section === 'committee_reports'
             || collect($created)->contains(fn (ObBlock $block) => $block->type === ObBlockType::CommitteeReport)) {
             $this->normalizeCommitteeReportSection($document);
+        } elseif ($section === 'unfinished') {
+            $this->regroupUnfinishedBusiness($document);
+        } else {
+            $this->normalizeAgendaSection($document, $section);
         }
 
         return $created;
@@ -720,6 +798,73 @@ class ObDocumentService
             null,
             (string) ($content['committee_name'] ?? ''),
         );
+    }
+
+    protected function normalizeAgendaSection(ObDocument $document, string $section): void
+    {
+        /** @var Collection<int, ObBlock> $blocks */
+        $blocks = $document->blocks()->orderBy('sort_order')->get()->values();
+        $bounds = ObSectionPlacement::sectionBounds($blocks, $section);
+
+        if ($bounds === null) {
+            return;
+        }
+
+        [$startIndex, $endIndex] = $bounds;
+        $matches = fn (ObBlock $block): bool => match ($section) {
+            'business_2nd' => $block->type === ObBlockType::ReadingAgenda
+                && ($block->content['reading'] ?? '2nd') !== '3rd',
+            'business_3rd' => $block->type === ObBlockType::ReadingAgenda
+                && ($block->content['reading'] ?? '2nd') === '3rd',
+            'unassigned_urgent' => $block->type === ObBlockType::UnassignedAgenda
+                && ($block->content['kind'] ?? 'regular') === 'urgent',
+            'unassigned_regular' => $block->type === ObBlockType::UnassignedAgenda
+                && ($block->content['kind'] ?? 'regular') !== 'urgent',
+            default => false,
+        };
+
+        $slotIndexes = [];
+        $sectionAgendas = collect();
+
+        for ($index = $startIndex + 1; $index < $endIndex; $index++) {
+            $block = $blocks[$index] ?? null;
+            if ($block && $matches($block)) {
+                $slotIndexes[] = $index;
+                $sectionAgendas->push($block);
+            }
+        }
+
+        if ($sectionAgendas->count() < 2) {
+            return;
+        }
+
+        $sortedIds = $sectionAgendas
+            ->sortBy(fn (ObBlock $block) => $this->agendaBlockSortKey($block))
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values();
+        $orderedIds = $blocks->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        foreach ($slotIndexes as $offset => $slotIndex) {
+            $orderedIds[$slotIndex] = $sortedIds[$offset];
+        }
+
+        $this->applyBlockOrder($document, $orderedIds);
+    }
+
+    /**
+     * @return array{0: int, 1: int|string, 2: int}
+     */
+    protected function agendaBlockSortKey(ObBlock $block): array
+    {
+        $nos = ObAgendaSnapshot::sortAgendaNos(ObAgendaSnapshot::agendaNosFromContent($block->content ?? []));
+        $no = trim((string) ($nos[0] ?? ''));
+
+        if ($no !== '' && ctype_digit($no)) {
+            return [0, (int) $no, (int) $block->id];
+        }
+
+        return [1, mb_strtolower($no), (int) $block->id];
     }
 
     /**
@@ -930,9 +1075,9 @@ class ObDocumentService
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, ObBlock>
+     * @return Collection<int, ObBlock>
      */
-    protected function findBlocksForAgenda(ObDocument $document, int $agendaItemId): \Illuminate\Support\Collection
+    protected function findBlocksForAgenda(ObDocument $document, int $agendaItemId): Collection
     {
         return ObBlock::query()
             ->where('ob_document_id', $document->id)
@@ -1165,4 +1310,3 @@ class ObDocumentService
         ])->save();
     }
 }
-

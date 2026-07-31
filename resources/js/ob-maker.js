@@ -318,15 +318,60 @@ export function initObMaker() {
             .join('');
     }
 
+    function permanentSectionLabel(block) {
+        const c = block.content ?? {};
+
+        if (block.type === 'adjournment') {
+            return 'VIII. ADJOURNMENT';
+        }
+
+        if (block.type === 'roman_section') {
+            const numeral = normalizeRomanNumeral(c.numeral);
+            if (['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'].includes(numeral)) {
+                return `${displayRomanNumeral(numeral)} ${String(c.title ?? c.body ?? '').trim()}`.trim();
+            }
+        }
+
+        if (block.type === 'subsection_label') {
+            const label = String(c.text ?? '').trim();
+            const permanentLabels = [
+                'A. UNFINISHED BUSINESS',
+                'B. BUSINESS FOR THE DAY',
+                '1. MEASURES FOR 2ND READING',
+                '2. MEASURES FOR 3RD READING',
+                'C. UNASSIGNED MATTERS',
+                '1. URGENT REQUEST/S',
+                '2. REGULAR UNASSIGNED BUSINESS',
+            ];
+
+            if (permanentLabels.includes(label.toUpperCase())) {
+                return label;
+            }
+        }
+
+        return '';
+    }
+
+    function renderPermanentSectionHeading(block) {
+        const label = permanentSectionLabel(block);
+
+        return label
+            ? `<div class="splis-ob-permanent-heading"><span>${escapeHtml(label)}</span></div>`
+            : '';
+    }
+
     function renderBlockControls(block, index) {
-        if (!canEdit) {
+        if (!canEdit || permanentSectionLabel(block)) {
             return '';
         }
 
+        const previousIsPermanent = index === 0 || permanentSectionLabel(blocks[index - 1]);
+        const nextIsPermanent = index === blocks.length - 1 || permanentSectionLabel(blocks[index + 1]);
+
         return `
             <div class="splis-ob-block-actions">
-                <button type="button" class="splis-ob-icon-btn" data-move-up="${block.id}" ${index === 0 ? 'disabled' : ''} title="Move up">↑</button>
-                <button type="button" class="splis-ob-icon-btn" data-move-down="${block.id}" ${index === blocks.length - 1 ? 'disabled' : ''} title="Move down">↓</button>
+                <button type="button" class="splis-ob-icon-btn" data-move-up="${block.id}" ${previousIsPermanent ? 'disabled' : ''} title="Move up">↑</button>
+                <button type="button" class="splis-ob-icon-btn" data-move-down="${block.id}" ${nextIsPermanent ? 'disabled' : ''} title="Move down">↓</button>
                 <button type="button" class="splis-ob-icon-btn splis-ob-icon-btn--danger" data-delete-block="${block.id}" title="Delete">×</button>
             </div>
         `;
@@ -412,28 +457,28 @@ export function initObMaker() {
             : '';
 
         return `
-            <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <div>
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-[minmax(8rem,12rem)_minmax(10rem,15rem)_minmax(8rem,12rem)_1fr]">
+                <div class="splis-ob-agenda-no-field">
                     <label class="splis-label">Agenda no.</label>
                     <input type="text" class="splis-input splis-ob-block-field" data-field="agenda_no" value="${escapeHtml(agendaNo)}" ${disabled}>
                 </div>
                 ${kindField}
                 ${committeeField}
-                <div>
+                <div class="splis-ob-compact-field">
                     <label class="splis-label">Date of receipt</label>
                     <input type="text" class="splis-input splis-ob-block-field" data-field="date_received" value="${escapeHtml(c.date_received ?? '')}" ${disabled}>
                 </div>
-                <div>
+                <div class="splis-ob-compact-field">
                     <label class="splis-label">Prescription</label>
                     <input type="text" class="splis-input splis-ob-block-field" data-field="prescription" value="${escapeHtml(c.prescription ?? '')}" ${disabled}>
                 </div>
-                <div class="md:col-span-2">
+                <div class="md:col-span-4">
                     <label class="splis-label">Title</label>
                     ${renderRichTitleEditor(c, disabled)}
                 </div>
-                <div class="md:col-span-2">
+                <div class="md:col-span-4">
                     <label class="splis-label">Referral note</label>
-                    <textarea class="splis-textarea splis-ob-block-field" data-field="referral_note" rows="3" ${disabled} placeholder="${escapeHtml(referralNotePlaceholder)}">${escapeHtml(c.referral_note ?? '')}</textarea>
+                    <input type="text" class="splis-input splis-ob-block-field" data-field="referral_note" value="${escapeHtml(c.referral_note ?? '')}" ${disabled} placeholder="${escapeHtml(referralNotePlaceholder)}">
                 </div>
             </div>
         `;
@@ -527,10 +572,12 @@ export function initObMaker() {
             .join('');
 
         return `
-            <div class="splis-ob-section-move mb-3 border-b border-slate-200 pb-3 dark:border-slate-700">
-                <label class="splis-label">Move to section</label>
-                <p class="mb-1 text-xs text-slate-500">Currently in: ${escapeHtml(block.section_label ?? block.section ?? '')}</p>
-                <select class="splis-select splis-ob-move-section" data-block-id="${block.id}">
+            <div class="splis-ob-section-move mb-3 flex flex-wrap items-end gap-3 border-b border-slate-200 pb-3 dark:border-slate-700">
+                <div>
+                    <label class="splis-label">Move to section</label>
+                    <p class="text-xs text-slate-500">Currently in: ${escapeHtml(block.section_label ?? block.section ?? '')}</p>
+                </div>
+                <select class="splis-select splis-ob-move-section" data-block-id="${block.id}" aria-label="Move to section">
                     <option value="">Select section…</option>
                     ${options}
                 </select>
@@ -573,11 +620,15 @@ export function initObMaker() {
         switch (block.type) {
             case 'heading':
             case 'committee_group':
+                return `<input type="text" class="splis-input splis-ob-block-field" data-field="text" value="${escapeHtml(c.text ?? '')}" ${disabled}>`;
             case 'subsection_label':
-                return `<textarea class="splis-textarea splis-ob-block-field" data-field="text" rows="2" ${disabled}>${escapeHtml(c.text ?? '')}</textarea>`;
+                return permanentSectionLabel(block)
+                    ? renderPermanentSectionHeading(block)
+                    : `<input type="text" class="splis-input splis-ob-block-field" data-field="text" value="${escapeHtml(c.text ?? '')}" ${disabled}>`;
             case 'roman_section': {
                 const flags = romanSectionFieldFlags(c);
-                const titleField = flags.showTitle
+                const permanent = permanentSectionLabel(block);
+                const titleField = flags.showTitle && !permanent
                     ? `
                         <div>
                             <label class="splis-label">Section title</label>
@@ -628,10 +679,12 @@ export function initObMaker() {
 
                 return `
                     <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-                        <div>
-                            <label class="splis-label">Roman numeral</label>
-                            <input type="text" class="splis-input splis-ob-block-field" data-field="numeral" value="${escapeHtml(c.numeral ?? '')}" ${disabled}>
-                        </div>
+                        ${permanent ? `<div class="md:col-span-2">${renderPermanentSectionHeading(block)}</div>` : `
+                            <div>
+                                <label class="splis-label">Roman numeral</label>
+                                <input type="text" class="splis-input splis-ob-block-field" data-field="numeral" value="${escapeHtml(c.numeral ?? '')}" ${disabled}>
+                            </div>
+                        `}
                         ${titleField}
                         ${bodyField}
                         ${sectionThreeLinkFields}
@@ -651,7 +704,7 @@ export function initObMaker() {
                             <label class="splis-label">Row no. (IV section only)</label>
                             <input type="number" class="splis-input splis-ob-block-field" data-field="row_no" value="${escapeHtml(c.row_no ?? '')}" ${disabled}>
                         </div>
-                        <div>
+                        <div class="splis-ob-agenda-no-field">
                             <label class="splis-label">Agenda no.</label>
                             <input type="text" class="splis-input splis-ob-block-field" data-field="agenda_no" value="${escapeHtml(
                                 Array.isArray(c.agenda_nos) && c.agenda_nos.length > 0
@@ -678,7 +731,7 @@ export function initObMaker() {
                     <div class="space-y-3">
                         <div>
                             <label class="splis-label">Committee header</label>
-                            <textarea class="splis-textarea splis-ob-block-field" data-field="committee_name" rows="2" ${disabled}>${escapeHtml(c.committee_name ?? '')}</textarea>
+                            <input type="text" class="splis-input splis-ob-block-field" data-field="committee_name" value="${escapeHtml(c.committee_name ?? '')}" ${disabled}>
                         </div>
                         <div>
                             <label class="splis-label">Chair</label>
@@ -1295,8 +1348,9 @@ export function initObMaker() {
         blocksList.innerHTML = blocks
             .map((block, index) => {
                 const selected = block.id === selectedBlockId ? ' is-selected' : '';
+                const permanent = permanentSectionLabel(block) ? ' is-permanent-section' : '';
                 return `
-                    <article id="ob-block-${block.id}" class="splis-ob-block${selected}" data-block-id="${block.id}">
+                    <article id="ob-block-${block.id}" class="splis-ob-block${selected}${permanent}" data-block-id="${block.id}">
                         <div class="splis-ob-block-head">
                             <span class="splis-ob-block-order">${block.sort_order}</span>
                             <span class="splis-ob-block-type">${escapeHtml(block.type_label)}</span>

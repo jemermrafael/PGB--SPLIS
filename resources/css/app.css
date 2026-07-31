@@ -2923,6 +2923,18 @@
         @apply border-brand-800 ring-2 ring-brand-800/20;
     }
 
+    .splis-ob-block.is-permanent-section {
+        @apply border-brand-800/40 bg-brand-50/70 dark:border-brand-gold/40 dark:bg-brand-950/20;
+    }
+
+    .splis-ob-block.is-permanent-section .splis-ob-block-head {
+        @apply border-brand-800/20 bg-brand-100/70 dark:border-brand-gold/20 dark:bg-brand-950/30;
+    }
+
+    .splis-ob-permanent-heading {
+        @apply rounded-lg bg-brand-800 px-4 py-3 text-base font-bold tracking-wide text-white shadow-sm dark:bg-brand-900;
+    }
+
     .splis-ob-block-head {
         @apply flex items-center gap-2 border-b border-slate-200 px-3 py-2 dark:border-slate-700;
     }
@@ -2948,7 +2960,19 @@
     }
 
     .splis-ob-section-move .splis-select {
-        @apply w-full;
+        @apply w-auto min-w-44 max-w-full;
+    }
+
+    .splis-ob-agenda-no-field .splis-label {
+        @apply font-bold text-brand-900 dark:text-brand-gold;
+    }
+
+    .splis-ob-agenda-no-field .splis-input {
+        @apply text-base font-bold text-brand-900 ring-1 ring-brand-800/30 dark:text-brand-gold;
+    }
+
+    .splis-ob-compact-field {
+        @apply w-full md:max-w-48;
     }
 
     .splis-ob-block-body {

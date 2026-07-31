@@ -30,10 +30,31 @@ class ObAgendaPoolService
         }
 
         if ($excludeDocumentId !== null) {
-            $query->whereNotIn('id', ObBlock::query()
+            $linkedIds = ObBlock::query()
                 ->where('ob_document_id', $excludeDocumentId)
-                ->whereNotNull('agenda_item_id')
-                ->select('agenda_item_id'));
+                ->get(['id', 'agenda_item_id', 'content'])
+                ->flatMap(function (ObBlock $block): array {
+                    $ids = [];
+
+                    if ($block->agenda_item_id !== null) {
+                        $ids[] = (int) $block->agenda_item_id;
+                    }
+
+                    foreach ($block->content['agenda_item_ids'] ?? [] as $id) {
+                        if (is_numeric($id)) {
+                            $ids[] = (int) $id;
+                        }
+                    }
+
+                    return $ids;
+                })
+                ->unique()
+                ->values()
+                ->all();
+
+            if ($linkedIds !== []) {
+                $query->whereNotIn('id', $linkedIds);
+            }
         }
 
         return $query->paginate($perPage, ['*'], 'page', $page);

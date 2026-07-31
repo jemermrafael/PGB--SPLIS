@@ -81,14 +81,12 @@ class ObDocumentController extends Controller
         LegislativeSession $legislativeSession,
         ObPrintRenderer $renderer,
         ObSectionThreeSyncService $sectionThreeSync,
-        ObCommitteeReportConsolidator $committeeReports,
     ): View {
         $document = $this->documentFor($legislativeSession);
         $this->authorize('view', $document);
 
         $legislativeSession->load(['priorSession', 'obDocument.blocks']);
         $sectionThreeSync->syncForSession($legislativeSession);
-        $committeeReports->consolidate($document);
         $document->refresh();
 
         $blocks = $document->blocks()->with('agendaItem')->orderBy('sort_order')->get();

@@ -88,11 +88,11 @@ class ObRegroupUnfinishedBusinessTest extends TestCase
             ->get();
 
         $this->assertSame([
+            'committee:SP COMMITTEE ON HEALTH AND SANITATION',
+            'agenda:188',
             'committee:SP COMMITTEE ON PEACE AND ORDER AND PUBLIC SAFETY',
             'agenda:220',
             'agenda:323',
-            'committee:SP COMMITTEE ON HEALTH AND SANITATION',
-            'agenda:188',
         ], $unfinished->map(function (ObBlock $block): string {
             if ($block->type === ObBlockType::UnfinishedCommittee) {
                 return 'committee:'.$block->content['committee_name'];

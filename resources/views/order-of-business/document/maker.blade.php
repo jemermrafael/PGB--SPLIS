@@ -96,7 +96,7 @@
             <div class="splis-card-header flex items-center justify-between gap-3">
                 <div>
                     <h2 class="splis-card-title">Document</h2>
-                    <p class="splis-card-subtitle">Click a block to select · edits save automatically</p>
+                    <p class="splis-card-subtitle">Editable content saves automatically · permanent section headers are locked</p>
                 </div>
                 @if ($canEdit)
                     <div class="flex flex-wrap justify-end gap-2">

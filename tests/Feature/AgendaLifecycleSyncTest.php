@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ObBlockType;
 use App\Models\AgendaItem;
+use App\Models\BoardMember;
+use App\Models\BoardMemberCommitteeReport;
 use App\Models\LegislativeSession;
 use App\Models\ObBlock;
 use App\Models\ObDocument;
@@ -113,5 +116,137 @@ class AgendaLifecycleSyncTest extends TestCase
                 ->where('agenda_item_id', $agenda->id)
                 ->exists()
         );
+    }
+
+    public function test_sync_sorts_agendas_by_number_in_their_section(): void
+    {
+        $user = User::factory()->create();
+
+        foreach (['300', '100', '200'] as $agendaNo) {
+            AgendaItem::create([
+                'tracking_no' => $agendaNo,
+                'title' => 'Agenda '.$agendaNo,
+                'committee_referred' => 'Tourism',
+                'status' => AgendaItem::STATUS_PENDING,
+                'prescribed_days' => 0,
+                'created_by' => $user->id,
+            ]);
+        }
+
+        $session = LegislativeSession::create([
+            'session_date' => now()->addWeek(),
+            'session_kind' => 'regular',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+        $document = ObDocument::create([
+            'legislative_session_id' => $session->id,
+            'title' => 'Sorted OB',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+        app(ObDocumentTemplateService::class)->seedDefaultBlocks($document);
+
+        app(AgendaLifecycleService::class)->syncNewSession($session, $user->id);
+
+        $this->assertSame(
+            ['100', '200', '300'],
+            ObBlock::query()
+                ->where('ob_document_id', $document->id)
+                ->where('type', ObBlockType::UnassignedAgenda)
+                ->orderBy('sort_order')
+                ->get()
+                ->map(fn (ObBlock $block) => (string) $block->content['agenda_no'])
+                ->all(),
+        );
+    }
+
+    public function test_sync_places_overdue_agenda_with_committee_report_into_committee_reports(): void
+    {
+        $user = User::factory()->create();
+
+        $agenda = AgendaItem::create([
+            'tracking_no' => '505',
+            'title' => 'Overdue report-backed agenda',
+            'committee_referred' => 'Tourism',
+            'committee_report_pdf_path' => 'agenda-pdfs/505/committee-report.pdf',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 10,
+            'date_received' => now()->subDays(40)->toDateString(),
+            'due_date' => now()->subDays(30)->toDateString(),
+            'days_left_label' => '-30',
+            'created_by' => $user->id,
+        ]);
+
+        $session = LegislativeSession::create([
+            'session_date' => now()->addWeek(),
+            'session_kind' => 'regular',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+        $document = ObDocument::create([
+            'legislative_session_id' => $session->id,
+            'title' => 'Overdue CR OB',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+        app(ObDocumentTemplateService::class)->seedDefaultBlocks($document);
+
+        app(AgendaLifecycleService::class)->syncNewSession($session, $user->id);
+
+        $this->assertDatabaseHas('ob_blocks', [
+            'ob_document_id' => $document->id,
+            'type' => ObBlockType::CommitteeReport,
+            'agenda_item_id' => $agenda->id,
+        ]);
+    }
+
+    public function test_sync_recovers_agenda_linked_to_board_member_report_even_when_legacy_agenda_fields_are_empty(): void
+    {
+        $user = User::factory()->create();
+        $boardMember = BoardMember::query()->create([
+            'name' => 'Committee Chair',
+            'honorific' => 'Hon.',
+            'is_active' => true,
+        ]);
+        $agenda = AgendaItem::create([
+            'tracking_no' => '404',
+            'title' => 'Report-backed agenda',
+            'committee_referred' => 'Tourism',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 0,
+            'created_by' => $user->id,
+        ]);
+        $report = BoardMemberCommitteeReport::query()->create([
+            'board_member_id' => $boardMember->id,
+            'title' => 'Tourism report',
+            'pdf_path' => 'board-member-committee-reports/report.pdf',
+            'original_filename' => 'report.pdf',
+            'submitted_by' => $user->id,
+            'submitted_at' => now(),
+        ]);
+        $report->agendaItems()->attach($agenda->id);
+
+        $session = LegislativeSession::create([
+            'session_date' => now()->addWeek(),
+            'session_kind' => 'regular',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+        $document = ObDocument::create([
+            'legislative_session_id' => $session->id,
+            'title' => 'Recovered OB',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+        app(ObDocumentTemplateService::class)->seedDefaultBlocks($document);
+
+        app(AgendaLifecycleService::class)->syncNewSession($session, $user->id);
+
+        $this->assertDatabaseHas('ob_blocks', [
+            'ob_document_id' => $document->id,
+            'type' => ObBlockType::CommitteeReport,
+            'agenda_item_id' => $agenda->id,
+        ]);
     }
 }

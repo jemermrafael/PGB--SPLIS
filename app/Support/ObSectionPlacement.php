@@ -52,26 +52,46 @@ class ObSectionPlacement
      */
     protected static function insertAfterCommitteeReports(Collection $blocks): ?int
     {
-        $endIndex = $blocks->search(fn (ObBlock $block) => self::isPrivilegeSectionStart($block));
-
-        if ($endIndex === false) {
-            $endIndex = $blocks->count();
-        }
-
-        $anchor = null;
+        $values = $blocks->values();
+        $anchorIndex = self::committeeReportAnchorIndex($values);
         $lastReport = null;
 
-        foreach ($blocks->take($endIndex) as $block) {
-            if (self::isCommitteeReportAnchor($block)) {
-                $anchor = $block;
-            }
-
+        foreach ($values->take(self::committeeReportZoneEndIndex($values)) as $block) {
             if ($block->type === ObBlockType::CommitteeReport) {
                 $lastReport = $block;
             }
         }
 
-        return ($lastReport ?? $anchor)?->id;
+        return ($lastReport ?? ($anchorIndex !== null ? $values[$anchorIndex] : null))?->id;
+    }
+
+    /**
+     * Position of the IV. Committee Report heading that opens the section.
+     *
+     * @param  Collection<int, ObBlock>  $blocks
+     */
+    public static function committeeReportAnchorIndex(Collection $blocks): ?int
+    {
+        $values = $blocks->values();
+        $anchorIndex = null;
+
+        foreach ($values->take(self::committeeReportZoneEndIndex($values)) as $index => $block) {
+            if (self::isCommitteeReportAnchor($block)) {
+                $anchorIndex = $index;
+            }
+        }
+
+        return $anchorIndex;
+    }
+
+    /**
+     * @param  Collection<int, ObBlock>  $blocks
+     */
+    protected static function committeeReportZoneEndIndex(Collection $blocks): int
+    {
+        $endIndex = $blocks->search(fn (ObBlock $block) => self::isPrivilegeSectionStart($block));
+
+        return $endIndex === false ? $blocks->count() : $endIndex;
     }
 
     public static function sectionBounds(Collection $blocks, string $section): ?array
@@ -81,7 +101,7 @@ class ObSectionPlacement
 
     /**
      * @param  Collection<int, ObBlock>  $blocks
-     * @return array{0: int, 1: int}|null  [zone start sort_order, zone end sort_order (exclusive marker)]
+     * @return array{0: int, 1: int}|null [zone start sort_order, zone end sort_order (exclusive marker)]
      */
     public static function unfinishedZoneSortBounds(Collection $blocks): ?array
     {

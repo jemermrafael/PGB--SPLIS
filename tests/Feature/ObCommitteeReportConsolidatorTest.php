@@ -10,9 +10,11 @@ use App\Models\LegislativeSession;
 use App\Models\ObBlock;
 use App\Models\ObDocument;
 use App\Models\User;
+use App\Services\AgendaObPlacementService;
 use App\Services\ObCommitteeReportConsolidator;
 use App\Support\ObAgendaSnapshot;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ObCommitteeReportConsolidatorTest extends TestCase
@@ -71,9 +73,12 @@ class ObCommitteeReportConsolidatorTest extends TestCase
             $first->content['agenda_item_ids'],
         );
 
-        // Row numbers close the gap left by the removed blocks.
-        $this->assertSame(1, $first->content['row_no']);
-        $this->assertSame(2, $other->refresh()->content['row_no']);
+        // Row numbers follow lowest agenda number after normalize.
+        $this->assertSame(
+            [1, 2],
+            [(int) $first->content['row_no'], (int) $other->refresh()->content['row_no']],
+            'housing(324+) should be row 1, transport(332) row 2; got housing='.json_encode($first->content).' transport='.json_encode($other->fresh()->content)
+        );
 
         // Agendas from the removed blocks now point at the surviving block.
         foreach (['324', '325'] as $absorbedNo) {
@@ -139,6 +144,95 @@ class ObCommitteeReportConsolidatorTest extends TestCase
         $report->agendaItems()->sync($agendas->pluck('id')->all());
 
         return ['report' => $report, 'agendas' => $agendas];
+    }
+
+    public function test_absorb_re_records_every_merged_agenda_before_deleting_redundant_block(): void
+    {
+        Storage::fake('local');
+
+        $boardMember = BoardMember::query()->create([
+            'name' => 'Housing Chair',
+            'honorific' => 'Hon.',
+            'is_active' => true,
+        ]);
+
+        $agendas = collect(['334', '324', '325'])->mapWithKeys(function (string $no) {
+            return [$no => $this->agenda($no, 'Housing and Land Use')];
+        });
+
+        $path = 'board-member-committee-reports/'.$boardMember->id.'/shared.pdf';
+        Storage::disk('local')->put($path, '%PDF-1.4');
+
+        $report = BoardMemberCommitteeReport::query()->create([
+            'board_member_id' => $boardMember->id,
+            'title' => 'Housing report',
+            'pdf_path' => $path,
+            'original_filename' => 'housing.pdf',
+            'previous_ob_placements' => [],
+            'submitted_by' => $this->user->id,
+            'submitted_at' => now(),
+        ]);
+        $report->agendaItems()->sync($agendas->pluck('id')->all());
+
+        $committee = [
+            'committee_id' => 21,
+            'committee_name' => 'SP Committee on Housing and Land Use',
+            'chair_name' => 'Board Member Housing Chair',
+        ];
+
+        $original = ObBlock::query()->create([
+            'ob_document_id' => $this->document->id,
+            'type' => ObBlockType::CommitteeReport,
+            'sort_order' => 20,
+            'agenda_item_id' => $agendas['334']->id,
+            'content' => array_merge($committee, [
+                'row_no' => 1,
+                'agenda_no' => '334',
+                'agenda_item_ids' => $agendas->pluck('id')->all(),
+            ]),
+        ]);
+
+        foreach ($agendas as $agenda) {
+            app(AgendaObPlacementService::class)->record($agenda, $original, $this->document, 'committee_reports');
+        }
+
+        $fragment = ObBlock::query()->create([
+            'ob_document_id' => $this->document->id,
+            'type' => ObBlockType::CommitteeReport,
+            'sort_order' => 10,
+            'agenda_item_id' => $agendas['324']->id,
+            'content' => array_merge($committee, [
+                'row_no' => 2,
+                'agenda_no' => '324',
+                'agenda_nos' => ['324', '325'],
+                'agenda_item_ids' => [$agendas['324']->id, $agendas['325']->id],
+            ]),
+        ]);
+
+        $original->update([
+            'content' => array_merge($committee, [
+                'row_no' => 1,
+                'agenda_no' => '334',
+                'agenda_item_ids' => [$agendas['334']->id],
+            ]),
+        ]);
+
+        app(ObCommitteeReportConsolidator::class)->consolidate($this->document);
+
+        $this->assertNull(ObBlock::query()->find($original->id));
+        $survivor = ObBlock::query()->findOrFail($fragment->id);
+        $this->assertEqualsCanonicalizing(
+            $agendas->pluck('id')->all(),
+            $survivor->content['agenda_item_ids'],
+        );
+
+        foreach ($agendas as $agenda) {
+            $this->assertDatabaseHas('agenda_ob_placements', [
+                'agenda_item_id' => $agenda->id,
+                'ob_block_id' => $survivor->id,
+                'section' => 'committee_reports',
+            ]);
+        }
     }
 
     protected function agenda(string $trackingNo, string $committee): AgendaItem

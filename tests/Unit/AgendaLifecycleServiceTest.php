@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Models\AgendaItem;
 use App\Models\LegislativeSession;
 use App\Services\AgendaLifecycleService;
+use App\Services\ObDocumentService;
 use Carbon\Carbon;
 use Tests\TestCase;
 
@@ -13,7 +14,7 @@ class AgendaLifecycleServiceTest extends TestCase
     public function test_resolve_target_section_returns_unassigned_for_first_placement(): void
     {
         $service = new AgendaLifecycleService(
-            $this->createMock(\App\Services\ObDocumentService::class),
+            $this->createMock(ObDocumentService::class),
         );
 
         $agenda = new AgendaItem([
@@ -35,7 +36,7 @@ class AgendaLifecycleServiceTest extends TestCase
     public function test_resolve_target_section_moves_to_unfinished_on_later_session(): void
     {
         $service = new AgendaLifecycleService(
-            $this->createMock(\App\Services\ObDocumentService::class),
+            $this->createMock(ObDocumentService::class),
         );
 
         $priorSession = new LegislativeSession([
@@ -65,7 +66,7 @@ class AgendaLifecycleServiceTest extends TestCase
     public function test_resolve_target_section_uses_committee_reports_when_report_exists(): void
     {
         $service = new AgendaLifecycleService(
-            $this->createMock(\App\Services\ObDocumentService::class),
+            $this->createMock(ObDocumentService::class),
         );
 
         $priorSession = new LegislativeSession([
@@ -96,7 +97,7 @@ class AgendaLifecycleServiceTest extends TestCase
     public function test_resolve_target_section_uses_committee_reports_when_pdf_path_exists(): void
     {
         $service = new AgendaLifecycleService(
-            $this->createMock(\App\Services\ObDocumentService::class),
+            $this->createMock(ObDocumentService::class),
         );
 
         $agenda = new AgendaItem([
@@ -115,10 +116,37 @@ class AgendaLifecycleServiceTest extends TestCase
         $this->assertSame('committee_reports', $service->resolveTargetSection($agenda, $session));
     }
 
+    public function test_resolve_target_section_keeps_committee_reports_when_prescription_days_elapsed(): void
+    {
+        $service = new AgendaLifecycleService(
+            $this->createMock(ObDocumentService::class),
+        );
+
+        $agenda = new AgendaItem([
+            'committee_referred' => 'Tourism',
+            'committee_report_pdf_path' => 'agenda-pdfs/1/committee-report.pdf',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 10,
+            'date_received' => now()->subDays(40),
+            'due_date' => now()->subDays(30),
+            'days_left_label' => '-30',
+        ]);
+        $agenda->setRelation('boardMemberCommitteeReports', collect());
+
+        $session = new LegislativeSession([
+            'session_date' => now()->addWeek(),
+            'status' => 'scheduled',
+        ]);
+        $session->id = 2;
+
+        $this->assertFalse($service->prescribedDaysPermit($agenda));
+        $this->assertSame('committee_reports', $service->resolveTargetSection($agenda, $session));
+    }
+
     public function test_prescribed_days_permit_rejects_lapsed_agenda(): void
     {
         $service = new AgendaLifecycleService(
-            $this->createMock(\App\Services\ObDocumentService::class),
+            $this->createMock(ObDocumentService::class),
         );
 
         $agenda = new AgendaItem([
@@ -132,7 +160,7 @@ class AgendaLifecycleServiceTest extends TestCase
     public function test_resolve_target_section_uses_urgent_unassigned_when_flagged(): void
     {
         $service = new AgendaLifecycleService(
-            $this->createMock(\App\Services\ObDocumentService::class),
+            $this->createMock(ObDocumentService::class),
         );
 
         $agenda = new AgendaItem([
@@ -154,7 +182,7 @@ class AgendaLifecycleServiceTest extends TestCase
     public function test_is_session_after_compares_dates(): void
     {
         $service = new AgendaLifecycleService(
-            $this->createMock(\App\Services\ObDocumentService::class),
+            $this->createMock(ObDocumentService::class),
         );
 
         $earlier = new LegislativeSession(['session_date' => Carbon::parse('2026-07-01')]);
