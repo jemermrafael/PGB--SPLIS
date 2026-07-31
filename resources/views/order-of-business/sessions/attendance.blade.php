@@ -55,16 +55,6 @@
                         @endif
                     </div>
                     <div class="flex flex-wrap items-center justify-end gap-3 text-sm">
-                        <span class="flex items-center gap-2">
-                            <span class="text-slate-500 whitespace-nowrap">Remarks</span>
-                            <input
-                                type="text"
-                                name="remarks[{{ $member->id }}]"
-                                value="{{ old('remarks.'.$member->id, $attendance?->notes) }}"
-                                maxlength="500"
-                                class="splis-input w-40 max-w-full text-sm"
-                            >
-                        </span>
                         <div class="splis-attendance-status" role="radiogroup" aria-label="Attendance for {{ $member->displayName() }}">
                             <label class="splis-attendance-status-option">
                                 <input
@@ -108,6 +98,16 @@
                                 <span title="Excused">*</span>
                             </label>
                         </div>
+                        <span class="flex items-center gap-2">
+                            <span class="text-slate-500 whitespace-nowrap">Remarks</span>
+                            <input
+                                type="text"
+                                name="remarks[{{ $member->id }}]"
+                                value="{{ old('remarks.'.$member->id, $attendance?->notes) }}"
+                                maxlength="500"
+                                class="splis-input w-40 max-w-full text-sm"
+                            >
+                        </span>
                     </div>
                 </div>
             @endforeach
@@ -122,7 +122,7 @@
                         Removing an official guest here also removes them from OB Maker.
                     </p>
                 </div>
-                <button type="button" class="splis-btn-secondary text-sm" data-guest-add>Add Guest</button>
+                <button type="button" class="splis-btn-secondary shrink-0 whitespace-nowrap text-sm" data-guest-add>+ Add Guest</button>
             </div>
 
             <div class="space-y-3" data-guest-rows>

@@ -3249,6 +3249,24 @@
         @apply text-blue-700 underline;
     }
 
+    .ob-print-guests-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        column-gap: 1.25rem;
+        align-items: start;
+    }
+
+    .ob-print-guests-col {
+        display: flex;
+        flex-direction: column;
+        row-gap: 0.35em;
+        min-width: 0;
+    }
+
+    .ob-print-guest-line {
+        @apply break-words;
+    }
+
     .ob-print-table {
         @apply mb-4 w-full border-collapse text-sm;
     }
@@ -3389,8 +3407,10 @@
         padding-bottom: 0.6em;
     }
 
-    .ob-print-roman-label--section-three {
-        @apply text-left;
+    .ob-print-roman-label--section-three,
+    .ob-print-table td.ob-print-roman-label--section-three {
+        text-align: justify;
+        text-align-last: left;
     }
 
     .ob-print-announce-date {
