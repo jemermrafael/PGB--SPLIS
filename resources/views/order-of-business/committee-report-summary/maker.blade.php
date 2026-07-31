@@ -121,9 +121,11 @@
 
         @forelse ($groups as $groupIndex => $group)
             <div class="splis-card overflow-hidden">
-                <div class="splis-card-header">
-                    <h2 class="splis-card-title">{{ $groupIndex + 1 }}. {{ $group['committee_name'] ?? 'Committee' }}</h2>
-                    <p class="splis-card-subtitle">{{ app(\App\Services\CommitteeReportSummaryService::class)->formatChairDisplay($group['chair_name'] ?? '') }}</p>
+                <div class="splis-card-header border-l-4 border-l-brand-700 bg-slate-50 dark:border-l-brand-gold dark:bg-slate-800/60">
+                    <h2 class="text-lg font-bold uppercase tracking-wide text-slate-900 dark:text-slate-50">
+                        <span class="mr-1.5 inline-flex min-w-[1.75rem] justify-center text-brand-700 dark:text-brand-gold">{{ $groupIndex + 1 }}.</span>{{ $group['committee_name'] ?? 'Committee' }}
+                    </h2>
+                    <p class="mt-1 text-sm font-semibold text-slate-600 dark:text-slate-300">{{ app(\App\Services\CommitteeReportSummaryService::class)->formatChairDisplay($group['chair_name'] ?? '') }}</p>
                 </div>
                 <div class="divide-y divide-slate-200 dark:divide-slate-700">
                     @foreach ($group['items'] ?? [] as $item)
@@ -139,8 +141,8 @@
                             $recHtml = old('recommendations_html.'.$itemKey, $item['recommendation_html'] ?? '');
                         @endphp
                         <div class="space-y-4 px-4 py-4">
-                            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                                Agenda No. {{ $item['agenda_no'] ?? '—' }}
+                            <p class="text-base font-bold text-slate-900 dark:text-slate-50">
+                                <span class="inline bg-[#fff200] px-1.5 py-0.5 text-slate-900">Agenda No. {{ $item['agenda_no'] ?? '—' }}</span>
                             </p>
                             @include('order-of-business.committee-report-summary.partials.rich-editor', [
                                 'label' => 'Title / description',

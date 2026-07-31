@@ -171,8 +171,8 @@ class EmailNotificationSettings
                     'action_label' => 'View ordinance',
                 ],
                 \App\Models\UserNotification::TYPE_AGENDA_ADDED_TO_OB => [
-                    'subject' => 'Agenda added to Order of Business',
-                    'body' => "{{label}} was added to {{session}}.\n\nOpen SPLIS for details.",
+                    'subject' => '{{email_subject}}',
+                    'body' => "{{summary}}\n\nOpen SPLIS for details.",
                     'action_label' => 'View Session',
                 ],
                 \App\Models\UserNotification::TYPE_SESSION_CREATED => [
@@ -213,8 +213,8 @@ class EmailNotificationSettings
                     'action_label' => 'View Request',
                 ],
                 \App\Models\UserNotification::TYPE_AGENDA_ADDED_TO_OB => [
-                    'subject' => 'Your request was added to the Order of Business',
-                    'body' => "{{label}} was added to {{session}}.\n\nYou can track this request in SPLIS.",
+                    'subject' => '{{email_subject}}',
+                    'body' => "{{summary}}\n\nYou can track this in SPLIS.",
                     'action_label' => 'View Request',
                 ],
                 \App\Models\UserNotification::TYPE_AGENDA_EXPIRING_SOON => [

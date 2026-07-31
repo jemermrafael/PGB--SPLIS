@@ -1155,10 +1155,9 @@
         @apply left-[12rem] min-w-[7rem] border-r border-slate-200 dark:border-slate-700;
     }
 
-    /* Nested scrollport so thead (top) + # column (left) freeze together.
-       Page-level sticky breaks when the wrap also needs overflow-x. */
+    /* Sticky # column for horizontal scroll; page scrolls vertically (not a nested viewport). */
     .splis-agenda-table-wrap {
-        @apply relative h-[100vh] overflow-auto;
+        @apply relative;
     }
 
     .splis-agenda-table thead th {
@@ -3273,7 +3272,7 @@
 
     .ob-print-table th,
     .ob-print-table td {
-        @apply border border-slate-400 px-2 text-left align-top;
+        @apply border-2 border-black px-2 text-left align-top;
         padding-top: 0.6em !important;
         padding-bottom: 0.6em !important;
     }

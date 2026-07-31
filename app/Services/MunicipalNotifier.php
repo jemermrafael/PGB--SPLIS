@@ -124,15 +124,88 @@ class MunicipalNotifier
 
     public function notifyAgendaAddedToOb(AgendaItem $agenda, LegislativeSession $session, bool $reNotify = false): void
     {
-        $label = $agenda->displayLabel();
-        $sessionTitle = $session->displayTitle();
-        $body = sprintf('%s was added to %s.', $label, $sessionTitle);
+        $this->notifyAgendasAddedToOb([$agenda], $session, $reNotify);
+    }
 
-        foreach ($this->usersForAgenda($agenda) as $user) {
+    /**
+     * One in-app notification + email per municipal user for all of their
+     * agendas in this batch (same OB / session).
+     *
+     * @param  iterable<int, AgendaItem>  $agendas
+     */
+    public function notifyAgendasAddedToOb(iterable $agendas, LegislativeSession $session, bool $reNotify = false): void
+    {
+        $agendas = collect($agendas)
+            ->filter(fn ($agenda) => $agenda instanceof AgendaItem)
+            ->unique(fn (AgendaItem $agenda) => $agenda->id)
+            ->values();
+
+        if ($agendas->isEmpty()) {
+            return;
+        }
+
+        $sessionTitle = $session->displayTitle();
+        $byUser = [];
+
+        foreach ($agendas as $agenda) {
+            foreach ($this->usersForAgenda($agenda) as $user) {
+                $byUser[$user->id] ??= ['user' => $user, 'agendas' => collect()];
+                $byUser[$user->id]['agendas']->put($agenda->id, $agenda);
+            }
+        }
+
+        foreach ($byUser as $entry) {
+            /** @var User $user */
+            $user = $entry['user'];
+            /** @var Collection<int, AgendaItem> $userAgendas */
+            $userAgendas = $entry['agendas']->values();
+            $labels = $userAgendas
+                ->map(fn (AgendaItem $agenda) => $agenda->displayLabel())
+                ->filter()
+                ->values()
+                ->all();
+
+            if ($labels === []) {
+                continue;
+            }
+
+            $count = count($labels);
+            $title = $count === 1
+                ? 'Your request was added to the Order of Business'
+                : 'Your requests were added to the Order of Business';
+            $summary = $count === 1
+                ? sprintf('%s was added to %s.', $labels[0], $sessionTitle)
+                : sprintf(
+                    "%d of your requests were added to %s:\n%s",
+                    $count,
+                    $sessionTitle,
+                    collect($labels)->map(fn (string $label) => '• '.$label)->implode("\n"),
+                );
+            $link = $count === 1
+                ? route('municipal.requests.show', $userAgendas->first(), absolute: false)
+                : route('municipal.requests.index', absolute: false);
+
+            UserNotification::query()
+                ->where('user_id', $user->id)
+                ->where('legislative_session_id', $session->id)
+                ->where('type', UserNotification::TYPE_AGENDA_ADDED_TO_OB)
+                ->whereNotNull('agenda_item_id')
+                ->delete();
+
+            $existing = UserNotification::query()
+                ->where('user_id', $user->id)
+                ->where('legislative_session_id', $session->id)
+                ->where('type', UserNotification::TYPE_AGENDA_ADDED_TO_OB)
+                ->whereNull('agenda_item_id')
+                ->first();
+
+            $previousBody = $existing?->body;
+
             $attributes = [
-                'title' => 'Your request was added to the Order of Business',
-                'body' => $body,
-                'link' => route('municipal.requests.show', $agenda, absolute: false),
+                'title' => $title,
+                'body' => $summary,
+                'link' => $link,
+                'agenda_item_id' => null,
             ];
 
             if ($reNotify) {
@@ -142,21 +215,31 @@ class MunicipalNotifier
             $notification = UserNotification::query()->updateOrCreate(
                 [
                     'user_id' => $user->id,
-                    'agenda_item_id' => $agenda->id,
                     'legislative_session_id' => $session->id,
                     'type' => UserNotification::TYPE_AGENDA_ADDED_TO_OB,
+                    'agenda_item_id' => null,
                 ],
                 $attributes,
             );
+
+            $shouldEmail = $reNotify
+                || $notification->wasRecentlyCreated
+                || $previousBody !== $summary;
+
+            if (! $shouldEmail) {
+                continue;
+            }
 
             $this->emails->sendForNotification(
                 $user,
                 $notification,
                 EmailNotificationSettings::AUDIENCE_MUNICIPAL,
-                force: $reNotify,
+                force: true,
                 vars: [
-                    'label' => $label,
+                    'label' => $count === 1 ? $labels[0] : collect($labels)->implode('; '),
+                    'summary' => $summary,
                     'session' => $sessionTitle,
+                    'email_subject' => $title,
                 ],
             );
         }

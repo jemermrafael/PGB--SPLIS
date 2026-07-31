@@ -592,10 +592,8 @@ class ObDocumentService
         $document->loadMissing('legislativeSession');
 
         if ($document->legislativeSession && $document->isFinal()) {
-            foreach ($items as $item) {
-                $this->boardMemberNotifier->notifyAgendaAddedToOb($item, $document->legislativeSession);
-                $this->municipalNotifier->notifyAgendaAddedToOb($item, $document->legislativeSession);
-            }
+            $this->boardMemberNotifier->notifyAgendasAddedToOb($items, $document->legislativeSession);
+            $this->municipalNotifier->notifyAgendasAddedToOb($items, $document->legislativeSession);
         }
 
         if (in_array($source, ['manual', 'manual_move'], true)) {
@@ -731,9 +729,9 @@ class ObDocumentService
         AgendaItem::query()
             ->whereIn('id', $agendaIds)
             ->get()
-            ->each(function (AgendaItem $item) use ($session): void {
-                $this->boardMemberNotifier->notifyAgendaAddedToOb($item, $session, reNotify: true);
-                $this->municipalNotifier->notifyAgendaAddedToOb($item, $session, reNotify: true);
+            ->pipe(function ($items) use ($session): void {
+                $this->boardMemberNotifier->notifyAgendasAddedToOb($items, $session, reNotify: true);
+                $this->municipalNotifier->notifyAgendasAddedToOb($items, $session, reNotify: true);
             });
     }
 
