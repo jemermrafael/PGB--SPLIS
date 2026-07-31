@@ -35,4 +35,25 @@ return [
         'pdf_final_journal' => 'Final Journal',
         'pdf_final_minutes' => 'Final Minutes',
     ],
+
+    'committee_report_summary' => [
+        'recommendation_templates' => [
+            [
+                'label' => 'Declare validity',
+                'html' => 'TO DECLARE THE VALIDITY UPON SUSPENSION OF RULES',
+            ],
+            [
+                'label' => 'Declare operative (conditions)',
+                'html' => 'TO DECLARE OPERATIVE IN ITS ENTIRETY SUBJECT TO CERTAIN CONDITIONS UPON SUSPENSION OF RULES',
+            ],
+            [
+                'label' => 'Approve ordinance (2nd reading)',
+                'html' => 'TO APPROVE THE PROPOSED ORDINANCE ON SECOND READING UPON SUSPENSION OF RULES',
+            ],
+            [
+                'label' => 'Approve',
+                'html' => 'TO APPROVE UPON SUSPENSION OF RULES',
+            ],
+        ],
+    ],
 ];

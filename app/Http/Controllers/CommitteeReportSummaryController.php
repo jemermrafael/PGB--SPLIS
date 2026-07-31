@@ -24,10 +24,17 @@ class CommitteeReportSummaryController extends Controller
             $request->user()?->id,
         );
 
+        $legislativeSession->loadMissing('committeeReportFiles');
+        $committeeReportFiles = $legislativeSession->committeeReportFiles
+            ->filter(fn ($file) => $file->existsLocally())
+            ->values();
+
         return view('order-of-business.committee-report-summary.maker', [
             'session' => $legislativeSession,
             'summary' => $summary,
             'content' => $summary->normalizedContent(),
+            'committeeReportFiles' => $committeeReportFiles,
+            'committeeReportsDriveUrl' => $legislativeSession->committeeReportsDriveUrl(),
         ]);
     }
 
@@ -52,6 +59,12 @@ class CommitteeReportSummaryController extends Controller
             'bodies.*' => ['nullable', 'string', 'max:10000'],
             'bodies_html' => ['nullable', 'array'],
             'bodies_html.*' => ['nullable', 'string', 'max:20000'],
+            'revised_title_labels' => ['nullable', 'array'],
+            'revised_title_labels.*' => ['nullable', 'string', 'max:255'],
+            'revised_titles' => ['nullable', 'array'],
+            'revised_titles.*' => ['nullable', 'string', 'max:10000'],
+            'revised_titles_html' => ['nullable', 'array'],
+            'revised_titles_html.*' => ['nullable', 'string', 'max:20000'],
             'recommendations' => ['nullable', 'array'],
             'recommendations.*' => ['nullable', 'string', 'max:5000'],
             'recommendations_html' => ['nullable', 'array'],

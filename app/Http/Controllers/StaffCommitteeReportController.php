@@ -116,9 +116,17 @@ class StaffCommitteeReportController extends Controller
                     ->sortByDesc(fn (LegislativeSession $session) => $session->session_date?->timestamp ?? 0)
                     ->values();
 
-                $session = $sessionId
-                    ? ($linkedSessions->first(fn (LegislativeSession $item) => (int) $item->id === $sessionId) ?? $linkedSessions->first())
-                    : $linkedSessions->first();
+                if ($sessionId) {
+                    $linkedSessions = $linkedSessions
+                        ->filter(fn (LegislativeSession $item) => (int) $item->id === $sessionId)
+                        ->values();
+                }
+
+                $sessionsPayload = $linkedSessions->map(fn (LegislativeSession $session) => [
+                    'id' => $session->id,
+                    'label' => $session->displayTitle(),
+                    'date' => $session->session_date?->toDateString(),
+                ])->values();
 
                 return [
                     'id' => $report->id,
@@ -129,10 +137,9 @@ class StaffCommitteeReportController extends Controller
                     'board_member' => $report->boardMember?->displayName() ?? '—',
                     'submitted_by' => $report->submitter?->name ?? '—',
                     'submitted_by_role' => $report->submitter?->role?->label() ?? null,
-                    'session' => $session === null ? null : [
-                        'id' => $session->id,
-                        'label' => $session->displayTitle(),
-                    ],
+                    'sessions' => $sessionsPayload,
+                    // Primary/latest session (kept for compatibility).
+                    'session' => $sessionsPayload->first(),
                     'agendas' => $report->agendaItems->map(fn (AgendaItem $agenda) => [
                         'id' => $agenda->id,
                         'label' => $agenda->displayLabel(),

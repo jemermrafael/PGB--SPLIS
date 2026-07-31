@@ -62,6 +62,12 @@ class CommitteeReportSummary extends Model
                                 is_string($item['body_html'] ?? null) ? $item['body_html'] : null,
                                 $body,
                             ),
+                            'revised_title_label' => trim((string) ($item['revised_title_label'] ?? 'REVISED TITLE')) ?: 'REVISED TITLE',
+                            'revised_title' => trim((string) ($item['revised_title'] ?? '')),
+                            'revised_title_html' => ObTitleMarkup::forTitle(
+                                is_string($item['revised_title_html'] ?? null) ? $item['revised_title_html'] : null,
+                                trim((string) ($item['revised_title'] ?? '')),
+                            ),
                             'recommendation' => $recommendation,
                             'recommendation_html' => ObTitleMarkup::forTitle(
                                 is_string($item['recommendation_html'] ?? null) ? $item['recommendation_html'] : null,

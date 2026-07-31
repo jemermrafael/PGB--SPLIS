@@ -69,29 +69,58 @@
         text-underline-offset: 2px;
     }
 
-    .scr-print-table {
-        width: 100%;
-        border-collapse: collapse;
-        border: 1.5pt solid #000;
+    .scr-print-group {
         margin-bottom: 0.85rem;
     }
 
-    .scr-print-table:last-of-type {
+    .scr-print-group:last-of-type {
         margin-bottom: 0;
     }
 
-    .scr-print-table td {
-        border: 1pt solid #000;
-        vertical-align: top;
+    /*
+     * Outer frame carries border + clone only (no padding/margin).
+     * Cloned padding on page fragments is what was overlapping the next group.
+     */
+    .scr-print-frame {
+        border: 1.5pt solid #000;
+        padding: 0;
+        margin: 0;
+        background: #fff;
+        -webkit-box-decoration-break: clone;
+        box-decoration-break: clone;
+    }
+
+    .scr-print-frame-inner {
+        display: flex;
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .scr-print-no {
+        flex: 0 0 2.1rem;
+        box-sizing: border-box;
+        border-right: 1.5pt solid #000;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 0.45rem 0.15rem;
+        font-weight: 700;
+        font-size: 12pt;
+        text-align: center;
+    }
+
+    .scr-print-body {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .scr-print-committee-block {
+        border-bottom: 1.5pt solid #000;
         padding: 0.45rem 0.55rem;
     }
 
-    .scr-print-col-no {
-        width: 2.1rem;
-        text-align: center;
-        font-weight: 700;
-        font-size: 12pt;
-        vertical-align: middle;
+    .scr-print-body-items {
+        padding: 0.45rem 0.55rem;
     }
 
     .scr-print-committee {
@@ -125,6 +154,27 @@
         font-weight: 700;
         background: #fff200;
         padding: 0 0.1rem;
+    }
+
+    .scr-print-revised-title {
+        margin: 0.45rem 0 0;
+        text-align: justify;
+        text-justify: inter-word;
+    }
+
+    .scr-print-revised-title-label {
+        font-weight: 700;
+        background: #fff200;
+        padding: 0 0.1rem;
+        text-transform: uppercase;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    .scr-print-revised-title-text {
+        display: block;
+        margin-top: 0.25rem;
+        text-transform: uppercase;
     }
 
     .scr-print-recommendation {
@@ -227,58 +277,65 @@
     </div>
 
     @forelse ($groups as $index => $group)
-        <table class="scr-print-table">
-            <tbody>
-                {{-- Row 1: number | committee + chair --}}
-                <tr>
-                    <td class="scr-print-col-no">{{ $index + 1 }}.</td>
-                    <td>
-                        <p class="scr-print-committee">{{ $group['committee_name'] ?? '' }}</p>
-                        <p class="scr-print-chair">{{ app(\App\Services\CommitteeReportSummaryService::class)->formatChairDisplay($group['chair_name'] ?? '') }}</p>
-                    </td>
-                </tr>
-                {{-- Row 2: empty number cell | agenda titles + recommendations --}}
-                <tr>
-                    <td class="scr-print-col-no"></td>
-                    <td>
-                        @foreach ($group['items'] ?? [] as $item)
-                            <div class="scr-print-item">
-                                <p>
-                                    <span class="scr-print-agenda-no">Agenda No. {{ $item['agenda_no'] ?? '—' }}</span>@if (filled($item['body'] ?? null) || filled($item['body_html'] ?? null))
-                                        —
-                                        @if (filled($item['body_html'] ?? null))
-                                            {!! $item['body_html'] !!}
-                                        @else
-                                            {!! nl2br(e($item['body'])) !!}
-                                        @endif
-                                    @endif
-                                </p>
-                                @if (filled($item['recommendation'] ?? null) || filled($item['recommendation_html'] ?? null))
-                                    <p class="scr-print-recommendation">
-                                        <span class="scr-print-recommendation-label">RECOMMENDATION:</span>
-                                        <span class="scr-print-recommendation-text">
-                                            @if (filled($item['recommendation_html'] ?? null))
-                                                {!! $item['recommendation_html'] !!}
+        <div class="scr-print-group">
+            <div class="scr-print-frame">
+                <div class="scr-print-frame-inner">
+                    <div class="scr-print-no">{{ $index + 1 }}.</div>
+                    <div class="scr-print-body">
+                        <div class="scr-print-committee-block">
+                            <p class="scr-print-committee">{{ $group['committee_name'] ?? '' }}</p>
+                            <p class="scr-print-chair">{{ app(\App\Services\CommitteeReportSummaryService::class)->formatChairDisplay($group['chair_name'] ?? '') }}</p>
+                        </div>
+                        <div class="scr-print-body-items">
+                            @foreach ($group['items'] ?? [] as $item)
+                                <div class="scr-print-item">
+                                    <p>
+                                        <span class="scr-print-agenda-no">Agenda No. {{ $item['agenda_no'] ?? '—' }}</span>@if (filled($item['body'] ?? null) || filled($item['body_html'] ?? null))
+                                            —
+                                            @if (filled($item['body_html'] ?? null))
+                                                {!! $item['body_html'] !!}
                                             @else
-                                                {{ mb_strtoupper(trim($item['recommendation'])) }}
+                                                {!! nl2br(e($item['body'])) !!}
                                             @endif
-                                        </span>
+                                        @endif
                                     </p>
-                                @endif
-                            </div>
-                        @endforeach
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+                                    @if (filled($item['revised_title'] ?? null) || filled($item['revised_title_html'] ?? null))
+                                        <p class="scr-print-revised-title">
+                                            <span class="scr-print-revised-title-label">{{ $item['revised_title_label'] ?? 'REVISED TITLE' }}:</span>
+                                            <span class="scr-print-revised-title-text">
+                                                @if (filled($item['revised_title_html'] ?? null))
+                                                    {!! $item['revised_title_html'] !!}
+                                                @else
+                                                    {!! nl2br(e($item['revised_title'])) !!}
+                                                @endif
+                                            </span>
+                                        </p>
+                                    @endif
+                                    @if (filled($item['recommendation'] ?? null) || filled($item['recommendation_html'] ?? null))
+                                        <p class="scr-print-recommendation">
+                                            <span class="scr-print-recommendation-label">RECOMMENDATION:</span>
+                                            <span class="scr-print-recommendation-text">
+                                                @if (filled($item['recommendation_html'] ?? null))
+                                                    {!! $item['recommendation_html'] !!}
+                                                @else
+                                                    {{ mb_strtoupper(trim($item['recommendation'])) }}
+                                                @endif
+                                            </span>
+                                        </p>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     @empty
-        <table class="scr-print-table">
-            <tbody>
-                <tr>
-                    <td colspan="2" style="padding: 1rem; text-align: center;">No committee report items.</td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="scr-print-group">
+            <div class="scr-print-frame">
+                <div class="scr-print-body-items" style="text-align: center; padding: 1rem;">No committee report items.</div>
+            </div>
+        </div>
     @endforelse
 
     <div class="scr-print-signatories">

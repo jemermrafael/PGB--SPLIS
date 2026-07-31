@@ -83,11 +83,50 @@ function renderSessionHeader(session) {
     `;
 }
 
+function expandReportsBySession(items) {
+    const rows = [];
+
+    for (const report of items) {
+        const sessions = Array.isArray(report.sessions) && report.sessions.length > 0
+            ? report.sessions
+            : [null];
+
+        for (const session of sessions) {
+            rows.push({ ...report, session });
+        }
+    }
+
+    rows.sort((a, b) => {
+        const dateA = a.session?.date || '';
+        const dateB = b.session?.date || '';
+
+        if (!a.session && b.session) {
+            return 1;
+        }
+        if (a.session && !b.session) {
+            return -1;
+        }
+        if (dateA !== dateB) {
+            return dateB.localeCompare(dateA);
+        }
+
+        const labelA = a.session?.label || '';
+        const labelB = b.session?.label || '';
+        if (labelA !== labelB) {
+            return labelA.localeCompare(labelB);
+        }
+
+        return String(b.submitted_at || '').localeCompare(String(a.submitted_at || ''));
+    });
+
+    return rows;
+}
+
 function groupReportsBySession(items) {
     const groups = [];
     let currentKey = null;
 
-    for (const report of items) {
+    for (const report of expandReportsBySession(items)) {
         const key = report.session?.id ?? 'none';
         if (key !== currentKey) {
             groups.push({

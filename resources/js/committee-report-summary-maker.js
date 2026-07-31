@@ -169,14 +169,6 @@ function syncEditorToInputs(wrap) {
     htmlInput.value = html;
 }
 
-function debounce(fn, ms) {
-    let timer;
-    return (...args) => {
-        clearTimeout(timer);
-        timer = setTimeout(() => fn(...args), ms);
-    };
-}
-
 export function initCommitteeReportSummaryMaker() {
     const root = document.getElementById('scr-maker');
     if (!root) {
@@ -185,9 +177,15 @@ export function initCommitteeReportSummaryMaker() {
 
     const form = root.querySelector('form[data-scr-maker-form]');
     const saveStatus = document.getElementById('scr-save-status');
+    const saveBtn = document.getElementById('scr-save-document');
+    const discardBtn = document.getElementById('scr-discard-changes');
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content
         ?? form?.querySelector('input[name="_token"]')?.value
         ?? '';
+
+    let dirty = false;
+    let isSaving = false;
+    let suppressLeavePrompt = false;
 
     function setStatus(message, isError = false) {
         if (!saveStatus) {
@@ -199,17 +197,104 @@ export function initCommitteeReportSummaryMaker() {
         saveStatus.classList.toggle('text-slate-500', !isError);
     }
 
+    function updateSaveButtons() {
+        const disabled = !dirty || isSaving;
+        [saveBtn, discardBtn].forEach((button) => {
+            if (button) {
+                button.disabled = disabled;
+            }
+        });
+        if (saveBtn) {
+            saveBtn.innerHTML = isSaving
+                ? 'Saving…'
+                : '<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3a9 9 0 1 1 0 18a9 9 0 0 1 0-18"/><path stroke-linecap="round" stroke-linejoin="round" d="m9 12 2 2 4-4"/></svg> Save';
+            saveBtn.classList.add('inline-flex', 'items-center', 'gap-2');
+        }
+        root.classList.toggle('has-unsaved-changes', dirty);
+    }
+
+    function updateSaveUi(statusMessage = null) {
+        updateSaveButtons();
+        if (statusMessage !== null) {
+            setStatus(statusMessage);
+        } else if (isSaving) {
+            setStatus('Saving…');
+        } else if (dirty) {
+            setStatus('Unsaved changes');
+        } else {
+            setStatus('All changes saved');
+        }
+    }
+
+    function markDirty() {
+        if (dirty) {
+            updateSaveUi();
+            return;
+        }
+        dirty = true;
+        updateSaveUi();
+    }
+
+    function clearDirty() {
+        dirty = false;
+        updateSaveUi();
+    }
+
     function syncAllEditors() {
         root.querySelectorAll('[data-scr-rich-wrap]').forEach((wrap) => syncEditorToInputs(wrap));
     }
 
-    const saveSummary = debounce(async () => {
-        if (!form) {
+    function applyTemplate(wrap, html, mode = 'replace') {
+        const editor = wrap.querySelector('[data-scr-rich-editor]');
+        if (!editor || editor.getAttribute('contenteditable') !== 'true') {
             return;
         }
 
+        const snippet = sanitizeRichHtml(html);
+        if (!snippet) {
+            return;
+        }
+
+        if (mode === 'append') {
+            const current = sanitizeRichHtml(editor.innerHTML);
+            editor.innerHTML = current
+                ? `${current}<br><br>${snippet}`
+                : snippet;
+        } else {
+            editor.innerHTML = snippet;
+        }
+
+        editor.focus();
+        syncEditorToInputs(wrap);
+        markDirty();
+    }
+
+    function runCommand(wrap, command) {
+        const editor = wrap.querySelector('[data-scr-rich-editor]');
+        if (!editor || editor.getAttribute('contenteditable') !== 'true') {
+            return;
+        }
+
+        editor.focus();
+
+        if (command === 'highlight') {
+            applyHighlight(editor);
+        } else {
+            document.execCommand(command, false, null);
+        }
+
+        syncEditorToInputs(wrap);
+        markDirty();
+    }
+
+    async function saveSummary() {
+        if (!form || isSaving) {
+            return false;
+        }
+
         syncAllEditors();
-        setStatus('Saving…');
+        isSaving = true;
+        updateSaveUi('Saving…');
 
         try {
             const response = await fetch(form.action, {
@@ -232,28 +317,30 @@ export function initCommitteeReportSummaryMaker() {
                 throw new Error(validationMessage ?? data.message ?? 'Save failed.');
             }
 
-            setStatus('Saved');
+            dirty = false;
+            isSaving = false;
+            updateSaveUi('All changes saved');
+            return true;
         } catch (error) {
+            isSaving = false;
+            updateSaveUi(error.message || 'Save failed.');
             setStatus(error.message || 'Save failed.', true);
+            return false;
         }
-    }, 500);
+    }
 
-    function runCommand(wrap, command) {
-        const editor = wrap.querySelector('[data-scr-rich-editor]');
-        if (!editor || editor.getAttribute('contenteditable') !== 'true') {
+    function discardChanges() {
+        if (!dirty) {
             return;
         }
 
-        editor.focus();
-
-        if (command === 'highlight') {
-            applyHighlight(editor);
-        } else {
-            document.execCommand(command, false, null);
+        const confirmed = window.confirm('Discard unsaved changes and reload the last saved summary?');
+        if (!confirmed) {
+            return;
         }
 
-        syncEditorToInputs(wrap);
-        saveSummary();
+        suppressLeavePrompt = true;
+        window.location.reload();
     }
 
     root.querySelectorAll('[data-scr-rich-wrap]').forEach((wrap) => {
@@ -268,6 +355,56 @@ export function initCommitteeReportSummaryMaker() {
         syncEditorToInputs(wrap);
     });
 
+    updateSaveUi('All changes saved');
+
+    function setRevisedTitleOpen(wrap, open, { focus = false } = {}) {
+        const addRow = wrap.querySelector('[data-scr-revised-add-row]');
+        const fields = wrap.querySelector('[data-scr-revised-fields]');
+        const label = wrap.querySelector('[data-scr-revised-label]');
+        const editorWrap = fields?.querySelector('[data-scr-rich-wrap]');
+        const editor = editorWrap?.querySelector('[data-scr-rich-editor]');
+        const plainInput = editorWrap?.querySelector('[data-scr-rich-plain]');
+        const htmlInput = editorWrap?.querySelector('[data-scr-rich-html]');
+
+        wrap.dataset.open = open ? '1' : '0';
+        addRow?.classList.toggle('hidden', open);
+        fields?.classList.toggle('hidden', !open);
+
+        if (label) {
+            label.disabled = !open;
+            if (open && !label.value.trim()) {
+                label.value = 'REVISED TITLE';
+            }
+        }
+
+        if (!open) {
+            if (label) {
+                label.value = 'REVISED TITLE';
+            }
+            if (editor) {
+                editor.innerHTML = '';
+            }
+            if (plainInput) {
+                plainInput.value = '';
+            }
+            if (htmlInput) {
+                htmlInput.value = '';
+            }
+            if (editor) {
+                editor.setAttribute('contenteditable', 'false');
+            }
+        } else if (editor) {
+            editor.setAttribute('contenteditable', 'true');
+            if (focus) {
+                editor.focus();
+            }
+        }
+    }
+
+    root.querySelectorAll('[data-scr-revised-wrap]').forEach((wrap) => {
+        setRevisedTitleOpen(wrap, wrap.dataset.open === '1');
+    });
+
     root.addEventListener('mousedown', (event) => {
         if (event.target.closest('[data-scr-rich-command]')) {
             event.preventDefault();
@@ -275,6 +412,46 @@ export function initCommitteeReportSummaryMaker() {
     });
 
     root.addEventListener('click', (event) => {
+        if (event.target.closest('#scr-discard-changes')) {
+            discardChanges();
+            return;
+        }
+
+        const revisedAdd = event.target.closest('[data-scr-revised-add]');
+        if (revisedAdd) {
+            const wrap = revisedAdd.closest('[data-scr-revised-wrap]');
+            if (wrap) {
+                setRevisedTitleOpen(wrap, true, { focus: true });
+                markDirty();
+            }
+            return;
+        }
+
+        const revisedRemove = event.target.closest('[data-scr-revised-remove]');
+        if (revisedRemove) {
+            const wrap = revisedRemove.closest('[data-scr-revised-wrap]');
+            if (wrap) {
+                setRevisedTitleOpen(wrap, false);
+                markDirty();
+            }
+            return;
+        }
+
+        const templateButton = event.target.closest('[data-scr-insert-template]');
+        if (templateButton) {
+            const wrap = templateButton.closest('[data-scr-rich-wrap]');
+            if (!wrap) {
+                return;
+            }
+
+            applyTemplate(
+                wrap,
+                templateButton.dataset.scrHtml ?? '',
+                templateButton.dataset.scrMode || 'replace',
+            );
+            return;
+        }
+
         const button = event.target.closest('[data-scr-rich-command]');
         if (!button) {
             return;
@@ -295,18 +472,18 @@ export function initCommitteeReportSummaryMaker() {
             if (wrap) {
                 syncEditorToInputs(wrap);
             }
-            saveSummary();
+            markDirty();
             return;
         }
 
         if (event.target.closest('form[data-scr-maker-form]') && event.target.matches('input, textarea, select')) {
-            saveSummary();
+            markDirty();
         }
     });
 
     root.addEventListener('change', (event) => {
         if (event.target.closest('form[data-scr-maker-form]') && event.target.matches('input, textarea, select')) {
-            saveSummary();
+            markDirty();
         }
     });
 
@@ -322,10 +499,16 @@ export function initCommitteeReportSummaryMaker() {
         if (wrap) {
             syncEditorToInputs(wrap);
         }
-        saveSummary();
+        markDirty();
     });
 
     root.addEventListener('keydown', (event) => {
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+            event.preventDefault();
+            saveSummary();
+            return;
+        }
+
         const editor = event.target.closest('[data-scr-rich-editor]');
         if (!editor || editor.getAttribute('contenteditable') !== 'true') {
             return;
@@ -362,31 +545,77 @@ export function initCommitteeReportSummaryMaker() {
 
     form?.addEventListener('submit', (event) => {
         event.preventDefault();
-        syncAllEditors();
-        setStatus('Saving…');
+        saveSummary();
+    });
 
-        fetch(form.action, {
-            method: 'POST',
-            headers: {
-                Accept: 'application/json',
-                'X-CSRF-TOKEN': csrf,
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            credentials: 'same-origin',
-            body: new FormData(form),
-        })
-            .then(async (response) => {
-                const data = await response.json().catch(() => ({}));
-                if (!response.ok) {
-                    const validationMessage = data.errors
-                        ? Object.values(data.errors).flat().find(Boolean)
-                        : null;
-                    throw new Error(validationMessage ?? data.message ?? 'Save failed.');
-                }
-                setStatus('Saved');
-            })
-            .catch((error) => {
-                setStatus(error.message || 'Save failed.', true);
-            });
+    root.querySelector('[data-scr-sync-form]')?.addEventListener('submit', (event) => {
+        if (!dirty) {
+            return;
+        }
+
+        const confirmed = window.confirm(
+            'You have unsaved changes. Refresh from OB will reload the page and discard them. Continue?',
+        );
+        if (!confirmed) {
+            event.preventDefault();
+            return;
+        }
+
+        suppressLeavePrompt = true;
+    });
+
+    window.addEventListener('beforeunload', (event) => {
+        if (suppressLeavePrompt || !dirty) {
+            return;
+        }
+        event.preventDefault();
+        event.returnValue = '';
+    });
+
+    document.addEventListener('click', (event) => {
+        if (suppressLeavePrompt || !dirty) {
+            return;
+        }
+
+        const link = event.target.closest('a[href]');
+        if (!link || event.defaultPrevented || event.button !== 0) {
+            return;
+        }
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+            return;
+        }
+        if (link.target === '_blank' || link.hasAttribute('download')) {
+            return;
+        }
+        if (link.hasAttribute('data-pdf-modal-open')) {
+            return;
+        }
+        if (link.closest('#scr-maker') && link.closest('form[data-scr-maker-form]')) {
+            // allow in-form links handled elsewhere
+        }
+
+        const href = link.getAttribute('href');
+        if (!href || href.startsWith('#') || href.startsWith('javascript:')) {
+            return;
+        }
+
+        let url;
+        try {
+            url = new URL(link.href, window.location.href);
+        } catch {
+            return;
+        }
+
+        if (url.href === window.location.href) {
+            return;
+        }
+
+        const leave = window.confirm('You have unsaved changes. Leave this page and discard them?');
+        if (!leave) {
+            event.preventDefault();
+            return;
+        }
+
+        suppressLeavePrompt = true;
     });
 }

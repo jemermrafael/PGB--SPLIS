@@ -9,6 +9,10 @@
     $reviewedBy = $content['reviewed_by'] ?? ['name' => '', 'title' => ''];
     $titlePlain = old('title', $summary->title);
     $titleHtml = old('title_html', $content['title_html'] ?? '');
+    $recommendationTemplates = config('order_of_business.committee_report_summary.recommendation_templates', []);
+    $committeeReportFiles = $committeeReportFiles ?? collect();
+    $committeeReportsDriveUrl = trim((string) ($committeeReportsDriveUrl ?? ''));
+    $hasCommitteeReportsFolder = $committeeReportFiles->isNotEmpty() || $committeeReportsDriveUrl !== '';
 @endphp
 
 <div class="max-w-5xl" id="scr-maker">
@@ -17,10 +21,25 @@
             <p class="text-sm text-slate-500">{{ $session->displayTitle() }}</p>
             <h1 class="splis-page-title">Summary of Committee Reports Maker</h1>
             <p class="splis-page-subtitle">
-                Content is loaded from OB Section IV (Committee Reports). Edit titles and recommendations with bold, underline, and highlight.
+                Content is loaded from OB Section IV (Committee Reports). Edit freely, then Save.
             </p>
         </div>
         <div class="flex flex-wrap gap-2">
+            @if ($hasCommitteeReportsFolder)
+                <button
+                    type="button"
+                    class="splis-btn-secondary inline-flex items-center gap-2"
+                    data-folder-modal-open
+                    data-folder-modal-target="#scr-committee-reports-folder-modal"
+                >
+                    <x-icon name="file-text" class="h-4 w-4" />
+                    @if ($committeeReportFiles->isNotEmpty())
+                        View Committee Reports ({{ $committeeReportFiles->count() }})
+                    @else
+                        View Committee Reports
+                    @endif
+                </button>
+            @endif
             <a
                 href="{{ route('ob.sessions.committee-report-summary.print', $session) }}"
                 data-pdf-modal-open
@@ -37,18 +56,48 @@
         </div>
     </div>
 
-    <div class="mb-4 flex flex-wrap items-center gap-3">
-        <form method="POST" action="{{ route('ob.sessions.committee-report-summary.sync', $session) }}">
-            @csrf
-            <button type="submit" class="splis-btn-secondary inline-flex items-center gap-2">
-                <x-icon name="refresh" class="h-4 w-4" />
-                Refresh from OB
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex min-w-0 flex-wrap items-center gap-3">
+            <form method="POST" action="{{ route('ob.sessions.committee-report-summary.sync', $session) }}" data-scr-sync-form>
+                @csrf
+                <button type="submit" class="splis-btn-secondary inline-flex items-center gap-2">
+                    <x-icon name="refresh" class="h-4 w-4" />
+                    Refresh from OB
+                </button>
+            </form>
+            <p id="scr-save-status" class="text-sm text-slate-500" aria-live="polite">All changes saved</p>
+        </div>
+        <div class="flex flex-wrap items-center justify-end gap-2">
+            <button
+                type="button"
+                id="scr-discard-changes"
+                class="splis-btn-secondary"
+                disabled
+                title="Reload the last saved summary and discard local edits"
+            >
+                Discard
             </button>
-        </form>
-        <p id="scr-save-status" class="text-sm text-slate-500" aria-live="polite">Changes save automatically</p>
+            <button
+                type="submit"
+                form="scr-maker-form"
+                id="scr-save-document"
+                class="splis-btn-primary inline-flex items-center gap-2"
+                disabled
+                title="Save all changes (Ctrl+S)"
+            >
+                <x-icon name="check-circle" class="h-4 w-4" />
+                Save
+            </button>
+        </div>
     </div>
 
-    <form method="POST" action="{{ route('ob.sessions.committee-report-summary.update', $session) }}" class="space-y-6" data-scr-maker-form>
+    <form
+        id="scr-maker-form"
+        method="POST"
+        action="{{ route('ob.sessions.committee-report-summary.update', $session) }}"
+        class="space-y-6"
+        data-scr-maker-form
+    >
         @csrf
         @method('PUT')
 
@@ -82,6 +131,10 @@
                             $itemKey = app(\App\Services\CommitteeReportSummaryService::class)->itemKey($item);
                             $bodyPlain = old('bodies.'.$itemKey, $item['body'] ?? '');
                             $bodyHtml = old('bodies_html.'.$itemKey, $item['body_html'] ?? '');
+                            $revisedLabel = old('revised_title_labels.'.$itemKey, $item['revised_title_label'] ?? 'REVISED TITLE');
+                            $revisedPlain = old('revised_titles.'.$itemKey, $item['revised_title'] ?? '');
+                            $revisedHtml = old('revised_titles_html.'.$itemKey, $item['revised_title_html'] ?? '');
+                            $hasRevisedTitle = filled($revisedPlain) || filled($revisedHtml);
                             $recPlain = old('recommendations.'.$itemKey, $item['recommendation'] ?? '');
                             $recHtml = old('recommendations_html.'.$itemKey, $item['recommendation_html'] ?? '');
                         @endphp
@@ -98,6 +151,46 @@
                                 'html' => $bodyHtml,
                                 'editorClass' => '!min-h-24 text-justify',
                             ])
+
+                            <div data-scr-revised-wrap data-open="{{ $hasRevisedTitle ? '1' : '0' }}">
+                                <div class="{{ $hasRevisedTitle ? 'hidden' : '' }}" data-scr-revised-add-row>
+                                    <button type="button" class="splis-btn-ghost text-sm" data-scr-revised-add>
+                                        + Add revised title
+                                    </button>
+                                </div>
+                                <div class="space-y-4 {{ $hasRevisedTitle ? '' : 'hidden' }}" data-scr-revised-fields>
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Revised title (optional)</p>
+                                        <button type="button" class="splis-btn-ghost text-sm text-red-600 hover:text-red-700" data-scr-revised-remove>
+                                            Remove
+                                        </button>
+                                    </div>
+                                    <div>
+                                        <label class="splis-label" for="scr-revised-label-{{ $itemKey }}">REVISED TITLE</label>
+                                        <input
+                                            type="text"
+                                            id="scr-revised-label-{{ $itemKey }}"
+                                            name="revised_title_labels[{{ $itemKey }}]"
+                                            class="splis-input font-semibold uppercase"
+                                            value="{{ $revisedLabel }}"
+                                            placeholder="REVISED TITLE"
+                                            @disabled(! $hasRevisedTitle)
+                                            data-scr-revised-label
+                                        >
+                                    </div>
+                                    @include('order-of-business.committee-report-summary.partials.rich-editor', [
+                                        'label' => 'Text',
+                                        'editorId' => 'scr-revised-'.$itemKey,
+                                        'name' => 'revised_titles['.$itemKey.']',
+                                        'htmlName' => 'revised_titles_html['.$itemKey.']',
+                                        'plain' => $revisedPlain,
+                                        'html' => $revisedHtml,
+                                        'editorClass' => '!min-h-20 text-justify uppercase',
+                                        'hint' => 'Optional. Supports bold, underline, and highlight.',
+                                    ])
+                                </div>
+                            </div>
+
                             @include('order-of-business.committee-report-summary.partials.rich-editor', [
                                 'label' => 'RECOMMENDATION',
                                 'editorId' => 'scr-rec-'.$itemKey,
@@ -106,7 +199,8 @@
                                 'plain' => $recPlain,
                                 'html' => $recHtml,
                                 'editorClass' => '!min-h-16 font-semibold uppercase text-justify',
-                                'hint' => 'Print shows this text bold and underlined. Use H only for yellow highlights you want.',
+                                'templates' => $recommendationTemplates,
+                                'hint' => 'Click a template to fill quickly, then edit. Use H for yellow highlights.',
                             ])
                         </div>
                     @endforeach
@@ -144,15 +238,20 @@
             </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-3">
-            <button type="submit" class="splis-btn-primary inline-flex items-center gap-2">
-                <x-icon name="check-circle" class="h-4 w-4" />
-                Save now
-            </button>
+        <div class="flex flex-wrap items-center justify-end gap-3">
             <a href="{{ route('ob.sessions.committee-report-summary.print', $session) }}" target="_blank" class="splis-btn-secondary">
                 Open Print Page
             </a>
         </div>
     </form>
 </div>
+
+@if ($hasCommitteeReportsFolder)
+    @include('partials.document-folder-modal', [
+        'modalId' => 'scr-committee-reports-folder-modal',
+        'title' => 'Committee Reports — '.$session->displayTitle(),
+        'files' => $committeeReportFiles,
+        'driveUrl' => $committeeReportsDriveUrl,
+    ])
+@endif
 @endsection

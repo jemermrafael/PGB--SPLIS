@@ -84,6 +84,7 @@ class StaffCommitteeReportTest extends TestCase
             ->assertJsonPath('meta.total', 1)
             ->assertJsonPath('data.0.title', 'Housing CR')
             ->assertJsonPath('data.0.session.id', $session->id)
+            ->assertJsonPath('data.0.sessions.0.id', $session->id)
             ->assertJsonPath('data.0.can_update', false)
             ->assertJsonPath('data.0.can_delete', false);
 

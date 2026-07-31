@@ -43,7 +43,14 @@ class CommitteeReportSummaryTest extends TestCase
             ->assertSee('COMMITTEE ON FINANCE')
             ->assertSee('Agenda No. 501')
             ->assertSee('Supplemental Budget request')
-            ->assertSee('RECOMMENDATION');
+            ->assertSee('RECOMMENDATION')
+            ->assertSee('Declare validity')
+            ->assertSee('Approve ordinance (2nd reading)')
+            ->assertSee('+ Add revised title')
+            ->assertSee('Discard')
+            ->assertDontSee('Insert REVISED TITLE')
+            ->assertDontSee('REVISED TITLE label')
+            ->assertDontSee('Changes save automatically');
 
         $summary = CommitteeReportSummary::query()
             ->where('legislative_session_id', $session->id)
@@ -82,11 +89,20 @@ class CommitteeReportSummaryTest extends TestCase
                 'bodies_html' => [
                     $itemKey => 'Supplemental Budget <strong>request</strong>',
                 ],
+                'revised_title_labels' => [
+                    $itemKey => 'REVISED TITLE',
+                ],
+                'revised_titles' => [
+                    $itemKey => 'A RESOLUTION STRONGLY ENCOURAGING THE PLAYING OF THE BEHOLD BATAAN MUSIC VIDEO',
+                ],
+                'revised_titles_html' => [
+                    $itemKey => 'A RESOLUTION <strong>STRONGLY ENCOURAGING</strong> THE PLAYING OF THE BEHOLD BATAAN MUSIC VIDEO',
+                ],
                 'recommendations' => [
                     $itemKey => 'TO APPROVE UPON SUSPENSION OF RULES',
                 ],
                 'recommendations_html' => [
-                    $itemKey => '<u><mark>TO APPROVE</mark> UPON SUSPENSION OF RULES</u>',
+                    $itemKey => '<u>TO APPROVE UPON SUSPENSION OF RULES</u>',
                 ],
             ])
             ->assertRedirect(route('ob.sessions.committee-report-summary.maker', $session));
@@ -94,8 +110,13 @@ class CommitteeReportSummaryTest extends TestCase
         $summary->refresh();
         $item = $summary->normalizedContent()['groups'][0]['items'][0];
         $this->assertSame('TO APPROVE UPON SUSPENSION OF RULES', $item['recommendation'] ?? null);
-        $this->assertSame('<u><mark>TO APPROVE</mark> UPON SUSPENSION OF RULES</u>', $item['recommendation_html'] ?? null);
+        $this->assertSame('<u>TO APPROVE UPON SUSPENSION OF RULES</u>', $item['recommendation_html'] ?? null);
         $this->assertSame('Supplemental Budget <strong>request</strong>', $item['body_html'] ?? null);
+        $this->assertSame('REVISED TITLE', $item['revised_title_label'] ?? null);
+        $this->assertSame(
+            'A RESOLUTION STRONGLY ENCOURAGING THE PLAYING OF THE BEHOLD BATAAN MUSIC VIDEO',
+            $item['revised_title'] ?? null,
+        );
 
         $this->actingAs($admin)
             ->withHeaders(['Accept' => 'application/json'])
@@ -123,6 +144,9 @@ class CommitteeReportSummaryTest extends TestCase
             ->assertSee('Agenda No. 501')
             ->assertSee('RECOMMENDATION:')
             ->assertSee('TO DECLARE OPERATIVE', false)
+            ->assertSee('REVISED TITLE')
+            ->assertSee('A RESOLUTION', false)
+            ->assertSee('BEHOLD BATAAN MUSIC VIDEO', false)
             ->assertDontSee('rowspan="2"', false)
             ->assertSee('Prepared by:')
             ->assertSee('MARJORIE ANNE G. ORANI')

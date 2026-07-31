@@ -7,6 +7,7 @@
     /** @var string $editorId */
     /** @var string|null $hint */
     /** @var string|null $editorClass */
+    /** @var list<array{label: string, html?: string, text?: string, mode?: string}>|null $templates */
 @endphp
 <div class="space-y-2" data-scr-rich-wrap>
     <div class="flex flex-wrap items-center justify-between gap-2">
@@ -47,5 +48,23 @@
     </div>
     <input type="hidden" name="{{ $name }}" value="{{ $plain }}" data-scr-rich-plain>
     <input type="hidden" name="{{ $htmlName }}" value="{{ $html ?? '' }}" data-scr-rich-html>
-    <p class="text-xs text-slate-500">{{ $hint ?? '' }}</p>
+    @if (! empty($templates))
+        <div class="flex flex-wrap gap-2" role="group" aria-label="{{ $label }} templates">
+            @foreach ($templates as $template)
+                <button
+                    type="button"
+                    class="splis-ob-chip text-left text-xs"
+                    data-scr-insert-template
+                    data-scr-mode="{{ $template['mode'] ?? 'replace' }}"
+                    data-scr-html="{{ e($template['html'] ?? $template['text'] ?? '') }}"
+                    title="{{ strip_tags($template['html'] ?? $template['text'] ?? $template['label']) }}"
+                >
+                    {{ $template['label'] }}
+                </button>
+            @endforeach
+        </div>
+    @endif
+    @if (filled($hint ?? null))
+        <p class="text-xs text-slate-500">{{ $hint }}</p>
+    @endif
 </div>

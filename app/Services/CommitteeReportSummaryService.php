@@ -98,6 +98,9 @@ class CommitteeReportSummaryService
      *   reviewed_by?: array{name?: string|null, title?: string|null},
      *   bodies?: array<string, string|null>,
      *   bodies_html?: array<string, string|null>,
+     *   revised_title_labels?: array<string, string|null>,
+     *   revised_titles?: array<string, string|null>,
+     *   revised_titles_html?: array<string, string|null>,
      *   recommendations?: array<string, string|null>,
      *   recommendations_html?: array<string, string|null>
      * }  $payload
@@ -107,13 +110,32 @@ class CommitteeReportSummaryService
         $content = $summary->normalizedContent();
         $bodies = $payload['bodies'] ?? [];
         $bodiesHtml = $payload['bodies_html'] ?? [];
+        $revisedTitleLabels = $payload['revised_title_labels'] ?? [];
+        $revisedTitles = $payload['revised_titles'] ?? [];
+        $revisedTitlesHtml = $payload['revised_titles_html'] ?? [];
         $recommendations = $payload['recommendations'] ?? [];
         $recommendationsHtml = $payload['recommendations_html'] ?? [];
 
         $groups = collect($content['groups'] ?? [])
-            ->map(function (array $group) use ($bodies, $bodiesHtml, $recommendations, $recommendationsHtml): array {
+            ->map(function (array $group) use (
+                $bodies,
+                $bodiesHtml,
+                $revisedTitleLabels,
+                $revisedTitles,
+                $revisedTitlesHtml,
+                $recommendations,
+                $recommendationsHtml,
+            ): array {
                 $group['items'] = collect($group['items'] ?? [])
-                    ->map(function (array $item) use ($bodies, $bodiesHtml, $recommendations, $recommendationsHtml): array {
+                    ->map(function (array $item) use (
+                        $bodies,
+                        $bodiesHtml,
+                        $revisedTitleLabels,
+                        $revisedTitles,
+                        $revisedTitlesHtml,
+                        $recommendations,
+                        $recommendationsHtml,
+                    ): array {
                         $key = $this->itemKey($item);
 
                         if (array_key_exists($key, $bodies)) {
@@ -124,6 +146,21 @@ class CommitteeReportSummaryService
                             $item['body_html'] = ObTitleMarkup::forTitle(
                                 is_string($bodiesHtml[$key]) ? $bodiesHtml[$key] : null,
                                 (string) ($item['body'] ?? ''),
+                            );
+                        }
+
+                        if (array_key_exists($key, $revisedTitleLabels)) {
+                            $item['revised_title_label'] = trim((string) $revisedTitleLabels[$key]) ?: 'REVISED TITLE';
+                        }
+
+                        if (array_key_exists($key, $revisedTitles)) {
+                            $item['revised_title'] = trim((string) $revisedTitles[$key]);
+                        }
+
+                        if (array_key_exists($key, $revisedTitlesHtml)) {
+                            $item['revised_title_html'] = ObTitleMarkup::forTitle(
+                                is_string($revisedTitlesHtml[$key]) ? $revisedTitlesHtml[$key] : null,
+                                (string) ($item['revised_title'] ?? ''),
                             );
                         }
 
@@ -259,11 +296,20 @@ class CommitteeReportSummaryService
                     $recommendation,
                 );
 
+                $revisedTitle = trim((string) ($existing['revised_title'] ?? ''));
+                $revisedTitleHtml = ObTitleMarkup::forTitle(
+                    is_string($existing['revised_title_html'] ?? null) ? $existing['revised_title_html'] : null,
+                    $revisedTitle,
+                );
+
                 $item = [
                     'agenda_item_id' => $agenda->id,
                     'agenda_no' => $agendaNo,
                     'body' => $body,
                     'body_html' => $bodyHtml,
+                    'revised_title_label' => trim((string) ($existing['revised_title_label'] ?? 'REVISED TITLE')) ?: 'REVISED TITLE',
+                    'revised_title' => $revisedTitle,
+                    'revised_title_html' => $revisedTitleHtml,
                     'recommendation' => $recommendation,
                     'recommendation_html' => $recommendationHtml,
                 ];
@@ -379,6 +425,9 @@ class CommitteeReportSummaryService
                 $map[$this->itemKey($item)] = [
                     'body' => trim((string) ($item['body'] ?? '')),
                     'body_html' => is_string($item['body_html'] ?? null) ? $item['body_html'] : null,
+                    'revised_title_label' => trim((string) ($item['revised_title_label'] ?? 'REVISED TITLE')) ?: 'REVISED TITLE',
+                    'revised_title' => trim((string) ($item['revised_title'] ?? '')),
+                    'revised_title_html' => is_string($item['revised_title_html'] ?? null) ? $item['revised_title_html'] : null,
                     'recommendation' => trim((string) ($item['recommendation'] ?? '')),
                     'recommendation_html' => is_string($item['recommendation_html'] ?? null) ? $item['recommendation_html'] : null,
                 ];
