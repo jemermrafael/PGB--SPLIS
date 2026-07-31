@@ -67,6 +67,7 @@ class BoardMemberPortalFeatureTest extends TestCase
             ->assertSee('Next Session')
             ->assertSee('My Agendas on next OB')
             ->assertSee('Agenda deadlines within')
+            ->assertSee('Incoming (for referral)')
             ->assertDontSee('>Your Committees</')
             ->assertDontSee('Session Calendar');
     }

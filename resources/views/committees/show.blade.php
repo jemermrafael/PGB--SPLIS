@@ -48,7 +48,12 @@
         'showCurrentBadge' => false,
     ])
 
-    <div class="splis-card splis-card-body space-y-5">
+    <div class="splis-card overflow-hidden">
+        <div class="splis-card-header splis-card-header--emphasis">
+            <h2 class="splis-card-title">Committee Roster</h2>
+            <p class="splis-card-subtitle">{{ $selectedTerm->label }}{{ $selectedTerm->is_current ? ' · Current' : '' }}</p>
+        </div>
+        <div class="splis-card-body space-y-5">
         <div>
             <p class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <x-icon name="calendar" class="h-3.5 w-3.5 shrink-0 opacity-80" />
@@ -131,6 +136,7 @@
                     <span class="text-slate-500">—</span>
                 @endif
             </dd>
+        </div>
         </div>
     </div>
 

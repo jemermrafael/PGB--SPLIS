@@ -11,6 +11,7 @@ use App\Models\Committee;
 use App\Models\CommitteeMembership;
 use App\Models\CommitteeTerm;
 use App\Models\LegislativeSession;
+use App\Models\ObDocument;
 use App\Models\User;
 use App\Models\UserNotification;
 use App\Services\BoardMemberNotifier;
@@ -33,23 +34,16 @@ class BoardMemberAgendaAddedToObDigestTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_multiple_agendas_on_same_ob_send_one_email_and_one_notification(): void
+    public function test_multiple_agendas_in_one_batch_send_one_combined_notification(): void
     {
         Mail::fake();
 
-        [$user, $committee] = $this->boardMemberOnCommittee();
-        $session = LegislativeSession::query()->create([
-            'session_number' => '53rd',
-            'session_kind' => 'regular',
-            'session_date' => now()->toDateString(),
-            'status' => 'scheduled',
-            'created_by' => $user->id,
-        ]);
+        [$user, $committee, $session] = $this->boardMemberWithFinalScheduledSession();
 
         $agendas = collect([
-            $this->agendaForCommittee($committee->name, $user->id, '101', 'First agenda'),
-            $this->agendaForCommittee($committee->name, $user->id, '102', 'Second agenda'),
-            $this->agendaForCommittee($committee->name, $user->id, '103', 'Third agenda'),
+            $this->agendaForCommittee($committee->name, $user->id, '350', 'First'),
+            $this->agendaForCommittee($committee->name, $user->id, '349', 'Second'),
+            $this->agendaForCommittee($committee->name, $user->id, '351', 'Third'),
         ]);
 
         app(BoardMemberNotifier::class)->notifyAgendasAddedToOb($agendas, $session);
@@ -65,29 +59,56 @@ class BoardMemberAgendaAddedToObDigestTest extends TestCase
             ->where('type', UserNotification::TYPE_AGENDA_ADDED_TO_OB)
             ->first();
 
-        $this->assertNull($notification->agenda_item_id);
-        $this->assertSame('Agendas added to Order of Business', $notification->title);
-        $this->assertStringContainsString('3 agendas were added', $notification->body);
-        $this->assertStringContainsString('#101', $notification->body);
-        $this->assertStringContainsString('#102', $notification->body);
-        $this->assertStringContainsString('#103', $notification->body);
+        $this->assertSame('Agenda added to Order of Business', $notification->title);
+        $this->assertSame(
+            '#349, #350, #351 was added to '.$session->displayTitle().'.',
+            $notification->body
+        );
 
         Mail::assertSent(SystemNotificationMail::class, 1);
     }
 
-    public function test_repeat_same_digest_does_not_resend_email(): void
+    public function test_later_batch_creates_a_separate_notification(): void
     {
         Mail::fake();
 
-        [$user, $committee] = $this->boardMemberOnCommittee();
-        $session = LegislativeSession::query()->create([
-            'session_number' => '53rd',
-            'session_kind' => 'regular',
-            'session_date' => now()->toDateString(),
-            'status' => 'scheduled',
-            'created_by' => $user->id,
-        ]);
+        [$user, $committee, $session] = $this->boardMemberWithFinalScheduledSession();
+        $notifier = app(BoardMemberNotifier::class);
 
+        $notifier->notifyAgendasAddedToOb([
+            $this->agendaForCommittee($committee->name, $user->id, '349', 'A'),
+            $this->agendaForCommittee($committee->name, $user->id, '350', 'B'),
+        ], $session);
+
+        $notifier->notifyAgendasAddedToOb([
+            $this->agendaForCommittee($committee->name, $user->id, '351', 'C'),
+        ], $session);
+
+        $notifications = UserNotification::query()
+            ->where('user_id', $user->id)
+            ->where('type', UserNotification::TYPE_AGENDA_ADDED_TO_OB)
+            ->orderBy('id')
+            ->get();
+
+        $this->assertCount(2, $notifications);
+        $this->assertSame(
+            '#349, #350 was added to '.$session->displayTitle().'.',
+            $notifications[0]->body
+        );
+        $this->assertSame(
+            '#351 was added to '.$session->displayTitle().'.',
+            $notifications[1]->body
+        );
+        $this->assertNull($notifications[1]->read_at);
+
+        Mail::assertSent(SystemNotificationMail::class, 2);
+    }
+
+    public function test_repeat_same_batch_does_not_duplicate(): void
+    {
+        Mail::fake();
+
+        [$user, $committee, $session] = $this->boardMemberWithFinalScheduledSession();
         $agendas = collect([
             $this->agendaForCommittee($committee->name, $user->id, '201', 'Alpha'),
             $this->agendaForCommittee($committee->name, $user->id, '202', 'Beta'),
@@ -102,6 +123,60 @@ class BoardMemberAgendaAddedToObDigestTest extends TestCase
             ->where('user_id', $user->id)
             ->where('type', UserNotification::TYPE_AGENDA_ADDED_TO_OB)
             ->count());
+    }
+
+    public function test_skips_when_session_is_not_scheduled_or_ob_not_final(): void
+    {
+        Mail::fake();
+
+        [$user, $committee] = $this->boardMemberOnCommittee();
+        $session = LegislativeSession::query()->create([
+            'session_number' => '53rd',
+            'session_kind' => 'regular',
+            'session_date' => now()->toDateString(),
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+
+        ObDocument::query()->create([
+            'legislative_session_id' => $session->id,
+            'title' => 'OB',
+            'status' => ObDocument::STATUS_FINAL,
+            'created_by' => $user->id,
+        ]);
+
+        app(BoardMemberNotifier::class)->notifyAgendasAddedToOb([
+            $this->agendaForCommittee($committee->name, $user->id, '400', 'Skip me'),
+        ], $session->fresh('obDocument'));
+
+        $this->assertSame(0, UserNotification::query()
+            ->where('user_id', $user->id)
+            ->where('type', UserNotification::TYPE_AGENDA_ADDED_TO_OB)
+            ->count());
+        Mail::assertNothingSent();
+    }
+
+    /** @return array{0: User, 1: Committee, 2: LegislativeSession} */
+    protected function boardMemberWithFinalScheduledSession(): array
+    {
+        [$user, $committee] = $this->boardMemberOnCommittee();
+
+        $session = LegislativeSession::query()->create([
+            'session_number' => '53rd',
+            'session_kind' => 'regular',
+            'session_date' => '2026-08-03',
+            'status' => 'scheduled',
+            'created_by' => $user->id,
+        ]);
+
+        ObDocument::query()->create([
+            'legislative_session_id' => $session->id,
+            'title' => 'OB',
+            'status' => ObDocument::STATUS_FINAL,
+            'created_by' => $user->id,
+        ]);
+
+        return [$user, $committee, $session->fresh('obDocument')];
     }
 
     /** @return array{0: User, 1: Committee} */

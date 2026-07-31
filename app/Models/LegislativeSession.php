@@ -392,6 +392,15 @@ class LegislativeSession extends Model
 
     public function isNotifiableToBoardMembers(): bool
     {
+        return $this->isNotifiableForObAgendaAdds();
+    }
+
+    /**
+     * Session is scheduled and has a final Order of Business — used for
+     * agenda-added-to-OB notifications (board member and municipal).
+     */
+    public function isNotifiableForObAgendaAdds(): bool
+    {
         return $this->status === 'scheduled'
             && $this->hasFinalObDocument();
     }

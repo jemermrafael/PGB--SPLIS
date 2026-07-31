@@ -63,7 +63,30 @@
                     @endforeach
                 </ul>
                 @if ($myItems->count() > 6)
-                    <p class="mt-2 text-xs text-slate-500">+ {{ $myItems->count() - 6 }} more on this OB</p>
+                    <details class="mt-2 group">
+                        <summary class="cursor-pointer list-none text-xs font-medium text-brand-700 hover:underline dark:text-brand-300 [&::-webkit-details-marker]:hidden">
+                            <span class="group-open:hidden">+ {{ $myItems->count() - 6 }} more on this OB — show all</span>
+                            <span class="hidden group-open:inline">Show less</span>
+                        </summary>
+                        <ul class="mt-2 space-y-2 text-sm">
+                            @foreach ($myItems->skip(6) as $item)
+                                <li>
+                                    <a href="{{ route('agenda.show', $item) }}" class="splis-link">
+                                        {{ $item->displayLabel() }} — {{ \Illuminate\Support\Str::limit($item->title ?: 'Untitled', 70) }}
+                                    </a>
+                                </li>
+                            @endforeach
+                        </ul>
+                        @if ($next && $next->obDocument)
+                            @can('view', $next->obDocument)
+                                <p class="mt-3">
+                                    <a href="{{ route('ob.document.print', $next) }}" target="_blank" class="splis-link text-xs font-medium">
+                                        Open full Order of Business
+                                    </a>
+                                </p>
+                            @endcan
+                        @endif
+                    </details>
                 @endif
             @else
                 <p class="text-sm text-slate-500">No items from your Committees on the next Order of Business.</p>
@@ -155,7 +178,33 @@
                         @endforeach
                     </ul>
                     @if ($incomingCount > 8)
-                        <p class="mt-2 text-xs text-slate-500">+ {{ $incomingCount - 8 }} more on next OB</p>
+                        <details class="mt-2 group">
+                            <summary class="cursor-pointer list-none text-xs font-medium text-brand-700 hover:underline dark:text-brand-300 [&::-webkit-details-marker]:hidden">
+                                <span class="group-open:hidden">+ {{ $incomingCount - 8 }} more on next OB — show all</span>
+                                <span class="hidden group-open:inline">Show less</span>
+                            </summary>
+                            <ul class="mt-2 space-y-2 text-sm">
+                                @foreach ($incoming->skip(8) as $agenda)
+                                    <li>
+                                        <a href="{{ route('agenda.show', $agenda) }}" class="splis-link font-medium">
+                                            {{ $agenda->displayLabel() }}
+                                        </a>
+                                        <span class="text-slate-600 dark:text-slate-300">
+                                            — {{ \Illuminate\Support\Str::limit($agenda->title ?: 'Untitled', 60) }}
+                                        </span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                            @if ($next && $next->obDocument)
+                                @can('view', $next->obDocument)
+                                    <p class="mt-3">
+                                        <a href="{{ route('ob.document.print', $next) }}" target="_blank" class="splis-link text-xs font-medium">
+                                            Open full Order of Business
+                                        </a>
+                                    </p>
+                                @endcan
+                            @endif
+                        </details>
                     @endif
                 @else
                     <p class="text-sm text-slate-500">No regular unassigned items on the next session OB.</p>

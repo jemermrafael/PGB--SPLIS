@@ -10,8 +10,8 @@
 @endphp
 
 @if ($splisActivityLogs->isNotEmpty())
-    <aside class="splis-card mt-6">
-        <div class="splis-card-header">
+    <aside class="splis-card mt-6 overflow-hidden">
+        <div @class(['splis-card-header', 'splis-card-header--emphasis' => ! empty($emphasisHeaders)])>
             <div>
                 <h2 class="splis-card-title">History</h2>
                 @if (($obPlacementCount ?? 0) > 0)

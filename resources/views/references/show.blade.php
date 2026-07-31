@@ -54,8 +54,8 @@
     </x-page-header>
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div class="splis-card lg:col-span-2">
-            <div class="splis-card-header">
+        <div class="splis-card overflow-hidden lg:col-span-2">
+            <div class="splis-card-header splis-card-header--emphasis">
                 <h2 class="splis-card-title">Document details</h2>
             </div>
             <dl class="splis-card-body grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -119,8 +119,8 @@
         </div>
 
         <div class="space-y-4">
-            <div class="splis-card">
-                <div class="splis-card-header">
+            <div class="splis-card overflow-hidden">
+                <div class="splis-card-header splis-card-header--emphasis">
                     <h2 class="splis-card-title">File</h2>
                 </div>
                 <div class="splis-card-body space-y-3 text-sm">
@@ -134,8 +134,8 @@
             </div>
 
             @can('archive', $reference)
-                <div class="splis-card">
-                    <div class="splis-card-header">
+                <div class="splis-card overflow-hidden">
+                    <div class="splis-card-header splis-card-header--emphasis">
                         <h2 class="splis-card-title">Lifecycle</h2>
                     </div>
                     <div class="splis-card-body space-y-2">
@@ -195,8 +195,8 @@
         </div>
     </div>
 
-    <div class="mt-6 splis-card">
-        <div class="splis-card-header">
+    <div class="mt-6 splis-card overflow-hidden">
+        <div class="splis-card-header splis-card-header--emphasis">
             <h2 class="splis-card-title">Version History</h2>
         </div>
         <div class="splis-card-body">

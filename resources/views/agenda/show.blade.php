@@ -126,8 +126,8 @@
 
     <div class="splis-detail-with-sidebar">
         <div class="min-w-0 space-y-6">
-            <div class="splis-card">
-                <div class="splis-card-header">
+            <div class="splis-card overflow-hidden">
+                <div class="splis-card-header splis-card-header--emphasis">
                     <h2 class="splis-card-title">Intake</h2>
                 </div>
                 <dl>
@@ -155,8 +155,8 @@
                 </dl>
             </div>
 
-            <div class="splis-card">
-                <div class="splis-card-header">
+            <div class="splis-card overflow-hidden">
+                <div class="splis-card-header splis-card-header--emphasis">
                     <h2 class="splis-card-title">Committee</h2>
                 </div>
                 <dl>
@@ -177,8 +177,8 @@
                 </dl>
             </div>
 
-            <div class="splis-card">
-                <div class="splis-card-header">
+            <div class="splis-card overflow-hidden">
+                <div class="splis-card-header splis-card-header--emphasis">
                     <h2 class="splis-card-title">Provincial Output</h2>
                 </div>
                 <dl>
@@ -216,8 +216,8 @@
 
         <div class="splis-detail-sidebar-column">
             @if ($agenda->hasIncoming() || $agenda->resolution || $agenda->ordinance || $agenda->appropriationOrdinance || $obPlacements->isNotEmpty() || auth()->user()?->can('addToOrderOfBusiness', $agenda) || auth()->user()?->can('linkOutput', $agenda) || auth()->user()?->can('removeFromOrderOfBusiness', $agenda))
-                <aside class="splis-card">
-                    <div class="splis-card-header">
+                <aside class="splis-card overflow-hidden">
+                    <div class="splis-card-header splis-card-header--emphasis">
                         <h2 class="splis-card-title">Connections</h2>
                     </div>
                     <div class="splis-card-body space-y-4">
@@ -354,8 +354,8 @@
                 </aside>
             @endif
 
-            <aside class="splis-card splis-agenda-tracking-card">
-                <div class="splis-card-header">
+            <aside class="splis-card splis-agenda-tracking-card overflow-hidden">
+                <div class="splis-card-header splis-card-header--emphasis">
                     <h2 class="splis-card-title">Tracking</h2>
                 </div>
                 <div class="splis-card-body space-y-5">
@@ -402,8 +402,8 @@
             </aside>
 
             @if ($agenda->pdfPublicUrlFor(AgendaPdfSlot::COMMITTEE_REPORT) || $agenda->pdfPublicUrlFor(AgendaPdfSlot::RESO_ORD_AO) || $agenda->pdfPublicUrlFor(AgendaPdfSlot::JOURNAL) || $agenda->pdfPublicUrlFor(AgendaPdfSlot::MINUTES) || $agenda->isPublished())
-                <div class="splis-card">
-                    <div class="splis-card-header">
+                <div class="splis-card overflow-hidden">
+                    <div class="splis-card-header splis-card-header--emphasis">
                         <h2 class="splis-card-title">Documents</h2>
                     </div>
                     <div class="splis-card-body flex flex-col gap-2">
@@ -454,6 +454,7 @@
     @include('agenda.partials.splis-activity-logs', [
         'splisActivityLogs' => $splisActivityLogs ?? collect(),
         'obPlacementCount' => $obPlacementCount ?? 0,
+        'emphasisHeaders' => true,
     ])
 
     @include('partials.detail-prev-next', [

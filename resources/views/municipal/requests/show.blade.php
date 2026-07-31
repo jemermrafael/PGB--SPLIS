@@ -62,8 +62,8 @@
 
     <div class="splis-detail-with-sidebar">
         <div class="min-w-0 space-y-6">
-            <div class="splis-card">
-                <div class="splis-card-header">
+            <div class="splis-card overflow-hidden">
+                <div class="splis-card-header splis-card-header--emphasis">
                     <h2 class="splis-card-title">Request details</h2>
                 </div>
                 <dl>
@@ -87,8 +87,8 @@
                 </dl>
             </div>
 
-            <div class="splis-card">
-                <div class="splis-card-header">
+            <div class="splis-card overflow-hidden">
+                <div class="splis-card-header splis-card-header--emphasis">
                     <h2 class="splis-card-title">Committee action</h2>
                 </div>
                 <dl>
@@ -112,8 +112,8 @@
         </div>
 
         <div class="splis-detail-sidebar-column">
-            <aside class="splis-card splis-agenda-tracking-card">
-                <div class="splis-card-header">
+            <aside class="splis-card splis-agenda-tracking-card overflow-hidden">
+                <div class="splis-card-header splis-card-header--emphasis">
                     <h2 class="splis-card-title">Tracking</h2>
                 </div>
                 <div class="splis-card-body space-y-5">
@@ -143,8 +143,8 @@
             </aside>
 
             @if ($agenda->resolution || $agenda->ordinance || $agenda->appropriationOrdinance || $finalObPlacements->isNotEmpty())
-                <aside class="splis-card">
-                    <div class="splis-card-header">
+                <aside class="splis-card overflow-hidden">
+                    <div class="splis-card-header splis-card-header--emphasis">
                         <h2 class="splis-card-title">Updates</h2>
                     </div>
                     <div class="splis-card-body space-y-4">
@@ -182,6 +182,7 @@
     @include('agenda.partials.splis-activity-logs', [
         'splisActivityLogs' => $splisActivityLogs ?? collect(),
         'obPlacementCount' => $obPlacementCount ?? 0,
+        'emphasisHeaders' => true,
     ])
 </div>
 @endsection

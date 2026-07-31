@@ -29,10 +29,10 @@
         @endif
     </div>
 
-    <div class="splis-card">
-        <div class="splis-card-header">
+    <div class="splis-card overflow-hidden">
+        <div class="splis-card-header splis-card-header--emphasis">
             <h2 class="splis-card-title">Resolution Details</h2>
-            <p class="mt-0.5 text-xs text-slate-500">Read-only record from the legacy SP Reso archive</p>
+            <p class="splis-card-subtitle">Read-only record from the legacy SP Reso archive</p>
         </div>
         <dl>
             @foreach ([

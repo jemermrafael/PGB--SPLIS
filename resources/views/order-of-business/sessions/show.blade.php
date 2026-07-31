@@ -64,8 +64,8 @@
     </div>
 
     <div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div class="splis-card lg:col-span-2">
-            <div class="splis-card-header">
+        <div class="splis-card overflow-hidden lg:col-span-2">
+            <div class="splis-card-header splis-card-header--emphasis">
                 <h2 class="splis-card-title">Session Details</h2>
             </div>
             <dl class="splis-card-body grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -100,8 +100,8 @@
             </dl>
         </div>
 
-        <div class="splis-card">
-            <div class="splis-card-header">
+        <div class="splis-card overflow-hidden">
+            <div class="splis-card-header splis-card-header--emphasis">
                 <h2 class="splis-card-title">Order of Business</h2>
             </div>
             <div class="splis-card-body space-y-3">
@@ -132,8 +132,8 @@
         $hasCommitteeReportsFolder = $committeeReportFiles->isNotEmpty() || filled($committeeReportsDriveUrl);
     @endphp
 
-    <div class="splis-card mb-6">
-        <div class="splis-card-header flex items-center justify-between gap-3">
+    <div class="splis-card mb-6 overflow-hidden">
+        <div class="splis-card-header splis-card-header--emphasis flex items-center justify-between gap-3">
             <div>
                 <h2 class="splis-card-title">Session Documents</h2>
                 <p class="splis-card-subtitle">Committee Reports, Journal, and Minutes</p>
@@ -238,7 +238,7 @@
 
     @if ($session->obDocument && $session->obDocument->blocks->isNotEmpty())
         <div class="splis-card overflow-hidden">
-            <div class="splis-card-header flex items-center justify-between">
+            <div class="splis-card-header splis-card-header--emphasis flex items-center justify-between">
                 <div>
                     <h2 class="splis-card-title">Document Outline</h2>
                     <p class="splis-card-subtitle">{{ $session->obDocument->blocks->count() }} blocks</p>

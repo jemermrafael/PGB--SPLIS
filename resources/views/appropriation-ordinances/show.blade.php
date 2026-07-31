@@ -32,7 +32,11 @@
         </div>
     </div>
 
-    <div class="splis-card splis-card-body space-y-6">
+    <div class="splis-card overflow-hidden">
+        <div class="splis-card-header splis-card-header--emphasis">
+            <h2 class="splis-card-title">Appropriation Ordinance Details</h2>
+        </div>
+        <div class="splis-card-body space-y-6">
         <div>
             <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Title</p>
             <p class="mt-1 whitespace-pre-wrap text-slate-900 dark:text-slate-100">{{ $appropriationOrdinance->subject }}</p>
@@ -58,6 +62,7 @@
                 </div>
             @endif
         </dl>
+        </div>
     </div>
 
     @include('partials.pdf-document-embed', [

@@ -590,10 +590,15 @@ class ObDocumentService
         }
 
         $document->loadMissing('legislativeSession');
+        $session = $document->legislativeSession;
 
-        if ($document->legislativeSession && $document->isFinal()) {
-            $this->boardMemberNotifier->notifyAgendasAddedToOb($items, $document->legislativeSession);
-            $this->municipalNotifier->notifyAgendasAddedToOb($items, $document->legislativeSession);
+        if ($session instanceof LegislativeSession) {
+            $session->setRelation('obDocument', $document);
+
+            if ($session->isNotifiableForObAgendaAdds()) {
+                $this->boardMemberNotifier->notifyAgendasAddedToOb($items, $session);
+                $this->municipalNotifier->notifyAgendasAddedToOb($items, $session);
+            }
         }
 
         if (in_array($source, ['manual', 'manual_move'], true)) {
@@ -709,6 +714,12 @@ class ObDocumentService
         $session = $document->legislativeSession;
 
         if ($session === null) {
+            return;
+        }
+
+        $session->setRelation('obDocument', $document);
+
+        if (! $session->isNotifiableForObAgendaAdds()) {
             return;
         }
 

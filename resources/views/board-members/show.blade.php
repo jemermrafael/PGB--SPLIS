@@ -84,8 +84,11 @@
         @endif
     </div>
 
-    <div class="splis-card splis-card-body mb-6">
-        <h2 class="mb-3 text-base font-semibold text-slate-900 dark:text-slate-100">Contact</h2>
+    <div class="splis-card mb-6 overflow-hidden">
+        <div class="splis-card-header splis-card-header--emphasis">
+            <h2 class="splis-card-title">Contact</h2>
+        </div>
+        <div class="splis-card-body">
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Contact number</p>
@@ -110,9 +113,15 @@
                 @endif
             </div>
         </div>
+        </div>
     </div>
 
-    <div class="splis-card splis-card-body mb-8 space-y-6">
+    <div class="splis-card mb-8 overflow-hidden">
+        <div class="splis-card-header splis-card-header--emphasis">
+            <h2 class="splis-card-title">Committee Assignments</h2>
+            <p class="splis-card-subtitle">{{ $selectedTerm->label }}{{ $selectedTerm->is_current ? ' · Current' : '' }}</p>
+        </div>
+        <div class="splis-card-body space-y-6">
         <div>
             <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Election term</p>
             <p class="text-lg font-medium text-slate-900 dark:text-slate-100">
@@ -141,6 +150,7 @@
         @else
             <p class="text-sm text-slate-500">No Committee Assignments for {{ $selectedTerm->label }} yet. Assign this member from a committee roster.</p>
         @endif
+        </div>
     </div>
 
     @if ($otherTerms->isNotEmpty())
@@ -148,13 +158,12 @@
             <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Other terms</h2>
 
             @foreach ($otherTerms as $entry)
-                <div class="splis-card splis-card-body space-y-5">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="splis-card overflow-hidden">
+                    <div class="splis-card-header splis-card-header--emphasis flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Past term</p>
-                            <p class="text-base font-medium text-slate-900 dark:text-slate-100">{{ $entry['term']->label }}</p>
+                            <h2 class="splis-card-title">{{ $entry['term']->label }}</h2>
                             @if ($entry['term']->year_from || $entry['term']->year_to)
-                                <p class="text-sm text-slate-500">{{ $entry['term']->year_from ?? '?' }}–{{ $entry['term']->year_to ?? 'present' }}</p>
+                                <p class="splis-card-subtitle">{{ $entry['term']->year_from ?? '?' }}–{{ $entry['term']->year_to ?? 'present' }}</p>
                             @endif
                         </div>
                         <a href="{{ route('board-members.show', ['boardMember' => $boardMember, 'term' => $entry['term']->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-sm">
@@ -162,7 +171,7 @@
                             View Term
                         </a>
                     </div>
-
+                    <div class="splis-card-body">
                     <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                         @include('board-members.partials.role-list', [
                             'title' => 'Chairmanship',
@@ -179,6 +188,7 @@
                             'memberships' => $entry['roles']['member'],
                             'empty' => '—',
                         ])
+                    </div>
                     </div>
                 </div>
             @endforeach

@@ -41,7 +41,11 @@
         </div>
     @endif
 
-    <div class="splis-card splis-card-body mb-6 space-y-6">
+    <div class="splis-card mb-6 overflow-hidden">
+        <div class="splis-card-header splis-card-header--emphasis">
+            <h2 class="splis-card-title">Ordinance Details</h2>
+        </div>
+        <div class="splis-card-body space-y-6">
             <div>
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Title</p>
                 <p class="mt-1 text-slate-900 dark:text-slate-100">{{ $ordinance->title ?: '—' }}</p>
@@ -78,10 +82,14 @@
                 <dd class="mt-1 text-slate-900 dark:text-slate-100">{{ $ordinance->classification ?: '—' }}</dd>
             </div>
         </dl>
+        </div>
     </div>
 
-    <div class="splis-card splis-card-body mb-6 space-y-5">
-        <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Means of verification</h2>
+    <div class="splis-card mb-6 overflow-hidden">
+        <div class="splis-card-header splis-card-header--emphasis">
+            <h2 class="splis-card-title">Means of verification</h2>
+        </div>
+        <div class="splis-card-body space-y-5">
         <dl class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
                 <dt class="splis-label">Bulletin</dt>
@@ -138,9 +146,14 @@
                 </dd>
             </div>
         </dl>
+        </div>
     </div>
 
-    <div class="splis-card splis-card-body space-y-4">
+    <div class="splis-card overflow-hidden">
+        <div class="splis-card-header splis-card-header--emphasis">
+            <h2 class="splis-card-title">Additional details</h2>
+        </div>
+        <div class="splis-card-body space-y-4">
         <div>
             <dt class="splis-label">Implementing bodies / departments</dt>
             <dd class="mt-1 whitespace-pre-wrap text-slate-900 dark:text-slate-100">{{ $ordinance->implementing_bodies ?: '—' }}</dd>
@@ -152,6 +165,7 @@
         <div>
             <dt class="splis-label">Remarks</dt>
             <dd class="mt-1 whitespace-pre-wrap text-slate-900 dark:text-slate-100">{{ $ordinance->remarks ?: '—' }}</dd>
+        </div>
         </div>
     </div>
 
