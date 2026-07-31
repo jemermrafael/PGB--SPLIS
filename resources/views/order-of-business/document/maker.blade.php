@@ -30,20 +30,6 @@
                 Print Preview
             </a>
             <a href="{{ route('ob.sessions.show', $session) }}" class="splis-btn-secondary">Session</a>
-            @can('delete', $session)
-                <form
-                    method="POST"
-                    action="{{ route('ob.sessions.destroy', $session) }}"
-                    data-confirm-submit
-                    data-confirm-title="Delete Order of Business session?"
-                    data-confirm-message="Delete this Order of Business session and its document? This cannot be undone."
-                    data-confirm-label="Delete"
-                >
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="splis-btn-danger">Delete</button>
-                </form>
-            @endcan
         </div>
     </div>
 
@@ -126,6 +112,29 @@
         </div>
     </div>
 
+    @can('delete', $session)
+        <div class="splis-ob-maker-danger-zone mt-8 border-t border-slate-200 pt-6 dark:border-slate-700">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">Delete this Order of Business</p>
+                    <p class="text-xs text-slate-500">Removes the session and its document. This cannot be undone.</p>
+                </div>
+                <form
+                    method="POST"
+                    action="{{ route('ob.sessions.destroy', $session) }}"
+                    data-confirm-submit
+                    data-confirm-title="Delete Order of Business session?"
+                    data-confirm-message="Delete this Order of Business session and its document? This cannot be undone."
+                    data-confirm-label="Delete"
+                >
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="splis-btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    @endcan
+
     <nav id="ob-section-nav" class="splis-ob-section-nav hidden" aria-label="Document structure">
         <button
             type="button"
@@ -133,6 +142,7 @@
             class="splis-ob-section-nav-toggle"
             aria-expanded="false"
             aria-controls="ob-section-nav-panel"
+            title="Drag to move · click to open"
         >
             Structure
         </button>
@@ -164,6 +174,22 @@
                 </button>
             </div>
             <ul id="ob-section-nav-list" class="splis-ob-section-nav-list"></ul>
+            <div class="splis-ob-section-nav-footer">
+                <a
+                    href="{{ route('ob.document.print', $session) }}"
+                    data-pdf-modal-open
+                    data-pdf-viewer="iframe"
+                    data-pdf-src="{{ route('ob.document.print', $session) }}?embed=1"
+                    data-pdf-url="{{ route('ob.document.print', $session) }}"
+                    data-pdf-title="Print Preview"
+                    class="splis-btn-secondary inline-flex w-full items-center justify-center gap-2"
+                >
+                    <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18M6.34 18H4.5a2.25 2.25 0 01-2.25-2.25v-3.006A2.25 2.25 0 014.5 9.75h15a2.25 2.25 0 012.25 2.25v3.006A2.25 2.25 0 0119.5 18h-1.84M9.75 9.75h4.5V6.75a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75v3zM9.75 18v1.125c0 .621.504 1.125 1.125 1.125h2.25c.621 0 1.125-.504 1.125-1.125V18"/>
+                    </svg>
+                    Print Preview
+                </a>
+            </div>
             <div id="ob-section-nav-resize" class="splis-ob-section-nav-resize" title="Drag to resize" aria-hidden="true"></div>
         </div>
     </nav>

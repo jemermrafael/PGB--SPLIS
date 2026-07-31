@@ -46,6 +46,8 @@ class ObSectionThreeSyncServiceTest extends TestCase
                 'numeral' => 'III.',
                 'title' => '',
                 'body' => 'READING AND APPROVAL OF THE JOURNAL OF PROCEEDINGS & MINUTES OF THE 26TH REGULAR SESSION HELD ON JULY 27, 2026 AT AT THE SESSION HALL, BALANGA CITY',
+                'journal_url' => 'https://example.test/stale-journal.pdf',
+                'minutes_url' => 'https://example.test/stale-minutes.pdf',
             ],
         ]);
 
@@ -53,10 +55,13 @@ class ObSectionThreeSyncServiceTest extends TestCase
 
         $this->assertTrue($synced);
 
-        $body = $document->fresh()->blocks()->first()->content['body'] ?? '';
+        $content = $document->fresh()->blocks()->first()->content ?? [];
+        $body = $content['body'] ?? '';
 
         $this->assertStringContainsString('HELD ON JULY 20, 2026', $body);
         $this->assertStringNotContainsString('HELD ON JULY 27, 2026', $body);
         $this->assertStringNotContainsString('AT AT', $body);
+        $this->assertArrayNotHasKey('journal_url', $content);
+        $this->assertArrayNotHasKey('minutes_url', $content);
     }
 }

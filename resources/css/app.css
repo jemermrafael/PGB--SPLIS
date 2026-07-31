@@ -2773,7 +2773,11 @@
     }
 
     .splis-ob-section-nav-toggle {
-        @apply inline-flex rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-lg ring-1 ring-slate-900/5 transition hover:border-brand-800 hover:text-brand-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-brand-gold dark:hover:text-brand-gold;
+        @apply inline-flex cursor-grab touch-none rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-lg ring-1 ring-slate-900/5 transition hover:border-brand-800 hover:text-brand-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-brand-gold dark:hover:text-brand-gold;
+    }
+
+    .splis-ob-section-nav.is-dragging .splis-ob-section-nav-toggle {
+        @apply cursor-grabbing;
     }
 
     .splis-ob-section-nav-panel {
@@ -2828,6 +2832,10 @@
 
     .splis-ob-section-nav-list {
         @apply min-h-0 flex-1 overflow-y-auto py-1;
+    }
+
+    .splis-ob-section-nav-footer {
+        @apply shrink-0 border-t border-slate-200 p-2 dark:border-slate-700;
     }
 
     .splis-ob-section-nav-item--level-0 {

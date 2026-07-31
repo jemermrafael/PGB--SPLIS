@@ -55,10 +55,6 @@ class ObSectionThreeGenerator
      */
     public function resolveJournalUrl(LegislativeSession $session, array $blockContent = []): ?string
     {
-        if (filled($blockContent['journal_url'] ?? null)) {
-            return (string) $blockContent['journal_url'];
-        }
-
         $prior = $session->priorSession;
 
         return $prior ? $this->journalUrlFromSession($prior) : null;
@@ -69,10 +65,6 @@ class ObSectionThreeGenerator
      */
     public function resolveMinutesUrl(LegislativeSession $session, array $blockContent = []): ?string
     {
-        if (filled($blockContent['minutes_url'] ?? null)) {
-            return (string) $blockContent['minutes_url'];
-        }
-
         $prior = $session->priorSession;
 
         return $prior ? $this->minutesUrlFromSession($prior) : null;

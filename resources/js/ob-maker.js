@@ -589,27 +589,14 @@ export function initObMaker() {
         const sectionThree = config.sectionThree ?? {};
 
         if (sectionThree.prior_session_title) {
-            return `<p class="mt-1 text-xs text-slate-500">Based on ${escapeHtml(sectionThree.prior_session_title)}. Journal and Minutes URLs auto-fill from that session unless you override them below. JOURNAL and MINUTES are linked in print preview.</p>`;
+            const hasLinks = Boolean(sectionThree.journal_url || sectionThree.minutes_url);
+
+            return hasLinks
+                ? `<p class="mt-1 text-xs text-slate-500">Based on ${escapeHtml(sectionThree.prior_session_title)}. JOURNAL and MINUTES link from that session’s Draft/Final Journal and Minutes in print preview.</p>`
+                : `<p class="mt-1 text-xs text-slate-500">Based on ${escapeHtml(sectionThree.prior_session_title)}. Add Draft Journal / Draft Minutes links on that session so JOURNAL and MINUTES become clickable in print preview.</p>`;
         }
 
-        return '<p class="mt-1 text-xs text-slate-500">No prior session set. Enter Journal and Minutes PDF URLs below to link JOURNAL and MINUTES in print preview.</p>';
-    }
-
-    function renderSectionThreeLinkFields(c, disabled) {
-        if (normalizeRomanNumeral(c.numeral) !== 'III') {
-            return '';
-        }
-
-        return `
-            <div>
-                <label class="splis-label">Journal PDF URL</label>
-                <input type="url" class="splis-input splis-ob-block-field" data-field="journal_url" value="${escapeHtml(c.journal_url ?? '')}" ${disabled} placeholder="https://">
-            </div>
-            <div>
-                <label class="splis-label">Minutes PDF URL</label>
-                <input type="url" class="splis-input splis-ob-block-field" data-field="minutes_url" value="${escapeHtml(c.minutes_url ?? '')}" ${disabled} placeholder="https://">
-            </div>
-        `;
+        return '<p class="mt-1 text-xs text-slate-500">No prior session set. Set a prior session (with Draft Journal / Draft Minutes links) on this session so JOURNAL and MINUTES can link in print preview.</p>';
     }
 
     function renderBlockEditor(block) {
@@ -645,7 +632,6 @@ export function initObMaker() {
                         </div>
                     `
                     : '';
-                const sectionThreeLinkFields = renderSectionThreeLinkFields(c, disabled);
                 const subLabelField = flags.showSubLabel
                     ? `
                         <div class="md:col-span-2">
@@ -687,7 +673,6 @@ export function initObMaker() {
                         `}
                         ${titleField}
                         ${bodyField}
-                        ${sectionThreeLinkFields}
                         ${subLabelField}
                         ${guestActions}
                         ${announcementActions}
@@ -1427,6 +1412,12 @@ export function initObMaker() {
         if (block.type === 'roman_section') {
             const guestInputs = [...blockEl.querySelectorAll('.splis-ob-section-guest-name')];
             content.guests = guestInputs.map((input) => ({ name: input.value }));
+
+            // Section III links come from the prior session's Draft/Final Journal & Minutes.
+            if (normalizeRomanNumeral(content.numeral) === 'III') {
+                delete content.journal_url;
+                delete content.minutes_url;
+            }
         }
 
         return content;
@@ -2342,7 +2333,14 @@ export function initObMaker() {
         closeSectionNavPanel();
     });
 
-    sectionNavToggle?.addEventListener('click', () => {
+    sectionNavToggle?.addEventListener('click', (event) => {
+        if (sectionNavToggle.dataset.suppressClick === '1') {
+            delete sectionNavToggle.dataset.suppressClick;
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+        }
+
         openSectionNavPanel();
     });
 
@@ -2461,15 +2459,70 @@ export function initObMaker() {
     }
 
     function bindSectionNavDrag() {
-        if (!sectionNavEl || !sectionNavDragHandle) {
+        if (!sectionNavEl) {
             return;
         }
+
+        const DRAG_THRESHOLD_PX = 4;
+
+        const beginDragTracking = (event, handle, { closedToggle = false } = {}) => {
+            if (event.button !== 0) {
+                return;
+            }
+            if (event.target.closest('button.splis-ob-section-nav-tool, a')) {
+                return;
+            }
+
+            const rect = sectionNavEl.getBoundingClientRect();
+            sectionNavDragState = {
+                pointerId: event.pointerId,
+                offsetX: event.clientX - rect.left,
+                offsetY: event.clientY - rect.top,
+                startX: event.clientX,
+                startY: event.clientY,
+                startLeft: rect.left,
+                startTop: rect.top,
+                moved: false,
+                active: !closedToggle,
+                handle,
+                closedToggle,
+            };
+
+            if (!closedToggle) {
+                event.preventDefault();
+                sectionNavEl.classList.add('is-dragging');
+                handle.setPointerCapture?.(event.pointerId);
+                applySectionNavPosition(rect.left, rect.top, false);
+            }
+
+            window.addEventListener('pointermove', onPointerMove);
+            window.addEventListener('pointerup', onPointerUp);
+        };
 
         const onPointerMove = (event) => {
             if (!sectionNavDragState) {
                 return;
             }
 
+            const dx = event.clientX - sectionNavDragState.startX;
+            const dy = event.clientY - sectionNavDragState.startY;
+            const pastThreshold = Math.abs(dx) >= DRAG_THRESHOLD_PX || Math.abs(dy) >= DRAG_THRESHOLD_PX;
+
+            if (!sectionNavDragState.active) {
+                if (!pastThreshold) {
+                    return;
+                }
+
+                sectionNavDragState.active = true;
+                sectionNavDragState.moved = true;
+                sectionNavEl.classList.add('is-dragging');
+                sectionNavDragState.handle.setPointerCapture?.(sectionNavDragState.pointerId);
+                applySectionNavPosition(sectionNavDragState.startLeft, sectionNavDragState.startTop, false);
+            } else if (pastThreshold) {
+                sectionNavDragState.moved = true;
+            }
+
+            event.preventDefault();
             const left = event.clientX - sectionNavDragState.offsetX;
             const top = event.clientY - sectionNavDragState.offsetY;
             applySectionNavPosition(left, top, false);
@@ -2480,36 +2533,36 @@ export function initObMaker() {
                 return;
             }
 
+            const { handle, moved, active, offsetX, offsetY, pointerId, closedToggle } = sectionNavDragState;
             sectionNavEl.classList.remove('is-dragging');
-            sectionNavDragHandle.releasePointerCapture?.(sectionNavDragState.pointerId);
-            const left = event.clientX - sectionNavDragState.offsetX;
-            const top = event.clientY - sectionNavDragState.offsetY;
-            applySectionNavPosition(left, top, true);
+
+            if (active) {
+                handle.releasePointerCapture?.(pointerId);
+                const left = event.clientX - offsetX;
+                const top = event.clientY - offsetY;
+                applySectionNavPosition(left, top, true);
+            }
+
             sectionNavDragState = null;
             window.removeEventListener('pointermove', onPointerMove);
             window.removeEventListener('pointerup', onPointerUp);
+
+            if (moved && closedToggle) {
+                sectionNavToggle.dataset.suppressClick = '1';
+            }
         };
 
-        sectionNavDragHandle.addEventListener('pointerdown', (event) => {
-            if (event.button !== 0) {
-                return;
-            }
-            if (event.target.closest('button, .splis-ob-section-nav-tool')) {
+        sectionNavDragHandle?.addEventListener('pointerdown', (event) => {
+            beginDragTracking(event, sectionNavDragHandle);
+        });
+
+        // Closed "Structure" chip can be dragged to a new spot.
+        sectionNavToggle?.addEventListener('pointerdown', (event) => {
+            if (!sectionNavEl.classList.contains('is-closed')) {
                 return;
             }
 
-            event.preventDefault();
-            const rect = sectionNavEl.getBoundingClientRect();
-            sectionNavDragState = {
-                pointerId: event.pointerId,
-                offsetX: event.clientX - rect.left,
-                offsetY: event.clientY - rect.top,
-            };
-            sectionNavEl.classList.add('is-dragging');
-            sectionNavDragHandle.setPointerCapture?.(event.pointerId);
-            applySectionNavPosition(rect.left, rect.top, false);
-            window.addEventListener('pointermove', onPointerMove);
-            window.addEventListener('pointerup', onPointerUp);
+            beginDragTracking(event, sectionNavToggle, { closedToggle: true });
         });
     }
 

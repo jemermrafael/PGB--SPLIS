@@ -45,21 +45,10 @@ class ObSectionThreeSyncService
             }
         }
 
-        $prior = $session->priorSession;
-
-        if ($prior !== null) {
-            $journalUrl = $this->generator->journalUrlFromSession($prior);
-            $minutesUrl = $this->generator->minutesUrlFromSession($prior);
-
-            if (($force || blank($content['journal_url'] ?? null)) && filled($journalUrl)) {
-                $content['journal_url'] = $journalUrl;
-                $updated = true;
-            }
-
-            if (($force || blank($content['minutes_url'] ?? null)) && filled($minutesUrl)) {
-                $content['minutes_url'] = $minutesUrl;
-                $updated = true;
-            }
+        // Journal/Minutes links live on the prior session; drop any legacy OB overrides.
+        if (array_key_exists('journal_url', $content) || array_key_exists('minutes_url', $content)) {
+            unset($content['journal_url'], $content['minutes_url']);
+            $updated = true;
         }
 
         if (! $updated) {
