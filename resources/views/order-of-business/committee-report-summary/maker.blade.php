@@ -121,11 +121,11 @@
 
         @forelse ($groups as $groupIndex => $group)
             <div class="splis-card overflow-hidden">
-                <div class="splis-card-header border-l-4 border-l-brand-700 bg-slate-50 dark:border-l-brand-gold dark:bg-slate-800/60">
-                    <h2 class="text-lg font-bold uppercase tracking-wide text-slate-900 dark:text-slate-50">
+                <div class="splis-card-header splis-card-header--emphasis">
+                    <h2 class="splis-card-title">
                         <span class="mr-1.5 inline-flex min-w-[1.75rem] justify-center text-brand-700 dark:text-brand-gold">{{ $groupIndex + 1 }}.</span>{{ $group['committee_name'] ?? 'Committee' }}
                     </h2>
-                    <p class="mt-1 text-sm font-semibold text-slate-600 dark:text-slate-300">{{ app(\App\Services\CommitteeReportSummaryService::class)->formatChairDisplay($group['chair_name'] ?? '') }}</p>
+                    <p class="splis-card-subtitle">{{ app(\App\Services\CommitteeReportSummaryService::class)->formatChairDisplay($group['chair_name'] ?? '') }}</p>
                 </div>
                 <div class="divide-y divide-slate-200 dark:divide-slate-700">
                     @foreach ($group['items'] ?? [] as $item)
