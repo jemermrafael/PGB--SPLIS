@@ -54,6 +54,17 @@
         </x-slot:badges>
         <x-slot:meta>
             <div class="flex flex-wrap justify-end gap-2">
+                @if (auth()->user()?->isBoardMember())
+                    <form method="POST" action="{{ route('board-member.watchlist.store') }}">
+                        @csrf
+                        <input type="hidden" name="watchable_type" value="agenda">
+                        <input type="hidden" name="watchable_id" value="{{ $agenda->id }}">
+                        <button type="submit" class="splis-btn-secondary inline-flex items-center gap-2 text-nowrap">
+                            <x-icon name="bell" class="h-4 w-4" />
+                            {{ ($isWatchingAgenda ?? false) ? 'Unwatch' : 'Watch' }}
+                        </button>
+                    </form>
+                @endif
                 @can('promote', $agenda)
                     @if (config('incoming.enabled', false))
                         <form method="POST" action="{{ route('agenda.promote-incoming', $agenda) }}">

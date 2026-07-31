@@ -19,6 +19,8 @@ class BoardMemberNotifier
 {
     public function __construct(
         protected EmailNotificationService $emails,
+        protected BoardMemberWatchlistService $watchlist,
+        protected UserNotificationPreferenceService $preferences,
     ) {}
 
     public function notifyCommitteeReferral(AgendaItem $agenda): void
@@ -39,27 +41,29 @@ class BoardMemberNotifier
         $body = sprintf('%s was referred to %s.', $label, $committee->name);
 
         foreach ($this->usersForAgendaCommittee($agenda) as $user) {
-            $notification = UserNotification::query()->firstOrCreate(
+            $notification = $this->createNotificationForUser($user, UserNotification::TYPE_COMMITTEE_REFERRAL, [
                 [
                     'user_id' => $user->id,
                     'agenda_item_id' => $agenda->id,
-                    'type' => UserNotification::TYPE_COMMITTEE_REFERRAL,
                 ],
                 [
                     'title' => 'Agenda referred to your committee',
                     'body' => $body,
                     'link' => route('agenda.show', $agenda, absolute: false),
                 ],
-            );
+            ]);
 
-            $this->emails->sendForNotification(
+            $this->sendBoardMemberEmail(
                 $user,
                 $notification,
-                EmailNotificationSettings::AUDIENCE_BOARD_MEMBER,
-                vars: [
+                UserNotification::TYPE_COMMITTEE_REFERRAL,
+                [
                     'label' => $label,
                     'committee' => $committee->name,
+                    'title' => 'Agenda referred to your committee',
+                    'body' => $body,
                 ],
+                route('agenda.show', $agenda, absolute: false),
             );
         }
     }
@@ -94,31 +98,34 @@ class BoardMemberNotifier
         );
 
         foreach ($this->usersForAgendaCommittee($agenda) as $user) {
-            $notification = UserNotification::query()->firstOrCreate(
+            $notification = $this->createNotificationForUser($user, UserNotification::TYPE_AGENDA_PUBLISHED, [
                 [
                     'user_id' => $user->id,
                     'agenda_item_id' => $agenda->id,
-                    'type' => UserNotification::TYPE_AGENDA_PUBLISHED,
                 ],
                 [
                     'title' => 'Agenda published',
                     'body' => $body,
                     'link' => $agenda->publishedTargetRoute() ?? route('agenda.show', $agenda, absolute: false),
                 ],
-            );
+            ]);
 
-            $this->emails->sendForNotification(
+            $this->sendBoardMemberEmail(
                 $user,
                 $notification,
-                EmailNotificationSettings::AUDIENCE_BOARD_MEMBER,
-                vars: [
+                $emailType,
+                [
                     'label' => $label,
                     'target' => $target,
                     'number_suffix' => $numberSuffix,
+                    'title' => 'Agenda published',
+                    'body' => $body,
                 ],
-                emailType: $emailType,
+                $agenda->publishedTargetRoute() ?? route('agenda.show', $agenda, absolute: false),
             );
         }
+
+        $this->watchlist->notifyWatchersOnAgendaPublished($agenda);
     }
 
     public function notifyAgendaAddedToOb(AgendaItem $agenda, LegislativeSession $session): void
@@ -185,28 +192,34 @@ class BoardMemberNotifier
             $labelList = implode(', ', $labels);
             $summary = sprintf('%s was added to %s.', $labelList, $sessionTitle);
 
-            $notification = UserNotification::query()->create([
-                'user_id' => $user->id,
-                'legislative_session_id' => $session->id,
-                'type' => UserNotification::TYPE_AGENDA_ADDED_TO_OB,
-                'agenda_item_id' => null,
-                'title' => $title,
-                'body' => $summary,
-                'link' => route('ob.sessions.show', $session, absolute: false),
-                'read_at' => null,
-            ]);
+            $notification = null;
+            if ($this->preferences->allowsInApp($user, UserNotification::TYPE_AGENDA_ADDED_TO_OB)) {
+                $notification = UserNotification::query()->create([
+                    'user_id' => $user->id,
+                    'legislative_session_id' => $session->id,
+                    'type' => UserNotification::TYPE_AGENDA_ADDED_TO_OB,
+                    'agenda_item_id' => null,
+                    'title' => $title,
+                    'body' => $summary,
+                    'link' => route('ob.sessions.show', $session, absolute: false),
+                    'read_at' => null,
+                ]);
+            }
 
-            $this->emails->sendForNotification(
+            $this->sendBoardMemberEmail(
                 $user,
                 $notification,
-                EmailNotificationSettings::AUDIENCE_BOARD_MEMBER,
-                force: true,
-                vars: [
+                UserNotification::TYPE_AGENDA_ADDED_TO_OB,
+                [
                     'label' => $labelList,
                     'summary' => $summary,
                     'session' => $sessionTitle,
                     'email_subject' => $title,
+                    'title' => $title,
+                    'body' => $summary,
                 ],
+                route('ob.sessions.show', $session, absolute: false),
+                force: true,
             );
         }
     }
@@ -220,26 +233,28 @@ class BoardMemberNotifier
         $sessionTitle = $session->displayTitle();
 
         foreach ($this->allBoardMemberUsers() as $user) {
-            $notification = UserNotification::query()->firstOrCreate(
+            $notification = $this->createNotificationForUser($user, UserNotification::TYPE_SESSION_CREATED, [
                 [
                     'user_id' => $user->id,
                     'legislative_session_id' => $session->id,
-                    'type' => UserNotification::TYPE_SESSION_CREATED,
                 ],
                 [
                     'title' => 'New Session scheduled',
                     'body' => $sessionTitle,
                     'link' => route('ob.sessions.show', $session, absolute: false),
                 ],
-            );
+            ]);
 
-            $this->emails->sendForNotification(
+            $this->sendBoardMemberEmail(
                 $user,
                 $notification,
-                EmailNotificationSettings::AUDIENCE_BOARD_MEMBER,
-                vars: [
+                UserNotification::TYPE_SESSION_CREATED,
+                [
                     'session' => $sessionTitle,
+                    'title' => 'New Session scheduled',
+                    'body' => $sessionTitle,
                 ],
+                route('ob.sessions.show', $session, absolute: false),
             );
         }
 
@@ -263,27 +278,29 @@ class BoardMemberNotifier
         }
 
         foreach ($this->allBoardMemberUsers() as $user) {
-            $notification = UserNotification::query()->firstOrCreate(
+            $notification = $this->createNotificationForUser($user, UserNotification::TYPE_OB_DOCUMENT_CREATED, [
                 [
                     'user_id' => $user->id,
                     'legislative_session_id' => $session->id,
-                    'type' => UserNotification::TYPE_OB_DOCUMENT_CREATED,
                 ],
                 [
                     'title' => 'Order of Business created',
                     'body' => $document->title,
                     'link' => route('ob.sessions.show', $session, absolute: false),
                 ],
-            );
+            ]);
 
-            $this->emails->sendForNotification(
+            $this->sendBoardMemberEmail(
                 $user,
                 $notification,
-                EmailNotificationSettings::AUDIENCE_BOARD_MEMBER,
-                vars: [
+                UserNotification::TYPE_OB_DOCUMENT_CREATED,
+                [
                     'document_title' => (string) $document->title,
                     'session' => $session->displayTitle(),
+                    'title' => 'Order of Business created',
+                    'body' => (string) $document->title,
                 ],
+                route('ob.sessions.show', $session, absolute: false),
             );
         }
 
@@ -314,28 +331,30 @@ class BoardMemberNotifier
         $body = sprintf('%s is due on %s%s.', $label, $dueDate, $daysLeftSuffix);
 
         foreach ($this->usersForAgendaCommittee($agenda) as $user) {
-            $notification = UserNotification::query()->firstOrCreate(
+            $notification = $this->createNotificationForUser($user, UserNotification::TYPE_AGENDA_EXPIRING_SOON, [
                 [
                     'user_id' => $user->id,
                     'agenda_item_id' => $agenda->id,
-                    'type' => UserNotification::TYPE_AGENDA_EXPIRING_SOON,
                 ],
                 [
                     'title' => 'Agenda deadline approaching',
                     'body' => $body,
                     'link' => route('agenda.show', $agenda, absolute: false),
                 ],
-            );
+            ]);
 
-            $this->emails->sendForNotification(
+            $this->sendBoardMemberEmail(
                 $user,
                 $notification,
-                EmailNotificationSettings::AUDIENCE_BOARD_MEMBER,
-                vars: [
+                UserNotification::TYPE_AGENDA_EXPIRING_SOON,
+                [
                     'label' => $label,
                     'due_date' => $dueDate,
                     'days_left_suffix' => $daysLeftSuffix,
+                    'title' => 'Agenda deadline approaching',
+                    'body' => $body,
                 ],
+                route('agenda.show', $agenda, absolute: false),
             );
         }
 
@@ -394,5 +413,53 @@ class BoardMemberNotifier
             ->where('is_active', true)
             ->whereNotNull('board_member_id')
             ->get();
+    }
+
+    /**
+     * @param  array{0: array<string, mixed>, 1: array<string, mixed>}  $payload
+     */
+    protected function createNotificationForUser(User $user, string $type, array $payload): ?UserNotification
+    {
+        if (! $this->preferences->allowsInApp($user, $type)) {
+            return null;
+        }
+
+        return UserNotification::query()->firstOrCreate(
+            array_merge($payload[0], ['type' => $type]),
+            $payload[1],
+        );
+    }
+
+    /**
+     * @param  array<string, string|null>  $vars
+     */
+    protected function sendBoardMemberEmail(
+        User $user,
+        ?UserNotification $notification,
+        string $type,
+        array $vars,
+        ?string $link = null,
+        bool $force = false,
+    ): void {
+        if ($notification) {
+            $this->emails->sendForNotification(
+                $user,
+                $notification,
+                EmailNotificationSettings::AUDIENCE_BOARD_MEMBER,
+                force: $force,
+                vars: $vars,
+                emailType: $type,
+            );
+
+            return;
+        }
+
+        $this->emails->sendTemplated(
+            $user,
+            EmailNotificationSettings::AUDIENCE_BOARD_MEMBER,
+            $type,
+            $vars,
+            $link ? url($link) : null,
+        );
     }
 }

@@ -30,6 +30,7 @@
         $myAgendaNavActive = request()->routeIs('board-member.agenda.*')
             || ($isBoardMember && request()->routeIs('agenda.*'));
         $myCommitteesNavActive = request()->routeIs('board-member.committees.*');
+        $mySessionsNavActive = request()->routeIs('board-member.sessions.*');
         $myProfileNavActive = request()->routeIs('board-member.profile.*');
 
         $myRequestsNavActive = request()->routeIs('municipal.requests.*');
@@ -48,6 +49,7 @@
         } elseif ($isBoardMember) {
             $navItems[] = ['label' => 'My Committees', 'url' => route('board-member.committees.index'), 'active' => $myCommitteesNavActive, 'icon' => 'users'];
             $navItems[] = ['label' => 'Order of Business', 'url' => route('ob.sessions.index'), 'active' => request()->routeIs('ob.*'), 'icon' => 'calendar'];
+            $navItems[] = ['label' => 'My Sessions', 'url' => route('board-member.sessions.index'), 'active' => $mySessionsNavActive, 'icon' => 'calendar'];
             $navItems[] = ['label' => 'Committee Reports', 'url' => route('board-member.committee-reports.index'), 'active' => request()->routeIs('board-member.committee-reports.*'), 'icon' => 'file-text'];
         }
 
@@ -114,6 +116,10 @@
                                     <a href="{{ route('board-member.profile.edit') }}" @class(['splis-user-menu-link inline-flex items-center gap-2', 'font-semibold' => $myProfileNavActive])>
                                         <x-icon name="user" class="h-4 w-4 shrink-0 opacity-80" />
                                         My Profile
+                                    </a>
+                                    <a href="{{ route('board-member.watchlist.index') }}" @class(['splis-user-menu-link inline-flex items-center gap-2', 'font-semibold' => request()->routeIs('board-member.watchlist.*')])>
+                                        <x-icon name="bookmark" class="h-4 w-4 shrink-0 opacity-80" />
+                                        My Watchlist
                                     </a>
                                     <a href="{{ route('board-member.committees.index') }}" class="splis-user-menu-link inline-flex items-center gap-2">
                                         <x-icon name="users" class="h-4 w-4 shrink-0 opacity-80" />

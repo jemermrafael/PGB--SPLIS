@@ -17,6 +17,7 @@ class EmailNotificationService
 {
     public function __construct(
         protected EmailNotificationSettings $settings,
+        protected UserNotificationPreferenceService $preferences,
     ) {}
 
     /**
@@ -59,6 +60,10 @@ class EmailNotificationService
         ?string $actionUrl = null,
     ): void {
         if (! $this->settings->typeEnabled($audience, $type)) {
+            return;
+        }
+
+        if ($user->isBoardMember() && ! $this->preferences->allowsEmail($user, $type)) {
             return;
         }
 

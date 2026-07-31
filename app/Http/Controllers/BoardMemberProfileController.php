@@ -6,6 +6,8 @@ use App\Models\BoardMember;
 use App\Models\User;
 use App\Services\BoardMemberDashboardService;
 use App\Services\BoardMemberProfileService;
+use App\Services\EmailNotificationSettings;
+use App\Services\UserNotificationPreferenceService;
 use App\Support\CommitteeTermSelection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,6 +21,7 @@ class BoardMemberProfileController extends Controller
         Request $request,
         BoardMemberProfileService $profiles,
         BoardMemberDashboardService $dashboard,
+        UserNotificationPreferenceService $preferences,
     ): View {
         /** @var User $user */
         $user = $request->user();
@@ -37,6 +40,9 @@ class BoardMemberProfileController extends Controller
             'selectedTerm' => $selectedTerm,
             'roles' => $profile['roles'],
             'assignmentCount' => $dashboard->committeeAssignmentsFor($user, $selectedTerm)->count(),
+            'notificationPreferenceTypes' => $preferences->preferenceTypes($user),
+            'notificationPreferences' => $preferences->resolved($user),
+            'notificationTypeLabels' => EmailNotificationSettings::typeLabels(),
         ]);
     }
 
@@ -94,5 +100,26 @@ class BoardMemberProfileController extends Controller
         return redirect()
             ->route('board-member.profile.edit')
             ->with('status', 'Your profile was updated.');
+    }
+
+    public function updateNotifications(
+        Request $request,
+        UserNotificationPreferenceService $preferences,
+    ): RedirectResponse {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->isBoardMember(), 403);
+
+        $request->validate([
+            'preferences' => ['nullable', 'array'],
+            'preferences.in_app' => ['nullable', 'array'],
+            'preferences.email' => ['nullable', 'array'],
+        ]);
+
+        $preferences->update($user, $request->input('preferences', []));
+
+        return redirect()
+            ->route('board-member.profile.edit')
+            ->with('status', 'Notification preferences updated.');
     }
 }

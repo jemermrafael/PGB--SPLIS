@@ -17,6 +17,17 @@
             <p class="splis-page-subtitle">{{ $ordinance->displaySeries() }}</p>
         </div>
         <div class="flex flex-wrap gap-2">
+            @if (auth()->user()?->isBoardMember())
+                <form method="POST" action="{{ route('board-member.watchlist.store') }}">
+                    @csrf
+                    <input type="hidden" name="watchable_type" value="ordinance">
+                    <input type="hidden" name="watchable_id" value="{{ $ordinance->id }}">
+                    <button type="submit" class="splis-btn-secondary inline-flex items-center gap-2">
+                        <x-icon name="bell" class="h-4 w-4" />
+                        {{ ($isWatchingOrdinance ?? false) ? 'Unwatch' : 'Watch' }}
+                    </button>
+                </form>
+            @endif
             @can('update', $ordinance)
                 <a href="{{ route('ordinances.edit', $ordinance) }}" class="splis-btn-primary inline-flex items-center gap-2">
                     <x-icon name="edit" class="h-4 w-4" />

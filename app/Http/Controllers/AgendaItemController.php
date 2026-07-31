@@ -15,6 +15,7 @@ use App\Services\AgendaOutputPublisher;
 use App\Services\AgendaPdfService;
 use App\Services\AgendaVersionService;
 use App\Services\BoardMemberNotifier;
+use App\Services\BoardMemberWatchlistService;
 use App\Services\MunicipalNotifier;
 use App\Services\ObDocumentService;
 use App\Support\ActivityLogger;
@@ -90,7 +91,12 @@ class AgendaItemController extends Controller
             ->with('status', $this->statusMessage('created', $agenda, $outputHandled));
     }
 
-    public function show(Request $request, AgendaItem $agenda, AgendaOutputLinker $linker): View|RedirectResponse
+    public function show(
+        Request $request,
+        AgendaItem $agenda,
+        AgendaOutputLinker $linker,
+        BoardMemberWatchlistService $watchlist,
+    ): View|RedirectResponse
     {
         if ($request->user()?->isMunicipalViewer()) {
             $this->authorize('view', $agenda);
@@ -152,6 +158,9 @@ class AgendaItemController extends Controller
             'outputLinkCandidates' => $agenda->needsOutputLink()
                 ? $linker->candidateOptions($agenda)
                 : collect(),
+            'isWatchingAgenda' => $request->user()?->isBoardMember()
+                ? $watchlist->isWatching($request->user(), $agenda)
+                : false,
             'previousAgenda' => $agenda->trashed() ? null : $agenda->previousInList(),
             'nextAgenda' => $agenda->trashed() ? null : $agenda->nextInList(),
         ]);

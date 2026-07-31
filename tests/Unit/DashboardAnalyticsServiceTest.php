@@ -183,24 +183,32 @@ class DashboardAnalyticsServiceTest extends TestCase
         $this->assertSame(1, $pilarJustice['agendas']);
     }
 
-    public function test_legislative_output_counts_by_date_approved(): void
+    public function test_legislative_output_counts_by_series_year(): void
     {
         $user = User::factory()->create(['role' => UserRole::Encoder]);
 
         Resolution::query()->create([
             'resolution_no' => '50',
-            'resolution_title' => 'Approved 2024',
+            'resolution_title' => 'Series 2023 approved later',
             'series' => 2023,
             'date_approved' => '2024-05-10',
             'status' => 'approved',
             'created_by' => $user->id,
         ]);
 
-        $output = app(ExecutiveAnalyticsService::class)->legislativeOutputAnalytics(2024, 2024, 2024);
-        $yearRow = collect($output['by_year'])->firstWhere('year', 2024);
+        Resolution::query()->create([
+            'resolution_no' => '51',
+            'resolution_title' => 'Series 2024 missing approval date',
+            'series' => 2024,
+            'date_approved' => null,
+            'status' => 'approved',
+            'created_by' => $user->id,
+        ]);
 
-        $this->assertNotNull($yearRow);
-        $this->assertSame(1, $yearRow['resolutions']);
+        $output = app(ExecutiveAnalyticsService::class)->legislativeOutputAnalytics(2023, 2024, 2024);
+
+        $this->assertSame(1, collect($output['by_year'])->firstWhere('year', 2023)['resolutions']);
+        $this->assertSame(1, collect($output['by_year'])->firstWhere('year', 2024)['resolutions']);
     }
 
     public function test_normalize_bar_chart_rows_sets_percentages(): void

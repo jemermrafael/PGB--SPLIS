@@ -32,7 +32,9 @@ use App\Http\Controllers\BoardMemberObSearchController;
 use App\Http\Controllers\BoardMemberOrdinanceReportController;
 use App\Http\Controllers\BoardMemberPhotoController;
 use App\Http\Controllers\BoardMemberProfileController;
+use App\Http\Controllers\BoardMemberSessionController;
 use App\Http\Controllers\BoardMemberSessionCalendarController;
+use App\Http\Controllers\BoardMemberWatchlistController;
 use App\Http\Controllers\CommitteeController;
 use App\Http\Controllers\CommitteeIconController;
 use App\Http\Controllers\CommitteeMonitoringController;
@@ -112,7 +114,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/my-committees/{committee}', [BoardMemberCommitteeController::class, 'show'])->name('board-member.committees.show');
     Route::get('/my-profile', [BoardMemberProfileController::class, 'edit'])->name('board-member.profile.edit');
     Route::put('/my-profile', [BoardMemberProfileController::class, 'update'])->name('board-member.profile.update');
+    Route::put('/my-profile/notifications', [BoardMemberProfileController::class, 'updateNotifications'])->name('board-member.profile.notifications.update');
     Route::get('/board-members/{boardMember}/photo', BoardMemberPhotoController::class)->name('board-members.photo');
+    Route::get('/my-sessions', [BoardMemberSessionController::class, 'index'])->name('board-member.sessions.index');
+    Route::get('/my-sessions/{session}', [BoardMemberSessionController::class, 'show'])->name('board-member.sessions.show');
     Route::get('/my-committee-reports', [BoardMemberCommitteeReportController::class, 'index'])->name('board-member.committee-reports.index');
     Route::get('/my-committee-reports/create', [BoardMemberCommitteeReportController::class, 'create'])->name('board-member.committee-reports.create');
     Route::get('/my-committee-reports/agendas', [BoardMemberCommitteeReportController::class, 'agendas'])->name('board-member.committee-reports.agendas');
@@ -134,6 +139,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard/ob/search', BoardMemberObSearchController::class)->name('board-member.dashboard.ob.search');
     Route::get('/my-sessions/{session}/calendar.ics', BoardMemberSessionCalendarController::class)->name('board-member.sessions.ics');
+    Route::get('/my-watchlist', [BoardMemberWatchlistController::class, 'index'])->name('board-member.watchlist.index');
+    Route::post('/my-watchlist', [BoardMemberWatchlistController::class, 'store'])->name('board-member.watchlist.store');
+    Route::delete('/my-watchlist/{watchlistItem}', [BoardMemberWatchlistController::class, 'destroy'])->name('board-member.watchlist.destroy');
 
     Route::get('/my-requests', [MunicipalRequestController::class, 'index'])->name('municipal.requests.index');
     Route::get('/my-requests/search', MunicipalRequestSearchController::class)->name('municipal.requests.search');

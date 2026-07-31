@@ -181,7 +181,8 @@ class UserNotificationController extends Controller
             UserNotification::TYPE_COMMITTEE_REFERRAL,
             UserNotification::TYPE_AGENDA_PUBLISHED,
             UserNotification::TYPE_AGENDA_ADDED_TO_OB,
-            UserNotification::TYPE_AGENDA_EXPIRING_SOON => str_contains((string) $notification->link, '/my-requests/')
+            UserNotification::TYPE_AGENDA_EXPIRING_SOON,
+            UserNotification::TYPE_WATCHLIST_PUBLISHED => str_contains((string) $notification->link, '/my-requests/')
                 ? 'View request'
                 : (str_contains((string) $notification->link, '/agenda/')
                     ? 'View Agenda'

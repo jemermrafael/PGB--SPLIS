@@ -32,6 +32,17 @@
             <h1 class="splis-page-title">Resolution No.: {{ $resolution->resolution_no }}</h1>
         </div>
         <div class="splis-page-header-actions">
+            @if (auth()->user()?->isBoardMember())
+                <form method="POST" action="{{ route('board-member.watchlist.store') }}">
+                    @csrf
+                    <input type="hidden" name="watchable_type" value="resolution">
+                    <input type="hidden" name="watchable_id" value="{{ $resolution->id }}">
+                    <button type="submit" class="splis-btn-secondary inline-flex items-center gap-2">
+                        <x-icon name="bell" class="h-4 w-4" />
+                        {{ ($isWatchingResolution ?? false) ? 'Unwatch' : 'Watch' }}
+                    </button>
+                </form>
+            @endif
             @can('update', $resolution)
                 <a href="{{ route('resolutions.edit', $resolution) }}" class="splis-btn-secondary inline-flex items-center gap-2">
                     <x-icon name="edit" class="h-4 w-4" />

@@ -65,6 +65,7 @@ class EmailNotificationSettings
                 \App\Models\UserNotification::TYPE_SESSION_CREATED,
                 \App\Models\UserNotification::TYPE_OB_DOCUMENT_CREATED,
                 \App\Models\UserNotification::TYPE_AGENDA_EXPIRING_SOON,
+                \App\Models\UserNotification::TYPE_WATCHLIST_PUBLISHED,
             ],
             self::AUDIENCE_MUNICIPAL => [
                 \App\Models\UserNotification::TYPE_COMMITTEE_REFERRAL,
@@ -80,6 +81,7 @@ class EmailNotificationSettings
                 \App\Models\UserNotification::TYPE_SESSION_CREATED,
                 \App\Models\UserNotification::TYPE_OB_DOCUMENT_CREATED,
                 \App\Models\UserNotification::TYPE_AGENDA_EXPIRING_SOON,
+                \App\Models\UserNotification::TYPE_WATCHLIST_PUBLISHED,
             ],
         ];
     }
@@ -130,6 +132,7 @@ class EmailNotificationSettings
             \App\Models\UserNotification::TYPE_SESSION_CREATED => 'New Session scheduled',
             \App\Models\UserNotification::TYPE_OB_DOCUMENT_CREATED => 'Order of Business created',
             \App\Models\UserNotification::TYPE_AGENDA_EXPIRING_SOON => 'Agenda deadline approaching',
+            \App\Models\UserNotification::TYPE_WATCHLIST_PUBLISHED => 'Watched item published',
             \App\Models\UserNotification::TYPE_ACTIVITY_LOG => 'Activity log events',
             self::TYPE_RESOLUTION_PUBLISHED => 'Agenda was published to Resolution',
             self::TYPE_ORDINANCE_PUBLISHED => 'New Ordinance published',
@@ -189,6 +192,11 @@ class EmailNotificationSettings
                     'subject' => 'Agenda deadline approaching',
                     'body' => "{{label}} is due on {{due_date}}{{days_left_suffix}}.\n\nPlease take action before the deadline.",
                     'action_label' => 'View Agenda',
+                ],
+                \App\Models\UserNotification::TYPE_WATCHLIST_PUBLISHED => [
+                    'subject' => 'Watched item published',
+                    'body' => "{{label}} was published to {{target}}.\n\nOpen SPLIS for details.",
+                    'action_label' => 'View published item',
                 ],
             ],
             self::AUDIENCE_MUNICIPAL => [

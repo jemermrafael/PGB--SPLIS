@@ -372,6 +372,18 @@ class LegislativeSession extends Model
     }
 
     /**
+     * Sessions listed on My Sessions / session packets.
+     * Scheduled or completed — OB may still be draft so members can prepare.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeForBoardMemberSessionPackets(Builder $query): Builder
+    {
+        return $query->whereIn('status', ['scheduled', 'completed']);
+    }
+
+    /**
      * Sessions that should surface as currently scheduled to Board Members.
      *
      * @param  Builder<self>  $query
@@ -388,6 +400,11 @@ class LegislativeSession extends Model
     {
         return in_array($this->status, ['scheduled', 'completed'], true)
             && $this->hasFinalObDocument();
+    }
+
+    public function isAvailableForBoardMemberSessionPacket(): bool
+    {
+        return in_array($this->status, ['scheduled', 'completed'], true);
     }
 
     public function isNotifiableToBoardMembers(): bool

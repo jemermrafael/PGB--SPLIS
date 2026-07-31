@@ -143,49 +143,9 @@ class ExecutiveAnalyticsService
      */
     protected function legislativeOutputByYear(int $yearFrom, int $yearTo): array
     {
-        if ($yearFrom > $yearTo) {
-            [$yearFrom, $yearTo] = [$yearTo, $yearFrom];
-        }
-
-        $years = range($yearFrom, $yearTo);
-        $yearExpr = SqlDateExpression::year('date_approved');
-        $start = Carbon::create($yearFrom, 1, 1)->startOfDay();
-        $end = Carbon::create($yearTo, 12, 31)->endOfDay();
-
-        $resolutionCounts = Resolution::query()
-            ->whereNotNull('date_approved')
-            ->whereBetween('date_approved', [$start, $end])
-            ->selectRaw($yearExpr.' as year_no, count(*) as aggregate')
-            ->groupBy('year_no')
-            ->pluck('aggregate', 'year_no');
-
-        $ordinanceCounts = Ordinance::query()
-            ->whereNotNull('date_approved')
-            ->whereBetween('date_approved', [$start, $end])
-            ->selectRaw($yearExpr.' as year_no, count(*) as aggregate')
-            ->groupBy('year_no')
-            ->pluck('aggregate', 'year_no');
-
-        $appropriationCounts = AppropriationOrdinance::query()
-            ->whereNotNull('date_approved')
-            ->whereBetween('date_approved', [$start, $end])
-            ->selectRaw($yearExpr.' as year_no, count(*) as aggregate')
-            ->groupBy('year_no')
-            ->pluck('aggregate', 'year_no');
-
-        return collect($years)
-            ->map(function (int $year) use ($resolutionCounts, $ordinanceCounts, $appropriationCounts): array {
-                $resolutions = (int) ($resolutionCounts[$year] ?? 0);
-                $ordinances = (int) ($ordinanceCounts[$year] ?? 0) + (int) ($appropriationCounts[$year] ?? 0);
-
-                return [
-                    'year' => $year,
-                    'resolutions' => $resolutions,
-                    'ordinances' => $ordinances,
-                    'total' => $resolutions + $ordinances,
-                ];
-            })
-            ->all();
+        // Use series / series_year (not date_approved). Legacy imports reliably have series years;
+        // date_approved is often null or set to the import date, which collapses history into one year.
+        return $this->dashboard->outputByYearRange($yearFrom, $yearTo);
     }
 
     /**

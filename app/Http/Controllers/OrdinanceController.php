@@ -8,6 +8,7 @@ use App\Models\ActivityLog;
 use App\Models\Ordinance;
 use App\Models\OrdinanceVersion;
 use App\Services\BoardMemberRosterService;
+use App\Services\BoardMemberWatchlistService;
 use App\Services\OrdinanceBoardMemberService;
 use App\Services\OrdinancePdfService;
 use App\Services\OrdinanceVersionService;
@@ -44,7 +45,7 @@ class OrdinanceController extends Controller
         ]);
     }
 
-    public function show(Ordinance $ordinance): View
+    public function show(Ordinance $ordinance, BoardMemberWatchlistService $watchlist): View
     {
         $this->authorize('view', $ordinance);
 
@@ -52,6 +53,9 @@ class OrdinanceController extends Controller
 
         return view('ordinances.show', [
             'ordinance' => $ordinance,
+            'isWatchingOrdinance' => auth()->user()?->isBoardMember()
+                ? $watchlist->isWatching(auth()->user(), $ordinance)
+                : false,
             'previousOrdinance' => $ordinance->trashed() ? null : $ordinance->previousInList(),
             'nextOrdinance' => $ordinance->trashed() ? null : $ordinance->nextInList(),
         ]);

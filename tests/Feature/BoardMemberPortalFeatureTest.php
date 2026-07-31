@@ -10,7 +10,11 @@ use App\Models\Committee;
 use App\Models\CommitteeMembership;
 use App\Models\CommitteeTerm;
 use App\Models\LegislativeSession;
+use App\Models\ObDocument;
+use App\Models\SessionAttendance;
 use App\Models\User;
+use App\Models\UserNotification;
+use App\Services\BoardMemberNotifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -94,6 +98,191 @@ class BoardMemberPortalFeatureTest extends TestCase
         $this->assertSame('bm_updated', $user->username);
         $this->assertSame('bm.updated@example.com', $user->email);
         $this->assertSame('Hon.', $boardMember->honorific);
+    }
+
+    public function test_board_member_can_view_session_packet_and_attendance_status(): void
+    {
+        [$user, $committee] = $this->linkedBoardMemberWithCommittee();
+
+        $agenda = AgendaItem::query()->create([
+            'title' => 'Committee item for session packet',
+            'committee_referred' => $committee->name,
+            'status' => AgendaItem::STATUS_PENDING,
+            'date_of_referral' => now()->toDateString(),
+            'prescribed_days' => 0,
+            'created_by' => $user->id,
+        ]);
+
+        $session = LegislativeSession::query()->create([
+            'session_number' => 'Session 42',
+            'session_kind' => 'regular',
+            'session_date' => now()->addDays(2)->toDateString(),
+            'session_time' => '09:00:00',
+            'venue' => 'Session Hall',
+            'status' => 'scheduled',
+        ]);
+
+        $document = ObDocument::query()->create([
+            'legislative_session_id' => $session->id,
+            'title' => 'Order of Business',
+            'status' => ObDocument::STATUS_FINAL,
+            'next_session_agenda_no' => 1,
+            'created_by' => $user->id,
+        ]);
+
+        $document->blocks()->create([
+            'type' => 'unassigned_agenda',
+            'sort_order' => 1,
+            'agenda_item_id' => $agenda->id,
+            'content' => ['title' => $agenda->title],
+        ]);
+
+        SessionAttendance::query()->create([
+            'legislative_session_id' => $session->id,
+            'board_member_id' => $user->board_member_id,
+            'is_present' => false,
+            'remarks' => 'OB',
+            'recorded_by' => $user->id,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('board-member.sessions.show', $session))
+            ->assertOk()
+            ->assertSee('Session Details')
+            ->assertSee('My Attendance')
+            ->assertSee('Official Business')
+            ->assertSee($agenda->displayLabel());
+
+        $this->actingAs($user)
+            ->get(route('board-member.sessions.index'))
+            ->assertOk()
+            ->assertSee($session->displayTitle());
+    }
+
+    public function test_board_member_sessions_index_hides_draft_and_lists_scheduled_without_final_ob(): void
+    {
+        [$user] = $this->linkedBoardMemberWithCommittee();
+
+        $draft = LegislativeSession::query()->create([
+            'session_number' => '53rd REGULAR SESSION',
+            'session_kind' => 'regular',
+            'session_date' => now()->addDays(3)->toDateString(),
+            'status' => 'draft',
+        ]);
+        ObDocument::query()->create([
+            'legislative_session_id' => $draft->id,
+            'title' => 'Draft OB',
+            'status' => ObDocument::STATUS_DRAFT,
+            'created_by' => $user->id,
+        ]);
+
+        $scheduled = LegislativeSession::query()->create([
+            'session_number' => '54th REGULAR SESSION',
+            'session_kind' => 'regular',
+            'session_date' => now()->addDays(5)->toDateString(),
+            'status' => 'scheduled',
+        ]);
+        ObDocument::query()->create([
+            'legislative_session_id' => $scheduled->id,
+            'title' => 'Draft OB still',
+            'status' => ObDocument::STATUS_DRAFT,
+            'created_by' => $user->id,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('board-member.sessions.index'))
+            ->assertOk()
+            ->assertDontSee($draft->displayTitle())
+            ->assertSee($scheduled->displayTitle())
+            ->assertSee('Order of Business is still draft');
+    }
+
+    public function test_board_member_can_toggle_watchlist(): void
+    {
+        [$user] = $this->linkedBoardMemberWithCommittee();
+
+        $agenda = AgendaItem::query()->create([
+            'title' => 'Watch me',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 0,
+            'created_by' => $user->id,
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('board-member.watchlist.store'), [
+                'watchable_type' => 'agenda',
+                'watchable_id' => $agenda->id,
+            ])
+            ->assertSessionHas('status', 'Added to your watchlist.');
+
+        $this->assertDatabaseHas('board_member_watchlist_items', [
+            'user_id' => $user->id,
+            'watchable_type' => AgendaItem::class,
+            'watchable_id' => $agenda->id,
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('board-member.watchlist.store'), [
+                'watchable_type' => 'agenda',
+                'watchable_id' => $agenda->id,
+            ])
+            ->assertSessionHas('status', 'Removed from your watchlist.');
+
+        $this->assertDatabaseMissing('board_member_watchlist_items', [
+            'user_id' => $user->id,
+            'watchable_type' => AgendaItem::class,
+            'watchable_id' => $agenda->id,
+        ]);
+    }
+
+    public function test_board_member_notification_preference_can_disable_in_app_creation(): void
+    {
+        [$user, $committee] = $this->linkedBoardMemberWithCommittee();
+
+        $agenda = AgendaItem::query()->create([
+            'title' => 'Published item',
+            'committee_referred' => $committee->name,
+            'status' => AgendaItem::STATUS_DONE,
+            'date_of_referral' => now()->toDateString(),
+            'date_passed' => now()->toDateString(),
+            'prescribed_days' => 0,
+            'resolution_id' => null,
+            'created_by' => $user->id,
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('board-member.profile.notifications.update'), [
+                'preferences' => [
+                    'in_app' => [
+                        UserNotification::TYPE_AGENDA_PUBLISHED => false,
+                    ],
+                    'email' => [
+                        UserNotification::TYPE_AGENDA_PUBLISHED => true,
+                    ],
+                ],
+            ])
+            ->assertRedirect(route('board-member.profile.edit'));
+
+        $agenda->forceFill([
+            'resolution_title' => 'Resolution adopting standards',
+            'reso_ord_ao_no' => '11',
+            'reso_ord_ao_series' => (int) now()->format('Y'),
+            'resolution_id' => \App\Models\Resolution::query()->create([
+                'resolution_no' => '11',
+                'resolution_title' => 'Resolution adopting standards',
+                'series' => (int) now()->format('Y'),
+                'status' => 'approved',
+                'created_by' => $user->id,
+            ])->id,
+        ])->save();
+
+        app(BoardMemberNotifier::class)->notifyAgendaPublished($agenda->fresh());
+
+        $this->assertDatabaseMissing('user_notifications', [
+            'user_id' => $user->id,
+            'type' => UserNotification::TYPE_AGENDA_PUBLISHED,
+            'agenda_item_id' => $agenda->id,
+        ]);
     }
 
     public function test_unlinked_board_member_sees_account_link_warning(): void

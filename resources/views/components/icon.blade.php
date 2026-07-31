@@ -31,6 +31,10 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14" />
             @break
 
+        @case('bookmark')
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 4h12a1 1 0 0 1 1 1v16l-7-4-7 4V5a1 1 0 0 1 1-1Z" />
+            @break
+
         @case('eye')
             <path stroke-linecap="round" stroke-linejoin="round" d="M3 12s3.6-6 9-6 9 6 9 6-3.6 6-9 6-9-6-9-6" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9a3 3 0 1 1 0 6a3 3 0 0 1 0-6" />

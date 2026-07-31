@@ -70,7 +70,7 @@
     <div class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
         <div class="splis-exec-panel">
             <h2 class="splis-exec-panel-title">Legislative Output by Year</h2>
-            <p class="splis-exec-panel-subtitle">Resolutions vs Ordinances (includes Appropriation Ordinances) · by date approved</p>
+            <p class="splis-exec-panel-subtitle">Resolutions vs Ordinances (includes Appropriation Ordinances) · by series year</p>
             <div class="splis-exec-chart-wrap">
                 <canvas id="chart-legislative-output-year" aria-label="Legislative output by year"></canvas>
             </div>

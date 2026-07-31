@@ -11,6 +11,7 @@ use App\Models\Resolution;
 use App\Models\ResolutionVersion;
 use App\Models\SeriesYear;
 use App\Services\PdfAttachmentService;
+use App\Services\BoardMemberWatchlistService;
 use App\Services\ResolutionRepository;
 use App\Services\ResolutionVersionService;
 use App\Support\DocumentType;
@@ -62,7 +63,7 @@ class ResolutionController extends Controller
         return view('resolutions.show-legacy', compact('resolution', 'labels', 'hasPdf'));
     }
 
-    public function show(Resolution $resolution): View
+    public function show(Resolution $resolution, BoardMemberWatchlistService $watchlist): View
     {
         $this->authorize('view', $resolution);
 
@@ -86,6 +87,9 @@ class ResolutionController extends Controller
             'hasPdf' => $hasPdf,
             'hasLocalPdf' => $hasLocalPdf,
             'pdfUrl' => $pdfUrl,
+            'isWatchingResolution' => auth()->user()?->isBoardMember()
+                ? $watchlist->isWatching(auth()->user(), $resolution)
+                : false,
             'previousResolution' => $resolution->trashed() ? null : $resolution->previousInList(),
             'nextResolution' => $resolution->trashed() ? null : $resolution->nextInList(),
         ]);

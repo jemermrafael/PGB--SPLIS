@@ -108,5 +108,52 @@
             </a>
         </div>
     </form>
+
+    @if (($notificationPreferenceTypes ?? []) !== [])
+        <form method="POST" action="{{ route('board-member.profile.notifications.update') }}" class="splis-card splis-card-body mt-6 space-y-4">
+            @csrf
+            @method('PUT')
+
+            <div>
+                <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">Notification preferences</h2>
+                <p class="mt-1 text-sm text-slate-500">Choose which Board Member alerts you want in-app and by email.</p>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="splis-table min-w-full">
+                    <thead>
+                        <tr>
+                            <th class="text-left">Type</th>
+                            <th class="text-center">In-app</th>
+                            <th class="text-center">Email</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($notificationPreferenceTypes as $type)
+                            @php
+                                $label = $notificationTypeLabels[$type] ?? \Illuminate\Support\Str::headline(str_replace('_', ' ', $type));
+                                $inAppEnabled = (bool) ($notificationPreferences['in_app'][$type] ?? true);
+                                $emailEnabled = (bool) ($notificationPreferences['email'][$type] ?? true);
+                            @endphp
+                            <tr>
+                                <td class="text-sm">{{ $label }}</td>
+                                <td class="text-center">
+                                    <input type="checkbox" name="preferences[in_app][{{ $type }}]" value="1" @checked($inAppEnabled)>
+                                </td>
+                                <td class="text-center">
+                                    <input type="checkbox" name="preferences[email][{{ $type }}]" value="1" @checked($emailEnabled)>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+                <button type="submit" class="splis-btn-primary">Save notification preferences</button>
+                <a href="{{ route('board-member.watchlist.index') }}" class="splis-btn-ghost">Open my watchlist</a>
+            </div>
+        </form>
+    @endif
 </div>
 @endsection
