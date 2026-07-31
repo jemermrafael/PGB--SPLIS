@@ -8,6 +8,38 @@
         <div>
             <h1 class="splis-page-title">Session Attendance</h1>
             <p class="splis-page-subtitle">{{ $session->displayTitle() }}</p>
+            <div class="mt-3 flex flex-wrap items-center gap-2">
+                @if ($previousSession)
+                    <a
+                        href="{{ route('ob.sessions.attendance', $previousSession) }}"
+                        class="splis-btn-secondary inline-flex items-center gap-2"
+                        title="{{ $previousSession->displayTitle() }}"
+                    >
+                        <x-icon name="arrow-left" class="h-4 w-4" />
+                        Previous
+                    </a>
+                @else
+                    <button type="button" class="splis-btn-secondary inline-flex items-center gap-2 opacity-50" disabled>
+                        <x-icon name="arrow-left" class="h-4 w-4" />
+                        Previous
+                    </button>
+                @endif
+                @if ($nextSession)
+                    <a
+                        href="{{ route('ob.sessions.attendance', $nextSession) }}"
+                        class="splis-btn-secondary inline-flex items-center gap-2"
+                        title="{{ $nextSession->displayTitle() }}"
+                    >
+                        Next
+                        <x-icon name="arrow-right" class="h-4 w-4" />
+                    </a>
+                @else
+                    <button type="button" class="splis-btn-secondary inline-flex items-center gap-2 opacity-50" disabled>
+                        Next
+                        <x-icon name="arrow-right" class="h-4 w-4" />
+                    </button>
+                @endif
+            </div>
         </div>
         <div class="flex flex-wrap gap-2">
             <a href="{{ route('ob.sessions.attendance.monthly') }}" class="splis-btn-secondary inline-flex items-center gap-2">

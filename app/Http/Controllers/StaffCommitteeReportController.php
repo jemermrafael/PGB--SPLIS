@@ -8,6 +8,7 @@ use App\Models\BoardMember;
 use App\Models\BoardMemberCommitteeReport;
 use App\Models\Committee;
 use App\Models\CommitteeMembership;
+use App\Models\LegislativeSession;
 use App\Models\User;
 use App\Services\BoardMemberCommitteeReportService;
 use App\Services\BoardMemberDashboardService;
@@ -34,6 +35,11 @@ class StaffCommitteeReportController extends Controller
 
         return view('committee-reports.index', [
             'committees' => Committee::query()->active()->ordered()->get(['id', 'name']),
+            'sessions' => LegislativeSession::query()
+                ->whereNotNull('session_date')
+                ->orderByDesc('session_date')
+                ->orderByDesc('id')
+                ->get(['id', 'session_number', 'session_date']),
             'searchUrl' => route('committee-reports.search'),
         ]);
     }
@@ -51,7 +57,14 @@ class StaffCommitteeReportController extends Controller
                 'boardMember',
                 'submitter:id,name,role',
                 'agendaItems:id,tracking_no,title,committee_referred',
+                'sessionFiles.session:id,session_number,session_date',
             ])
+            ->orderByRaw('(
+                select max(ls.session_date)
+                from legislative_session_committee_report_files as f
+                inner join legislative_sessions as ls on ls.id = f.legislative_session_id
+                where f.board_member_committee_report_id = board_member_committee_reports.id
+            ) desc')
             ->orderByDesc('submitted_at')
             ->orderByDesc('id');
 
@@ -77,6 +90,13 @@ class StaffCommitteeReportController extends Controller
             }
         }
 
+        $sessionId = $request->integer('session_id') ?: null;
+        if ($sessionId) {
+            $query->whereHas('sessionFiles', function (Builder $files) use ($sessionId): void {
+                $files->where('legislative_session_id', $sessionId);
+            });
+        }
+
         if ($request->filled('date_from')) {
             $query->whereDate('submitted_at', '>=', $request->date('date_from'));
         }
@@ -88,7 +108,18 @@ class StaffCommitteeReportController extends Controller
         $paginator = $query->paginate(20);
 
         return response()->json([
-            'data' => collect($paginator->items())->map(function (BoardMemberCommitteeReport $report) use ($user) {
+            'data' => collect($paginator->items())->map(function (BoardMemberCommitteeReport $report) use ($user, $sessionId) {
+                $linkedSessions = $report->sessionFiles
+                    ->map(fn ($file) => $file->session)
+                    ->filter()
+                    ->unique('id')
+                    ->sortByDesc(fn (LegislativeSession $session) => $session->session_date?->timestamp ?? 0)
+                    ->values();
+
+                $session = $sessionId
+                    ? ($linkedSessions->first(fn (LegislativeSession $item) => (int) $item->id === $sessionId) ?? $linkedSessions->first())
+                    : $linkedSessions->first();
+
                 return [
                     'id' => $report->id,
                     'title' => $report->title ?: '—',
@@ -98,6 +129,10 @@ class StaffCommitteeReportController extends Controller
                     'board_member' => $report->boardMember?->displayName() ?? '—',
                     'submitted_by' => $report->submitter?->name ?? '—',
                     'submitted_by_role' => $report->submitter?->role?->label() ?? null,
+                    'session' => $session === null ? null : [
+                        'id' => $session->id,
+                        'label' => $session->displayTitle(),
+                    ],
                     'agendas' => $report->agendaItems->map(fn (AgendaItem $agenda) => [
                         'id' => $agenda->id,
                         'label' => $agenda->displayLabel(),

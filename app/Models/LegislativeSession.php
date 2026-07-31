@@ -145,6 +145,52 @@ class LegislativeSession extends Model
         return $parts !== [] ? implode(' — ', $parts) : 'Legislative session #'.$this->id;
     }
 
+    /**
+     * Chronologically earlier session (by session_date, then id).
+     */
+    public function previousBySessionDate(): ?self
+    {
+        if ($this->session_date === null) {
+            return null;
+        }
+
+        return static::query()
+            ->whereNotNull('session_date')
+            ->where(function (Builder $query): void {
+                $query->where('session_date', '<', $this->session_date)
+                    ->orWhere(function (Builder $sameDay): void {
+                        $sameDay->whereDate('session_date', $this->session_date->toDateString())
+                            ->where($this->getKeyName(), '<', $this->getKey());
+                    });
+            })
+            ->orderByDesc('session_date')
+            ->orderByDesc($this->getKeyName())
+            ->first();
+    }
+
+    /**
+     * Chronologically later session (by session_date, then id).
+     */
+    public function nextBySessionDate(): ?self
+    {
+        if ($this->session_date === null) {
+            return null;
+        }
+
+        return static::query()
+            ->whereNotNull('session_date')
+            ->where(function (Builder $query): void {
+                $query->where('session_date', '>', $this->session_date)
+                    ->orWhere(function (Builder $sameDay): void {
+                        $sameDay->whereDate('session_date', $this->session_date->toDateString())
+                            ->where($this->getKeyName(), '>', $this->getKey());
+                    });
+            })
+            ->orderBy('session_date')
+            ->orderBy($this->getKeyName())
+            ->first();
+    }
+
     public function permalinkYear(): int
     {
         return (int) ($this->session_date?->year ?: $this->created_at?->year ?: now()->year);

@@ -31,6 +31,8 @@ class SessionAttendanceController extends Controller
 
         return view('order-of-business.sessions.attendance', [
             'session' => $legislativeSession,
+            'previousSession' => $legislativeSession->previousBySessionDate(),
+            'nextSession' => $legislativeSession->nextBySessionDate(),
             'roster' => $roster,
             'attendances' => $attendances,
             'termId' => $termId,

@@ -71,6 +71,38 @@ function renderRow(report) {
     `;
 }
 
+function renderSessionHeader(session) {
+    const label = session?.label || 'No linked session';
+
+    return `
+        <tr class="bg-slate-50 dark:bg-slate-800/60">
+            <td colspan="6" class="py-2.5 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                ${escapeHtml(label)}
+            </td>
+        </tr>
+    `;
+}
+
+function groupReportsBySession(items) {
+    const groups = [];
+    let currentKey = null;
+
+    for (const report of items) {
+        const key = report.session?.id ?? 'none';
+        if (key !== currentKey) {
+            groups.push({
+                key,
+                session: report.session ?? null,
+                reports: [],
+            });
+            currentKey = key;
+        }
+        groups[groups.length - 1].reports.push(report);
+    }
+
+    return groups;
+}
+
 export function initStaffCommitteeReportsSearch() {
     const root = document.getElementById('staff-committee-reports');
     if (!root) {
@@ -170,7 +202,9 @@ export function initStaffCommitteeReportsSearch() {
             return;
         }
 
-        body.innerHTML = items.map(renderRow).join('');
+        body.innerHTML = groupReportsBySession(items)
+            .map((group) => `${renderSessionHeader(group.session)}${group.reports.map(renderRow).join('')}`)
+            .join('');
         renderAjaxPagination(pagination, {
             page,
             lastPage,

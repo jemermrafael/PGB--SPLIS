@@ -25,6 +25,14 @@ class StaffCommitteeReportTest extends TestCase
         $encoder = User::factory()->create(['role' => UserRole::Encoder]);
         [$bmUser, $committee, $term, $boardMember] = $this->linkedBoardMemberWithCommittee();
 
+        $session = \App\Models\LegislativeSession::query()->create([
+            'session_date' => now()->toDateString(),
+            'session_kind' => 'regular',
+            'session_number' => '1st REGULAR SESSION',
+            'status' => 'scheduled',
+            'created_by' => $encoder->id,
+        ]);
+
         $agenda = AgendaItem::query()->create([
             'tracking_no' => '401',
             'title' => 'Housing referral',
@@ -46,23 +54,45 @@ class StaffCommitteeReportTest extends TestCase
         ]);
         $report->agendaItems()->attach($agenda->id);
 
+        \App\Models\LegislativeSessionCommitteeReportFile::query()->create([
+            'legislative_session_id' => $session->id,
+            'board_member_committee_report_id' => $report->id,
+            'original_filename' => 'sample.pdf',
+            'stored_path' => 'session-committee-reports/1/sample.pdf',
+            'mime_type' => 'application/pdf',
+            'file_size' => 12,
+            'sort_order' => 0,
+            'created_by' => $encoder->id,
+        ]);
+
         $this->actingAs($encoder)
             ->get(route('committee-reports.index'))
             ->assertOk()
             ->assertSee('Committee Reports')
-            ->assertSee('Submit Report');
+            ->assertSee('Submit Report')
+            ->assertSee('All Sessions')
+            ->assertSee($session->displayTitle());
 
         $this->actingAs($encoder)
             ->getJson(route('committee-reports.search', [
                 'committee_id' => $committee->id,
+                'session_id' => $session->id,
                 'date_from' => now()->subDays(2)->toDateString(),
                 'date_to' => now()->toDateString(),
             ]))
             ->assertOk()
             ->assertJsonPath('meta.total', 1)
             ->assertJsonPath('data.0.title', 'Housing CR')
+            ->assertJsonPath('data.0.session.id', $session->id)
             ->assertJsonPath('data.0.can_update', false)
             ->assertJsonPath('data.0.can_delete', false);
+
+        $this->actingAs($encoder)
+            ->getJson(route('committee-reports.search', [
+                'session_id' => 999999,
+            ]))
+            ->assertOk()
+            ->assertJsonPath('meta.total', 0);
 
         $this->actingAs($encoder)
             ->getJson(route('committee-reports.search', [

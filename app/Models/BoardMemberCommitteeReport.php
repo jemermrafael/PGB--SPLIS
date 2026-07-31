@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class BoardMemberCommitteeReport extends Model
 {
@@ -44,5 +45,10 @@ class BoardMemberCommitteeReport extends Model
             'board_member_committee_report_id',
             'agenda_item_id',
         );
+    }
+
+    public function sessionFiles(): HasMany
+    {
+        return $this->hasMany(LegislativeSessionCommitteeReportFile::class);
     }
 }

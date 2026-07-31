@@ -24,10 +24,19 @@
     </div>
 
     <form id="staff-cr-search-form" class="splis-filter-panel mb-6">
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
             <div>
                 <label class="splis-label" for="staff-cr-q">Search</label>
                 <input type="search" name="q" id="staff-cr-q" class="splis-input" placeholder="Title, file, or board member" autocomplete="off">
+            </div>
+            <div>
+                <label class="splis-label" for="staff-cr-session">Session</label>
+                <select name="session_id" id="staff-cr-session" class="splis-select">
+                    <option value="">All Sessions</option>
+                    @foreach ($sessions as $session)
+                        <option value="{{ $session->id }}">{{ $session->displayTitle() }}</option>
+                    @endforeach
+                </select>
             </div>
             <div>
                 <label class="splis-label" for="staff-cr-committee">Committee</label>
