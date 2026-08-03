@@ -76,6 +76,44 @@ class BoardMemberPortalFeatureTest extends TestCase
             ->assertDontSee('Session Calendar');
     }
 
+    public function test_board_member_pending_stats_include_no_due_date_agendas(): void
+    {
+        [$user, $chairCommittee] = $this->linkedBoardMemberWithCommittee();
+
+        AgendaItem::query()->create([
+            'title' => 'Strictly pending item',
+            'committee_referred' => $chairCommittee->name,
+            'status' => AgendaItem::STATUS_PENDING,
+            'date_of_referral' => now()->toDateString(),
+            'date_received' => now()->toDateString(),
+            'due_date' => now()->addDays(10)->toDateString(),
+            'prescribed_days' => 14,
+            'created_by' => $user->id,
+        ]);
+
+        AgendaItem::query()->create([
+            'title' => 'No due date awaiting action',
+            'committee_referred' => $chairCommittee->name,
+            'status' => AgendaItem::STATUS_NO_DUE_DATE,
+            'date_of_referral' => now()->toDateString(),
+            'date_received' => now()->toDateString(),
+            'prescribed_days' => 0,
+            'created_by' => $user->id,
+        ]);
+
+        $this->actingAs($user)
+            ->getJson(route('board-member.agenda.search'))
+            ->assertOk()
+            ->assertJsonPath('stats.pending', 2);
+
+        $this->actingAs($user)
+            ->getJson(route('board-member.agenda.search', ['status' => AgendaItem::STATUS_PENDING]))
+            ->assertOk()
+            ->assertJsonPath('meta.total', 2)
+            ->assertJsonFragment(['title' => 'Strictly pending item'])
+            ->assertJsonFragment(['title' => 'No due date awaiting action']);
+    }
+
     public function test_board_member_my_agenda_search_lists_only_chairmanship_items(): void
     {
         [$user, $chairCommittee, $term, $boardMember] = $this->linkedBoardMemberWithCommittee();
@@ -424,7 +462,7 @@ class BoardMemberPortalFeatureTest extends TestCase
             ->assertSee('not linked to a Board Member profile');
     }
 
-    public function test_board_member_agenda_index_lists_only_chairmanship_items(): void
+    public function test_board_member_agenda_index_lists_all_committee_membership_items(): void
     {
         [$chairUser, $chairCommittee, $term, $boardMember] = $this->linkedBoardMemberWithCommittee();
 
@@ -470,9 +508,9 @@ class BoardMemberPortalFeatureTest extends TestCase
             ->getJson(route('agenda.search'))
             ->assertOk()
             ->assertJsonFragment(['title' => $chairAgenda->title])
-            ->assertJsonMissing(['title' => $memberAgenda->title])
-            ->assertJsonPath('meta.total', 1)
-            ->assertJsonPath('stats.total', 1);
+            ->assertJsonFragment(['title' => $memberAgenda->title])
+            ->assertJsonPath('meta.total', 2)
+            ->assertJsonPath('stats.total', 2);
     }
 
     /**

@@ -17,7 +17,8 @@ class AgendaItemRepository
 
     /**
      * Visible agenda base query for the given viewer.
-     * Regular board members see only chairmanship referrals; Vice Governor and staff see all.
+     * Regular board members see referrals for all their committee roles
+     * (chair / vice chair / member); Vice Governor and staff see all.
      *
      * @return Builder<AgendaItem>
      */
@@ -29,7 +30,7 @@ class AgendaItemRepository
             && $user->board_member_id !== null
         ) {
             return $this->boardMemberDashboard
-                ->chairmanshipAgendaQueryFor($user)
+                ->committeeAgendaQueryFor($user)
                 ->notArchived();
         }
 

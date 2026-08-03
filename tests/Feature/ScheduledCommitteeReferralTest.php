@@ -72,35 +72,43 @@ class ScheduledCommitteeReferralTest extends TestCase
         ]);
     }
 
-    public function test_board_member_incoming_shows_only_after_delivery_and_only_for_chair(): void
+    public function test_board_member_incoming_shows_two_hours_after_session_for_chair_only(): void
     {
-        [$chairUser, $memberUser, $committee, $session, $agenda] = $this->sessionWithRegularUnassigned();
+        [$chairUser, $memberUser, $committee, $session, $agenda] = $this->sessionWithRegularUnassigned([
+            'session_date' => now()->toDateString(),
+            'session_time' => now()->subHour()->format('H:i:s'),
+            'status' => 'scheduled',
+        ]);
+
+        $referrals = app(CommitteeReferralScheduleService::class);
+
+        // Within 2 hours of session start — still locked (even though already on My Agenda / next OB).
+        $this->assertFalse($session->fresh()->committeeReferralsAreAvailable());
+        $this->assertTrue($referrals->referredFromLastObForChair($chairUser)['agendas']->isEmpty());
 
         $this->actingAs($chairUser)
             ->get(route('dashboard'))
             ->assertOk()
             ->assertSee('Agendas Referred from last OB')
-            ->assertDontSee($agenda->title);
+            ->assertSee('No referred agendas yet. Items appear 2 hours after the session.');
 
-        $encoder = User::factory()->create(['role' => UserRole::Admin, 'is_active' => true]);
-        $schedule = app(CommitteeReferralScheduleService::class)->schedule(
-            $session,
-            now()->subMinute(),
-            $encoder,
-        );
-        app(CommitteeReferralScheduleService::class)->dispatch($schedule);
+        $session->forceFill([
+            'session_time' => now()->subHours(3)->format('H:i:s'),
+        ])->save();
+
+        $unlocked = $referrals->referredFromLastObForChair($chairUser);
+        $this->assertTrue($session->fresh()->committeeReferralsAreAvailable());
+        $this->assertTrue($unlocked['agendas']->contains(fn (AgendaItem $item) => $item->id === $agenda->id));
+        $this->assertSame($session->id, $unlocked['session']?->id);
 
         $this->actingAs($chairUser)
             ->get(route('dashboard'))
             ->assertOk()
             ->assertSee('Agendas Referred from last OB')
-            ->assertSee($agenda->title);
+            ->assertSee($agenda->title)
+            ->assertDontSee('No referred agendas yet. Items appear 2 hours after the session.');
 
-        $this->actingAs($memberUser)
-            ->get(route('dashboard'))
-            ->assertOk()
-            ->assertSee('Agendas Referred from last OB')
-            ->assertDontSee($agenda->title);
+        $this->assertTrue($referrals->referredFromLastObForChair($memberUser)['agendas']->isEmpty());
     }
 
     public function test_dispatch_due_command_sends_pending_schedules(): void
@@ -133,9 +141,10 @@ class ScheduledCommitteeReferralTest extends TestCase
     }
 
     /**
+     * @param  array<string, mixed>  $sessionOverrides
      * @return array{0: User, 1: User, 2: Committee, 3: LegislativeSession, 4: AgendaItem}
      */
-    protected function sessionWithRegularUnassigned(): array
+    protected function sessionWithRegularUnassigned(array $sessionOverrides = []): array
     {
         $term = CommitteeTerm::query()->current()->first()
             ?? CommitteeTerm::query()->create([
@@ -187,7 +196,7 @@ class ScheduledCommitteeReferralTest extends TestCase
         $chairUser = User::factory()->create([
             'role' => UserRole::BoardMember,
             'board_member_id' => $chairBm->id,
-            'username' => 'bm_chair',
+            'username' => 'bm_chair_'.uniqid(),
             'is_active' => true,
             'name' => 'Hon. Chair Person',
         ]);
@@ -195,7 +204,7 @@ class ScheduledCommitteeReferralTest extends TestCase
         $memberUser = User::factory()->create([
             'role' => UserRole::BoardMember,
             'board_member_id' => $memberBm->id,
-            'username' => 'bm_member',
+            'username' => 'bm_member_'.uniqid(),
             'is_active' => true,
             'name' => 'Hon. Committee Member',
         ]);
@@ -212,13 +221,14 @@ class ScheduledCommitteeReferralTest extends TestCase
             'created_by' => $encoderId,
         ]);
 
-        $session = LegislativeSession::query()->create([
+        $session = LegislativeSession::query()->create(array_merge([
             'session_number' => '12',
             'session_kind' => 'regular',
             'session_date' => now()->subDay()->toDateString(),
+            'session_time' => '10:00:00',
             'status' => 'completed',
             'created_by' => $encoderId,
-        ]);
+        ], $sessionOverrides));
 
         $document = ObDocument::query()->create([
             'legislative_session_id' => $session->id,

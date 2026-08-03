@@ -864,6 +864,13 @@
         background-repeat: no-repeat;
     }
 
+    @media (max-width: 1023px) {
+        .splis-dashboard-hero {
+            background-size: cover;
+            background-position: center;
+        }
+    }
+
     .splis-dashboard-hero-glow {
         @apply pointer-events-none absolute -right-10 -top-14 h-44 w-44 rounded-full opacity-35;
         background: radial-gradient(circle, rgb(212 168 67 / 0.4) 0%, transparent 70%);
@@ -871,6 +878,14 @@
 
     .splis-dashboard-hero-content {
         @apply relative z-10 w-full max-w-3xl;
+    }
+
+    .splis-dashboard-hero-content--with-action {
+        @apply !max-w-none flex flex-col items-start gap-4 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between;
+    }
+
+    .splis-dashboard-hero-action {
+        @apply shrink-0 self-start lg:ml-auto lg:self-center;
     }
 
     .splis-dashboard-hero-eyebrow {

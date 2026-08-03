@@ -101,7 +101,7 @@
                         @endforeach
                     </ul>
                 @else
-                    <p class="text-sm text-slate-500">No referred Agendas for Committees you Chair yet.</p>
+                    <p class="text-sm text-slate-500">No referred agendas yet. Items appear 2 hours after the session.</p>
                 @endif
             </div>
         </div>
@@ -243,11 +243,14 @@
                 <div class="p-4 sm:p-5">
                     <h3 class="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">Agendas Referred from last OB</h3>
                     <p class="mb-3 text-xs text-slate-500">
-                        Regular unassigned Agendas sent to Committees you Chair
+                        Regular Unassigned Business from the last session (available 2 hours after session time) for committees you chair
                         @if ($referredSession)
                             · {{ $referredSession->displayTitle() }}
                             @if ($referredSession->session_date)
-                                ({{ $referredSession->session_date->format('M j, Y') }})
+                                ({{ $referredSession->session_date->format('M j, Y') }}
+                                @if ($referredSession->formattedSessionTime())
+                                    · {{ $referredSession->formattedSessionTime() }}
+                                @endif)
                             @endif
                         @endif
                     </p>
@@ -285,7 +288,7 @@
                             </details>
                         @endif
                     @else
-                        <p class="text-sm text-slate-500">No referred Agendas for Committees you Chair yet.</p>
+                        <p class="text-sm text-slate-500">No referred agendas yet. Items appear 2 hours after the session.</p>
                     @endif
                 </div>
             </div>

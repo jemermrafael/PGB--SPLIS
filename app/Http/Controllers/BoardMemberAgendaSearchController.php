@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AgendaItem;
 use App\Models\Committee;
 use App\Models\User;
 use App\Services\AgendaItemRepository;
@@ -56,6 +57,12 @@ class BoardMemberAgendaSearchController extends Controller
                     ->orWhere('reso_ord_ao_no', 'like', '%'.$term.'%');
             });
             unset($filters['title'], $filters['number']);
+        }
+
+        // BM "Pending" includes No Due Date — both await action.
+        if (($filters['status'] ?? null) === AgendaItem::STATUS_PENDING) {
+            $baseQuery->awaitingAction();
+            unset($filters['status']);
         }
 
         $perPage = min(max($request->integer('per_page', 15), 5), 50);

@@ -6,10 +6,21 @@
 <div id="dashboard-search" class="splis-dashboard w-full" data-search-url="{{ route('dashboard.documents.search') }}">
     <div class="splis-dashboard-hero">
         <div class="splis-dashboard-hero-glow" aria-hidden="true"></div>
-        <div class="splis-dashboard-hero-content">
-            <p class="splis-dashboard-hero-eyebrow">Legislative archive</p>
-            <h1 class="splis-page-title text-white">Welcome, {{ auth()->user()->name }}</h1>
-            <p class="splis-dashboard-hero-subtitle">Search Resolutions and Ordinances — {{ number_format($totalDocuments) }} documents in the Archive ({{ number_format($totalResolutions) }} Resolutions · {{ number_format($totalOrdinances) }} Ordinances)</p>
+        <div @class([
+            'splis-dashboard-hero-content',
+            'splis-dashboard-hero-content--with-action' => auth()->user()->canAdmin(),
+        ])>
+            <div class="min-w-0">
+                <p class="splis-dashboard-hero-eyebrow">Legislative archive</p>
+                <h1 class="splis-page-title text-white">Welcome, {{ auth()->user()->name }}</h1>
+                <p class="splis-dashboard-hero-subtitle">Search Resolutions and Ordinances — {{ number_format($totalDocuments) }} documents in the Archive ({{ number_format($totalResolutions) }} Resolutions · {{ number_format($totalOrdinances) }} Ordinances)</p>
+            </div>
+            @if (auth()->user()->canAdmin())
+                <a href="{{ route('admin.analytics.index') }}" class="splis-header-btn splis-dashboard-hero-action">
+                    <x-icon name="chart-bar" class="h-4 w-4" />
+                    Executive Dashboard
+                </a>
+            @endif
         </div>
     </div>
 

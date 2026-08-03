@@ -234,7 +234,7 @@ class BoardMemberDashboardService
         $base = $this->agendaQueryForCommittee($user, $committee, $term);
 
         return [
-            'pending' => (clone $base)->where('status', AgendaItem::STATUS_PENDING)->count(),
+            'pending' => (clone $base)->awaitingAction()->count(),
             'expiring_soon' => (clone $base)->expiringSoon()->count(),
             'due_soon' => (clone $base)->dueSoon()->count(),
             'done' => (clone $base)->where('status', AgendaItem::STATUS_DONE)->count(),
@@ -372,7 +372,7 @@ class BoardMemberDashboardService
         $base = $this->chairmanshipAgendaQueryFor($user);
 
         return [
-            'pending' => (clone $base)->where('status', AgendaItem::STATUS_PENDING)->count(),
+            'pending' => (clone $base)->awaitingAction()->count(),
             'expiring_soon' => (clone $base)->expiringSoon()->count(),
             'due_soon' => (clone $base)->dueSoon()->count(),
             'done' => (clone $base)->where('status', AgendaItem::STATUS_DONE)->count(),

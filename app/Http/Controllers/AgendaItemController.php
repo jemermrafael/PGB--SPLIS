@@ -49,7 +49,7 @@ class AgendaItemController extends Controller
             && $user->board_member_id !== null
         ) {
             $committees = $dashboard
-                ->chairCommitteesForBoardMember((int) $user->board_member_id)
+                ->committeesFor($user)
                 ->pluck('name')
                 ->filter()
                 ->values()

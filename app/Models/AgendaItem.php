@@ -377,6 +377,25 @@ class AgendaItem extends Model
         return AgendaDeadline::toneForItem($this);
     }
 
+    /**
+     * Pending-like statuses awaiting board member action (includes no due date).
+     *
+     * @return list<string>
+     */
+    public static function awaitingActionStatuses(): array
+    {
+        return [
+            self::STATUS_PENDING,
+            self::STATUS_NO_DUE_DATE,
+        ];
+    }
+
+    /** @param Builder<AgendaItem> $query */
+    public function scopeAwaitingAction(Builder $query): Builder
+    {
+        return $query->whereIn('status', self::awaitingActionStatuses());
+    }
+
     /** @param Builder<AgendaItem> $query */
     public function scopeExpiringSoon(Builder $query): Builder
     {

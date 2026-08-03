@@ -176,7 +176,9 @@ class CommitteeReferralScheduleService
     }
 
     /**
-     * Agendas referred from the latest delivered OB schedule for this chair only.
+     * Regular Unassigned agendas from the latest OB whose referrals are unlocked
+     * (2 hours after session date/time), for committees this member chairs.
+     * Does not require Schedule Committee Referral.
      *
      * @return array{agendas: Collection<int, AgendaItem>, session: ?LegislativeSession}
      */
@@ -189,47 +191,38 @@ class CommitteeReferralScheduleService
             return $empty;
         }
 
-        $latestDelivery = CommitteeReferralDelivery::query()
-            ->where('board_member_id', $boardMemberId)
-            ->whereNotNull('delivered_at')
-            ->orderByDesc('delivered_at')
+        $sessions = LegislativeSession::query()
+            ->visibleToBoardMembers()
+            ->whereNotNull('session_date')
+            ->orderByDesc('session_date')
+            ->orderByDesc('session_time')
             ->orderByDesc('id')
-            ->first();
+            ->limit(40)
+            ->get();
 
-        if ($latestDelivery === null) {
-            return $empty;
-        }
+        foreach ($sessions as $session) {
+            if (! $session->committeeReferralsAreAvailable()) {
+                continue;
+            }
 
-        $schedule = ScheduledCommitteeReferral::query()
-            ->with('legislativeSession')
-            ->find($latestDelivery->scheduled_committee_referral_id);
-
-        $agendaIds = CommitteeReferralDelivery::query()
-            ->where('board_member_id', $boardMemberId)
-            ->where('scheduled_committee_referral_id', $latestDelivery->scheduled_committee_referral_id)
-            ->whereNotNull('delivered_at')
-            ->orderByDesc('delivered_at')
-            ->orderByDesc('id')
-            ->pluck('agenda_item_id')
-            ->unique()
-            ->values();
-
-        if ($agendaIds->isEmpty()) {
-            return $empty;
-        }
-
-        $items = AgendaItem::query()
-            ->whereIn('id', $agendaIds->all())
-            ->get()
-            ->keyBy('id');
-
-        return [
-            'agendas' => $agendaIds
-                ->map(fn ($id) => $items->get($id))
+            $agendas = $this->previewForSession($session)
+                ->filter(fn (array $row) => ($row['chair']?->id ?? null) === $boardMemberId)
+                ->map(fn (array $row) => $row['agenda'])
                 ->filter()
-                ->values(),
-            'session' => $schedule?->legislativeSession,
-        ];
+                ->unique(fn (AgendaItem $agenda) => $agenda->id)
+                ->values();
+
+            if ($agendas->isEmpty()) {
+                continue;
+            }
+
+            return [
+                'agendas' => $agendas,
+                'session' => $session,
+            ];
+        }
+
+        return $empty;
     }
 
     /**

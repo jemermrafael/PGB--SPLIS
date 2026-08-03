@@ -281,6 +281,43 @@ class LegislativeSession extends Model
     }
 
     /**
+     * Session calendar date + clock time in app timezone (defaults to 00:00 when time is blank).
+     */
+    public function sessionDateTime(): ?Carbon
+    {
+        if ($this->session_date === null) {
+            return null;
+        }
+
+        $time = filled($this->session_time)
+            ? Carbon::parse((string) $this->session_time)->format('H:i:s')
+            : '00:00:00';
+
+        return Carbon::parse(
+            $this->session_date->toDateString().' '.$time,
+            config('app.timezone'),
+        );
+    }
+
+    /**
+     * When Regular Unassigned referrals become visible on BM dashboards (2 hours after session).
+     */
+    public function committeeReferralAvailableAt(): ?Carbon
+    {
+        return $this->sessionDateTime()?->copy()->addHours(2);
+    }
+
+    public function committeeReferralsAreAvailable(?Carbon $asOf = null): bool
+    {
+        $availableAt = $this->committeeReferralAvailableAt();
+        if ($availableAt === null) {
+            return false;
+        }
+
+        return $availableAt->lte($asOf ?? now());
+    }
+
+    /**
      * Value for HTML <input type="time"> (24-hour H:i).
      */
     public function sessionTimeInputValue(): ?string
