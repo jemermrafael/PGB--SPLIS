@@ -605,7 +605,10 @@ class ObDocumentService
             AgendaItem::query()
                 ->whereIn('id', $items->pluck('id'))
                 ->update(['ob_manual_override_at' => now()]);
+        }
 
+        // First-time manual adds only. Moves already log agenda.ob_relocated.
+        if ($source === 'manual') {
             $session = $document->legislativeSession;
 
             if ($session) {
