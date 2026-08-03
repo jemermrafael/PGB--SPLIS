@@ -263,7 +263,6 @@ export function initObMaker() {
     let sectionNavResizeState = null;
     const saveStatus = document.getElementById('ob-save-status');
     const saveDocumentBtn = document.getElementById('ob-save-document');
-    const discardChangesBtn = document.getElementById('ob-discard-changes');
     const titleInput = document.getElementById('ob-doc-title');
     const statusSelect = document.getElementById('ob-doc-status');
     const agendaPoolEl = document.getElementById('ob-agenda-pool');
@@ -295,9 +294,6 @@ export function initObMaker() {
         if (saveDocumentBtn) {
             saveDocumentBtn.disabled = !canEdit || !dirty || isSaving;
             saveDocumentBtn.textContent = isSaving ? 'Saving…' : 'Save';
-        }
-        if (discardChangesBtn) {
-            discardChangesBtn.disabled = !canEdit || !dirty || isSaving;
         }
         root.classList.toggle('has-unsaved-changes', dirty);
     }
@@ -1609,7 +1605,7 @@ export function initObMaker() {
         // attendance names when a structural action ran after a typing pause.
         const choice = await promptUnsavedChanges({
             title: 'Save changes first?',
-            message: 'You have unsaved Order of Business edits. Save them before continuing, discard them, or cancel.',
+            message: 'You have unsaved Order of Business edits. Save them before continuing, leave without saving, or cancel.',
         });
 
         if (choice === 'cancel') {
@@ -1623,11 +1619,6 @@ export function initObMaker() {
         }
 
         return saveAll({ reason: 'before-mutation' });
-    }
-
-    function discardLocalChanges() {
-        suppressLeavePrompt = true;
-        window.location.reload();
     }
 
     async function persistOrder() {
@@ -2180,19 +2171,6 @@ export function initObMaker() {
 
         if (target.matches('#ob-save-document')) {
             saveAll({ reason: 'manual' });
-            return;
-        }
-
-        if (target.matches('#ob-discard-changes')) {
-            confirmAction({
-                title: 'Discard unsaved changes?',
-                message: 'Reload the last saved Order of Business and lose local edits?',
-                confirmLabel: 'Discard',
-            }).then((confirmed) => {
-                if (confirmed) {
-                    discardLocalChanges();
-                }
-            });
             return;
         }
 
@@ -2809,7 +2787,7 @@ export function initObMaker() {
 
     function promptUnsavedChanges({
         title = 'Unsaved changes',
-        message = 'You have unsaved edits in the Order of Business Maker. Save them, discard them, or stay on this page.',
+        message = 'You have unsaved edits in the Order of Business Maker. Save them, leave without saving, or stay on this page.',
     } = {}) {
         if (!unsavedDialog) {
             const stay = !window.confirm(`${message}\n\nLeave without saving?`);

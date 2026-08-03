@@ -47,7 +47,7 @@ class CommitteeReportSummaryTest extends TestCase
             ->assertSee('Declare validity')
             ->assertSee('Approve ordinance (2nd reading)')
             ->assertSee('+ Add revised title')
-            ->assertSee('Discard')
+            ->assertSee('Back')
             ->assertDontSee('Insert REVISED TITLE')
             ->assertDontSee('REVISED TITLE label')
             ->assertDontSee('Changes save automatically');

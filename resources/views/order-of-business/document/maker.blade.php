@@ -80,15 +80,15 @@
                 </div>
                 @if ($canEdit)
                     <div class="flex flex-wrap justify-end gap-2">
-                        <button
-                            type="button"
-                            id="ob-discard-changes"
+                        <a
+                            href="{{ route('ob.sessions.show', $session) }}"
+                            id="ob-back-to-session"
                             class="splis-btn-secondary shrink-0"
-                            disabled
-                            title="Reload the last saved document and discard local edits"
+                            data-ob-back
+                            title="Back to session"
                         >
-                            Discard
-                        </button>
+                            Back
+                        </a>
                         <button
                             type="button"
                             id="ob-save-document"
@@ -214,9 +214,9 @@
         <div class="splis-ob-dialog-backdrop" data-ob-unsaved-cancel tabindex="-1"></div>
         <div class="splis-ob-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="ob-unsaved-title">
             <h3 id="ob-unsaved-title" class="splis-ob-dialog-title">Unsaved changes</h3>
-            <p id="ob-unsaved-message" class="splis-ob-dialog-message">You have unsaved edits in the Order of Business Maker. Save them, discard them, or stay on this page.</p>
+            <p id="ob-unsaved-message" class="splis-ob-dialog-message">You have unsaved edits in the Order of Business Maker. Save them, leave without saving, or stay on this page.</p>
             <div class="splis-ob-dialog-actions">
-                <button type="button" class="splis-btn-secondary" data-ob-unsaved-discard>Discard</button>
+                <button type="button" class="splis-btn-secondary" data-ob-unsaved-discard>Leave</button>
                 <button type="button" class="splis-btn-secondary" data-ob-unsaved-cancel>Cancel</button>
                 <button type="button" id="ob-unsaved-save" class="splis-btn-primary">Save</button>
             </div>
