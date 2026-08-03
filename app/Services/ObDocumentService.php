@@ -480,11 +480,15 @@ class ObDocumentService
             ->orderBy('id')
             ->get();
 
-        $items = $items->reject(fn (AgendaItem $item) => $item->status === AgendaItem::STATUS_DONE)->values();
+        $items = $items
+            ->reject(fn (AgendaItem $item) => $item->status === AgendaItem::STATUS_DONE
+                || $item->status === AgendaItem::STATUS_LAPSED
+                || $item->isObLifecycleResolved())
+            ->values();
 
         if ($items->isEmpty()) {
             throw ValidationException::withMessages([
-                'agenda_item_ids' => ['Done agenda items cannot be added to the Order of Business.'],
+                'agenda_item_ids' => ['Done, lapsed, or resolved agenda items cannot be added to the Order of Business.'],
             ]);
         }
 

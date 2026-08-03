@@ -19,6 +19,11 @@ class ObAgendaPoolService
     ): LengthAwarePaginator {
         $query = AgendaItem::query()
             ->where('status', '!=', AgendaItem::STATUS_DONE)
+            ->where('status', '!=', AgendaItem::STATUS_LAPSED)
+            ->where(function ($builder): void {
+                $builder->whereNull('ob_lifecycle_stage')
+                    ->orWhere('ob_lifecycle_stage', '!=', AgendaItem::OB_STAGE_RESOLVED);
+            })
             ->orderByDesc('date_received')
             ->orderByDesc('id');
         if ($search !== null && $search !== '') {

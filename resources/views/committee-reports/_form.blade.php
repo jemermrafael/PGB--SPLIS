@@ -38,18 +38,6 @@
             @endif
 
             <div>
-                <label class="splis-label" for="title">Report title (optional)</label>
-                <input
-                    type="text"
-                    name="title"
-                    id="title"
-                    value="{{ old('title', $report?->title) }}"
-                    class="splis-input"
-                    placeholder="Committee Report Title"
-                >
-            </div>
-
-            <div>
                 <label class="splis-label" for="pdf">
                     {{ $isEdit ? 'Replace PDF (optional)' : 'PDF file' }}
                 </label>

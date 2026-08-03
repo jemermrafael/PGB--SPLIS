@@ -151,7 +151,6 @@
 
             <div class="flex flex-wrap gap-2">
                 <button type="submit" class="splis-btn-primary">Save notification preferences</button>
-                <a href="{{ route('board-member.watchlist.index') }}" class="splis-btn-ghost">Open my watchlist</a>
             </div>
         </form>
     @endif
