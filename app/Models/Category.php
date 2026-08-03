@@ -46,6 +46,30 @@ class Category extends Model
         ])->id;
     }
 
+    /**
+     * Normalize category labels for analytics charts (merge near-duplicates).
+     */
+    public static function analyticsGroupLabel(?string $description): string
+    {
+        $label = mb_strtoupper(trim(preg_replace('/\s+/u', ' ', (string) $description) ?? ''));
+        if ($label === '') {
+            return 'Unknown';
+        }
+
+        if (
+            $label === 'SUPPLEMENTAL'
+            || preg_match('/^SUPPLEMENTAL\s+BUDGET(\s+NO\.?\s*\d+)?$/u', $label) === 1
+        ) {
+            return 'SUPPLEMENTAL BUDGET';
+        }
+
+        if (str_starts_with($label, 'SUPPLEMENTAL INVESTMENT')) {
+            return 'SUPPLEMENTAL INVESTMENT PROGRAM';
+        }
+
+        return $label;
+    }
+
     public function category2s(): HasMany
     {
         return $this->hasMany(Category2::class);

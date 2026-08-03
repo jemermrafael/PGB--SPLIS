@@ -337,13 +337,20 @@ class DashboardAnalyticsService
      */
     public function boardMemberCommitteeBreakdown(User $user): array
     {
-        return $this->boardMemberDashboard->committeesFor($user)
-            ->map(function (Committee $committee) use ($user): array {
+        $term = $this->boardMemberDashboard->resolveTermForUser($user);
+
+        return $this->boardMemberDashboard->committeeAssignmentsFor($user, $term)
+            ->map(function (array $assignment) use ($user): array {
+                /** @var Committee $committee */
+                $committee = $assignment['committee'];
                 $stats = $this->boardMemberDashboard->agendaStatsForCommittee($user, $committee);
+                $roleLabel = $assignment['role_label'] ?? null;
 
                 return [
                     'committee_id' => $committee->id,
-                    'committee' => $committee->name,
+                    'committee' => $roleLabel
+                        ? $committee->name.' ('.$roleLabel.')'
+                        : $committee->name,
                     'pending' => $stats['pending'],
                     'done' => $stats['done'],
                     'url' => route('board-member.agenda.committee', $committee),

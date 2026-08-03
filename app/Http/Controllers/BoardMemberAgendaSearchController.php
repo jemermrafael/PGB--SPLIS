@@ -27,10 +27,10 @@ class BoardMemberAgendaSearchController extends Controller
 
         if ($committeeId) {
             $committee = Committee::query()->findOrFail($committeeId);
-            abort_unless($dashboard->membershipForCommittee($user, $committee) !== null, 403);
+            abort_unless($dashboard->isChairOfCommittee($user, $committee), 403);
             $baseQuery = $dashboard->agendaQueryForCommittee($user, $committee);
         } else {
-            $baseQuery = $dashboard->committeeAgendaQueryFor($user);
+            $baseQuery = $dashboard->chairmanshipAgendaQueryFor($user);
         }
 
         $filters = $request->only([

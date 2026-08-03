@@ -176,28 +176,46 @@ class CommitteeReferralScheduleService
     }
 
     /**
-     * Delivered agendas visible to a chair on the BM briefing.
+     * Agendas referred from the latest delivered OB schedule for this chair only.
      *
-     * @return Collection<int, AgendaItem>
+     * @return array{agendas: Collection<int, AgendaItem>, session: ?LegislativeSession}
      */
-    public function incomingForChair(User $user): Collection
+    public function referredFromLastObForChair(User $user): array
     {
+        $empty = ['agendas' => collect(), 'session' => null];
+
         $boardMemberId = (int) ($user->board_member_id ?? 0);
         if ($boardMemberId < 1 || ! $user->isBoardMember()) {
-            return collect();
+            return $empty;
         }
 
-        $agendaIds = CommitteeReferralDelivery::query()
+        $latestDelivery = CommitteeReferralDelivery::query()
             ->where('board_member_id', $boardMemberId)
             ->whereNotNull('delivered_at')
             ->orderByDesc('delivered_at')
-            ->limit(100)
+            ->orderByDesc('id')
+            ->first();
+
+        if ($latestDelivery === null) {
+            return $empty;
+        }
+
+        $schedule = ScheduledCommitteeReferral::query()
+            ->with('legislativeSession')
+            ->find($latestDelivery->scheduled_committee_referral_id);
+
+        $agendaIds = CommitteeReferralDelivery::query()
+            ->where('board_member_id', $boardMemberId)
+            ->where('scheduled_committee_referral_id', $latestDelivery->scheduled_committee_referral_id)
+            ->whereNotNull('delivered_at')
+            ->orderByDesc('delivered_at')
+            ->orderByDesc('id')
             ->pluck('agenda_item_id')
             ->unique()
             ->values();
 
         if ($agendaIds->isEmpty()) {
-            return collect();
+            return $empty;
         }
 
         $items = AgendaItem::query()
@@ -205,10 +223,21 @@ class CommitteeReferralScheduleService
             ->get()
             ->keyBy('id');
 
-        return $agendaIds
-            ->map(fn ($id) => $items->get($id))
-            ->filter()
-            ->values();
+        return [
+            'agendas' => $agendaIds
+                ->map(fn ($id) => $items->get($id))
+                ->filter()
+                ->values(),
+            'session' => $schedule?->legislativeSession,
+        ];
+    }
+
+    /**
+     * @return Collection<int, AgendaItem>
+     */
+    public function incomingForChair(User $user): Collection
+    {
+        return $this->referredFromLastObForChair($user)['agendas'];
     }
 
     /**

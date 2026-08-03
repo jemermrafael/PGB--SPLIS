@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AgendaItem;
+use App\Models\User;
 use App\Support\AgendaDeadline;
 use App\Support\CommitteeIcon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -10,26 +11,60 @@ use Illuminate\Database\Eloquent\Builder;
 
 class AgendaItemRepository
 {
+    public function __construct(
+        protected BoardMemberDashboardService $boardMemberDashboard,
+    ) {}
+
+    /**
+     * Visible agenda base query for the given viewer.
+     * Regular board members see only chairmanship referrals; Vice Governor and staff see all.
+     *
+     * @return Builder<AgendaItem>
+     */
+    public function visibleQueryFor(?User $user = null): Builder
+    {
+        if (
+            $user?->isBoardMember()
+            && ! $user->isViceGovernorBoardMember()
+            && $user->board_member_id !== null
+        ) {
+            return $this->boardMemberDashboard
+                ->chairmanshipAgendaQueryFor($user)
+                ->notArchived();
+        }
+
+        return AgendaItem::query()->notArchived();
+    }
+
     /**
      * @return array<string, int>
      */
-    public function stats(): array
+    public function stats(?User $user = null): array
+    {
+        return $this->statsFromBuilder($this->visibleQueryFor($user));
+    }
+
+    /**
+     * @param  Builder<AgendaItem>  $query
+     * @return array<string, int>
+     */
+    public function statsFromBuilder(Builder $query): array
     {
         return [
-            'total' => AgendaItem::query()->notArchived()->count(),
-            'pending' => AgendaItem::query()->notArchived()->where('status', AgendaItem::STATUS_PENDING)->count(),
-            'expiring_soon' => AgendaItem::query()->notArchived()->expiringSoon()->count(),
-            'due_soon' => AgendaItem::query()->notArchived()->dueSoon()->count(),
-            'done' => AgendaItem::query()->notArchived()->where('status', AgendaItem::STATUS_DONE)->count(),
-            'lapsed' => AgendaItem::query()->notArchived()->where('status', AgendaItem::STATUS_LAPSED)->count(),
-            'no_due_date' => AgendaItem::query()->notArchived()->where('status', AgendaItem::STATUS_NO_DUE_DATE)->count(),
-            'has_incoming' => AgendaItem::query()->notArchived()->whereNotNull('incoming_document_id')->count(),
+            'total' => (clone $query)->count(),
+            'pending' => (clone $query)->where('status', AgendaItem::STATUS_PENDING)->count(),
+            'expiring_soon' => (clone $query)->expiringSoon()->count(),
+            'due_soon' => (clone $query)->dueSoon()->count(),
+            'done' => (clone $query)->where('status', AgendaItem::STATUS_DONE)->count(),
+            'lapsed' => (clone $query)->where('status', AgendaItem::STATUS_LAPSED)->count(),
+            'no_due_date' => (clone $query)->where('status', AgendaItem::STATUS_NO_DUE_DATE)->count(),
+            'has_incoming' => (clone $query)->whereNotNull('incoming_document_id')->count(),
         ];
     }
 
-    public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
+    public function paginate(array $filters = [], int $perPage = 25, ?User $user = null): LengthAwarePaginator
     {
-        return $this->paginateFromBuilder(AgendaItem::query()->notArchived(), $filters, $perPage);
+        return $this->paginateFromBuilder($this->visibleQueryFor($user), $filters, $perPage);
     }
 
     public function paginateArchived(array $filters = [], int $perPage = 25): LengthAwarePaginator

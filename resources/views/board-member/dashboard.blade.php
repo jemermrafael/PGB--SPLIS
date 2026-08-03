@@ -38,7 +38,7 @@
     >
         <div class="splis-card-header flex flex-wrap items-start justify-between gap-3">
             <div>
-                <h2 class="splis-card-title">Agenda Referred to Your Committees</h2>
+                <h2 class="splis-card-title">Agenda Referred to Committees You Chair</h2>
                 <p class="splis-card-subtitle">Recent Referrals</p>
             </div>
             <a href="{{ route('board-member.agenda.index') }}" class="splis-link text-sm">My Agenda</a>

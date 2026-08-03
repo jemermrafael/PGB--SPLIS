@@ -22,7 +22,7 @@ class BoardMemberAgendaController extends Controller
             'statuses' => config('agenda.statuses', []),
             'senders' => AgendaFieldOptions::senders(),
             'committees' => $user->board_member_id
-                ? $dashboard->committeesFor($user)->pluck('name')->values()->all()
+                ? $dashboard->chairCommitteesForBoardMember((int) $user->board_member_id)->pluck('name')->values()->all()
                 : [],
             'outcomes' => AgendaFieldOptions::outcomes(),
             'stats' => $user->board_member_id

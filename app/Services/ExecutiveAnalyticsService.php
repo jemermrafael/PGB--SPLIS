@@ -49,13 +49,20 @@ class ExecutiveAnalyticsService
         }
 
         $term = $this->boardMembers->resolveTermForUser($user);
-        $committees = $this->boardMembers->committeesFor($user, $term);
+        $assignments = $this->boardMembers->committeeAssignmentsFor($user, $term);
+        $committees = $assignments->pluck('committee')->filter()->values();
+        $roles = $assignments
+            ->mapWithKeys(fn (array $assignment) => [
+                (int) $assignment['committee']->id => (string) $assignment['role_label'],
+            ])
+            ->all();
 
         return new ExecutiveAnalyticsScope(
             fullAccess: false,
             committees: $committees,
             boardMemberId: (int) $user->board_member_id,
             boardMemberName: $user->boardMember?->name,
+            committeeRoles: $roles,
         );
     }
 
@@ -279,7 +286,9 @@ class ExecutiveAnalyticsService
             'municipalities' => $municipalities,
             'year' => $year,
             'month' => $month,
-            'committee' => $committee?->name ?? ($this->scope->isFull() ? 'All Committees' : 'My Committees'),
+            'committee' => $committee !== null
+                ? ($this->scope->isFull() ? $committee->name : $this->scope->displayNameFor($committee))
+                : ($this->scope->isFull() ? 'All Committees' : 'My Committees'),
             'committee_id' => $committee?->id,
             'period_label' => $this->mapPeriodLabel($year, $month),
             'total' => (int) collect($municipalities)->sum('total'),
@@ -468,13 +477,19 @@ class ExecutiveAnalyticsService
         if (! $this->scope->isFull()) {
             return ($this->scope->committees ?? collect())
                 ->sortBy('sort_order')
-                ->values();
+                ->values()
+                ->map(function (Committee $committee) {
+                    $committee->setAttribute('display_name', $this->scope->displayNameFor($committee));
+
+                    return $committee;
+                });
         }
 
         return Committee::query()
             ->active()
             ->ordered()
-            ->get(['id', 'name']);
+            ->get(['id', 'name'])
+            ->each(fn (Committee $committee) => $committee->setAttribute('display_name', $committee->name));
     }
 
     public function filteredBudgetApproved(?int $year = null, ?int $municipalityId = null, string $scope = 'all'): int
@@ -888,16 +903,23 @@ class ExecutiveAnalyticsService
             ->selectRaw('category_id, count(*) as aggregate')
             ->groupBy('category_id')
             ->orderByDesc('aggregate')
-            ->limit(10)
             ->get()
             ->map(function ($row): array {
                 $cat = Category::query()->find($row->category_id);
 
                 return [
-                    'label' => $cat?->description ?? 'Unknown',
+                    'label' => Category::analyticsGroupLabel($cat?->description),
                     'value' => (int) $row->aggregate,
                 ];
             })
+            ->groupBy('label')
+            ->map(fn (Collection $rows, string $label): array => [
+                'label' => $label,
+                'value' => (int) $rows->sum('value'),
+            ])
+            ->sortByDesc('value')
+            ->take(10)
+            ->values()
             ->all();
 
         $departments = $this->resolutionQuery()
@@ -918,20 +940,17 @@ class ExecutiveAnalyticsService
             })
             ->all();
 
-        $committees = $this->resolutionQuery()
-            ->whereBetween('series', [$yearFrom, $yearTo])
-            ->whereNotNull('committee')
-            ->where('committee', '!=', '')
-            ->selectRaw('committee, count(*) as aggregate')
-            ->groupBy('committee')
-            ->orderByDesc('aggregate')
-            ->limit(10)
-            ->get()
-            ->map(fn ($row): array => [
-                'label' => Str::limit((string) $row->committee, 28),
-                'value' => (int) $row->aggregate,
-            ])
-            ->all();
+        $committees = $this->aggregatedCommitteeCounts(
+            $this->resolutionQuery()
+                ->whereBetween('series', [$yearFrom, $yearTo])
+                ->whereNotNull('committee')
+                ->where('committee', '!=', '')
+                ->selectRaw('committee, count(*) as aggregate')
+                ->groupBy('committee')
+                ->get(),
+            limit: 10,
+            labelLimit: 28,
+        );
 
         $sponsors = $this->resolutionQuery()
             ->whereBetween('series', [$yearFrom, $yearTo])
@@ -1314,25 +1333,54 @@ class ExecutiveAnalyticsService
     {
         $monthAgenda = $this->monthlyAgendaIntake($focusYear);
 
-        $committeeResolutions = $this->resolutionQuery()
-            ->whereBetween('series', [$yearFrom, $yearTo])
-            ->whereNotNull('committee')
-            ->where('committee', '!=', '')
-            ->selectRaw('committee, count(*) as aggregate')
-            ->groupBy('committee')
-            ->orderByDesc('aggregate')
-            ->limit(8)
-            ->get()
-            ->map(fn ($row): array => [
-                'label' => Str::limit((string) $row->committee, 24),
-                'value' => (int) $row->aggregate,
-            ])
-            ->all();
+        $committeeResolutions = $this->aggregatedCommitteeCounts(
+            $this->resolutionQuery()
+                ->whereBetween('series', [$yearFrom, $yearTo])
+                ->whereNotNull('committee')
+                ->where('committee', '!=', '')
+                ->selectRaw('committee, count(*) as aggregate')
+                ->groupBy('committee')
+                ->get(),
+            limit: 8,
+            labelLimit: 24,
+        );
 
         return [
             'month_agenda' => $monthAgenda,
             'committee_resolutions' => $committeeResolutions,
         ];
+    }
+
+    /**
+     * Merge short/long committee name variants (e.g. "Finance" + full Finance committee name).
+     *
+     * @param  Collection<int, object{committee: string, aggregate: int|string}>  $rows
+     * @return list<array{label: string, value: int}>
+     */
+    protected function aggregatedCommitteeCounts(Collection $rows, int $limit, int $labelLimit): array
+    {
+        return $rows
+            ->groupBy(fn ($row) => $this->canonicalizeCommitteeLabel((string) $row->committee))
+            ->map(fn (Collection $group, string $label): array => [
+                'label' => Str::limit($label !== '' ? $label : 'Unknown', $labelLimit),
+                'value' => (int) $group->sum(fn ($row) => (int) $row->aggregate),
+            ])
+            ->sortByDesc('value')
+            ->take($limit)
+            ->values()
+            ->all();
+    }
+
+    protected function canonicalizeCommitteeLabel(string $raw): string
+    {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return '';
+        }
+
+        $committee = CommitteeLookup::findByName($raw);
+
+        return $committee?->name ?? CommitteeLookup::normalizeReferralName($raw);
     }
 
     /**

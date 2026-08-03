@@ -24,7 +24,9 @@ class BoardMemberBriefingService
      *     unread_notifications: int,
      *     pending_count: int,
      *     session_today: bool,
-     *     incoming_for_referral: Collection<int, AgendaItem>
+     *     incoming_for_referral: Collection<int, AgendaItem>,
+     *     referred_from_last_ob: Collection<int, AgendaItem>,
+     *     referred_from_session: LegislativeSession|null
      * }
      */
     public function for(User $user): array
@@ -42,6 +44,8 @@ class BoardMemberBriefingService
                 'pending_count' => 0,
                 'session_today' => false,
                 'incoming_for_referral' => collect(),
+                'referred_from_last_ob' => collect(),
+                'referred_from_session' => null,
             ];
         }
 
@@ -50,8 +54,8 @@ class BoardMemberBriefingService
             ? $this->dashboard->myCommitteeItemsOnSession($user, $nextSession)
             : collect();
 
-        $deadlineCount = $this->dashboard->agendaStatsFor($user)['expiring_soon'] ?? 0;
         $stats = $this->dashboard->agendaStatsFor($user);
+        $referred = $this->referralSchedule->referredFromLastObForChair($user);
 
         return [
             'next_session' => $nextSession,
@@ -62,7 +66,9 @@ class BoardMemberBriefingService
             'unread_notifications' => $user->unreadNotifications()->count(),
             'pending_count' => $stats['pending'] ?? 0,
             'session_today' => $nextSession?->session_date?->isToday() ?? false,
-            'incoming_for_referral' => $this->referralSchedule->incomingForChair($user),
+            'incoming_for_referral' => $referred['agendas'],
+            'referred_from_last_ob' => $referred['agendas'],
+            'referred_from_session' => $referred['session'],
         ];
     }
 

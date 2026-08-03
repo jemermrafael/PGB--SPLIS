@@ -17,7 +17,7 @@ class BoardMemberCommitteeAgendaController extends Controller
         abort_unless($user->isBoardMember(), 403);
 
         $membership = $dashboard->membershipForCommittee($user, $committee);
-        abort_unless($membership !== null, 403);
+        abort_unless($membership !== null && $dashboard->isChairOfCommittee($user, $committee), 403);
 
         return view('board-member.agenda.committee', [
             'user' => $user,

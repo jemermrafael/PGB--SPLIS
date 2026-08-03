@@ -37,7 +37,7 @@
                                 </div>
                                 <div class="flex flex-wrap items-center gap-2">
                                     <span class="splis-badge">{{ $attendanceLabelFor($session) }}</span>
-                                    <a href="{{ route('board-member.sessions.show', $session) }}" class="splis-btn-secondary text-sm">Open session packet</a>
+                                    <a href="{{ route('board-member.sessions.show', $session) }}" class="splis-btn-secondary text-sm">Open Session Packet</a>
                                 </div>
                             </div>
                         </li>

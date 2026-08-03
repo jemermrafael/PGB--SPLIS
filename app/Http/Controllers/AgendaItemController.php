@@ -14,6 +14,7 @@ use App\Services\AgendaOutputLinker;
 use App\Services\AgendaOutputPublisher;
 use App\Services\AgendaPdfService;
 use App\Services\AgendaVersionService;
+use App\Services\BoardMemberDashboardService;
 use App\Services\BoardMemberNotifier;
 use App\Services\BoardMemberWatchlistService;
 use App\Services\MunicipalNotifier;
@@ -34,16 +35,33 @@ class AgendaItemController extends Controller
         protected AgendaPdfService $agendaPdfService,
     ) {}
 
-    public function index(AgendaItemRepository $repository): View
+    public function index(Request $request, AgendaItemRepository $repository, BoardMemberDashboardService $dashboard): View
     {
         $this->authorize('viewAny', AgendaItem::class);
+
+        /** @var \App\Models\User|null $user */
+        $user = $request->user();
+        $committees = AgendaFieldOptions::committees();
+
+        if (
+            $user?->isBoardMember()
+            && ! $user->isViceGovernorBoardMember()
+            && $user->board_member_id !== null
+        ) {
+            $committees = $dashboard
+                ->chairCommitteesForBoardMember((int) $user->board_member_id)
+                ->pluck('name')
+                ->filter()
+                ->values()
+                ->all();
+        }
 
         return view('agenda.index', [
             'statuses' => config('agenda.statuses', []),
             'senders' => AgendaFieldOptions::senders(),
-            'committees' => AgendaFieldOptions::committees(),
+            'committees' => $committees,
             'outcomes' => AgendaFieldOptions::outcomes(),
-            'stats' => $repository->stats(),
+            'stats' => $repository->stats($user),
         ]);
     }
 

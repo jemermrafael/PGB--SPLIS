@@ -11,7 +11,7 @@
     <div class="splis-page-header">
         <div>
             <h1 class="splis-page-title">My Agenda</h1>
-            <p class="splis-page-subtitle">Agenda items referred to your committees.</p>
+            <p class="splis-page-subtitle">Agenda items referred to committees you chair.</p>
         </div>
         <a href="{{ route('agenda.index') }}" class="splis-btn-ghost">All agenda</a>
     </div>

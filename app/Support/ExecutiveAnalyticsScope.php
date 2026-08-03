@@ -9,12 +9,14 @@ class ExecutiveAnalyticsScope
 {
     /**
      * @param  Collection<int, Committee>|null  $committees
+     * @param  array<int, string>  $committeeRoles  committee_id => role label (Chair, Member, …)
      */
     public function __construct(
         public readonly bool $fullAccess,
         public readonly ?Collection $committees = null,
         public readonly ?int $boardMemberId = null,
         public readonly ?string $boardMemberName = null,
+        public readonly array $committeeRoles = [],
     ) {}
 
     public static function full(): self
@@ -50,5 +52,19 @@ class ExecutiveAnalyticsScope
         }
 
         return in_array($committeeId, $this->committeeIds(), true);
+    }
+
+    public function roleLabelFor(int $committeeId): ?string
+    {
+        $label = $this->committeeRoles[$committeeId] ?? null;
+
+        return filled($label) ? (string) $label : null;
+    }
+
+    public function displayNameFor(Committee $committee): string
+    {
+        $role = $this->roleLabelFor((int) $committee->id);
+
+        return $role ? $committee->name.' ('.$role.')' : $committee->name;
     }
 }

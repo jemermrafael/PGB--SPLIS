@@ -15,8 +15,11 @@
             @endphp
             <div class="flex items-start justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 dark:border-slate-600 dark:bg-slate-900/40">
                 <div class="min-w-0">
-                    <a href="{{ $showUrl }}" class="inline-flex max-w-full hover:opacity-90">
+                    <a href="{{ $showUrl }}" class="inline-flex max-w-full items-center gap-2 hover:opacity-90">
                         <x-committee-meta :committee="$assignment['committee']" class="splis-list-committee--lg !normal-case tracking-normal" />
+                        @if (! empty($assignment['role_label']))
+                            <span class="shrink-0 text-sm font-medium text-slate-500 dark:text-slate-400">({{ $assignment['role_label'] }})</span>
+                        @endif
                     </a>
                     @if ($badge)
                         <p class="mt-1"><span class="splis-badge splis-badge--muted">{{ $badge }}</span></p>

@@ -59,7 +59,7 @@
             </p>
 
             <div class="flex flex-wrap gap-2">
-                <button type="submit" class="splis-btn-primary">
+                <button type="submit" class="splis-btn-primary whitespace-nowrap">
                     {{ $isEdit ? 'Save Changes' : 'Submit Report' }}
                 </button>
                 <a href="{{ route('board-member.committee-reports.index') }}" class="splis-btn-ghost">Cancel</a>

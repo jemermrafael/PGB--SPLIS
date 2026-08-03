@@ -79,7 +79,7 @@ class ScheduledCommitteeReferralTest extends TestCase
         $this->actingAs($chairUser)
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertDontSee('Incoming (for referral)')
+            ->assertSee('Agendas Referred from last OB')
             ->assertDontSee($agenda->title);
 
         $encoder = User::factory()->create(['role' => UserRole::Admin, 'is_active' => true]);
@@ -93,13 +93,13 @@ class ScheduledCommitteeReferralTest extends TestCase
         $this->actingAs($chairUser)
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertSee('Incoming (for referral)')
+            ->assertSee('Agendas Referred from last OB')
             ->assertSee($agenda->title);
 
         $this->actingAs($memberUser)
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertDontSee('Incoming (for referral)')
+            ->assertSee('Agendas Referred from last OB')
             ->assertDontSee($agenda->title);
     }
 

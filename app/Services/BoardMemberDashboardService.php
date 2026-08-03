@@ -161,34 +161,47 @@ class BoardMemberDashboardService
     }
 
     /**
-     * Agenda items from the member's committees that appear on a session OB.
+     * Agenda items from committees the member chairs that appear on a session OB.
      *
      * @return Collection<int, AgendaItem>
      */
     public function myCommitteeItemsOnSession(User $user, LegislativeSession $session): Collection
     {
-        $committeeNames = $this->committeesFor($user)
-            ->pluck('name')
-            ->filter()
-            ->map(fn ($name) => mb_strtolower((string) $name))
-            ->values();
+        $committees = $this->chairCommitteesForBoardMember((int) ($user->board_member_id ?? 0));
 
-        if ($committeeNames->isEmpty()) {
+        if ($committees->isEmpty()) {
             return collect();
         }
 
         $session->loadMissing('obDocument.blocks.agendaItem');
 
-        return $session->obDocument?->blocks
-            ?->filter(fn ($block) => $block->agendaItem !== null)
-            ->map(fn ($block) => $block->agendaItem)
-            ->filter(function (AgendaItem $agendaItem) use ($committeeNames) {
-                $committee = mb_strtolower((string) ($agendaItem->committee_referred ?? ''));
+        $orderedSessionAgendaIds = ($session->obDocument?->blocks ?? collect())
+            ->pluck('agenda_item_id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
 
-                return $committeeNames->contains(fn ($name) => $name !== '' && str_contains($committee, $name));
-            })
-            ->unique('id')
-            ->values() ?? collect();
+        if ($orderedSessionAgendaIds->isEmpty()) {
+            return collect();
+        }
+
+        $matched = $this->agendaQueryForCommittees($committees)
+            ->whereIn('id', $orderedSessionAgendaIds->all())
+            ->get()
+            ->keyBy('id');
+
+        return $orderedSessionAgendaIds
+            ->map(fn (int $id) => $matched->get($id))
+            ->filter()
+            ->values();
+    }
+
+    public function isChairOfCommittee(User $user, Committee $committee, ?CommitteeTerm $term = null): bool
+    {
+        $membership = $this->membershipForCommittee($user, $committee, $term);
+
+        return $membership !== null && $membership['role'] === CommitteeMembershipRole::Chair;
     }
 
     /**
@@ -345,7 +358,7 @@ class BoardMemberDashboardService
      */
     public function agendaQueryFor(User $user): Builder
     {
-        return $this->committeeAgendaQueryFor($user)
+        return $this->chairmanshipAgendaQueryFor($user)
             ->orderByDesc('date_of_referral')
             ->orderByDesc('date_received')
             ->orderByDesc('id');
@@ -356,7 +369,7 @@ class BoardMemberDashboardService
      */
     public function agendaStatsFor(User $user): array
     {
-        $base = $this->committeeAgendaQueryFor($user);
+        $base = $this->chairmanshipAgendaQueryFor($user);
 
         return [
             'pending' => (clone $base)->where('status', AgendaItem::STATUS_PENDING)->count(),
@@ -372,7 +385,7 @@ class BoardMemberDashboardService
      */
     public function expiringSoonAgendaQueryFor(User $user): Builder
     {
-        return $this->committeeAgendaQueryFor($user)
+        return $this->chairmanshipAgendaQueryFor($user)
             ->expiringSoon()
             ->orderBy('due_date')
             ->orderBy('id');

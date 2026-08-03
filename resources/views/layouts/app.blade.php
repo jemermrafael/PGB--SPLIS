@@ -118,10 +118,6 @@
                                         <x-icon name="user" class="h-4 w-4 shrink-0 opacity-80" />
                                         My Profile
                                     </a>
-                                    <a href="{{ route('board-member.watchlist.index') }}" @class(['splis-user-menu-link inline-flex items-center gap-2', 'font-semibold' => request()->routeIs('board-member.watchlist.*')])>
-                                        <x-icon name="bookmark" class="h-4 w-4 shrink-0 opacity-80" />
-                                        My Watchlist
-                                    </a>
                                     <a href="{{ route('board-member.committees.index') }}" class="splis-user-menu-link inline-flex items-center gap-2">
                                         <x-icon name="users" class="h-4 w-4 shrink-0 opacity-80" />
                                         My Committees

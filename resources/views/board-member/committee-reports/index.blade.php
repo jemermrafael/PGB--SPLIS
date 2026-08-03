@@ -12,7 +12,7 @@
             page="board_member_committee_reports"
         />
         @can('create', App\Models\BoardMemberCommitteeReport::class)
-            <a href="{{ route('board-member.committee-reports.create') }}" class="splis-btn-primary inline-flex items-center gap-2">
+            <a href="{{ route('board-member.committee-reports.create') }}" class="splis-btn-primary inline-flex items-center gap-2 whitespace-nowrap">
                 <x-icon name="plus" class="h-4 w-4" />
                 Submit Report
             </a>

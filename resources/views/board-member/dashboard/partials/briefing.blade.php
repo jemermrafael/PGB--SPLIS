@@ -5,8 +5,9 @@
     $deadlines = $briefing['deadline_agendas'] ?? collect();
     $deadlineDays = $briefing['deadline_days'] ?? $expiringSoonDays ?? 14;
     $deadlineCount = (int) ($briefing['deadline_count'] ?? $deadlines->count());
-    $incoming = $briefing['incoming_for_referral'] ?? collect();
+    $incoming = $briefing['referred_from_last_ob'] ?? ($briefing['incoming_for_referral'] ?? collect());
     $incomingCount = $incoming->count();
+    $referredSession = $briefing['referred_from_session'] ?? null;
 @endphp
 
 <section class="splis-card mb-8 overflow-hidden border-brand-200 dark:border-brand-800">
@@ -16,7 +17,7 @@
             <h2 class="splis-card-title">{{ now()->format('l, F j') }}</h2>
             <p class="splis-card-subtitle">
                 @if ($briefing['session_today'] ?? false)
-                    Session day — review your committee items below.
+                    Session day — Review your Committee items below.
                 @else
                     Next Session, your OB items, and upcoming Agenda deadlines.
                 @endif
@@ -38,7 +39,7 @@
                     <p class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ $next->session_date?->format('M j, Y') }} · {{ $next->formattedSessionTime() ?: '—' }}</p>
                     <p class="mt-1 text-xs text-slate-500">{{ $next->displayTitle() }}</p>
                     <div class="mt-2 flex flex-wrap gap-2">
-                        <a href="{{ route('board-member.sessions.show', $next) }}" class="splis-btn-primary !py-1.5 text-xs">Open session packet</a>
+                        <a href="{{ route('board-member.sessions.show', $next) }}" class="splis-btn-primary !py-1.5 text-xs">Open Session Packet</a>
                         <a href="{{ route('board-member.sessions.ics', $next) }}" class="splis-btn-ghost !py-1.5 text-xs">Calendar</a>
                     </div>
                 @else
@@ -59,7 +60,7 @@
                         @endforeach
                     </ul>
                 @else
-                    <p class="text-sm text-slate-500">No items from your Committees on the next Order of Business.</p>
+                    <p class="text-sm text-slate-500">No items from committees you chair on the next Order of Business.</p>
                 @endif
             </div>
 
@@ -81,9 +82,12 @@
                 @endif
             </div>
 
-            @if ($incoming->isNotEmpty())
-                <div class="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
-                    <h3 class="mb-1 text-sm font-semibold text-slate-900 dark:text-slate-100">Incoming (for referral)</h3>
+            <div class="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+                <h3 class="mb-1 text-sm font-semibold text-slate-900 dark:text-slate-100">Agendas Referred from last OB</h3>
+                @if ($incoming->isNotEmpty())
+                    @if ($referredSession)
+                        <p class="mb-2 text-xs text-slate-500">{{ $referredSession->displayTitle() }} · committees you chair</p>
+                    @endif
                     <ul class="space-y-1.5 text-sm">
                         @foreach ($incoming->take(4) as $agenda)
                             <li>
@@ -96,8 +100,10 @@
                             </li>
                         @endforeach
                     </ul>
-                </div>
-            @endif
+                @else
+                    <p class="text-sm text-slate-500">No referred Agendas for Committees you Chair yet.</p>
+                @endif
+            </div>
         </div>
     </div>
 
@@ -112,7 +118,7 @@
                         <p class="mt-1 text-sm text-slate-500">{{ $next->venue }}</p>
                     @endif
                     <div class="mt-3 flex flex-wrap gap-2">
-                        <a href="{{ route('board-member.sessions.show', $next) }}" class="splis-btn-primary !py-1.5 text-sm">Open session packet</a>
+                        <a href="{{ route('board-member.sessions.show', $next) }}" class="splis-btn-primary !py-1.5 text-sm">Open Session Packet</a>
                         @can('view', $next->obDocument)
                             <a href="{{ route('ob.document.print', $next) }}" target="_blank" class="splis-btn-secondary !py-1.5 text-sm">View OB</a>
                         @endcan
@@ -162,7 +168,7 @@
                         </details>
                     @endif
                 @else
-                    <p class="text-sm text-slate-500">No items from your Committees on the next Order of Business.</p>
+                    <p class="text-sm text-slate-500">No items from committees you chair on the next Order of Business.</p>
                 @endif
             </div>
         </div>
@@ -234,44 +240,54 @@
             </div>
         </details>
 
-                @if ($incoming->isNotEmpty())
                 <div class="p-4 sm:p-5">
-                    <h3 class="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">Incoming (for referral)</h3>
-                    <p class="mb-3 text-xs text-slate-500">Regular unassigned business referred to committees you chair.</p>
-                    <ul class="space-y-2 text-sm">
-                        @foreach ($incoming->take(8) as $agenda)
-                            <li>
-                                <a href="{{ route('agenda.show', $agenda) }}" class="splis-link font-medium">
-                                    {{ $agenda->displayLabel() }}
-                                </a>
-                                <span class="text-slate-600 dark:text-slate-300">
-                                    — {{ \Illuminate\Support\Str::limit($agenda->title ?: 'Untitled', 60) }}
-                                </span>
-                            </li>
-                        @endforeach
-                    </ul>
-                    @if ($incomingCount > 8)
-                        <details class="mt-2 group">
-                            <summary class="cursor-pointer list-none text-xs font-medium text-brand-700 hover:underline dark:text-brand-300 [&::-webkit-details-marker]:hidden">
-                                <span class="group-open:hidden">+ {{ $incomingCount - 8 }} more — show all</span>
-                                <span class="hidden group-open:inline">Show less</span>
-                            </summary>
-                            <ul class="mt-2 space-y-2 text-sm">
-                                @foreach ($incoming->skip(8) as $agenda)
-                                    <li>
-                                        <a href="{{ route('agenda.show', $agenda) }}" class="splis-link font-medium">
-                                            {{ $agenda->displayLabel() }}
-                                        </a>
-                                        <span class="text-slate-600 dark:text-slate-300">
-                                            — {{ \Illuminate\Support\Str::limit($agenda->title ?: 'Untitled', 60) }}
-                                        </span>
-                                    </li>
-                                @endforeach
-                            </ul>
-                        </details>
+                    <h3 class="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">Agendas Referred from last OB</h3>
+                    <p class="mb-3 text-xs text-slate-500">
+                        Regular unassigned Agendas sent to Committees you Chair
+                        @if ($referredSession)
+                            · {{ $referredSession->displayTitle() }}
+                            @if ($referredSession->session_date)
+                                ({{ $referredSession->session_date->format('M j, Y') }})
+                            @endif
+                        @endif
+                    </p>
+                    @if ($incoming->isNotEmpty())
+                        <ul class="space-y-2 text-sm">
+                            @foreach ($incoming->take(8) as $agenda)
+                                <li>
+                                    <a href="{{ route('agenda.show', $agenda) }}" class="splis-link font-medium">
+                                        {{ $agenda->displayLabel() }}
+                                    </a>
+                                    <span class="text-slate-600 dark:text-slate-300">
+                                        — {{ \Illuminate\Support\Str::limit($agenda->title ?: 'Untitled', 60) }}
+                                    </span>
+                                </li>
+                            @endforeach
+                        </ul>
+                        @if ($incomingCount > 8)
+                            <details class="mt-2 group">
+                                <summary class="cursor-pointer list-none text-xs font-medium text-brand-700 hover:underline dark:text-brand-300 [&::-webkit-details-marker]:hidden">
+                                    <span class="group-open:hidden">+ {{ $incomingCount - 8 }} more — show all</span>
+                                    <span class="hidden group-open:inline">Show less</span>
+                                </summary>
+                                <ul class="mt-2 space-y-2 text-sm">
+                                    @foreach ($incoming->skip(8) as $agenda)
+                                        <li>
+                                            <a href="{{ route('agenda.show', $agenda) }}" class="splis-link font-medium">
+                                                {{ $agenda->displayLabel() }}
+                                            </a>
+                                            <span class="text-slate-600 dark:text-slate-300">
+                                                — {{ \Illuminate\Support\Str::limit($agenda->title ?: 'Untitled', 60) }}
+                                            </span>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </details>
+                        @endif
+                    @else
+                        <p class="text-sm text-slate-500">No referred Agendas for Committees you Chair yet.</p>
                     @endif
                 </div>
-                @endif
             </div>
         </div>
     </div>

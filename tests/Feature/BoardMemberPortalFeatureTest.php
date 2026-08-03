@@ -71,9 +71,128 @@ class BoardMemberPortalFeatureTest extends TestCase
             ->assertSee('Next Session')
             ->assertSee('My Agendas on next OB')
             ->assertSee('Agenda deadlines within')
-            ->assertDontSee('Incoming (for referral)')
+            ->assertSee('Agendas Referred from last OB')
             ->assertDontSee('>Your Committees</')
             ->assertDontSee('Session Calendar');
+    }
+
+    public function test_board_member_my_agenda_search_lists_only_chairmanship_items(): void
+    {
+        [$user, $chairCommittee, $term, $boardMember] = $this->linkedBoardMemberWithCommittee();
+
+        $memberCommittee = Committee::query()->create([
+            'name' => 'Energy, Water, and Public Utilities',
+            'is_active' => true,
+            'sort_order' => 2,
+        ]);
+
+        CommitteeMembership::query()->create([
+            'committee_id' => $memberCommittee->id,
+            'board_member_id' => $boardMember->id,
+            'committee_term_id' => $term->id,
+            'role' => CommitteeMembershipRole::Member,
+            'sort_order' => 0,
+        ]);
+
+        $chairAgenda = AgendaItem::query()->create([
+            'title' => 'My Agenda chairmanship item',
+            'committee_referred' => $chairCommittee->name,
+            'status' => AgendaItem::STATUS_PENDING,
+            'date_of_referral' => now()->toDateString(),
+            'date_received' => now()->toDateString(),
+            'prescribed_days' => 0,
+            'created_by' => $user->id,
+        ]);
+
+        $memberAgenda = AgendaItem::query()->create([
+            'title' => 'My Agenda membership item',
+            'committee_referred' => $memberCommittee->name,
+            'status' => AgendaItem::STATUS_PENDING,
+            'date_of_referral' => now()->toDateString(),
+            'date_received' => now()->toDateString(),
+            'prescribed_days' => 0,
+            'created_by' => $user->id,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('board-member.agenda.index'))
+            ->assertOk();
+
+        $this->actingAs($user)
+            ->getJson(route('board-member.agenda.search'))
+            ->assertOk()
+            ->assertJsonFragment(['title' => $chairAgenda->title])
+            ->assertJsonMissing(['title' => $memberAgenda->title])
+            ->assertJsonPath('meta.total', 1);
+    }
+
+    public function test_board_member_dashboard_next_ob_lists_only_chairmanship_agendas(): void
+    {
+        [$user, $chairCommittee, $term, $boardMember] = $this->linkedBoardMemberWithCommittee();
+
+        $memberCommittee = Committee::query()->create([
+            'name' => 'Energy, Water, and Public Utilities',
+            'is_active' => true,
+            'sort_order' => 2,
+        ]);
+
+        CommitteeMembership::query()->create([
+            'committee_id' => $memberCommittee->id,
+            'board_member_id' => $boardMember->id,
+            'committee_term_id' => $term->id,
+            'role' => CommitteeMembershipRole::Member,
+            'sort_order' => 0,
+        ]);
+
+        $chairAgenda = AgendaItem::query()->create([
+            'title' => 'Chair item on next OB',
+            'committee_referred' => $chairCommittee->name,
+            'status' => AgendaItem::STATUS_PENDING,
+            'date_of_referral' => now()->toDateString(),
+            'prescribed_days' => 0,
+            'created_by' => $user->id,
+        ]);
+
+        $memberAgenda = AgendaItem::query()->create([
+            'title' => 'Member-only item on next OB',
+            'committee_referred' => $memberCommittee->name,
+            'status' => AgendaItem::STATUS_PENDING,
+            'date_of_referral' => now()->toDateString(),
+            'prescribed_days' => 0,
+            'created_by' => $user->id,
+        ]);
+
+        $session = LegislativeSession::query()->create([
+            'session_number' => 'Next Regular Session',
+            'session_kind' => 'regular',
+            'session_date' => now()->addDays(2)->toDateString(),
+            'session_time' => '10:00:00',
+            'venue' => 'Session Hall',
+            'status' => 'scheduled',
+        ]);
+
+        $document = ObDocument::query()->create([
+            'legislative_session_id' => $session->id,
+            'title' => 'Order of Business',
+            'status' => ObDocument::STATUS_FINAL,
+            'created_by' => $user->id,
+        ]);
+
+        foreach ([$chairAgenda, $memberAgenda] as $index => $agenda) {
+            $document->blocks()->create([
+                'type' => 'committee_report',
+                'sort_order' => $index + 1,
+                'agenda_item_id' => $agenda->id,
+                'content' => ['title' => $agenda->title],
+            ]);
+        }
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('My Agendas on next OB')
+            ->assertSee($chairAgenda->title)
+            ->assertDontSee($memberAgenda->title);
     }
 
     public function test_board_member_can_update_profile(): void
@@ -303,6 +422,57 @@ class BoardMemberPortalFeatureTest extends TestCase
             ->get(route('board-member.committees.index'))
             ->assertOk()
             ->assertSee('not linked to a Board Member profile');
+    }
+
+    public function test_board_member_agenda_index_lists_only_chairmanship_items(): void
+    {
+        [$chairUser, $chairCommittee, $term, $boardMember] = $this->linkedBoardMemberWithCommittee();
+
+        $memberCommittee = Committee::query()->create([
+            'name' => 'Energy, Water, and Public Utilities',
+            'is_active' => true,
+            'sort_order' => 2,
+        ]);
+
+        CommitteeMembership::query()->create([
+            'committee_id' => $memberCommittee->id,
+            'board_member_id' => $boardMember->id,
+            'committee_term_id' => $term->id,
+            'role' => CommitteeMembershipRole::Member,
+            'sort_order' => 0,
+        ]);
+
+        $chairAgenda = AgendaItem::query()->create([
+            'title' => 'Chairmanship referral item',
+            'committee_referred' => $chairCommittee->name,
+            'status' => AgendaItem::STATUS_PENDING,
+            'date_of_referral' => now()->toDateString(),
+            'date_received' => now()->toDateString(),
+            'prescribed_days' => 0,
+            'created_by' => $chairUser->id,
+        ]);
+
+        $memberAgenda = AgendaItem::query()->create([
+            'title' => 'Membership-only referral item',
+            'committee_referred' => $memberCommittee->name,
+            'status' => AgendaItem::STATUS_PENDING,
+            'date_of_referral' => now()->toDateString(),
+            'date_received' => now()->toDateString(),
+            'prescribed_days' => 0,
+            'created_by' => $chairUser->id,
+        ]);
+
+        $this->actingAs($chairUser)
+            ->get(route('agenda.index'))
+            ->assertOk();
+
+        $this->actingAs($chairUser)
+            ->getJson(route('agenda.search'))
+            ->assertOk()
+            ->assertJsonFragment(['title' => $chairAgenda->title])
+            ->assertJsonMissing(['title' => $memberAgenda->title])
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('stats.total', 1);
     }
 
     /**

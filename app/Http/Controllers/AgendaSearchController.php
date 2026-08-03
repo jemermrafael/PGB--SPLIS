@@ -31,8 +31,9 @@ class AgendaSearchController extends Controller
         }
 
         $filters['page'] = $request->integer('page', 1);
+        $user = $request->user();
 
-        $paginator = $repository->paginate($filters, 25);
+        $paginator = $repository->paginate($filters, 25, $user);
 
         return response()->json([
             'data' => collect($paginator->items())->values(),
@@ -42,7 +43,7 @@ class AgendaSearchController extends Controller
                 'per_page' => $paginator->perPage(),
                 'total' => $paginator->total(),
             ],
-            'stats' => $repository->stats(),
+            'stats' => $repository->stats($user),
         ]);
     }
 }

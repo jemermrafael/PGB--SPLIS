@@ -200,7 +200,7 @@
                     <select id="map-committee-id" class="splis-input" data-map-filter="committee_id">
                         <option value="" @selected($mapCommitteeId === null)>{{ ($analyticsScopeFull ?? true) ? 'All Committees' : 'My Committees' }}</option>
                         @foreach ($committees as $committee)
-                            <option value="{{ $committee->id }}" @selected($mapCommitteeId === $committee->id)>{{ $committee->name }}</option>
+                            <option value="{{ $committee->id }}" @selected($mapCommitteeId === $committee->id)>{{ $committee->display_name ?? $committee->name }}</option>
                         @endforeach
                     </select>
                 </div>
