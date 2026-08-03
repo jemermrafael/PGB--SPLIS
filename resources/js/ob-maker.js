@@ -510,8 +510,32 @@ export function initObMaker() {
         return match ? String(match.id) : '';
     }
 
+    function renderReadonlyField(label, value, { className = '', empty = '—' } = {}) {
+        const text = String(value ?? '').trim();
+
+        return `
+            <div class="${className}">
+                <p class="splis-label">${escapeHtml(label)}</p>
+                <p class="splis-ob-readonly-value">${
+                    text !== ''
+                        ? escapeHtml(text)
+                        : `<span class="text-slate-400">${escapeHtml(empty)}</span>`
+                }</p>
+            </div>
+        `;
+    }
+
     function renderCommitteeSelect(c, disabled, fieldLabel = 'Committee', hint = '') {
         const selectedId = resolveCommitteeId(c);
+        const selected = committees.find((item) => String(item.id) === selectedId);
+        const displayName = selected?.name
+            || String(c.committee_name ?? '').trim()
+            || '';
+
+        if (disabled === 'disabled') {
+            return renderReadonlyField(fieldLabel, displayName, { className: 'md:col-span-2' });
+        }
+
         const options = committees
             .map(
                 (item) =>
@@ -540,6 +564,7 @@ export function initObMaker() {
             includeKind = false,
             includeCommittee = false,
             referralNotePlaceholder = '(Referred last November 24, 2025)',
+            lockFinalMeta = false,
         } = options;
         const agendaNo = c.agenda_no ?? c.session_agenda_no ?? '';
 
@@ -564,30 +589,54 @@ export function initObMaker() {
               )
             : '';
 
-        return `
-            <div class="grid grid-cols-1 gap-3 md:grid-cols-[minmax(8rem,12rem)_minmax(10rem,15rem)_minmax(8rem,12rem)_1fr]">
+        const agendaNoField = lockFinalMeta
+            ? renderReadonlyField('Agenda no.', agendaNo, { className: 'splis-ob-agenda-no-field' })
+            : `
                 <div class="splis-ob-agenda-no-field">
                     <label class="splis-label">Agenda no.</label>
                     <input type="text" class="splis-input splis-ob-block-field" data-field="agenda_no" value="${escapeHtml(agendaNo)}" ${disabled}>
                 </div>
-                ${kindField}
-                ${committeeField}
+            `;
+
+        const dateField = lockFinalMeta
+            ? renderReadonlyField('Date of receipt', c.date_received, { className: 'splis-ob-compact-field' })
+            : `
                 <div class="splis-ob-compact-field">
                     <label class="splis-label">Date of receipt</label>
                     <input type="text" class="splis-input splis-ob-block-field" data-field="date_received" value="${escapeHtml(c.date_received ?? '')}" ${disabled}>
                 </div>
+            `;
+
+        const prescriptionField = lockFinalMeta
+            ? renderReadonlyField('Prescription', c.prescription, { className: 'splis-ob-compact-field' })
+            : `
                 <div class="splis-ob-compact-field">
                     <label class="splis-label">Prescription</label>
                     <input type="text" class="splis-input splis-ob-block-field" data-field="prescription" value="${escapeHtml(c.prescription ?? '')}" ${disabled}>
                 </div>
-                <div class="md:col-span-4">
-                    <label class="splis-label">Title</label>
-                    ${renderRichTitleEditor(c, disabled)}
-                </div>
+            `;
+
+        const referralField = lockFinalMeta
+            ? renderReadonlyField('Referral note', c.referral_note, { className: 'md:col-span-4' })
+            : `
                 <div class="md:col-span-4">
                     <label class="splis-label">Referral note</label>
                     <input type="text" class="splis-input splis-ob-block-field" data-field="referral_note" value="${escapeHtml(c.referral_note ?? '')}" ${disabled} placeholder="${escapeHtml(referralNotePlaceholder)}">
                 </div>
+            `;
+
+        return `
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-[minmax(8rem,12rem)_minmax(10rem,15rem)_minmax(8rem,12rem)_1fr]">
+                ${agendaNoField}
+                ${kindField}
+                ${committeeField}
+                ${dateField}
+                ${prescriptionField}
+                <div class="md:col-span-4">
+                    <label class="splis-label">Title</label>
+                    ${renderRichTitleEditor(c, disabled)}
+                </div>
+                ${referralField}
             </div>
         `;
     }
@@ -789,7 +838,20 @@ export function initObMaker() {
             }
             case 'paragraph':
                 return `<textarea class="splis-textarea splis-ob-block-field" data-field="text" rows="4" ${disabled}>${escapeHtml(c.text ?? '')}</textarea>`;
-            case 'committee_report':
+            case 'committee_report': {
+                const needsCommittee = c.needs_committee === true;
+                const agendaNosLabel = Array.isArray(c.agenda_nos) && c.agenda_nos.length > 0
+                    ? c.agenda_nos.join(', ')
+                    : (c.agenda_no ?? c.session_agenda_no ?? '');
+                const chairField = needsCommittee
+                    ? `
+                        <div class="md:col-span-2">
+                            <label class="splis-label">Chaired by</label>
+                            <input type="text" class="splis-input splis-ob-block-field" data-field="chair_name" value="${escapeHtml(c.chair_name ?? '')}" ${disabled}>
+                        </div>
+                    `
+                    : renderReadonlyField('Chaired by', c.chair_name, { className: 'md:col-span-2' });
+
                 return `
                     ${sectionMove}
                     <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -799,44 +861,36 @@ export function initObMaker() {
                         </div>
                         <div class="splis-ob-agenda-no-field">
                             <label class="splis-label">Agenda no.</label>
-                            <input type="text" class="splis-input splis-ob-block-field" data-field="agenda_no" value="${escapeHtml(
-                                Array.isArray(c.agenda_nos) && c.agenda_nos.length > 0
-                                    ? c.agenda_nos.join(', ')
-                                    : (c.agenda_no ?? c.session_agenda_no ?? ''),
-                            )}" ${disabled} placeholder="e.g. 262, 272, 273">
+                            <input type="text" class="splis-input splis-ob-block-field" data-field="agenda_no" value="${escapeHtml(agendaNosLabel)}" ${disabled} placeholder="e.g. 262, 272, 273">
                         </div>
                         ${renderCommitteeSelect(
                             c,
-                            disabled,
+                            needsCommittee ? disabled : 'disabled',
                             'SP Committee',
-                            c.needs_committee
+                            needsCommittee
                                 ? 'Select the committee for this report (from agenda details or choose here).'
                                 : '',
                         )}
-                        <div class="md:col-span-2">
-                            <label class="splis-label">Chaired by</label>
-                            <input type="text" class="splis-input splis-ob-block-field" data-field="chair_name" value="${escapeHtml(c.chair_name ?? '')}" ${disabled}>
-                        </div>
+                        ${chairField}
                     </div>
                 `;
+            }
             case 'unfinished_committee':
                 return `
                     <div class="space-y-3">
-                        <div>
-                            <label class="splis-label">Committee header</label>
-                            <input type="text" class="splis-input splis-ob-block-field" data-field="committee_name" value="${escapeHtml(c.committee_name ?? '')}" ${disabled}>
-                        </div>
-                        <div>
-                            <label class="splis-label">Chair</label>
-                            <input type="text" class="splis-input splis-ob-block-field" data-field="chair_name" value="${escapeHtml(c.chair_name ?? '')}" ${disabled}>
-                        </div>
+                        ${renderReadonlyField('Committee header', c.committee_name)}
+                        ${renderReadonlyField('Chair', c.chair_name)}
                     </div>
                 `;
             case 'unfinished_agenda':
-                return sectionMove + renderAgendaMetaFields(c, disabled, { includeCommittee: c.needs_committee === true });
+                return sectionMove + renderAgendaMetaFields(c, disabled, {
+                    includeCommittee: c.needs_committee === true,
+                    lockFinalMeta: true,
+                });
             case 'unassigned_agenda':
                 return sectionMove + renderAgendaMetaFields(c, disabled, {
                     includeKind: true,
+                    lockFinalMeta: true,
                     referralNotePlaceholder:
                         (c.kind ?? 'regular') === 'urgent'
                             ? 'Sponsored by: SP Committee on …\nChaired by: Board Member …'
@@ -855,7 +909,7 @@ export function initObMaker() {
                                 </select>
                             </div>
                         </div>
-                        ${renderAgendaMetaFields(c, disabled)}
+                        ${renderAgendaMetaFields(c, disabled, { lockFinalMeta: true })}
                     </div>
                 `;
             case 'announcement':

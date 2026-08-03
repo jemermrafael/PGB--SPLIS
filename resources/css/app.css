@@ -3003,6 +3003,14 @@
         @apply text-base font-bold text-brand-900 ring-1 ring-brand-800/30 dark:text-brand-gold;
     }
 
+    .splis-ob-readonly-value {
+        @apply text-sm text-slate-800 dark:text-slate-100;
+    }
+
+    .splis-ob-agenda-no-field .splis-ob-readonly-value {
+        @apply inline-block bg-[#fff200] px-1.5 py-0.5 text-base font-bold tracking-wide text-brand-900 dark:text-brand-900;
+    }
+
     .splis-ob-compact-field {
         @apply w-full md:max-w-48;
     }
