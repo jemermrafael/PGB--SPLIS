@@ -54,6 +54,7 @@ use App\Http\Controllers\LegislativeSessionController;
 use App\Http\Controllers\MunicipalRequestController;
 use App\Http\Controllers\MunicipalRequestSearchController;
 use App\Http\Controllers\MyOrdinanceController;
+use App\Http\Controllers\MyResolutionController;
 use App\Http\Controllers\ObAgendaPoolController;
 use App\Http\Controllers\ObDocumentController;
 use App\Http\Controllers\OrdinanceController;
@@ -108,6 +109,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/my-ordinances', [MyOrdinanceController::class, 'index'])->name('board-member.ordinances.index');
     Route::get('/all-ordinances', [MyOrdinanceController::class, 'all'])->name('board-member.ordinances.all');
     Route::get('/all-ordinances/search', [MyOrdinanceController::class, 'allSearch'])->name('board-member.ordinances.all.search');
+
+    Route::get('/my-resolutions', [MyResolutionController::class, 'index'])->name('board-member.resolutions.index');
+    Route::get('/my-resolutions/search', [MyResolutionController::class, 'search'])->name('board-member.resolutions.search');
 
     Route::get('/my-agenda', [BoardMemberAgendaController::class, 'index'])->name('board-member.agenda.index');
     Route::get('/my-agenda/search', BoardMemberAgendaSearchController::class)->name('board-member.agenda.search');

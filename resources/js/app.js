@@ -21,6 +21,7 @@ import { initHeaderNav } from './header-nav';
 import { initHeaderNotifications } from './header-notifications';
 import { initNotificationsFeed } from './notifications-feed';
 import { initBoardMemberOrdinancesTable } from './board-member-ordinances';
+import { initBoardMemberResolutionsSearch } from './board-member-resolutions';
 import { initAdminBoardMemberOrdinancesSearch } from './admin-board-member-ordinances';
 import { initBoardMemberCommitteeReportAgendaSearch } from './board-member-committee-reports';
 import { initStaffCommitteeReportsSearch } from './staff-committee-reports';
@@ -81,6 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initHeaderNotifications();
     initNotificationsFeed();
     initBoardMemberOrdinancesTable();
+    initBoardMemberResolutionsSearch();
     initAdminBoardMemberOrdinancesSearch();
     initBoardMemberCommitteeReportAgendaSearch();
     initStaffCommitteeReportsSearch();

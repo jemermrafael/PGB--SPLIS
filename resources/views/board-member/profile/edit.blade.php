@@ -115,7 +115,7 @@
             @method('PUT')
 
             <div>
-                <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">Notification preferences</h2>
+                <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">Notification Preferences</h2>
                 <p class="mt-1 text-sm text-slate-500">Choose which Board Member alerts you want in-app and by email.</p>
             </div>
 

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\CommitteeMembershipRole;
 use App\Enums\UserRole;
 use App\Models\AgendaItem;
 use App\Models\CommitteeMembership;
@@ -427,14 +428,32 @@ class BoardMemberNotifier
             return collect();
         }
 
-        $termId = CommitteeTerm::query()->current()->value('id');
+        $termId = CommitteeTerm::query()->current()->orderByDesc('id')->value('id');
 
         $memberIds = CommitteeMembership::query()
             ->where('committee_id', $committee->id)
-            ->when($termId, fn ($query) => $query->where('committee_term_id', $termId))
+            ->where('role', CommitteeMembershipRole::Chair)
+            ->when(
+                $termId,
+                fn ($query) => $query->where(function ($inner) use ($termId): void {
+                    $inner->where('committee_term_id', $termId)
+                        ->orWhereNull('committee_term_id');
+                }),
+            )
             ->pluck('board_member_id')
             ->unique()
             ->all();
+
+        if ($memberIds === []) {
+            // Fallback when roster is on another term.
+            $memberIds = CommitteeMembership::query()
+                ->where('committee_id', $committee->id)
+                ->where('role', CommitteeMembershipRole::Chair)
+                ->orderByDesc('committee_term_id')
+                ->pluck('board_member_id')
+                ->unique()
+                ->all();
+        }
 
         if ($memberIds === []) {
             return collect();

@@ -120,6 +120,6 @@ class BoardMemberProfileController extends Controller
 
         return redirect()
             ->route('board-member.profile.edit')
-            ->with('status', 'Notification preferences updated.');
+            ->with('status', 'Notification Preferences updated.');
     }
 }

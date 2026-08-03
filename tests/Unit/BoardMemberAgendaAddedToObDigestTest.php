@@ -200,6 +200,81 @@ class BoardMemberAgendaAddedToObDigestTest extends TestCase
     }
 
     /** @return array{0: User, 1: Committee, 2: LegislativeSession} */
+    public function test_committee_agenda_notifications_go_only_to_chair_not_members(): void
+    {
+        Mail::fake();
+
+        [$chairUser, $committee] = $this->boardMemberOnCommittee();
+
+        $term = CommitteeTerm::query()->current()->first();
+        $memberProfile = BoardMember::query()->create([
+            'name' => 'Regular Member',
+            'honorific' => 'Hon.',
+            'is_active' => true,
+        ]);
+        CommitteeMembership::query()->create([
+            'committee_id' => $committee->id,
+            'board_member_id' => $memberProfile->id,
+            'committee_term_id' => $term->id,
+            'role' => CommitteeMembershipRole::Member,
+            'sort_order' => 1,
+        ]);
+        $memberUser = User::factory()->create([
+            'role' => UserRole::BoardMember,
+            'board_member_id' => $memberProfile->id,
+            'username' => 'bm_member_'.uniqid(),
+            'email' => 'bm_member_'.uniqid().'@example.com',
+            'is_active' => true,
+            'name' => 'Hon. Regular Member',
+        ]);
+
+        $viceProfile = BoardMember::query()->create([
+            'name' => 'Vice Chair',
+            'honorific' => 'Hon.',
+            'is_active' => true,
+        ]);
+        CommitteeMembership::query()->create([
+            'committee_id' => $committee->id,
+            'board_member_id' => $viceProfile->id,
+            'committee_term_id' => $term->id,
+            'role' => CommitteeMembershipRole::ViceChair,
+            'sort_order' => 2,
+        ]);
+        $viceUser = User::factory()->create([
+            'role' => UserRole::BoardMember,
+            'board_member_id' => $viceProfile->id,
+            'username' => 'bm_vice_'.uniqid(),
+            'email' => 'bm_vice_'.uniqid().'@example.com',
+            'is_active' => true,
+            'name' => 'Hon. Vice Chair',
+        ]);
+
+        $agenda = $this->agendaForCommittee($committee->name, $chairUser->id, '401', 'Chair-only notice');
+
+        $notifier = app(BoardMemberNotifier::class);
+        $notifier->notifyCommitteeReferral($agenda);
+
+        $this->assertDatabaseHas('user_notifications', [
+            'user_id' => $chairUser->id,
+            'type' => UserNotification::TYPE_COMMITTEE_REFERRAL,
+            'agenda_item_id' => $agenda->id,
+        ]);
+        $this->assertDatabaseMissing('user_notifications', [
+            'user_id' => $memberUser->id,
+            'type' => UserNotification::TYPE_COMMITTEE_REFERRAL,
+            'agenda_item_id' => $agenda->id,
+        ]);
+        $this->assertDatabaseMissing('user_notifications', [
+            'user_id' => $viceUser->id,
+            'type' => UserNotification::TYPE_COMMITTEE_REFERRAL,
+            'agenda_item_id' => $agenda->id,
+        ]);
+
+        Mail::assertSent(SystemNotificationMail::class, fn (SystemNotificationMail $mail) => $mail->hasTo($chairUser->email));
+        Mail::assertNotSent(SystemNotificationMail::class, fn (SystemNotificationMail $mail) => $mail->hasTo($memberUser->email));
+        Mail::assertNotSent(SystemNotificationMail::class, fn (SystemNotificationMail $mail) => $mail->hasTo($viceUser->email));
+    }
+
     protected function boardMemberWithFinalScheduledSession(): array
     {
         [$user, $committee] = $this->boardMemberOnCommittee();
