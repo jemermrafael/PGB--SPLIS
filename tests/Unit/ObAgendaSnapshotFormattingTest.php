@@ -195,7 +195,7 @@ class ObAgendaSnapshotFormattingTest extends TestCase
         ]);
 
         $this->assertSame(
-            'Agenda Nos. <a href="https://example.test/a.pdf" class="ob-print-link" target="_blank" rel="noopener">058</a>, <a href="https://example.test/b.pdf" class="ob-print-link" target="_blank" rel="noopener">267</a>',
+            '<a href="https://example.test/a.pdf" class="ob-print-link" target="_blank" rel="noopener">Agenda Nos. </a><a href="https://example.test/a.pdf" class="ob-print-link" target="_blank" rel="noopener">058</a>, <a href="https://example.test/b.pdf" class="ob-print-link" target="_blank" rel="noopener">267</a>',
             $html,
         );
     }

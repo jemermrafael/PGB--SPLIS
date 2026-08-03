@@ -221,7 +221,13 @@ class ObAgendaSnapshot
             return e($no);
         }, $nos);
 
-        return e($prefix).implode(', ', $parts);
+        // Keep "Agenda Nos." visually linked (blue + underline) even when each
+        // number opens a different PDF. Point the prefix at the first available file.
+        $prefixHtml = $filledUrls !== []
+            ? '<a href="'.e($filledUrls[0]).'" class="ob-print-link" target="_blank" rel="noopener">'.e($prefix).'</a>'
+            : e($prefix);
+
+        return $prefixHtml.implode(', ', $parts);
     }
 
     /**

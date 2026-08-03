@@ -695,7 +695,7 @@ class ObPrintRenderer
             }
 
             foreach ($rows as $position => $row) {
-                if (str_starts_with((string) ($keyByRowIndex[$position] ?? ''), 'report:')) {
+                if ($this->shouldShareCommitteeReportLinks((array) $row)) {
                     $row = ObAgendaSnapshot::shareAgendaNoLinkAcrossRow($row);
                 }
 
@@ -716,21 +716,58 @@ class ObPrintRenderer
      */
     protected function committeeReportGroupKey(ObBlock $block, array $row): string
     {
+        return ObAgendaSnapshot::committeeReportKey($row);
+    }
+
+    /**
+     * Shared PDF (one upload tagged to many agendas) → one link for the whole label.
+     * Separate PDFs for the same committee → keep per-number links.
+     *
+     * @param  array<string, mixed>  $row
+     */
+    protected function shouldShareCommitteeReportLinks(array $row): bool
+    {
+        $links = is_array($row['agenda_no_links'] ?? null) ? $row['agenda_no_links'] : [];
+        $urls = array_values(array_filter(array_map(
+            static fn ($url) => filled($url) ? (string) $url : null,
+            $links,
+        )));
+
+        if ($urls !== [] && count(array_unique($urls)) === 1) {
+            return true;
+        }
+
+        $ids = [];
+        foreach ($row['agenda_item_ids'] ?? [] as $id) {
+            if (is_numeric($id) && (int) $id > 0) {
+                $ids[] = (int) $id;
+            }
+        }
+
+        if ($ids === []) {
+            return false;
+        }
+
+        $paths = [];
         $reportIds = [];
 
-        foreach ($this->agendaIdsForBlock($block) as $id) {
-            $reportId = $this->committeeReportIdsByAgendaId->get($id);
+        foreach ($ids as $id) {
+            $item = $this->agendaItemsById->get($id);
+            if ($item instanceof AgendaItem && filled($item->committee_report_pdf_path)) {
+                $paths[(string) $item->committee_report_pdf_path] = true;
+            }
 
+            $reportId = $this->committeeReportIdsByAgendaId->get($id);
             if ($reportId !== null) {
                 $reportIds[(int) $reportId] = true;
             }
         }
 
         if (count($reportIds) === 1) {
-            return 'report:'.array_key_first($reportIds);
+            return true;
         }
 
-        return ObAgendaSnapshot::committeeReportKey($row);
+        return count($paths) === 1;
     }
 
     /**

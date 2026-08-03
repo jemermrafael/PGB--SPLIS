@@ -146,4 +146,101 @@ class ObPrintRendererCommitteeReportTest extends TestCase
             $html,
         );
     }
+
+    public function test_groups_same_committee_separate_pdfs_with_per_agenda_links(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+        $boardMember = BoardMember::query()->create([
+            'name' => 'Finance Chair',
+            'honorific' => 'Hon.',
+            'is_active' => true,
+        ]);
+
+        $session = LegislativeSession::query()->create([
+            'session_date' => now()->addWeek(),
+            'session_kind' => 'regular',
+            'session_number' => '54th',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+
+        $document = ObDocument::query()->create([
+            'legislative_session_id' => $session->id,
+            'title' => 'OB',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+
+        $agendas = collect(['300', '301', '302'])->mapWithKeys(function (string $no) use ($user) {
+            return [$no => AgendaItem::query()->create([
+                'tracking_no' => $no,
+                'title' => 'Agenda '.$no,
+                'committee_referred' => 'Finance, Budget, Appropriation, and Ways & Means',
+                'status' => AgendaItem::STATUS_PENDING,
+                'prescribed_days' => 0,
+                'created_by' => $user->id,
+            ])];
+        });
+
+        foreach ($agendas as $no => $agenda) {
+            $path = 'board-member-committee-reports/'.$boardMember->id.'/'.$no.'.pdf';
+            Storage::disk('local')->put($path, '%PDF-1.4 '.$no);
+            $agenda->forceFill(['committee_report_pdf_path' => $path])->save();
+
+            $report = BoardMemberCommitteeReport::query()->create([
+                'board_member_id' => $boardMember->id,
+                'title' => 'Finance report '.$no,
+                'pdf_path' => $path,
+                'original_filename' => $no.'.pdf',
+                'previous_ob_placements' => [],
+                'submitted_by' => $user->id,
+                'submitted_at' => now(),
+            ]);
+            $report->agendaItems()->sync([$agenda->id]);
+        }
+
+        $committeeContent = [
+            'committee_id' => 7,
+            'committee_name' => 'SP Committee on Finance, Budget, Appropriation, and Ways & Means',
+            'chair_name' => 'Board Member Finance Chair',
+        ];
+
+        $blocks = $agendas->values()->map(function (AgendaItem $agenda, int $index) use ($document, $committeeContent): ObBlock {
+            return ObBlock::query()->create([
+                'ob_document_id' => $document->id,
+                'type' => ObBlockType::CommitteeReport,
+                'sort_order' => $index + 1,
+                'agenda_item_id' => $agenda->id,
+                'content' => array_merge($committeeContent, [
+                    'row_no' => $index + 1,
+                    'agenda_no' => $agenda->tracking_no,
+                    'agenda_item_ids' => [$agenda->id],
+                ]),
+            ]);
+        });
+
+        $segments = app(ObPrintRenderer::class)->segments($blocks, $session);
+        $table = collect($segments)->firstWhere('type', 'committee_reports_table');
+
+        $this->assertNotNull($table);
+        $this->assertCount(1, $table['rows']);
+
+        $row = $table['rows'][0];
+        $this->assertSame(['300', '301', '302'], ObAgendaSnapshot::agendaNosFromContent($row));
+
+        $links = $row['agenda_no_links'] ?? [];
+        $this->assertCount(3, $links);
+        $this->assertCount(3, array_unique(array_values($links)));
+
+        $html = ObAgendaSnapshot::displayAgendaNosLabelHtml($row);
+        $this->assertStringContainsString(
+            'class="ob-print-link" target="_blank" rel="noopener">Agenda Nos. </a>',
+            $html,
+        );
+        $this->assertStringContainsString('>300</a>', $html);
+        $this->assertStringContainsString('>301</a>', $html);
+        $this->assertStringContainsString('>302</a>', $html);
+    }
 }

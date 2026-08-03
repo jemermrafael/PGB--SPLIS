@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Enums\ObBlockType;
 use App\Models\AgendaItem;
-use App\Models\BoardMemberCommitteeReport;
 use App\Models\ObBlock;
 use App\Models\ObDocument;
 use App\Support\ObAgendaSnapshot;
@@ -12,9 +11,12 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * One committee report belongs on one row under IV. Committee Report. Agendas filed
- * under the same report can reach the document at different times, which leaves a
- * block per agenda; this folds those blocks back into the first one.
+ * One committee belongs on one row under IV. Committee Report.
+ *
+ * Agendas for the same committee (whether tagged on one shared PDF or uploaded
+ * as separate reports) can reach the document as separate blocks; this folds
+ * those blocks into the first one. Link rendering keeps a single shared link
+ * when every agenda uses the same PDF, or per-number links when PDFs differ.
  */
 class ObCommitteeReportConsolidator
 {
@@ -34,24 +36,23 @@ class ObCommitteeReportConsolidator
         }
 
         $absorbedCount = DB::transaction(function () use ($document, $blocks): int {
-            $reportIds = $this->reportIdsByAgendaId($blocks);
-            $primaryByReport = [];
+            $primaryByCommittee = [];
             $absorbed = [];
 
             foreach ($blocks as $block) {
-                $reportId = $this->soleReportId($block, $reportIds);
+                $committeeKey = $this->committeeKey($block);
 
-                if ($reportId === null) {
+                if ($committeeKey === null) {
                     continue;
                 }
 
-                if (! isset($primaryByReport[$reportId])) {
-                    $primaryByReport[$reportId] = $block;
+                if (! isset($primaryByCommittee[$committeeKey])) {
+                    $primaryByCommittee[$committeeKey] = $block;
 
                     continue;
                 }
 
-                $this->absorb($primaryByReport[$reportId], $block, $document);
+                $this->absorb($primaryByCommittee[$committeeKey], $block, $document);
                 $absorbed[] = $block->id;
             }
 
@@ -106,55 +107,16 @@ class ObCommitteeReportConsolidator
         }
     }
 
-    /**
-     * Null when the block has no filed report, or spans more than one.
-     *
-     * @param  Collection<int, int>  $reportIds
-     */
-    protected function soleReportId(ObBlock $block, Collection $reportIds): ?int
+    protected function committeeKey(ObBlock $block): ?string
     {
-        $found = [];
+        $content = is_array($block->content) ? $block->content : [];
+        $key = ObAgendaSnapshot::committeeReportKey($content);
 
-        foreach ($this->agendaIds($block) as $agendaId) {
-            $reportId = $reportIds->get($agendaId);
-
-            if ($reportId !== null) {
-                $found[(int) $reportId] = true;
-            }
+        if ($key === 'name:' || $key === 'id:0') {
+            return null;
         }
 
-        return count($found) === 1 ? array_key_first($found) : null;
-    }
-
-    /**
-     * @param  Collection<int, ObBlock>  $blocks
-     * @return Collection<int, int> Agenda item id => committee report id
-     */
-    protected function reportIdsByAgendaId(Collection $blocks): Collection
-    {
-        $agendaIds = $blocks->flatMap(fn (ObBlock $block) => $this->agendaIds($block))->unique()->values();
-
-        if ($agendaIds->isEmpty()) {
-            return collect();
-        }
-
-        $reports = BoardMemberCommitteeReport::query()
-            ->whereHas('agendaItems', fn ($query) => $query->whereIn('agenda_items.id', $agendaIds->all()))
-            ->with('agendaItems:id')
-            ->orderBy('id')
-            ->get();
-
-        $map = collect();
-
-        foreach ($reports as $report) {
-            foreach ($report->agendaItems as $agenda) {
-                if (! $map->has((int) $agenda->id)) {
-                    $map->put((int) $agenda->id, (int) $report->id);
-                }
-            }
-        }
-
-        return $map;
+        return $key;
     }
 
     protected function compactSortOrders(ObDocument $document): void

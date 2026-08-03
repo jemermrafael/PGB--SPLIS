@@ -90,30 +90,40 @@ class ObCommitteeReportConsolidatorTest extends TestCase
         }
     }
 
-    public function test_it_keeps_separate_reports_from_the_same_committee_apart(): void
+    public function test_it_folds_separate_reports_from_the_same_committee_into_one_row(): void
     {
         $first = $this->report('Housing and Land Use', ['324']);
         $second = $this->report('Housing and Land Use', ['325']);
 
-        $this->block($first['agendas']['324'], 'SP Committee on Housing and Land Use', 21, 1);
-        $this->block($second['agendas']['325'], 'SP Committee on Housing and Land Use', 21, 2);
+        $primary = $this->block($first['agendas']['324'], 'SP Committee on Housing and Land Use', 21, 1);
+        $other = $this->block($second['agendas']['325'], 'SP Committee on Housing and Land Use', 21, 2);
 
-        $this->assertSame(0, app(ObCommitteeReportConsolidator::class)->consolidate($this->document));
-        $this->assertSame(2, ObBlock::query()
-            ->where('ob_document_id', $this->document->id)
-            ->where('type', ObBlockType::CommitteeReport)
-            ->count());
+        $this->assertSame(1, app(ObCommitteeReportConsolidator::class)->consolidate($this->document));
+        $this->assertNull(ObBlock::query()->find($other->id));
+
+        $primary->refresh();
+        $this->assertSame(['324', '325'], ObAgendaSnapshot::agendaNosFromContent($primary->content));
+        $this->assertEqualsCanonicalizing(
+            [
+                $first['agendas']['324']->id,
+                $second['agendas']['325']->id,
+            ],
+            $primary->content['agenda_item_ids'],
+        );
     }
 
-    public function test_it_leaves_blocks_without_a_filed_report_alone(): void
+    public function test_it_folds_same_committee_blocks_even_without_a_filed_report(): void
     {
         $agenda = $this->agenda('401', 'Housing and Land Use');
         $other = $this->agenda('402', 'Housing and Land Use');
 
-        $this->block($agenda, 'SP Committee on Housing and Land Use', 21, 1);
-        $this->block($other, 'SP Committee on Housing and Land Use', 21, 2);
+        $primary = $this->block($agenda, 'SP Committee on Housing and Land Use', 21, 1);
+        $redundant = $this->block($other, 'SP Committee on Housing and Land Use', 21, 2);
 
-        $this->assertSame(0, app(ObCommitteeReportConsolidator::class)->consolidate($this->document));
+        $this->assertSame(1, app(ObCommitteeReportConsolidator::class)->consolidate($this->document));
+        $this->assertNull(ObBlock::query()->find($redundant->id));
+        $primary->refresh();
+        $this->assertSame(['401', '402'], ObAgendaSnapshot::agendaNosFromContent($primary->content));
     }
 
     /**
