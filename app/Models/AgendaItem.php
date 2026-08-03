@@ -280,6 +280,18 @@ class AgendaItem extends Model
         return $this->placeholderLabel();
     }
 
+    /**
+     * Calendar year shown under List # (year the agenda was added / received).
+     */
+    public function listYearLabel(): ?int
+    {
+        if (! $this->tracking_no) {
+            return null;
+        }
+
+        return $this->permalinkYear();
+    }
+
     public function placeholderLabel(): string
     {
         return $this->is_urgent_request ? '---' : 'Unnumbered';

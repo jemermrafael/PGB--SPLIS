@@ -20,6 +20,19 @@ class AgendaItemDisplayLabelTest extends TestCase
 
         $this->assertSame('#304', $agenda->displayLabel());
         $this->assertSame('304', $agenda->listNumberLabel());
+        $this->assertSame((int) now()->year, $agenda->listYearLabel());
+    }
+
+    public function test_list_year_uses_date_received_year(): void
+    {
+        $agenda = AgendaItem::query()->create([
+            'tracking_no' => '351',
+            'date_received' => '2026-03-15',
+            'is_urgent_request' => false,
+            'status' => AgendaItem::STATUS_PENDING,
+        ]);
+
+        $this->assertSame(2026, $agenda->listYearLabel());
     }
 
     public function test_urgent_unnumbered_agenda_uses_dash_placeholder(): void
@@ -32,6 +45,7 @@ class AgendaItemDisplayLabelTest extends TestCase
 
         $this->assertSame('---', $agenda->displayLabel());
         $this->assertSame('---', $agenda->listNumberLabel());
+        $this->assertNull($agenda->listYearLabel());
     }
 
     public function test_unnumbered_non_urgent_agenda_uses_unnumbered_placeholder(): void
@@ -44,6 +58,7 @@ class AgendaItemDisplayLabelTest extends TestCase
 
         $this->assertSame('Unnumbered', $agenda->displayLabel());
         $this->assertSame('Unnumbered', $agenda->listNumberLabel());
+        $this->assertNull($agenda->listYearLabel());
     }
 
     public function test_effective_measure_type_uses_linked_resolution(): void

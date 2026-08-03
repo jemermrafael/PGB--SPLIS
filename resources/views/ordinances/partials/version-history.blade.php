@@ -2,15 +2,14 @@
     use App\Support\OrdinancePdfType;
 
     $sortedVersions = $ordinance->versions->sortByDesc('version_no')->values();
+    $versionCount = $sortedVersions->count();
 @endphp
 
-<div class="splis-card mt-6 overflow-hidden">
-    <div class="splis-card-header splis-card-header--emphasis !border-b-0">
-        <div>
-            <h2 class="splis-card-title">Version History</h2>
-            <p class="splis-card-subtitle">Title and PDF changes — current version: v{{ $ordinance->current_version_no }}</p>
-        </div>
-    </div>
+<x-history-accordion
+    title="Version History"
+    :subtitle="'Title and PDF changes — current version: v'.$ordinance->current_version_no"
+    :count="$versionCount"
+>
     <div class="splis-table-wrap">
         <table class="splis-table">
             <thead>
@@ -66,7 +65,7 @@
                         <td class="whitespace-nowrap text-sm text-slate-500">{{ $version->created_at?->format('M j, Y g:i A') }}</td>
                         @can('delete', $version)
                             <td class="whitespace-nowrap text-right">
-                                @if ($sortedVersions->count() > 1)
+                                @if ($versionCount > 1)
                                     <form
                                         method="POST"
                                         action="{{ route('ordinances.versions.destroy', [$ordinance, $version]) }}"
@@ -91,4 +90,4 @@
             </tbody>
         </table>
     </div>
-</div>
+</x-history-accordion>

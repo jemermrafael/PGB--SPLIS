@@ -335,7 +335,7 @@ class AgendaLifecycleService
 
         try {
             DB::transaction(function () use ($agenda, $session, $document, $targetSection, $currentSection, $userId): void {
-                $this->documentService->removeAgendaFromDocument($document, $agenda, $userId, 'automatic');
+                $this->documentService->removeAgendaFromDocument($document, $agenda, $userId, 'relocation');
                 $this->documentService->addAgendaItems(
                     $document,
                     [$agenda->id],

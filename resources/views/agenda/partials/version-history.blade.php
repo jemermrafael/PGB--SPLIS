@@ -4,6 +4,7 @@
     $versionService = app(AgendaVersionService::class);
     $fieldLabels = AgendaVersionService::fieldLabels();
     $sortedVersions = $agenda->versions->sortBy('version_no')->values();
+    $versionCount = $sortedVersions->count();
 
     $compareVersions = $sortedVersions->map(fn ($version) => [
         'version_no' => $version->version_no,
@@ -27,18 +28,19 @@
     });
 @endphp
 
-<div class="splis-card mt-6 overflow-hidden">
-    <div class="splis-card-header splis-card-header--emphasis flex flex-wrap items-center justify-between gap-3 !border-b-0">
-        <div>
-            <h2 class="splis-card-title">Version History</h2>
-            <p class="splis-card-subtitle">Current version: v{{ $agenda->current_version_no }}</p>
-        </div>
-        @if ($sortedVersions->count() >= 2)
+<x-history-accordion
+    title="Version History"
+    :subtitle="'Current version: v'.$agenda->current_version_no"
+    :count="$versionCount"
+>
+    <x-slot:actions>
+        @if ($versionCount >= 2)
             <button type="button" id="agenda-version-compare-open" class="splis-btn-secondary text-sm">
                 Compare versions
             </button>
         @endif
-    </div>
+    </x-slot:actions>
+
     <div class="splis-table-wrap">
         <table class="splis-table">
             <thead>
@@ -95,7 +97,7 @@
                         <td class="whitespace-nowrap text-sm text-slate-500">{{ $version->created_at?->format('M j, Y g:i A') }}</td>
                         @can('delete', $version)
                             <td class="whitespace-nowrap text-right">
-                                @if ($agenda->versions->count() > 1)
+                                @if ($versionCount > 1)
                                     <form
                                         method="POST"
                                         action="{{ route('agenda.versions.destroy', [$agenda, $version]) }}"
@@ -120,9 +122,9 @@
             </tbody>
         </table>
     </div>
-</div>
+</x-history-accordion>
 
-@if ($sortedVersions->count() >= 2)
+@if ($versionCount >= 2)
     <div
         id="agenda-version-compare"
         data-versions='@json($compareVersions)'

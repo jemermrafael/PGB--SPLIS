@@ -51,6 +51,7 @@ class AgendaItemRepository
             'tracking_no' => $item->tracking_no,
             'display_label' => $item->displayLabel(),
             'list_number' => $item->listNumberLabel(),
+            'list_year' => $item->listYearLabel(),
             'is_urgent_request' => $item->is_urgent_request,
             'date_received' => $item->date_received?->format('Y-m-d'),
             'sender' => $item->sender,

@@ -42,11 +42,25 @@ function renderRemarksCell(remarks) {
     return `<td class="max-w-[12rem] text-sm">${renderTruncatedTitle(display, full, truncated)}</td>`;
 }
 
+function renderListNumberLink(item, { className = 'splis-doc-list-link' } = {}) {
+    const number = escapeHtml(item.list_number ?? item.display_label ?? item.tracking_no ?? 'Unnumbered');
+    const year = item.list_year ? String(item.list_year) : null;
+
+    if (year) {
+        return `<a href="${escapeHtml(item.url)}" class="${escapeHtml(className)}">
+            <span class="block leading-tight">${number}</span>
+            <span class="mt-0.5 block text-xs font-normal leading-tight text-slate-500">${escapeHtml(year)}</span>
+        </a>`;
+    }
+
+    return `<a href="${escapeHtml(item.url)}" class="${escapeHtml(className)}">${number}</a>`;
+}
+
 function renderListItem(item) {
     return `
         <tr class="splis-agenda-row" data-href="${escapeHtml(item.url)}">
             <td class="splis-agenda-sticky-col whitespace-nowrap font-semibold">
-                <a href="${escapeHtml(item.url)}" class="splis-doc-list-link">${escapeHtml(item.list_number ?? item.display_label ?? item.tracking_no ?? 'Unnumbered')}</a>
+                ${renderListNumberLink(item)}
             </td>
             ${renderTitleCell(item.title)}
             <td class="hidden md:table-cell">${escapeHtml(item.sender || '—')}</td>
@@ -63,13 +77,12 @@ function renderListItem(item) {
 
 function renderGridItem(item) {
     const { display, full, truncated } = truncateWords(item.title);
-    const number = item.list_number ?? item.display_label ?? item.tracking_no ?? 'Unnumbered';
     const toneClass = item.days_left_tone ? ` splis-agenda-days--${escapeHtml(item.days_left_tone)}` : '';
 
     return `
         <article class="splis-doc-card flex flex-col gap-3">
             <div class="flex items-start justify-between gap-2">
-                <a href="${escapeHtml(item.url)}" class="splis-doc-card-number">${escapeHtml(number)}</a>
+                ${renderListNumberLink(item, { className: 'splis-doc-card-number' })}
                 ${renderStatusBadge(item.status, item.status_label)}
             </div>
             <p class="splis-doc-card-title">${renderTruncatedTitle(display, full, truncated)}</p>

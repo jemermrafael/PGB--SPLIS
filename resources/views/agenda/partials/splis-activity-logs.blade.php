@@ -7,20 +7,20 @@
         'agenda.ob_relocated' => 'Moved in Order of Business',
     ];
     $obActions = array_keys($actionLabels);
+    $historyCount = $splisActivityLogs->count();
+    $historySubtitle = ($obPlacementCount ?? 0) > 0
+        ? 'Added to Order of Business '.$obPlacementCount.' '.(($obPlacementCount === 1) ? 'time' : 'times')
+        : null;
 @endphp
 
 @if ($splisActivityLogs->isNotEmpty())
-    <aside class="splis-card mt-6 overflow-hidden">
-        <div @class(['splis-card-header', 'splis-card-header--emphasis' => ! empty($emphasisHeaders)])>
-            <div>
-                <h2 class="splis-card-title">History</h2>
-                @if (($obPlacementCount ?? 0) > 0)
-                    <p class="splis-card-subtitle">
-                        Added to Order of Business {{ $obPlacementCount }} {{ $obPlacementCount === 1 ? 'time' : 'times' }}
-                    </p>
-                @endif
-            </div>
-        </div>
+    <x-history-accordion
+        title="History"
+        :subtitle="$historySubtitle"
+        :count="$historyCount"
+        :aside="true"
+        :open="true"
+    >
         <div class="splis-card-body">
             <ul class="splis-activity-timeline">
                 @foreach ($splisActivityLogs as $log)
@@ -28,7 +28,13 @@
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0 flex-1">
                         <p class="splis-activity-timeline-action">
-                            {{ $actionLabels[$log->action] ?? str_replace('.', ' ', ucfirst($log->action)) }}
+                            @if ($log->action === 'agenda.ob_relocated' && ! empty($log->properties['to_section_label']))
+                                Moved to {{ $log->properties['to_section_label'] }}
+                            @elseif ($log->action === 'agenda.added_to_ob' && ! empty($log->properties['section_label']))
+                                Added to {{ $log->properties['section_label'] }}
+                            @else
+                                {{ $actionLabels[$log->action] ?? str_replace('.', ' ', ucfirst($log->action)) }}
+                            @endif
                             @if (in_array($log->action, $obActions, true) && ! empty($log->properties['agenda_version_no']))
                                 <span class="font-normal text-slate-500">· version {{ $log->properties['agenda_version_no'] }}</span>
                             @endif
@@ -58,7 +64,7 @@
                             </p>
                         @endif
 
-                        @if (! empty($log->properties['section_label']))
+                        @if ($log->action !== 'agenda.added_to_ob' && ! empty($log->properties['section_label']))
                             <p class="splis-activity-timeline-detail">
                                 Section: {{ $log->properties['section_label'] }}
                             </p>
@@ -82,5 +88,5 @@
                 @endforeach
             </ul>
         </div>
-    </aside>
+    </x-history-accordion>
 @endif

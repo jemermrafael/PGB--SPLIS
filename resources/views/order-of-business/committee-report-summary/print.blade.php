@@ -138,7 +138,7 @@
     .scr-print-cell--committee,
     .scr-print-cell--body {
         background-image: linear-gradient(#000, #000);
-        background-size: 1.5pt 100%;
+        background-size: 1px 100%;
         background-position: left top;
         background-repeat: repeat-y;
         background-color: #fff;

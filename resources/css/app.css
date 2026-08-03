@@ -922,7 +922,15 @@
     }
 
     .splis-accordion-count {
-        @apply inline-flex min-w-[1.75rem] items-center justify-center rounded-full bg-brand-100 px-2 py-0.5 text-xs font-bold text-brand-800;
+        @apply inline-flex min-w-[1.75rem] items-center justify-center rounded-full bg-brand-100 px-2 py-0.5 text-xs font-bold text-brand-800 dark:bg-brand-900/50 dark:text-brand-200;
+    }
+
+    details.splis-accordion.splis-card > .splis-accordion-summary {
+        @apply border-b border-transparent;
+    }
+
+    details.splis-accordion.splis-card[open] > .splis-accordion-summary {
+        @apply border-slate-200 dark:border-slate-700;
     }
 
     .splis-accordion-body {
