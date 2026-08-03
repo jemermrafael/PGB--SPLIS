@@ -9,7 +9,7 @@
     data-can-edit="{{ $canEdit ? '1' : '0' }}"
     data-config='@json($makerConfig)'
 >
-    <div class="splis-ob-maker-page-header splis-page-header !mb-4">
+    <div class="splis-ob-maker-page-header splis-page-header !mb-4 flex items-center rounded-lg" style="position: sticky; top: 150px; z-index:9999;">
         <div class="min-w-0">
             <p class="text-sm text-slate-500">{{ $session->displayTitle() }}</p>
             <h1 class="splis-page-title truncate">Order of Business Maker</h1>
