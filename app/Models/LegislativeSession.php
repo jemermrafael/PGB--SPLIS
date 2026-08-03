@@ -277,7 +277,19 @@ class LegislativeSession extends Model
             return null;
         }
 
-        return Str::of($this->session_time)->substr(0, 5);
+        return Carbon::parse($this->session_time)->format('g:i A');
+    }
+
+    /**
+     * Value for HTML <input type="time"> (24-hour H:i).
+     */
+    public function sessionTimeInputValue(): ?string
+    {
+        if (! $this->session_time) {
+            return null;
+        }
+
+        return Str::of($this->session_time)->substr(0, 5)->toString();
     }
 
     public function formattedSessionTimeForPrint(): ?string

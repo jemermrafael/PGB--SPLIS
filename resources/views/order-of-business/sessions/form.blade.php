@@ -4,7 +4,7 @@
     $isEdit = $session->exists;
     $timeValue = old('session_time');
     if ($timeValue === null) {
-        $timeValue = $session->formattedSessionTime();
+        $timeValue = $session->sessionTimeInputValue();
     }
 @endphp
 

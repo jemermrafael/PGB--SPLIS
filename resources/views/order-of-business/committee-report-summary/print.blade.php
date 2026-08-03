@@ -69,6 +69,11 @@
         text-underline-offset: 2px;
     }
 
+    /*
+     * 2x2 CSS grid (4 cells). Borders use box-decoration-break + vertical
+     * background gradients so left/right edges survive Chrome page fragments.
+     * Padding lives on .scr-print-cell-inner only (not the bordered box).
+     */
     .scr-print-group {
         margin-bottom: 0.85rem;
     }
@@ -77,50 +82,72 @@
         margin-bottom: 0;
     }
 
-    /*
-     * Outer frame carries border + clone only (no padding/margin).
-     * Cloned padding on page fragments is what was overlapping the next group.
-     */
-    .scr-print-frame {
+    .scr-print-grid {
+        display: grid;
+        grid-template-columns: 2.1rem minmax(0, 1fr);
+        grid-template-rows: auto auto;
+        width: 100%;
         border: 1.5pt solid #000;
+        -webkit-box-decoration-break: clone;
+        box-decoration-break: clone;
+        background-color: #fff;
+        background-image:
+            linear-gradient(#000, #000),
+            linear-gradient(#000, #000);
+        background-size: 1.5pt 100%, 1.5pt 100%;
+        background-position: left top, right top;
+        background-repeat: repeat-y;
+    }
+
+    .scr-print-cell {
+        min-width: 0;
         padding: 0;
         margin: 0;
-        background: #fff;
+        background-color: #fff;
         -webkit-box-decoration-break: clone;
         box-decoration-break: clone;
     }
 
-    .scr-print-frame-inner {
-        display: flex;
-        align-items: stretch;
-        width: 100%;
+    .scr-print-cell-inner {
+        padding: 0.45rem 0.55rem;
     }
 
-    .scr-print-no {
-        flex: 0 0 2.1rem;
-        box-sizing: border-box;
-        border-right: 1.5pt solid #000;
-        display: flex;
-        align-items: flex-start;
-        justify-content: center;
-        padding: 0.45rem 0.15rem;
+    /* Number column: right divider (cloned + gradient for fragments). */
+    .scr-print-cell--no,
+    .scr-print-cell--no-empty {
+        text-align: center;
         font-weight: 700;
         font-size: 12pt;
-        text-align: center;
+        background-image: linear-gradient(#ffffff, #ffffff);
+        background-size: 1.5pt 100%;
+        background-position: right top;
+        background-repeat: repeat-y;
+        background-color: #fff;
     }
 
-    .scr-print-body {
-        flex: 1;
-        min-width: 0;
+    .scr-print-cell--no .scr-print-cell-inner {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100%;
+        padding-left: 0.15rem;
+        padding-right: 0.15rem;
     }
 
-    .scr-print-committee-block {
-        border-bottom: 1.5pt solid #000;
-        padding: 0.45rem 0.55rem;
+    /* Content column: left divider backup so the split line stays on page 2+. */
+    .scr-print-cell--committee,
+    .scr-print-cell--body {
+        background-image: linear-gradient(#000, #000);
+        background-size: 1.5pt 100%;
+        background-position: left top;
+        background-repeat: repeat-y;
+        background-color: #fff;
     }
 
-    .scr-print-body-items {
-        padding: 0.45rem 0.55rem;
+    /* Horizontal split between header row and body row. */
+    .scr-print-cell--no,
+    .scr-print-cell--committee {
+        border-bottom: 1px solid #000;
     }
 
     .scr-print-committee {
@@ -198,6 +225,11 @@
 
     .scr-print-recommendation-text u {
         text-decoration: underline;
+    }
+
+    .scr-print-empty {
+        text-align: center;
+        padding: 1rem 0.55rem;
     }
 
     .scr-print-signatories {
@@ -278,62 +310,71 @@
 
     @forelse ($groups as $index => $group)
         <div class="scr-print-group">
-            <div class="scr-print-frame">
-                <div class="scr-print-frame-inner">
-                    <div class="scr-print-no">{{ $index + 1 }}.</div>
-                    <div class="scr-print-body">
-                        <div class="scr-print-committee-block">
-                            <p class="scr-print-committee">{{ $group['committee_name'] ?? '' }}</p>
-                            <p class="scr-print-chair">{{ app(\App\Services\CommitteeReportSummaryService::class)->formatChairDisplay($group['chair_name'] ?? '') }}</p>
-                        </div>
-                        <div class="scr-print-body-items">
-                            @foreach ($group['items'] ?? [] as $item)
-                                <div class="scr-print-item">
-                                    <p>
-                                        <span class="scr-print-agenda-no">Agenda No. {{ $item['agenda_no'] ?? '—' }}</span>@if (filled($item['body'] ?? null) || filled($item['body_html'] ?? null))
-                                            —
-                                            @if (filled($item['body_html'] ?? null))
-                                                {!! $item['body_html'] !!}
-                                            @else
-                                                {!! nl2br(e($item['body'])) !!}
-                                            @endif
+            <div class="scr-print-grid">
+                {{-- Row 1 --}}
+                <div class="scr-print-cell scr-print-cell--no">
+                    <div class="scr-print-cell-inner">{{ $index + 1 }}.</div>
+                </div>
+                <div class="scr-print-cell scr-print-cell--committee">
+                    <div class="scr-print-cell-inner">
+                        <p class="scr-print-committee">{{ $group['committee_name'] ?? '' }}</p>
+                        <p class="scr-print-chair">{{ app(\App\Services\CommitteeReportSummaryService::class)->formatChairDisplay($group['chair_name'] ?? '') }}</p>
+                    </div>
+                </div>
+                {{-- Row 2 --}}
+                <div class="scr-print-cell scr-print-cell--no-empty" aria-hidden="true">
+                    <div class="scr-print-cell-inner"></div>
+                </div>
+                <div class="scr-print-cell scr-print-cell--body">
+                    <div class="scr-print-cell-inner">
+                        @foreach ($group['items'] ?? [] as $item)
+                            <div class="scr-print-item">
+                                <p>
+                                    <span class="scr-print-agenda-no">Agenda No. {{ $item['agenda_no'] ?? '—' }}</span>@if (filled($item['body'] ?? null) || filled($item['body_html'] ?? null))
+                                        —
+                                        @if (filled($item['body_html'] ?? null))
+                                            {!! $item['body_html'] !!}
+                                        @else
+                                            {!! nl2br(e($item['body'])) !!}
                                         @endif
+                                    @endif
+                                </p>
+                                @if (filled($item['revised_title'] ?? null) || filled($item['revised_title_html'] ?? null))
+                                    <p class="scr-print-revised-title">
+                                        <span class="scr-print-revised-title-label">{{ $item['revised_title_label'] ?? 'REVISED TITLE' }}:</span>
+                                        <span class="scr-print-revised-title-text">
+                                            @if (filled($item['revised_title_html'] ?? null))
+                                                {!! $item['revised_title_html'] !!}
+                                            @else
+                                                {!! nl2br(e($item['revised_title'])) !!}
+                                            @endif
+                                        </span>
                                     </p>
-                                    @if (filled($item['revised_title'] ?? null) || filled($item['revised_title_html'] ?? null))
-                                        <p class="scr-print-revised-title">
-                                            <span class="scr-print-revised-title-label">{{ $item['revised_title_label'] ?? 'REVISED TITLE' }}:</span>
-                                            <span class="scr-print-revised-title-text">
-                                                @if (filled($item['revised_title_html'] ?? null))
-                                                    {!! $item['revised_title_html'] !!}
-                                                @else
-                                                    {!! nl2br(e($item['revised_title'])) !!}
-                                                @endif
-                                            </span>
-                                        </p>
-                                    @endif
-                                    @if (filled($item['recommendation'] ?? null) || filled($item['recommendation_html'] ?? null))
-                                        <p class="scr-print-recommendation">
-                                            <span class="scr-print-recommendation-label">RECOMMENDATION:</span>
-                                            <span class="scr-print-recommendation-text">
-                                                @if (filled($item['recommendation_html'] ?? null))
-                                                    {!! $item['recommendation_html'] !!}
-                                                @else
-                                                    {{ mb_strtoupper(trim($item['recommendation'])) }}
-                                                @endif
-                                            </span>
-                                        </p>
-                                    @endif
-                                </div>
-                            @endforeach
-                        </div>
+                                @endif
+                                @if (filled($item['recommendation'] ?? null) || filled($item['recommendation_html'] ?? null))
+                                    <p class="scr-print-recommendation">
+                                        <span class="scr-print-recommendation-label">RECOMMENDATION:</span>
+                                        <span class="scr-print-recommendation-text">
+                                            @if (filled($item['recommendation_html'] ?? null))
+                                                {!! $item['recommendation_html'] !!}
+                                            @else
+                                                {{ mb_strtoupper(trim($item['recommendation'])) }}
+                                            @endif
+                                        </span>
+                                    </p>
+                                @endif
+                            </div>
+                        @endforeach
                     </div>
                 </div>
             </div>
         </div>
     @empty
         <div class="scr-print-group">
-            <div class="scr-print-frame">
-                <div class="scr-print-body-items" style="text-align: center; padding: 1rem;">No committee report items.</div>
+            <div class="scr-print-grid">
+                <div class="scr-print-cell scr-print-cell--body" style="grid-column: 1 / -1;">
+                    <div class="scr-print-cell-inner scr-print-empty">No committee report items.</div>
+                </div>
             </div>
         </div>
     @endforelse

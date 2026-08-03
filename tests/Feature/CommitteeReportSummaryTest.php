@@ -193,7 +193,7 @@ class CommitteeReportSummaryTest extends TestCase
             ->assertSee('Agenda No. 502')
             ->getContent();
 
-        $this->assertSame(2, substr_count($html, 'class="scr-print-table"'));
+        $this->assertSame(2, substr_count($html, 'class="scr-print-grid"'));
     }
 
     public function test_sync_preserves_existing_recommendations(): void
