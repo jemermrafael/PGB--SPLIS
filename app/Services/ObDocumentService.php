@@ -280,7 +280,7 @@ class ObDocumentService
     }
 
     /**
-     * Keep every agenda-bearing OB section in ascending Agenda No. order.
+     * Keep every agenda-bearing OB section in ascending year, then Agenda No. order.
      */
     public function normalizeAgendaSections(ObDocument $document): void
     {
@@ -348,7 +348,7 @@ class ObDocumentService
     }
 
     /**
-     * Sort IV. Committee Report rows by lowest agenda number, renumber row_no, and rename BM PDFs.
+     * Sort IV. Committee Report rows by year then Agenda No., renumber row_no, and rename BM PDFs.
      */
     public function normalizeCommitteeReportSection(ObDocument $document): void
     {
@@ -365,10 +365,7 @@ class ObDocumentService
         // Laravel Collection::sortBy([cb, cb]) can invert order when keys differ;
         // a single callback that returns [primary, tie-break] sorts correctly.
         $sortedReports = $reportBlocks
-            ->sortBy(fn (ObBlock $block) => [
-                $this->committeeReportSortKey($block),
-                (int) $block->id,
-            ])
+            ->sortBy(fn (ObBlock $block) => ObAgendaSnapshot::blockAgendaSortKey($block))
             ->values();
 
         $sortedReportIds = $sortedReports->pluck('id')->map(fn ($id) => (int) $id)->all();
@@ -436,29 +433,6 @@ class ObDocumentService
                 ObBlock::whereKey($blockId)->update(['sort_order' => $index + 1]);
             }
         });
-    }
-
-    protected function committeeReportSortKey(ObBlock $block): string
-    {
-        $nos = ObAgendaSnapshot::agendaNosFromContent($block->content ?? []);
-        $numeric = [];
-
-        foreach ($nos as $no) {
-            $digits = preg_replace('/\D+/', '', trim((string) $no)) ?? '';
-            if ($digits !== '' && ctype_digit($digits)) {
-                $numeric[] = (int) $digits;
-            }
-        }
-
-        if ($numeric !== []) {
-            return str_pad((string) min($numeric), 10, '0', STR_PAD_LEFT);
-        }
-
-        if ($nos !== []) {
-            return (string) min($nos);
-        }
-
-        return 'zzzz'.str_pad((string) $block->id, 10, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -869,18 +843,11 @@ class ObDocumentService
     }
 
     /**
-     * @return array{0: int, 1: int|string, 2: int}
+     * @return array{0: int, 1: int, 2: int|string, 3: int}
      */
     protected function agendaBlockSortKey(ObBlock $block): array
     {
-        $nos = ObAgendaSnapshot::sortAgendaNos(ObAgendaSnapshot::agendaNosFromContent($block->content ?? []));
-        $no = trim((string) ($nos[0] ?? ''));
-
-        if ($no !== '' && ctype_digit($no)) {
-            return [0, (int) $no, (int) $block->id];
-        }
-
-        return [1, mb_strtolower($no), (int) $block->id];
+        return ObAgendaSnapshot::blockAgendaSortKey($block);
     }
 
     /**

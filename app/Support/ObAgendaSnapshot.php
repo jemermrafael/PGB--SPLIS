@@ -4,6 +4,8 @@ namespace App\Support;
 
 use App\Models\AgendaItem;
 use App\Models\BoardMember;
+use App\Models\ObBlock;
+use Carbon\Carbon;
 
 class ObAgendaSnapshot
 {
@@ -14,6 +16,119 @@ class ObAgendaSnapshot
         }
 
         return (string) $item->id;
+    }
+
+    /**
+     * Calendar year used for OB / SCR ordering (oldest year first).
+     */
+    public static function listYear(AgendaItem $item): int
+    {
+        return $item->permalinkYear();
+    }
+
+    /**
+     * @param  array<string, mixed>  $content
+     */
+    public static function listYearFromContent(array $content): ?int
+    {
+        if (isset($content['list_year']) && is_numeric($content['list_year'])) {
+            $year = (int) $content['list_year'];
+
+            return $year > 0 ? $year : null;
+        }
+
+        $date = trim((string) ($content['date_received'] ?? ''));
+        if ($date === '') {
+            return null;
+        }
+
+        try {
+            $year = Carbon::parse($date)->year;
+
+            return $year > 0 ? $year : null;
+        } catch (\Throwable) {
+            if (preg_match('/\b((?:19|20)\d{2})\b/', $date, $matches) === 1) {
+                return (int) $matches[1];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Sort key: year ascending, then Agenda No. Missing year sorts last.
+     *
+     * @return array{0: int, 1: int, 2: int|string}
+     */
+    public static function agendaSortTuple(string $no, ?int $year = null): array
+    {
+        $no = trim($no);
+        $yearKey = ($year !== null && $year > 0) ? $year : PHP_INT_MAX;
+
+        if ($no !== '' && ctype_digit($no)) {
+            return [$yearKey, 0, (int) $no];
+        }
+
+        return [$yearKey, 1, mb_strtolower($no)];
+    }
+
+    /**
+     * Lowest year+Agenda No. key for an OB agenda-bearing block.
+     *
+     * @return array{0: int, 1: int, 2: int|string, 3: int}
+     */
+    public static function blockAgendaSortKey(ObBlock $block): array
+    {
+        $content = is_array($block->content) ? $block->content : [];
+        $nos = self::agendaNosFromContent($content);
+        $yearsByNo = self::listYearsFromContent($content);
+        $defaultYear = self::listYearFromContent($content);
+
+        if ($defaultYear === null && $block->agenda_item_id) {
+            $item = $block->relationLoaded('agendaItem')
+                ? $block->agendaItem
+                : $block->agendaItem()->first();
+            if ($item instanceof AgendaItem) {
+                $defaultYear = self::listYear($item);
+            }
+        }
+
+        $candidates = [];
+
+        foreach ($nos as $no) {
+            $year = isset($yearsByNo[$no]) ? $yearsByNo[$no] : $defaultYear;
+            $candidates[] = self::agendaSortTuple($no, $year);
+        }
+
+        if ($candidates === []) {
+            $candidates[] = self::agendaSortTuple('', $defaultYear);
+        }
+
+        usort($candidates, fn (array $a, array $b): int => $a <=> $b);
+
+        $best = $candidates[0];
+        $best[] = (int) $block->id;
+
+        return $best;
+    }
+
+    /**
+     * @param  array<string, mixed>  $content
+     * @return array<string, int>
+     */
+    public static function listYearsFromContent(array $content): array
+    {
+        $years = [];
+
+        if (is_array($content['list_years'] ?? null)) {
+            foreach ($content['list_years'] as $no => $year) {
+                if (is_numeric($year) && (int) $year > 0) {
+                    $years[trim((string) $no)] = (int) $year;
+                }
+            }
+        }
+
+        return $years;
     }
 
     /**
@@ -144,16 +259,22 @@ class ObAgendaSnapshot
     }
 
     /**
-     * Ascending, with plain numbers ordered numerically.
+     * Ascending by year (when provided), then plain numbers numerically.
      *
      * @param  array<int, string>  $nos
+     * @param  array<string, int>  $yearsByNo
      * @return list<string>
      */
-    public static function sortAgendaNos(array $nos): array
+    public static function sortAgendaNos(array $nos, array $yearsByNo = []): array
     {
         $nos = array_values($nos);
 
-        usort($nos, fn (string $a, string $b): int => self::agendaNoSortKey($a) <=> self::agendaNoSortKey($b));
+        usort($nos, function (string $a, string $b) use ($yearsByNo): int {
+            $yearA = isset($yearsByNo[$a]) ? (int) $yearsByNo[$a] : null;
+            $yearB = isset($yearsByNo[$b]) ? (int) $yearsByNo[$b] : null;
+
+            return self::agendaSortTuple($a, $yearA) <=> self::agendaSortTuple($b, $yearB);
+        });
 
         return $nos;
     }
@@ -172,15 +293,35 @@ class ObAgendaSnapshot
      */
     public static function mergeCommitteeReportRows(array $existing, array $incoming): array
     {
+        $yearsByNo = [];
+
+        foreach ([$existing, $incoming] as $row) {
+            foreach (self::listYearsFromContent($row) as $no => $year) {
+                $yearsByNo[$no] = $year;
+            }
+
+            $rowYear = self::listYearFromContent($row);
+            if ($rowYear !== null) {
+                foreach (self::agendaNosFromContent($row) as $no) {
+                    $yearsByNo[$no] ??= $rowYear;
+                }
+            }
+        }
+
         $nos = self::sortAgendaNos(array_unique(array_merge(
             self::agendaNosFromContent($existing),
             self::agendaNosFromContent($incoming),
-        )));
+        )), $yearsByNo);
 
         $existing['agenda_nos'] = $nos;
 
         if ($nos !== []) {
             $existing['agenda_no'] = $nos[0];
+        }
+
+        if ($yearsByNo !== []) {
+            $existing['list_years'] = $yearsByNo;
+            $existing['list_year'] = min($yearsByNo);
         }
 
         $existingLinks = is_array($existing['agenda_no_links'] ?? null) ? $existing['agenda_no_links'] : [];
@@ -311,9 +452,14 @@ class ObAgendaSnapshot
             $referral = null;
         }
 
+        $agendaNo = self::agendaNo($item);
+        $listYear = self::listYear($item);
+
         return [
             'row_no' => $rowNo,
-            'agenda_no' => self::agendaNo($item),
+            'agenda_no' => $agendaNo,
+            'list_year' => $listYear,
+            'list_years' => [$agendaNo => $listYear],
             'committee_id' => $committee?->id,
             'committee_name' => ObCommitteeFormatter::resolvedReportLabel($committee?->id, $referral),
             'chair_name' => CommitteeLookup::obChairFor($committee?->id, $referral),
@@ -370,6 +516,7 @@ class ObAgendaSnapshot
     {
         return array_merge([
             'agenda_no' => self::agendaNo($item),
+            'list_year' => self::listYear($item),
             'date_received' => $item->date_received?->format('F j, Y') ?? '',
             'prescription' => self::prescriptionLabel($item),
             'title' => (string) ($item->title ?? ''),

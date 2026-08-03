@@ -234,6 +234,7 @@ class CommitteeReportSummaryTest extends TestCase
             'committee_referred' => 'Finance, Budget, Appropriations and Ways and Means',
             'status' => AgendaItem::STATUS_PENDING,
             'prescribed_days' => 0,
+            'date_received' => '2026-02-01',
             'created_by' => $admin->id,
         ]);
         $earlier = AgendaItem::query()->create([
@@ -242,6 +243,7 @@ class CommitteeReportSummaryTest extends TestCase
             'committee_referred' => 'Finance, Budget, Appropriations and Ways and Means',
             'status' => AgendaItem::STATUS_PENDING,
             'prescribed_days' => 0,
+            'date_received' => '2026-01-01',
             'created_by' => $admin->id,
         ]);
 
@@ -270,12 +272,62 @@ class CommitteeReportSummaryTest extends TestCase
         $this->assertSame(['311', '328', '501'], $nos);
     }
 
+    public function test_items_within_a_committee_are_sorted_by_year_then_agenda_number(): void
+    {
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'is_active' => true]);
+        [$session] = $this->seedCommitteeReportsOnSession($admin, dateReceived: '2026-05-01');
+        $document = $session->obDocument;
+
+        $from2026 = AgendaItem::query()->create([
+            'tracking_no' => '113',
+            'title' => '2026 agenda',
+            'committee_referred' => 'Finance, Budget, Appropriations and Ways and Means',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 0,
+            'date_received' => '2026-02-01',
+            'created_by' => $admin->id,
+        ]);
+        $from2023 = AgendaItem::query()->create([
+            'tracking_no' => '580',
+            'title' => '2023 agenda',
+            'committee_referred' => 'Finance, Budget, Appropriations and Ways and Means',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 0,
+            'date_received' => '2023-08-01',
+            'created_by' => $admin->id,
+        ]);
+
+        ObBlock::query()->create([
+            'ob_document_id' => $document->id,
+            'type' => ObBlockType::CommitteeReport,
+            'sort_order' => 41,
+            'agenda_item_id' => $from2026->id,
+            'content' => [
+                'committee_name' => 'Finance, Budget, Appropriations and Ways and Means',
+                'chair_name' => 'BM Jovy Z. Banzon',
+                'agenda_no' => '113',
+                'agenda_item_ids' => [$from2026->id, $from2023->id],
+                'agenda_nos' => ['113', '580'],
+            ],
+        ]);
+
+        $service = app(CommitteeReportSummaryService::class);
+        $summary = $service->ensureForSession($session->fresh(), $admin->id);
+        $service->syncFromSessionOb($summary, preserveRecommendations: false);
+
+        $nos = collect($summary->fresh()->normalizedContent()['groups'][0]['items'])
+            ->pluck('agenda_no')
+            ->all();
+
+        $this->assertSame(['580', '113', '501'], $nos);
+    }
+
     protected int $lastAgendaId = 0;
 
     /**
      * @return array{0: LegislativeSession, 1: AgendaItem}
      */
-    protected function seedCommitteeReportsOnSession(User $user): array
+    protected function seedCommitteeReportsOnSession(User $user, ?string $dateReceived = null): array
     {
         $session = $this->makeSession($user);
 
@@ -292,6 +344,7 @@ class CommitteeReportSummaryTest extends TestCase
             'committee_referred' => 'Finance, Budget, Appropriations and Ways and Means',
             'status' => AgendaItem::STATUS_PENDING,
             'prescribed_days' => 0,
+            'date_received' => $dateReceived,
             'created_by' => $user->id,
         ]);
         $this->lastAgendaId = $agenda->id;
@@ -305,6 +358,7 @@ class CommitteeReportSummaryTest extends TestCase
                 'committee_name' => 'Finance, Budget, Appropriations and Ways and Means',
                 'chair_name' => 'BM Jovy Z. Banzon',
                 'agenda_no' => '501',
+                'list_year' => $dateReceived ? (int) substr($dateReceived, 0, 4) : null,
                 'agenda_item_ids' => [$agenda->id],
             ],
         ]);

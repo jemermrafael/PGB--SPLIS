@@ -129,6 +129,7 @@ class AgendaLifecycleSyncTest extends TestCase
                 'committee_referred' => 'Tourism',
                 'status' => AgendaItem::STATUS_PENDING,
                 'prescribed_days' => 0,
+                'date_received' => '2026-01-15',
                 'created_by' => $user->id,
             ]);
         }
@@ -151,6 +152,66 @@ class AgendaLifecycleSyncTest extends TestCase
 
         $this->assertSame(
             ['100', '200', '300'],
+            ObBlock::query()
+                ->where('ob_document_id', $document->id)
+                ->where('type', ObBlockType::UnassignedAgenda)
+                ->orderBy('sort_order')
+                ->get()
+                ->map(fn (ObBlock $block) => (string) $block->content['agenda_no'])
+                ->all(),
+        );
+    }
+
+    public function test_sync_sorts_agendas_by_year_then_number(): void
+    {
+        $user = User::factory()->create();
+
+        AgendaItem::create([
+            'tracking_no' => '113',
+            'title' => 'Newer lower number',
+            'committee_referred' => 'Tourism',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 0,
+            'date_received' => '2026-03-01',
+            'created_by' => $user->id,
+        ]);
+        AgendaItem::create([
+            'tracking_no' => '580',
+            'title' => 'Older higher number',
+            'committee_referred' => 'Tourism',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 0,
+            'date_received' => '2023-06-15',
+            'created_by' => $user->id,
+        ]);
+        AgendaItem::create([
+            'tracking_no' => '50',
+            'title' => 'Same year earlier number',
+            'committee_referred' => 'Tourism',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 0,
+            'date_received' => '2023-01-10',
+            'created_by' => $user->id,
+        ]);
+
+        $session = LegislativeSession::create([
+            'session_date' => now()->addWeek(),
+            'session_kind' => 'regular',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+        $document = ObDocument::create([
+            'legislative_session_id' => $session->id,
+            'title' => 'Year sorted OB',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+        app(ObDocumentTemplateService::class)->seedDefaultBlocks($document);
+
+        app(AgendaLifecycleService::class)->syncNewSession($session, $user->id);
+
+        $this->assertSame(
+            ['50', '580', '113'],
             ObBlock::query()
                 ->where('ob_document_id', $document->id)
                 ->where('type', ObBlockType::UnassignedAgenda)

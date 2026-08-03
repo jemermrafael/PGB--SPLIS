@@ -241,9 +241,13 @@ export function initObMaker() {
     let poolLoading = false;
     let poolObserver = null;
     const dirtyBlockIds = new Set();
+    const pendingDeletedBlockIds = new Set();
     let documentMetaDirty = false;
+    let orderDirty = false;
     let isSaving = false;
     let suppressLeavePrompt = false;
+    let unsavedHistoryTrap = false;
+    let ignoringPopState = false;
 
     const blocksList = document.getElementById('ob-blocks-list');
     const blocksEmpty = document.getElementById('ob-blocks-empty');
@@ -263,7 +267,6 @@ export function initObMaker() {
     let sectionNavResizeState = null;
     const saveStatus = document.getElementById('ob-save-status');
     const saveDocumentBtn = document.getElementById('ob-save-document');
-    const titleInput = document.getElementById('ob-doc-title');
     const statusSelect = document.getElementById('ob-doc-status');
     const agendaPoolEl = document.getElementById('ob-agenda-pool');
     const agendaSearchInput = document.getElementById('ob-agenda-search');
@@ -286,7 +289,30 @@ export function initObMaker() {
     }
 
     function isDirty() {
-        return documentMetaDirty || dirtyBlockIds.size > 0;
+        return documentMetaDirty
+            || orderDirty
+            || dirtyBlockIds.size > 0
+            || pendingDeletedBlockIds.size > 0;
+    }
+
+    function armUnsavedHistoryTrap() {
+        if (!canEdit || suppressLeavePrompt || unsavedHistoryTrap || !isDirty()) {
+            return;
+        }
+        history.pushState({ splisObUnsaved: 1 }, '', window.location.href);
+        unsavedHistoryTrap = true;
+    }
+
+    function releaseUnsavedHistoryTrap() {
+        if (!unsavedHistoryTrap) {
+            return;
+        }
+        unsavedHistoryTrap = false;
+        ignoringPopState = true;
+        history.back();
+        queueMicrotask(() => {
+            ignoringPopState = false;
+        });
     }
 
     function updateSaveButtons() {
@@ -300,6 +326,12 @@ export function initObMaker() {
 
     function updateSaveUi(statusMessage = null) {
         updateSaveButtons();
+
+        if (isDirty()) {
+            armUnsavedHistoryTrap();
+        } else {
+            releaseUnsavedHistoryTrap();
+        }
 
         if (statusMessage !== null) {
             setStatus(statusMessage);
@@ -330,10 +362,20 @@ export function initObMaker() {
         updateSaveUi();
     }
 
+    function markOrderDirty() {
+        if (!canEdit) {
+            return;
+        }
+        orderDirty = true;
+        updateSaveUi();
+    }
+
     function clearDirtyState() {
         dirtyBlockIds.clear();
+        pendingDeletedBlockIds.clear();
         documentMetaDirty = false;
-        updateSaveButtons();
+        orderDirty = false;
+        updateSaveUi();
     }
 
     function syncAllBlocksFromDom() {
@@ -1527,7 +1569,7 @@ export function initObMaker() {
         const data = await api(urls.updateDocument, {
             method: 'PUT',
             body: JSON.stringify({
-                title: titleInput?.value ?? documentState.title,
+                title: documentState.title,
                 status: statusSelect?.value ?? documentState.status,
             }),
         });
@@ -1546,10 +1588,13 @@ export function initObMaker() {
 
         syncAllBlocksFromDom();
 
-        const blockIds = [...dirtyBlockIds];
+        const blockIds = [...dirtyBlockIds].filter((id) => !pendingDeletedBlockIds.has(id));
+        const deletedIds = [...pendingDeletedBlockIds];
         const saveMeta = documentMetaDirty;
+        const saveOrder = orderDirty || deletedIds.length > 0;
+        let deletedAgendaLinked = false;
 
-        if (!saveMeta && blockIds.length === 0) {
+        if (!saveMeta && !saveOrder && blockIds.length === 0 && deletedIds.length === 0) {
             updateSaveUi('All changes saved');
             return true;
         }
@@ -1559,8 +1604,32 @@ export function initObMaker() {
         setStatus('Saving…');
 
         try {
+            for (const blockId of deletedIds) {
+                await api(blockUrl(urls.deleteBlock, blockId), { method: 'DELETE' });
+                pendingDeletedBlockIds.delete(blockId);
+                dirtyBlockIds.delete(blockId);
+                deletedAgendaLinked = true;
+            }
+
+            if (saveOrder && blocks.length > 0) {
+                const order = blocks.map((block) => block.id);
+                const data = await api(urls.reorder, {
+                    method: 'PUT',
+                    body: JSON.stringify({ order }),
+                });
+                if (Array.isArray(data.blocks)) {
+                    const contentById = new Map(blocks.map((block) => [block.id, block.content]));
+                    blocks = normalizeBlocks(data.blocks).map((block) => ({
+                        ...block,
+                        content: contentById.has(block.id) ? contentById.get(block.id) : block.content,
+                    })).sort((a, b) => a.sort_order - b.sort_order);
+                }
+                orderDirty = false;
+            }
+
             if (saveMeta) {
                 await persistDocumentMeta();
+                documentMetaDirty = false;
             }
 
             for (const blockId of blockIds) {
@@ -1579,11 +1648,11 @@ export function initObMaker() {
                 dirtyBlockIds.delete(blockId);
             }
 
-            if (saveMeta) {
-                documentMetaDirty = false;
-            }
-
             clearDirtyState();
+            renderBlocks();
+            if (deletedAgendaLinked) {
+                loadAgendaPool(1, false);
+            }
             setStatus(reason === 'leave' ? 'Saved' : 'All changes saved');
             return true;
         } catch (error) {
@@ -1613,26 +1682,12 @@ export function initObMaker() {
         }
 
         if (choice === 'discard') {
-            clearDirtyState();
-            setStatus('Local edits discarded for this action');
-            return true;
+            suppressLeavePrompt = true;
+            window.location.reload();
+            return false;
         }
 
         return saveAll({ reason: 'before-mutation' });
-    }
-
-    async function persistOrder() {
-        if (! (await ensureSavedBeforeMutation())) {
-            return;
-        }
-
-        const order = blocks.map((block) => block.id);
-        const data = await api(urls.reorder, {
-            method: 'PUT',
-            body: JSON.stringify({ order }),
-        });
-        blocks = normalizeBlocks(data.blocks).sort((a, b) => a.sort_order - b.sort_order);
-        renderBlocks();
     }
 
     async function addBlock(type, afterBlockId = null) {
@@ -1719,35 +1774,32 @@ export function initObMaker() {
         const label = block?.type_label ?? 'this block';
         const confirmed = await confirmAction({
             title: 'Delete block?',
-            message: `Remove ${label} from the document? This cannot be undone.`,
+            message: `Remove ${label} from the document? It stays removed only after you Save. Leave without saving to keep it.`,
             confirmLabel: 'Delete',
         });
         if (!confirmed) {
             return;
         }
 
-        try {
-            if (! (await ensureSavedBeforeMutation())) {
-                return;
-            }
-
-            setStatus('Deleting…');
-            const deletedBlock = blocks.find((block) => block.id === blockId);
-            const data = await api(blockUrl(urls.deleteBlock, blockId), { method: 'DELETE' });
-            dirtyBlockIds.delete(blockId);
-            blocks = normalizeBlocks(data.blocks ?? blocks.filter((block) => block.id !== blockId)).sort((a, b) => a.sort_order - b.sort_order);
-            if (selectedBlockId === blockId) {
-                selectedBlockId = blocks[0]?.id ?? null;
-            }
-            documentState = data.document;
-            renderBlocks();
-            if (deletedBlock?.agenda_item_id) {
-                loadAgendaPool(1, false);
-            }
-            setStatus('Block deleted');
-        } catch (error) {
-            setStatus(error.message, true);
+        if (selectedBlockId !== null) {
+            syncBlockFromDom(selectedBlockId);
         }
+        syncBlockFromDom(blockId);
+
+        pendingDeletedBlockIds.add(blockId);
+        dirtyBlockIds.delete(blockId);
+        blocks = blocks
+            .filter((item) => item.id !== blockId)
+            .map((item, sortIndex) => ({ ...item, sort_order: sortIndex + 1 }));
+        orderDirty = true;
+
+        if (selectedBlockId === blockId) {
+            selectedBlockId = blocks[0]?.id ?? null;
+        }
+
+        renderBlocks();
+        updateSaveUi('Unsaved changes');
+        setStatus('Block removed — Save to apply');
     }
 
     async function moveBlockToSection(blockId, section) {
@@ -1815,7 +1867,8 @@ export function initObMaker() {
         [copy[index], copy[target]] = [copy[target], copy[index]];
         blocks = copy.map((block, sortIndex) => ({ ...block, sort_order: sortIndex + 1 }));
         renderBlocks();
-        persistOrder().catch((error) => setStatus(error.message, true));
+        markOrderDirty();
+        setStatus('Unsaved changes');
     }
 
     async function loadAgendaPool(page = 1, append = false) {
@@ -2045,7 +2098,7 @@ export function initObMaker() {
         const confirmed = await confirmAction({
             title: 'Auto-place and sort Agendas?',
             message:
-                'Place eligible agendas into this Order of Business using lifecycle rules (unassigned, unfinished, or committee reports), then sort sections by Agenda No. and regroup Unfinished Business by committee. Manually moved items are left as-is. Items already in the correct section are skipped.',
+                'Place eligible agendas into this Order of Business using lifecycle rules (unassigned, unfinished, or committee reports), then sort sections by year and Agenda No. and regroup Unfinished Business by committee. Manually moved items are left as-is. Items already in the correct section are skipped.',
             confirmLabel: 'Auto-place and sort',
             danger: false,
         });
@@ -2295,7 +2348,7 @@ export function initObMaker() {
 
     root.addEventListener('input', (event) => {
         const target = event.target;
-        if (target.matches('#ob-doc-title, #ob-doc-status')) {
+        if (target.matches('#ob-doc-status')) {
             markDocumentMetaDirty();
             return;
         }
@@ -2311,7 +2364,7 @@ export function initObMaker() {
 
     root.addEventListener('change', (event) => {
         const target = event.target;
-        if (target.matches('#ob-doc-title, #ob-doc-status')) {
+        if (target.matches('#ob-doc-status')) {
             markDocumentMetaDirty();
             return;
         }
@@ -2859,6 +2912,29 @@ export function initObMaker() {
         event.returnValue = '';
     });
 
+    window.addEventListener('popstate', () => {
+        if (ignoringPopState) {
+            return;
+        }
+
+        if (suppressLeavePrompt || !isDirty()) {
+            unsavedHistoryTrap = false;
+            return;
+        }
+
+        history.pushState({ splisObUnsaved: 1 }, '', window.location.href);
+        unsavedHistoryTrap = true;
+
+        handleLeaveAttempt(() => {
+            suppressLeavePrompt = true;
+            unsavedHistoryTrap = false;
+            ignoringPopState = true;
+            // Discard keeps dirty (still on re-armed trap → go -2).
+            // Save already released one history entry → go -1.
+            history.go(isDirty() ? -2 : -1);
+        });
+    });
+
     document.addEventListener('click', (event) => {
         if (!canEdit || suppressLeavePrompt || !isDirty()) {
             return;
@@ -2920,7 +2996,26 @@ export function initObMaker() {
     }, true);
 
     window.addEventListener('keydown', (event) => {
-        if (!canEdit || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 's') {
+        if (!canEdit) {
+            return;
+        }
+
+        const key = event.key;
+        const isRefreshKey = key === 'F5'
+            || ((event.ctrlKey || event.metaKey) && key.toLowerCase() === 'r');
+
+        if (isRefreshKey) {
+            if (suppressLeavePrompt || !isDirty()) {
+                return;
+            }
+            event.preventDefault();
+            handleLeaveAttempt(() => {
+                window.location.reload();
+            });
+            return;
+        }
+
+        if (!(event.ctrlKey || event.metaKey) || key.toLowerCase() !== 's') {
             return;
         }
         if (!root.contains(event.target) && event.target !== document.body) {

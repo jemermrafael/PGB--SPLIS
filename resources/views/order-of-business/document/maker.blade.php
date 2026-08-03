@@ -14,7 +14,18 @@
             <p class="text-sm text-slate-500">{{ $session->displayTitle() }}</p>
             <h1 class="splis-page-title truncate">Order of Business Maker</h1>
         </div>
-        <div class="splis-ob-maker-actions flex flex-wrap gap-2">
+        <div class="splis-ob-maker-actions flex flex-wrap items-center gap-2">
+            <label class="sr-only" for="ob-doc-status">Status</label>
+            <select
+                id="ob-doc-status"
+                class="splis-select w-auto min-w-[8.5rem]"
+                title="Document status"
+                @disabled(! $canEdit)
+            >
+                @foreach (config('order_of_business.document_statuses', []) as $value => $label)
+                    <option value="{{ $value }}" @selected($document->status === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
             <a
                 href="{{ route('ob.document.print', $session) }}"
                 data-pdf-modal-open
@@ -30,23 +41,8 @@
                 Print Preview
             </a>
             <a href="{{ route('ob.sessions.show', $session) }}" class="splis-btn-secondary">Session</a>
+            <p id="ob-save-status" class="text-sm text-slate-500" aria-live="polite"></p>
         </div>
-    </div>
-
-    <div class="splis-ob-maker-toolbar splis-card splis-card-body mb-4 flex flex-wrap items-end gap-4">
-        <div class="min-w-[200px] flex-1">
-            <label class="splis-label" for="ob-doc-title">Document title</label>
-            <input type="text" id="ob-doc-title" class="splis-input" value="{{ $document->title }}" @disabled(! $canEdit)>
-        </div>
-        <div>
-            <label class="splis-label" for="ob-doc-status">Status</label>
-            <select id="ob-doc-status" class="splis-select" @disabled(! $canEdit)>
-                @foreach (config('order_of_business.document_statuses', []) as $value => $label)
-                    <option value="{{ $value }}" @selected($document->status === $value)>{{ $label }}</option>
-                @endforeach
-            </select>
-        </div>
-        <p id="ob-save-status" class="text-sm text-slate-500" aria-live="polite"></p>
     </div>
 
     <div class="splis-ob-maker-layout">

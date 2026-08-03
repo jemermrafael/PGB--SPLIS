@@ -199,4 +199,37 @@ class ObAgendaSnapshotFormattingTest extends TestCase
             $html,
         );
     }
+
+    public function test_agenda_sort_tuple_orders_by_year_then_number(): void
+    {
+        $keys = [
+            '113-2026' => ObAgendaSnapshot::agendaSortTuple('113', 2026),
+            '580-2023' => ObAgendaSnapshot::agendaSortTuple('580', 2023),
+            '50-2023' => ObAgendaSnapshot::agendaSortTuple('50', 2023),
+        ];
+
+        asort($keys);
+
+        $this->assertSame(['50-2023', '580-2023', '113-2026'], array_keys($keys));
+    }
+
+    public function test_merging_rows_sorts_agenda_nos_by_year_when_provided(): void
+    {
+        $merged = ObAgendaSnapshot::mergeCommitteeReportRows(
+            [
+                'agenda_nos' => ['113'],
+                'list_year' => 2026,
+                'list_years' => ['113' => 2026],
+            ],
+            [
+                'agenda_nos' => ['580'],
+                'list_year' => 2023,
+                'list_years' => ['580' => 2023],
+            ],
+        );
+
+        $this->assertSame(['580', '113'], $merged['agenda_nos']);
+        $this->assertSame('580', $merged['agenda_no']);
+        $this->assertSame(2023, $merged['list_year']);
+    }
 }

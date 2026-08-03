@@ -177,7 +177,10 @@ class CommitteeReportSummaryService
 
                         return $item;
                     })
-                    ->sortBy(fn (array $item) => ObAgendaSnapshot::agendaNoSortKey((string) ($item['agenda_no'] ?? '')))
+                    ->sortBy(fn (array $item) => ObAgendaSnapshot::agendaSortTuple(
+                        (string) ($item['agenda_no'] ?? ''),
+                        isset($item['list_year']) && is_numeric($item['list_year']) ? (int) $item['list_year'] : null,
+                    ))
                     ->values()
                     ->all();
 
@@ -306,6 +309,7 @@ class CommitteeReportSummaryService
                 $item = [
                     'agenda_item_id' => $agenda->id,
                     'agenda_no' => $agendaNo,
+                    'list_year' => ObAgendaSnapshot::listYear($agenda),
                     'body' => $body,
                     'body_html' => $bodyHtml,
                     'revised_title_label' => trim((string) ($existing['revised_title_label'] ?? 'REVISED TITLE')) ?: 'REVISED TITLE',
@@ -326,7 +330,7 @@ class CommitteeReportSummaryService
 
         return collect(array_values($grouped))
             ->map(function (array $group): array {
-                $group['items'] = $this->sortItemsByAgendaNo($group['items'] ?? []);
+                $group['items'] = $this->sortItemsByAgendaYearThenNo($group['items'] ?? []);
 
                 return $group;
             })
@@ -338,10 +342,13 @@ class CommitteeReportSummaryService
      * @param  list<array<string, mixed>>  $items
      * @return list<array<string, mixed>>
      */
-    protected function sortItemsByAgendaNo(array $items): array
+    protected function sortItemsByAgendaYearThenNo(array $items): array
     {
         return collect($items)
-            ->sortBy(fn (array $item) => ObAgendaSnapshot::agendaNoSortKey((string) ($item['agenda_no'] ?? '')))
+            ->sortBy(fn (array $item) => ObAgendaSnapshot::agendaSortTuple(
+                (string) ($item['agenda_no'] ?? ''),
+                isset($item['list_year']) && is_numeric($item['list_year']) ? (int) $item['list_year'] : null,
+            ))
             ->values()
             ->all();
     }

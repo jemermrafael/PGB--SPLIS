@@ -58,6 +58,9 @@ class CommitteeReportSummary extends Model
                         return [
                             'agenda_item_id' => $item['agenda_item_id'] ?? null,
                             'agenda_no' => (string) ($item['agenda_no'] ?? ''),
+                            'list_year' => isset($item['list_year']) && is_numeric($item['list_year'])
+                                ? (int) $item['list_year']
+                                : null,
                             'body' => $body,
                             'body_html' => ObTitleMarkup::forTitle(
                                 is_string($item['body_html'] ?? null) ? $item['body_html'] : null,
@@ -76,7 +79,10 @@ class CommitteeReportSummary extends Model
                             ),
                         ];
                     })
-                    ->sortBy(fn (array $item) => ObAgendaSnapshot::agendaNoSortKey((string) ($item['agenda_no'] ?? '')))
+                    ->sortBy(fn (array $item) => ObAgendaSnapshot::agendaSortTuple(
+                        (string) ($item['agenda_no'] ?? ''),
+                        isset($item['list_year']) && is_numeric($item['list_year']) ? (int) $item['list_year'] : null,
+                    ))
                     ->values()
                     ->all();
 

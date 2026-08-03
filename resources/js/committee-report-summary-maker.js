@@ -187,6 +187,28 @@ export function initCommitteeReportSummaryMaker() {
     let dirty = false;
     let isSaving = false;
     let suppressLeavePrompt = false;
+    let unsavedHistoryTrap = false;
+    let ignoringPopState = false;
+
+    function armUnsavedHistoryTrap() {
+        if (suppressLeavePrompt || unsavedHistoryTrap || !dirty) {
+            return;
+        }
+        history.pushState({ splisScrUnsaved: 1 }, '', window.location.href);
+        unsavedHistoryTrap = true;
+    }
+
+    function releaseUnsavedHistoryTrap() {
+        if (!unsavedHistoryTrap) {
+            return;
+        }
+        unsavedHistoryTrap = false;
+        ignoringPopState = true;
+        history.back();
+        queueMicrotask(() => {
+            ignoringPopState = false;
+        });
+    }
 
     function setStatus(message, isError = false) {
         if (!saveStatus) {
@@ -212,6 +234,13 @@ export function initCommitteeReportSummaryMaker() {
 
     function updateSaveUi(statusMessage = null) {
         updateSaveButtons();
+
+        if (dirty) {
+            armUnsavedHistoryTrap();
+        } else {
+            releaseUnsavedHistoryTrap();
+        }
+
         if (statusMessage !== null) {
             setStatus(statusMessage);
         } else if (isSaving) {
@@ -567,6 +596,56 @@ export function initCommitteeReportSummaryMaker() {
         }
         event.preventDefault();
         event.returnValue = '';
+    });
+
+    window.addEventListener('popstate', async () => {
+        if (ignoringPopState) {
+            return;
+        }
+
+        if (suppressLeavePrompt || !dirty) {
+            unsavedHistoryTrap = false;
+            return;
+        }
+
+        history.pushState({ splisScrUnsaved: 1 }, '', window.location.href);
+        unsavedHistoryTrap = true;
+
+        const leave = await confirmLeaveIfDirty(
+            'You have unsaved changes. Leave this page and discard them?',
+        );
+
+        if (!leave) {
+            return;
+        }
+
+        suppressLeavePrompt = true;
+        unsavedHistoryTrap = false;
+        ignoringPopState = true;
+        history.go(-2);
+    });
+
+    window.addEventListener('keydown', async (event) => {
+        const key = event.key;
+        const isRefreshKey = key === 'F5'
+            || ((event.ctrlKey || event.metaKey) && key.toLowerCase() === 'r');
+
+        if (!isRefreshKey || suppressLeavePrompt || !dirty) {
+            return;
+        }
+
+        event.preventDefault();
+
+        const leave = await confirmLeaveIfDirty(
+            'You have unsaved changes. Refresh this page and discard them?',
+        );
+
+        if (!leave) {
+            return;
+        }
+
+        suppressLeavePrompt = true;
+        window.location.reload();
     });
 
     document.addEventListener('click', async (event) => {
