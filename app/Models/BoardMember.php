@@ -157,6 +157,15 @@ class BoardMember extends Model
         return $assignment?->district ?? $this->district;
     }
 
+    public function isViceGovernor(?int $termId = null): bool
+    {
+        if ($termId === null) {
+            $termId = CommitteeTerm::query()->current()->value('id');
+        }
+
+        return $this->districtForTerm($termId) === 'Vice Governor';
+    }
+
     public function isActiveForTerm(?int $termId): bool
     {
         if ($termId === null) {

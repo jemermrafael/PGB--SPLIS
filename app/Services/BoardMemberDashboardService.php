@@ -416,8 +416,12 @@ class BoardMemberDashboardService
             ->get();
     }
 
-    public function rosterForAttendance(): Collection
+    public function rosterForAttendance(?int $seriesYear = null): Collection
     {
+        if ($seriesYear !== null) {
+            return $this->rosterService->orderedActiveMembersForYear($seriesYear);
+        }
+
         $term = CommitteeTerm::query()->current()->first() ?? CommitteeTerm::currentOrCreate();
 
         return $this->rosterService->orderedActiveMembers($term);

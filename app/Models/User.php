@@ -108,6 +108,20 @@ class User extends Authenticatable
         return $this->role === UserRole::BoardMember;
     }
 
+    public function isViceGovernorBoardMember(): bool
+    {
+        return $this->isBoardMember()
+            && $this->boardMember?->isViceGovernor() === true;
+    }
+
+    /**
+     * Full province-wide Executive Dashboard (admin/superadmin or Vice Governor BM).
+     */
+    public function seesFullExecutiveDashboard(): bool
+    {
+        return $this->canAdmin() || $this->isViceGovernorBoardMember();
+    }
+
     public function isMunicipalViewer(): bool
     {
         return $this->role === UserRole::MunicipalViewer;

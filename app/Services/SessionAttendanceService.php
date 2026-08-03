@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\BoardMemberTerm;
-use App\Models\CommitteeTerm;
 use App\Models\LegislativeSession;
 use App\Models\MonthlyAttendanceSheet;
 use App\Models\SessionAttendance;
@@ -171,7 +170,7 @@ class SessionAttendanceService
     public function monthlySummary(int $year, int $month): array
     {
         $sessions = $this->sessionsForMonth($year, $month);
-        $roster = $this->rosterService->rosterForAttendance();
+        $roster = $this->boardMemberRoster->orderedActiveMembersForYear($year);
 
         $summary = [];
 
@@ -239,7 +238,7 @@ class SessionAttendanceService
         }
 
         $sessions = $this->sessionsForMonth($year, $month);
-        $term = CommitteeTerm::query()->current()->first() ?? CommitteeTerm::currentOrCreate();
+        $term = $this->boardMemberRoster->termForSeriesYear($year);
         $grouped = $this->boardMemberRoster->rosterGroupedByDistrict($term);
 
         $sessionSlots = collect($sessions->all());

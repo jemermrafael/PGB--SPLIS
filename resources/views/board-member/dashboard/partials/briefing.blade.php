@@ -80,6 +80,24 @@
                     <p class="text-sm text-slate-500">No Agenda deadlines within {{ $deadlineDays }} days.</p>
                 @endif
             </div>
+
+            @if ($incoming->isNotEmpty())
+                <div class="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+                    <h3 class="mb-1 text-sm font-semibold text-slate-900 dark:text-slate-100">Incoming (for referral)</h3>
+                    <ul class="space-y-1.5 text-sm">
+                        @foreach ($incoming->take(4) as $agenda)
+                            <li>
+                                <a href="{{ route('agenda.show', $agenda) }}" class="splis-link font-medium">
+                                    {{ $agenda->displayLabel() }}
+                                </a>
+                                <span class="text-slate-600 dark:text-slate-300">
+                                    — {{ \Illuminate\Support\Str::limit($agenda->title ?: 'Untitled', 56) }}
+                                </span>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
         </div>
     </div>
 
@@ -216,55 +234,44 @@
             </div>
         </details>
 
+                @if ($incoming->isNotEmpty())
                 <div class="p-4 sm:p-5">
                     <h3 class="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">Incoming (for referral)</h3>
-                    <p class="mb-3 text-xs text-slate-500">Regular unassigned business on the next Order of Business session.</p>
-                    @if ($incoming->isNotEmpty())
-                        <ul class="space-y-2 text-sm">
-                            @foreach ($incoming->take(8) as $agenda)
-                                <li>
-                                    <a href="{{ route('agenda.show', $agenda) }}" class="splis-link font-medium">
-                                        {{ $agenda->displayLabel() }}
-                                    </a>
-                                    <span class="text-slate-600 dark:text-slate-300">
-                                        — {{ \Illuminate\Support\Str::limit($agenda->title ?: 'Untitled', 60) }}
-                                    </span>
-                                </li>
-                            @endforeach
-                        </ul>
-                        @if ($incomingCount > 8)
-                            <details class="mt-2 group">
-                                <summary class="cursor-pointer list-none text-xs font-medium text-brand-700 hover:underline dark:text-brand-300 [&::-webkit-details-marker]:hidden">
-                                    <span class="group-open:hidden">+ {{ $incomingCount - 8 }} more on next OB — show all</span>
-                                    <span class="hidden group-open:inline">Show less</span>
-                                </summary>
-                                <ul class="mt-2 space-y-2 text-sm">
-                                    @foreach ($incoming->skip(8) as $agenda)
-                                        <li>
-                                            <a href="{{ route('agenda.show', $agenda) }}" class="splis-link font-medium">
-                                                {{ $agenda->displayLabel() }}
-                                            </a>
-                                            <span class="text-slate-600 dark:text-slate-300">
-                                                — {{ \Illuminate\Support\Str::limit($agenda->title ?: 'Untitled', 60) }}
-                                            </span>
-                                        </li>
-                                    @endforeach
-                                </ul>
-                                @if ($next && $next->obDocument)
-                                    @can('view', $next->obDocument)
-                                        <p class="mt-3">
-                                            <a href="{{ route('ob.document.print', $next) }}" target="_blank" class="splis-link text-xs font-medium">
-                                                Open full Order of Business
-                                            </a>
-                                        </p>
-                                    @endcan
-                                @endif
-                            </details>
-                        @endif
-                    @else
-                        <p class="text-sm text-slate-500">No regular unassigned items on the next session OB.</p>
+                    <p class="mb-3 text-xs text-slate-500">Regular unassigned business referred to committees you chair.</p>
+                    <ul class="space-y-2 text-sm">
+                        @foreach ($incoming->take(8) as $agenda)
+                            <li>
+                                <a href="{{ route('agenda.show', $agenda) }}" class="splis-link font-medium">
+                                    {{ $agenda->displayLabel() }}
+                                </a>
+                                <span class="text-slate-600 dark:text-slate-300">
+                                    — {{ \Illuminate\Support\Str::limit($agenda->title ?: 'Untitled', 60) }}
+                                </span>
+                            </li>
+                        @endforeach
+                    </ul>
+                    @if ($incomingCount > 8)
+                        <details class="mt-2 group">
+                            <summary class="cursor-pointer list-none text-xs font-medium text-brand-700 hover:underline dark:text-brand-300 [&::-webkit-details-marker]:hidden">
+                                <span class="group-open:hidden">+ {{ $incomingCount - 8 }} more — show all</span>
+                                <span class="hidden group-open:inline">Show less</span>
+                            </summary>
+                            <ul class="mt-2 space-y-2 text-sm">
+                                @foreach ($incoming->skip(8) as $agenda)
+                                    <li>
+                                        <a href="{{ route('agenda.show', $agenda) }}" class="splis-link font-medium">
+                                            {{ $agenda->displayLabel() }}
+                                        </a>
+                                        <span class="text-slate-600 dark:text-slate-300">
+                                            — {{ \Illuminate\Support\Str::limit($agenda->title ?: 'Untitled', 60) }}
+                                        </span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </details>
                     @endif
                 </div>
+                @endif
             </div>
         </div>
     </div>

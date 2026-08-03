@@ -59,6 +59,7 @@
             || request()->routeIs('committee-terms.*')
             || request()->routeIs('committee-monitoring.*')
             || request()->routeIs('committee-reports.*')
+            || request()->routeIs('scheduled-committee-referrals.*')
             || request()->routeIs('admin.board-member-ordinances');
     @endphp
 
@@ -130,6 +131,16 @@
                                     <a href="{{ route('admin.analytics.index') }}" class="splis-user-menu-link inline-flex items-center gap-2">
                                         <x-icon name="chart-bar" class="h-4 w-4 shrink-0 opacity-80" />
                                         Executive Dashboard
+                                    </a>
+                                @endif
+                                @if (auth()->user()->canAdmin())
+                                    @php $archivedAgendaCount = \App\Models\AgendaItem::query()->archived()->count(); @endphp
+                                    <a href="{{ route('admin.archives.index') }}" @class(['splis-user-menu-link inline-flex items-center gap-2', 'font-semibold' => request()->routeIs('admin.archives.*')])>
+                                        <x-icon name="archive" class="h-4 w-4 shrink-0 opacity-80" />
+                                        Archives
+                                        @if ($archivedAgendaCount > 0)
+                                            <span class="ml-auto tabular-nums text-xs opacity-70">({{ number_format($archivedAgendaCount) }})</span>
+                                        @endif
                                     </a>
                                 @endif
                                 @if (auth()->user()->canManageUsers())
@@ -367,6 +378,18 @@
                             >
                                 Committee Monitoring
                             </a>
+                            @if ($user?->canEncode())
+                                <a
+                                    href="{{ route('scheduled-committee-referrals.index') }}"
+                                    role="menuitem"
+                                    @class([
+                                        'splis-nav-dropdown-link',
+                                        'splis-nav-dropdown-link-active' => request()->routeIs('scheduled-committee-referrals.*'),
+                                    ])
+                                >
+                                    Schedule Committee Referral
+                                </a>
+                            @endif
                             @can('viewAny', App\Models\BoardMemberCommitteeReport::class)
                                 <a
                                     href="{{ route('committee-reports.index') }}"

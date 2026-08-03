@@ -48,6 +48,61 @@ class BoardMemberRosterService
     }
 
     /**
+     * Roster for a calendar year (election term covering that year).
+     *
+     * @return Collection<int, BoardMember>
+     */
+    public function orderedActiveMembersForYear(int $year): Collection
+    {
+        return $this->orderedActiveMembers($this->termForSeriesYear($year));
+    }
+
+    /**
+     * Move a term assignment up (-1) or down (+1) within its district.
+     * Order is stored per election term, so Monthly / session attendance follow /board-members.
+     */
+    public function moveAssignment(BoardMemberTerm $assignment, int $direction): bool
+    {
+        if (! in_array($direction, [-1, 1], true) || blank($assignment->district)) {
+            return false;
+        }
+
+        $siblings = BoardMemberTerm::query()
+            ->where('committee_term_id', $assignment->committee_term_id)
+            ->where('district', $assignment->district)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->values();
+
+        $index = $siblings->search(fn (BoardMemberTerm $row) => $row->id === $assignment->id);
+
+        if ($index === false) {
+            return false;
+        }
+
+        $target = $index + $direction;
+
+        if ($target < 0 || $target >= $siblings->count()) {
+            return false;
+        }
+
+        $current = $siblings[$index];
+        $neighbor = $siblings[$target];
+
+        $siblings[$index] = $neighbor;
+        $siblings[$target] = $current;
+
+        foreach ($siblings as $position => $row) {
+            if ((int) $row->sort_order !== $position) {
+                $row->forceFill(['sort_order' => $position])->saveQuietly();
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * @param  array{district?: string|null, ex_officio_title?: string|null, is_active?: bool}  $data
      */
     public function saveAssignment(BoardMember $boardMember, CommitteeTerm $term, array $data): BoardMemberTerm
@@ -56,6 +111,22 @@ class BoardMemberRosterService
         $exOfficioTitle = $district === 'Ex Officio'
             ? (trim((string) ($data['ex_officio_title'] ?? '')) ?: null)
             : null;
+
+        $existing = BoardMemberTerm::query()
+            ->where('board_member_id', $boardMember->id)
+            ->where('committee_term_id', $term->id)
+            ->first();
+
+        $sortOrder = $existing?->sort_order;
+        if ($sortOrder === null) {
+            $sortOrder = (int) BoardMemberTerm::query()
+                ->where('committee_term_id', $term->id)
+                ->when(
+                    filled($district),
+                    fn ($query) => $query->where('district', $district),
+                )
+                ->max('sort_order') + 1;
+        }
 
         $assignment = BoardMemberTerm::query()->updateOrCreate(
             [
@@ -66,6 +137,7 @@ class BoardMemberRosterService
                 'district' => $district,
                 'ex_officio_title' => $exOfficioTitle,
                 'is_active' => true,
+                'sort_order' => $sortOrder,
             ],
         );
 

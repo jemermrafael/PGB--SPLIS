@@ -16,6 +16,7 @@ class SessionAttendanceController extends Controller
     public function __construct(
         protected SessionAttendanceService $attendanceService,
         protected BoardMemberDashboardService $dashboardService,
+        protected \App\Services\BoardMemberRosterService $rosterService,
     ) {}
 
     public function show(LegislativeSession $legislativeSession, ObDocumentService $obDocuments): View
@@ -25,9 +26,12 @@ class SessionAttendanceController extends Controller
         $obDocuments->syncSessionGuestsFromDocument($legislativeSession);
         $legislativeSession->refresh();
 
-        $roster = $this->dashboardService->rosterForAttendance();
+        $seriesYear = $legislativeSession->session_date?->year;
+        $roster = $this->dashboardService->rosterForAttendance($seriesYear);
         $attendances = $this->attendanceService->forSession($legislativeSession);
-        $termId = \App\Models\CommitteeTerm::query()->current()->value('id');
+        $termId = $seriesYear
+            ? $this->rosterService->termForSeriesYear((int) $seriesYear)->id
+            : \App\Models\CommitteeTerm::query()->current()->value('id');
 
         return view('order-of-business.sessions.attendance', [
             'session' => $legislativeSession,
@@ -83,12 +87,12 @@ class SessionAttendanceController extends Controller
 
         $year = (int) $request->input('year', now()->year);
         $month = (int) $request->input('month', now()->month);
-        $currentTermId = \App\Models\CommitteeTerm::query()->current()->value('id');
+        $term = $this->rosterService->termForSeriesYear($year);
 
         return view('order-of-business.sessions.attendance-monthly', [
             'year' => $year,
             'month' => $month,
-            'currentTermId' => $currentTermId,
+            'currentTermId' => $term->id,
             'summary' => $this->attendanceService->monthlySummary($year, $month),
             'sessions' => $this->attendanceService->sessionsForMonth($year, $month),
         ]);

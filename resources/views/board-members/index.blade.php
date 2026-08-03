@@ -10,7 +10,7 @@
     <div class="splis-page-header">
         <x-page-heading
             title="Board Members"
-            subtitle="Sangguniang Panlalawigan roster — Vice Governor, District Board Members, and Ex Officio Members."
+            subtitle="Sangguniang Panlalawigan roster — Vice Governor, District Board Members, and Ex Officio Members. Order within each district is per election term and is used by session and monthly attendance."
             icon="user"
             page="board_members"
         />
@@ -82,70 +82,103 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($assignments as $assignment)
+                        @php
+                            $districtRows = $assignments
+                                ->filter(fn ($row) => $row->boardMember !== null)
+                                ->values();
+                        @endphp
+                        @foreach ($districtRows as $index => $assignment)
                             @php $member = $assignment->boardMember; @endphp
-                            @if ($member)
-                                <tr>
-                                    @if ($canManage)
-                                        <td>
-                                            @can('delete', $member)
-                                                <input
-                                                    type="checkbox"
-                                                    value="{{ $member->id }}"
-                                                    data-board-member-checkbox
-                                                    class="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
-                                                    aria-label="Select {{ $member->displayName() }}"
-                                                >
-                                            @endcan
-                                        </td>
-                                    @endif
-                                    <td class="font-medium text-slate-900 dark:text-slate-100">
-                                        <a href="{{ route('board-members.show', ['boardMember' => $member, 'term' => $selectedTerm->id]) }}" class="hover:text-brand-700 dark:hover:text-brand-300">
-                                            {{ $member->displayName() }}
-                                        </a>
-                                    </td>
-                                    <td>{{ $member->contactNumber() ?: '—' }}</td>
+                            <tr>
+                                @if ($canManage)
                                     <td>
-                                        @if ($member->contactEmail())
-                                            <a href="mailto:{{ $member->contactEmail() }}" class="splis-link">{{ $member->contactEmail() }}</a>
-                                        @else
-                                            —
-                                        @endif
+                                        @can('delete', $member)
+                                            <input
+                                                type="checkbox"
+                                                value="{{ $member->id }}"
+                                                data-board-member-checkbox
+                                                class="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                                                aria-label="Select {{ $member->displayName() }}"
+                                            >
+                                        @endcan
                                     </td>
-                                    <td class="text-right">
-                                        <div class="flex justify-end gap-2">
-                                            <a href="{{ route('board-members.show', ['boardMember' => $member, 'term' => $selectedTerm->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-sm">
-                                                <x-icon name="eye" class="h-4 w-4" />
-                                                Profile
-                                            </a>
-                                            @can('update', $member)
-                                                <a href="{{ route('board-members.edit', ['boardMember' => $member, 'term' => $selectedTerm->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-sm">
-                                                    <x-icon name="edit" class="h-4 w-4" />
-                                                    Edit
-                                                </a>
-                                            @endcan
-                                            @can('delete', $member)
-                                                <form
-                                                    method="POST"
-                                                    action="{{ route('board-members.destroy', $member) }}"
-                                                    data-confirm-submit
-                                                    data-confirm-title="Move Board Member to trash?"
-                                                    data-confirm-message="Move {{ $member->displayName() }} to trash? Superadmin can restore from Trash."
-                                                    data-confirm-label="Delete"
-                                                >
+                                @endif
+                                <td class="font-medium text-slate-900 dark:text-slate-100">
+                                    <a href="{{ route('board-members.show', ['boardMember' => $member, 'term' => $selectedTerm->id]) }}" class="hover:text-brand-700 dark:hover:text-brand-300">
+                                        {{ $member->displayName() }}
+                                    </a>
+                                </td>
+                                <td>{{ $member->contactNumber() ?: '—' }}</td>
+                                <td>
+                                    @if ($member->contactEmail())
+                                        <a href="mailto:{{ $member->contactEmail() }}" class="splis-link">{{ $member->contactEmail() }}</a>
+                                    @else
+                                        —
+                                    @endif
+                                </td>
+                                <td class="text-right">
+                                    <div class="flex flex-wrap justify-end gap-2">
+                                        @can('update', $member)
+                                            <div class="flex items-center gap-1">
+                                                <form method="POST" action="{{ route('board-members.move', $member) }}">
                                                     @csrf
-                                                    @method('DELETE')
                                                     <input type="hidden" name="term" value="{{ $selectedTerm->id }}">
-                                                    <button type="submit" class="splis-btn-danger inline-flex items-center gap-2 text-sm">
-                                                        <x-icon name="trash" class="h-4 w-4" />
-                                                        Delete
+                                                    <input type="hidden" name="direction" value="-1">
+                                                    <button
+                                                        type="submit"
+                                                        class="splis-btn-secondary px-2 py-1 text-sm"
+                                                        title="Move up in {{ $selectedTerm->label }}"
+                                                        @disabled($index === 0)
+                                                    >
+                                                        ↑
                                                     </button>
                                                 </form>
-                                            @endcan
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endif
+                                                <form method="POST" action="{{ route('board-members.move', $member) }}">
+                                                    @csrf
+                                                    <input type="hidden" name="term" value="{{ $selectedTerm->id }}">
+                                                    <input type="hidden" name="direction" value="1">
+                                                    <button
+                                                        type="submit"
+                                                        class="splis-btn-secondary px-2 py-1 text-sm"
+                                                        title="Move down in {{ $selectedTerm->label }}"
+                                                        @disabled($index === $districtRows->count() - 1)
+                                                    >
+                                                        ↓
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        @endcan
+                                        <a href="{{ route('board-members.show', ['boardMember' => $member, 'term' => $selectedTerm->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-sm">
+                                            <x-icon name="eye" class="h-4 w-4" />
+                                            Profile
+                                        </a>
+                                        @can('update', $member)
+                                            <a href="{{ route('board-members.edit', ['boardMember' => $member, 'term' => $selectedTerm->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-sm">
+                                                <x-icon name="edit" class="h-4 w-4" />
+                                                Edit
+                                            </a>
+                                        @endcan
+                                        @can('delete', $member)
+                                            <form
+                                                method="POST"
+                                                action="{{ route('board-members.destroy', $member) }}"
+                                                data-confirm-submit
+                                                data-confirm-title="Move Board Member to trash?"
+                                                data-confirm-message="Move {{ $member->displayName() }} to trash? Superadmin can restore from Trash."
+                                                data-confirm-label="Delete"
+                                            >
+                                                @csrf
+                                                @method('DELETE')
+                                                <input type="hidden" name="term" value="{{ $selectedTerm->id }}">
+                                                <button type="submit" class="splis-btn-danger inline-flex items-center gap-2 text-sm">
+                                                    <x-icon name="trash" class="h-4 w-4" />
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        @endcan
+                                    </div>
+                                </td>
+                            </tr>
                         @endforeach
                     </tbody>
                 </table>

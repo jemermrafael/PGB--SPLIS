@@ -32,7 +32,13 @@
     <header class="splis-exec-header">
         <div>
             <h1 class="splis-exec-title">Executive Dashboard</h1>
-            <p class="splis-exec-subtitle">Overview of Legislative Operations and Performance</p>
+            <p class="splis-exec-subtitle">
+                @if ($analyticsScopeFull ?? true)
+                    Overview of Legislative Operations and Performance
+                @else
+                    Your committees, referred agendas, and related legislative output
+                @endif
+            </p>
         </div>
         <p class="text-sm text-slate-500">{{ now()->format('M j, Y | l') }}</p>
     </header>
@@ -184,7 +190,7 @@
                 <h2 class="splis-exec-panel-title">Bataan — Agendas by Municipality</h2>
                 <p class="text-sm text-slate-500 dark:text-slate-400">Agendas counted by date passed</p>
                 <p class="splis-exec-panel-subtitle" data-map-subtitle>
-                    {{ $committeeMap['committee'] ?? 'All Committees' }} · {{ $committeeMap['period_label'] ?? '' }} · {{ number_format($committeeMapTotal) }} agendas
+                    {{ $committeeMap['committee'] ?? (($analyticsScopeFull ?? true) ? 'All Committees' : 'My Committees') }} · {{ $committeeMap['period_label'] ?? '' }} · {{ number_format($committeeMapTotal) }} agendas
                 </p>
             </div>
 
@@ -192,7 +198,7 @@
                 <div class="sm:col-span-2">
                     <label class="splis-label" for="map-committee-id">Committee</label>
                     <select id="map-committee-id" class="splis-input" data-map-filter="committee_id">
-                        <option value="" @selected($mapCommitteeId === null)>All Committees</option>
+                        <option value="" @selected($mapCommitteeId === null)>{{ ($analyticsScopeFull ?? true) ? 'All Committees' : 'My Committees' }}</option>
                         @foreach ($committees as $committee)
                             <option value="{{ $committee->id }}" @selected($mapCommitteeId === $committee->id)>{{ $committee->name }}</option>
                         @endforeach

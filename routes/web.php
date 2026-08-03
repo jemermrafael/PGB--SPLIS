@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\Admin\ArchivesController;
 use App\Http\Controllers\Admin\DatabaseBackupController;
 use App\Http\Controllers\Admin\DataSyncController;
 use App\Http\Controllers\Admin\EmailNotificationSettingsController;
@@ -73,6 +74,7 @@ use App\Http\Controllers\SessionCommitteeReportsMirrorController;
 use App\Http\Controllers\SessionPdfController;
 use App\Http\Controllers\SessionPdfDeleteController;
 use App\Http\Controllers\SessionPdfMirrorController;
+use App\Http\Controllers\ScheduledCommitteeReferralController;
 use App\Http\Controllers\StaffCommitteeReportController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserNotificationController;
@@ -237,6 +239,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/agenda/{agenda}/edit', [AgendaItemController::class, 'edit'])->name('agenda.edit');
     Route::put('/agenda/{agenda}', [AgendaItemController::class, 'update'])->name('agenda.update');
     Route::delete('/agenda/{agenda}', [AgendaItemController::class, 'destroy'])->name('agenda.destroy');
+    Route::post('/agenda/{agenda}/archive', [AgendaItemController::class, 'archive'])->name('agenda.archive');
+    Route::post('/agenda/{agenda}/restore-archive', [AgendaItemController::class, 'restoreArchive'])->name('agenda.restore-archive');
     Route::post('/agenda/{agenda}/promote-incoming', [AgendaItemController::class, 'promote'])->name('agenda.promote-incoming');
     Route::post('/agenda/{agenda}/unlink-incoming', [AgendaItemController::class, 'unlinkIncoming'])->name('agenda.unlink-incoming');
     Route::post('/agenda/{agenda}/unlink-resolution', [AgendaItemController::class, 'unlinkResolution'])->name('agenda.unlink-resolution');
@@ -269,10 +273,16 @@ Route::middleware('auth')->group(function () {
     Route::delete('/committees/{committee}', [CommitteeController::class, 'destroy'])->name('committees.destroy');
     Route::get('/committee-monitoring', [CommitteeMonitoringController::class, 'index'])->name('committee-monitoring.index');
 
+    Route::get('/scheduled-committee-referrals', [ScheduledCommitteeReferralController::class, 'index'])->name('scheduled-committee-referrals.index');
+    Route::get('/scheduled-committee-referrals/create', [ScheduledCommitteeReferralController::class, 'create'])->name('scheduled-committee-referrals.create');
+    Route::post('/scheduled-committee-referrals', [ScheduledCommitteeReferralController::class, 'store'])->name('scheduled-committee-referrals.store');
+    Route::delete('/scheduled-committee-referrals/{scheduledCommitteeReferral}', [ScheduledCommitteeReferralController::class, 'cancel'])->name('scheduled-committee-referrals.cancel');
+
     Route::get('/board-members', [BoardMemberController::class, 'index'])->name('board-members.index');
     Route::get('/board-members/create', [BoardMemberController::class, 'create'])->name('board-members.create');
     Route::post('/board-members', [BoardMemberController::class, 'store'])->name('board-members.store');
     Route::delete('/board-members/bulk', [BoardMemberController::class, 'bulkDestroy'])->name('board-members.bulk-destroy');
+    Route::post('/board-members/{boardMember}/move', [BoardMemberController::class, 'move'])->name('board-members.move');
     Route::get('/board-members/{boardMember}', [BoardMemberController::class, 'show'])->name('board-members.show')->withTrashed();
     Route::get('/board-members/{boardMember}/edit', [BoardMemberController::class, 'edit'])->name('board-members.edit');
     Route::put('/board-members/{boardMember}', [BoardMemberController::class, 'update'])->name('board-members.update');
@@ -324,6 +334,9 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('role:admin,superadmin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/archives', [ArchivesController::class, 'index'])->name('archives.index');
+        Route::get('/archives/search', [ArchivesController::class, 'search'])->name('archives.search');
+
         Route::get('/email-notifications', [EmailNotificationSettingsController::class, 'index'])->name('email-notifications.index');
         Route::put('/email-notifications', [EmailNotificationSettingsController::class, 'update'])->name('email-notifications.update');
         Route::post('/email-notifications/test', [EmailNotificationSettingsController::class, 'sendTest'])->name('email-notifications.test');

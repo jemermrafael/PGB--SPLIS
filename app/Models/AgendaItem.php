@@ -123,6 +123,7 @@ class AgendaItem extends Model
             'is_urgent_request' => 'boolean',
             'published_at' => 'datetime',
             'ob_manual_override_at' => 'datetime',
+            'archived_at' => 'datetime',
         ];
     }
 
@@ -149,6 +150,11 @@ class AgendaItem extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function archiver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'archived_by');
     }
 
     public function obBlocks(): HasMany
@@ -381,6 +387,65 @@ class AgendaItem extends Model
             ->where('status', self::STATUS_PENDING)
             ->whereNotNull('due_date')
             ->whereBetween('due_date', [$today, $end]);
+    }
+
+    /** @param Builder<AgendaItem> $query */
+    public function scopeNotArchived(Builder $query): Builder
+    {
+        return $query->whereNull('archived_at');
+    }
+
+    /** @param Builder<AgendaItem> $query */
+    public function scopeArchived(Builder $query): Builder
+    {
+        return $query->whereNotNull('archived_at');
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->archived_at !== null;
+    }
+
+    public function archive(?User $actor = null): void
+    {
+        if ($this->isArchived()) {
+            return;
+        }
+
+        $this->forceFill([
+            'archived_at' => now(),
+            'archived_by' => $actor?->id,
+        ])->save();
+    }
+
+    public function restoreFromArchive(): void
+    {
+        if (! $this->isArchived()) {
+            return;
+        }
+
+        $this->forceFill([
+            'archived_at' => null,
+            'archived_by' => null,
+        ])->save();
+    }
+
+    public function previousInList(): ?static
+    {
+        return static::query()
+            ->notArchived()
+            ->where($this->getKeyName(), '>', $this->getKey())
+            ->orderBy($this->getKeyName())
+            ->first();
+    }
+
+    public function nextInList(): ?static
+    {
+        return static::query()
+            ->notArchived()
+            ->where($this->getKeyName(), '<', $this->getKey())
+            ->orderByDesc($this->getKeyName())
+            ->first();
     }
 
     /** @param Builder<AgendaItem> $query */

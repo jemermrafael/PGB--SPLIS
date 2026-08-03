@@ -22,27 +22,13 @@
                         </tr>
                     @endif
                     @if (! empty($segment['guests']))
-                        @php
-                            $guestNames = array_values($segment['guests']);
-                            $guestCount = count($guestNames);
-                            $guestLeftCount = (int) ceil($guestCount / 2);
-                            $guestLeft = array_slice($guestNames, 0, $guestLeftCount);
-                            $guestRight = array_slice($guestNames, $guestLeftCount);
-                        @endphp
                         <tr>
                             <td></td>
                             <td class="ob-print-guests">
-                                <div class="ob-print-guests-grid">
-                                    <div class="ob-print-guests-col">
-                                        @foreach ($guestLeft as $index => $guestName)
-                                            <div class="ob-print-guest-line">{{ $index + 1 }}. {{ $guestName }}</div>
-                                        @endforeach
-                                    </div>
-                                    <div class="ob-print-guests-col">
-                                        @foreach ($guestRight as $index => $guestName)
-                                            <div class="ob-print-guest-line">{{ $guestLeftCount + $index + 1 }}. {{ $guestName }}</div>
-                                        @endforeach
-                                    </div>
+                                <div class="ob-print-guests-list">
+                                    @foreach (array_values($segment['guests']) as $index => $guestName)
+                                        <div class="ob-print-guest-line">{{ $index + 1 }}. {{ $guestName }}</div>
+                                    @endforeach
                                 </div>
                             </td>
                         </tr>

@@ -25,11 +25,15 @@ class AgendaItemPolicy
 
     public function update(User $user, AgendaItem $agendaItem): bool
     {
-        return $user->canEncode();
+        return $user->canEncode() && ! $agendaItem->isArchived();
     }
 
     public function delete(User $user, AgendaItem $agendaItem): bool
     {
+        if ($agendaItem->isArchived()) {
+            return false;
+        }
+
         if ($user->isSuperadmin()) {
             return true;
         }
@@ -37,35 +41,46 @@ class AgendaItemPolicy
         return $user->canEncode() && ! $agendaItem->hasIncoming();
     }
 
+    public function archive(User $user, AgendaItem $agendaItem): bool
+    {
+        return $user->canAdmin() && ! $agendaItem->isArchived() && ! $agendaItem->trashed();
+    }
+
+    public function restoreArchive(User $user, AgendaItem $agendaItem): bool
+    {
+        return $user->canAdmin() && $agendaItem->isArchived() && ! $agendaItem->trashed();
+    }
+
     public function promote(User $user, AgendaItem $agendaItem): bool
     {
-        return $user->canEncode() && ! $agendaItem->hasIncoming();
+        return $user->canEncode() && ! $agendaItem->isArchived() && ! $agendaItem->hasIncoming();
     }
 
     public function unlinkIncoming(User $user, AgendaItem $agendaItem): bool
     {
-        return $user->canEncode() && $agendaItem->hasIncoming();
+        return $user->canEncode() && ! $agendaItem->isArchived() && $agendaItem->hasIncoming();
     }
 
     public function unlinkResolution(User $user, AgendaItem $agendaItem): bool
     {
-        return $user->canEncode() && $agendaItem->resolution_id !== null;
+        return $user->canEncode() && ! $agendaItem->isArchived() && $agendaItem->resolution_id !== null;
     }
 
     public function addToOrderOfBusiness(User $user, AgendaItem $agendaItem): bool
     {
         return $user->canEncode()
+            && ! $agendaItem->isArchived()
             && $agendaItem->status !== AgendaItem::STATUS_DONE
             && ! $agendaItem->obPlacements()->exists();
     }
 
     public function removeFromOrderOfBusiness(User $user, AgendaItem $agendaItem): bool
     {
-        return $user->canEncode() && $agendaItem->obPlacements()->exists();
+        return $user->canEncode() && ! $agendaItem->isArchived() && $agendaItem->obPlacements()->exists();
     }
 
     public function linkOutput(User $user, AgendaItem $agendaItem): bool
     {
-        return $user->canEncode() && $agendaItem->needsOutputLink();
+        return $user->canEncode() && ! $agendaItem->isArchived() && $agendaItem->needsOutputLink();
     }
 }

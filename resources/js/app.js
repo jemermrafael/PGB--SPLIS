@@ -1,5 +1,6 @@
 import { initActivityLogDelete } from './activity-log-delete';
 import { initAgendaSearch } from './agenda-search';
+import { initArchivesSearch } from './archives-search';
 import { initAgendaForm } from './agenda-form';
 import { initAgendaDeadlinePreview } from './agenda-deadline-preview';
 import { initAccessibility } from './accessibility';
@@ -68,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initOrdinanceAttributionMode();
     initKeywordTags();
     initAgendaSearch();
+    initArchivesSearch();
     initAgendaDeadlinePreview();
     initDashboardSearch();
     initDirectorySearch();

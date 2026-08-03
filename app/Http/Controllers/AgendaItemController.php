@@ -305,6 +305,38 @@ class AgendaItemController extends Controller
             ->with('status', 'Agenda item moved to trash.');
     }
 
+    public function archive(Request $request, AgendaItem $agenda): RedirectResponse
+    {
+        $this->authorize('archive', $agenda);
+
+        $agenda->archive($request->user());
+
+        ActivityLogger::log('agenda.archived', $agenda, [
+            'tracking_no' => $agenda->tracking_no,
+            'title' => $agenda->title,
+        ]);
+
+        return redirect()
+            ->route('admin.archives.index')
+            ->with('status', 'Agenda '.$agenda->displayLabel().' archived.');
+    }
+
+    public function restoreArchive(Request $request, AgendaItem $agenda): RedirectResponse
+    {
+        $this->authorize('restoreArchive', $agenda);
+
+        $agenda->restoreFromArchive();
+
+        ActivityLogger::log('agenda.restored_from_archive', $agenda, [
+            'tracking_no' => $agenda->tracking_no,
+            'title' => $agenda->title,
+        ]);
+
+        return redirect()
+            ->route('agenda.show', $agenda)
+            ->with('status', 'Agenda '.$agenda->displayLabel().' restored from Archives.');
+    }
+
     public function promote(Request $request, AgendaItem $agenda, AgendaIncomingPromoter $promoter): RedirectResponse
     {
         $this->authorize('promote', $agenda);

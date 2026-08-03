@@ -16,20 +16,29 @@ class AgendaItemRepository
     public function stats(): array
     {
         return [
-            'total' => AgendaItem::query()->count(),
-            'pending' => AgendaItem::query()->where('status', AgendaItem::STATUS_PENDING)->count(),
-            'expiring_soon' => AgendaItem::query()->expiringSoon()->count(),
-            'due_soon' => AgendaItem::query()->dueSoon()->count(),
-            'done' => AgendaItem::query()->where('status', AgendaItem::STATUS_DONE)->count(),
-            'lapsed' => AgendaItem::query()->where('status', AgendaItem::STATUS_LAPSED)->count(),
-            'no_due_date' => AgendaItem::query()->where('status', AgendaItem::STATUS_NO_DUE_DATE)->count(),
-            'has_incoming' => AgendaItem::query()->whereNotNull('incoming_document_id')->count(),
+            'total' => AgendaItem::query()->notArchived()->count(),
+            'pending' => AgendaItem::query()->notArchived()->where('status', AgendaItem::STATUS_PENDING)->count(),
+            'expiring_soon' => AgendaItem::query()->notArchived()->expiringSoon()->count(),
+            'due_soon' => AgendaItem::query()->notArchived()->dueSoon()->count(),
+            'done' => AgendaItem::query()->notArchived()->where('status', AgendaItem::STATUS_DONE)->count(),
+            'lapsed' => AgendaItem::query()->notArchived()->where('status', AgendaItem::STATUS_LAPSED)->count(),
+            'no_due_date' => AgendaItem::query()->notArchived()->where('status', AgendaItem::STATUS_NO_DUE_DATE)->count(),
+            'has_incoming' => AgendaItem::query()->notArchived()->whereNotNull('incoming_document_id')->count(),
         ];
     }
 
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
-        return $this->paginateFromBuilder(AgendaItem::query(), $filters, $perPage);
+        return $this->paginateFromBuilder(AgendaItem::query()->notArchived(), $filters, $perPage);
+    }
+
+    public function paginateArchived(array $filters = [], int $perPage = 25): LengthAwarePaginator
+    {
+        return $this->paginateFromBuilder(
+            AgendaItem::query()->archived()->with('archiver'),
+            $filters,
+            $perPage,
+        );
     }
 
     public function paginateFromBuilder(Builder $query, array $filters = [], int $perPage = 25): LengthAwarePaginator
@@ -71,6 +80,8 @@ class AgendaItemRepository
             'has_pdf' => $item->hasAnyPdf(),
             'remarks' => $item->remarks,
             'date_of_referral' => $item->date_of_referral?->format('Y-m-d'),
+            'archived_at' => $item->archived_at?->format('Y-m-d H:i'),
+            'archived_by' => $item->archiver?->name,
             'url' => route('agenda.show', $item),
         ];
     }

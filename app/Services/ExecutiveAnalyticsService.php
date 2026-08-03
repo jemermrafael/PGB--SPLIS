@@ -15,17 +15,177 @@ use App\Models\Ordinance;
 use App\Models\Resolution;
 use App\Support\BataanPoliticalMap;
 use App\Support\CommitteeLookup;
+use App\Support\ExecutiveAnalyticsScope;
 use App\Support\SqlDateExpression;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ExecutiveAnalyticsService
 {
+    protected ExecutiveAnalyticsScope $scope;
+
     public function __construct(
         protected DashboardAnalyticsService $dashboard,
-    ) {}
+        protected BoardMemberDashboardService $boardMembers,
+    ) {
+        $this->scope = ExecutiveAnalyticsScope::full();
+    }
+
+    public function resolveScope(?\App\Models\User $user): ExecutiveAnalyticsScope
+    {
+        if ($user === null) {
+            return ExecutiveAnalyticsScope::empty();
+        }
+
+        if ($user->seesFullExecutiveDashboard()) {
+            return ExecutiveAnalyticsScope::full();
+        }
+
+        if (! $user->isBoardMember() || ! $user->board_member_id) {
+            return ExecutiveAnalyticsScope::empty();
+        }
+
+        $term = $this->boardMembers->resolveTermForUser($user);
+        $committees = $this->boardMembers->committeesFor($user, $term);
+
+        return new ExecutiveAnalyticsScope(
+            fullAccess: false,
+            committees: $committees,
+            boardMemberId: (int) $user->board_member_id,
+            boardMemberName: $user->boardMember?->name,
+        );
+    }
+
+    /**
+     * @template T
+     *
+     * @param  callable(): T  $callback
+     * @return T
+     */
+    public function usingScope(ExecutiveAnalyticsScope $scope, callable $callback): mixed
+    {
+        $previous = $this->scope;
+        $this->scope = $scope;
+
+        try {
+            return $callback();
+        } finally {
+            $this->scope = $previous;
+        }
+    }
+
+    public function currentScope(): ExecutiveAnalyticsScope
+    {
+        return $this->scope;
+    }
+
+    /**
+     * @return Builder<AgendaItem>
+     */
+    protected function agendaQuery(): Builder
+    {
+        $query = AgendaItem::query()->notArchived();
+
+        if ($this->scope->isFull()) {
+            return $query;
+        }
+
+        $committees = $this->scope->committees ?? collect();
+        if ($committees->isEmpty()) {
+            return $query->whereRaw('0 = 1');
+        }
+
+        return $query->where(function (Builder $builder) use ($committees): void {
+            foreach ($committees as $committee) {
+                $builder->orWhere(function (Builder $nested) use ($committee): void {
+                    CommitteeLookup::applyAgendaCommitteeFilter($nested, $committee);
+                });
+            }
+        });
+    }
+
+    /**
+     * @return Builder<Resolution>
+     */
+    protected function resolutionQuery(): Builder
+    {
+        $query = Resolution::query();
+
+        if ($this->scope->isFull()) {
+            return $query;
+        }
+
+        $resolutionIds = $this->agendaQuery()
+            ->whereNotNull('resolution_id')
+            ->pluck('resolution_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $name = trim((string) ($this->scope->boardMemberName ?? ''));
+
+        return $query->where(function (Builder $builder) use ($resolutionIds, $name): void {
+            if ($resolutionIds->isNotEmpty()) {
+                $builder->whereIn('id', $resolutionIds->all());
+            } else {
+                $builder->whereRaw('0 = 1');
+            }
+
+            if ($name !== '') {
+                $builder->orWhere('sponsored_by', 'like', '%'.$name.'%');
+            }
+        });
+    }
+
+    /**
+     * @return Builder<Ordinance>
+     */
+    protected function ordinanceQuery(): Builder
+    {
+        $query = Ordinance::query();
+
+        if ($this->scope->isFull()) {
+            return $query;
+        }
+
+        $boardMemberId = (int) ($this->scope->boardMemberId ?? 0);
+        if ($boardMemberId < 1) {
+            return $query->whereRaw('0 = 1');
+        }
+
+        return $query->whereHas(
+            'boardMembers',
+            fn (Builder $builder) => $builder->where('board_members.id', $boardMemberId),
+        );
+    }
+
+    /**
+     * @return Builder<AppropriationOrdinance>
+     */
+    protected function appropriationQuery(): Builder
+    {
+        $query = AppropriationOrdinance::query();
+
+        if ($this->scope->isFull()) {
+            return $query;
+        }
+
+        $ids = $this->agendaQuery()
+            ->whereNotNull('appropriation_ordinance_id')
+            ->pluck('appropriation_ordinance_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return $query->whereRaw('0 = 1');
+        }
+
+        return $query->whereIn('id', $ids->all());
+    }
 
     /**
      * @return array<string, mixed>
@@ -60,14 +220,14 @@ class ExecutiveAnalyticsService
 
     public function earliestDataYear(): int
     {
-        $resolutionMin = (int) (Resolution::query()->min('series') ?? 1985);
+        $resolutionMin = (int) ($this->resolutionQuery()->min('series') ?? 1985);
 
-        $agendaReceivedMin = AgendaItem::query()->whereNotNull('date_received')->min('date_received');
+        $agendaReceivedMin = $this->agendaQuery()->whereNotNull('date_received')->min('date_received');
         $agendaReceivedYear = $agendaReceivedMin
             ? (int) Carbon::parse($agendaReceivedMin)->format('Y')
             : 1985;
 
-        $agendaCreatedMin = AgendaItem::query()->min('created_at');
+        $agendaCreatedMin = $this->agendaQuery()->min('created_at');
         $agendaCreatedYear = $agendaCreatedMin
             ? (int) Carbon::parse($agendaCreatedMin)->format('Y')
             : 1985;
@@ -89,7 +249,7 @@ class ExecutiveAnalyticsService
                 $label = $municipality->senderLabel();
                 $slug = BataanPoliticalMap::slugForName($label);
 
-                $agendas = AgendaItem::query()
+                $agendas = $this->agendaQuery()
                     ->whereNotNull('committee_referred')
                     ->where('committee_referred', '!=', '')
                     ->when(
@@ -119,7 +279,7 @@ class ExecutiveAnalyticsService
             'municipalities' => $municipalities,
             'year' => $year,
             'month' => $month,
-            'committee' => $committee?->name ?? 'All Committees',
+            'committee' => $committee?->name ?? ($this->scope->isFull() ? 'All Committees' : 'My Committees'),
             'committee_id' => $committee?->id,
             'period_label' => $this->mapPeriodLabel($year, $month),
             'total' => (int) collect($municipalities)->sum('total'),
@@ -133,7 +293,7 @@ class ExecutiveAnalyticsService
     {
         return [
             'by_year' => $this->legislativeOutputByYear($yearFrom, $yearTo),
-            'by_month' => $this->dashboard->outputByMonth($focusYear),
+            'by_month' => $this->legislativeOutputByMonth($focusYear),
             'focus_year' => $focusYear,
         ];
     }
@@ -143,9 +303,134 @@ class ExecutiveAnalyticsService
      */
     protected function legislativeOutputByYear(int $yearFrom, int $yearTo): array
     {
-        // Use series / series_year (not date_approved). Legacy imports reliably have series years;
-        // date_approved is often null or set to the import date, which collapses history into one year.
-        return $this->dashboard->outputByYearRange($yearFrom, $yearTo);
+        if ($this->scope->isFull()) {
+            // Use series / series_year (not date_approved). Legacy imports reliably have series years;
+            // date_approved is often null or set to the import date, which collapses history into one year.
+            return $this->dashboard->outputByYearRange($yearFrom, $yearTo);
+        }
+
+        $years = range($yearFrom, $yearTo);
+
+        $resolutionCounts = $this->resolutionQuery()
+            ->selectRaw('series, count(*) as aggregate')
+            ->whereIn('series', $years)
+            ->groupBy('series')
+            ->pluck('aggregate', 'series');
+
+        $ordinanceCounts = $this->ordinanceQuery()
+            ->selectRaw('series_year, count(*) as aggregate')
+            ->whereIn('series_year', $years)
+            ->groupBy('series_year')
+            ->pluck('aggregate', 'series_year');
+
+        $appropriationCounts = $this->appropriationQuery()
+            ->selectRaw('series_year, count(*) as aggregate')
+            ->whereIn('series_year', $years)
+            ->groupBy('series_year')
+            ->pluck('aggregate', 'series_year');
+
+        return collect($years)
+            ->map(function (int $year) use ($resolutionCounts, $ordinanceCounts, $appropriationCounts): array {
+                $resolutions = (int) ($resolutionCounts[$year] ?? 0);
+                $ordinances = (int) ($ordinanceCounts[$year] ?? 0) + (int) ($appropriationCounts[$year] ?? 0);
+
+                return [
+                    'year' => $year,
+                    'resolutions' => $resolutions,
+                    'ordinances' => $ordinances,
+                    'total' => $resolutions + $ordinances,
+                ];
+            })
+            ->all();
+    }
+
+    /**
+     * @return list<array{month: string, resolutions: int, ordinances: int, total: int}>
+     */
+    protected function legislativeOutputByMonth(int $year): array
+    {
+        if ($this->scope->isFull()) {
+            return $this->dashboard->outputByMonth($year);
+        }
+
+        $monthSelect = SqlDateExpression::month('date_approved');
+
+        $resolutionCounts = $this->resolutionQuery()
+            ->selectRaw($monthSelect.' as month_no, count(*) as aggregate')
+            ->where('series', $year)
+            ->whereNotNull('date_approved')
+            ->whereYear('date_approved', $year)
+            ->groupBy('month_no')
+            ->pluck('aggregate', 'month_no');
+
+        $ordinanceCounts = $this->ordinanceQuery()
+            ->selectRaw($monthSelect.' as month_no, count(*) as aggregate')
+            ->where('series_year', $year)
+            ->whereNotNull('date_approved')
+            ->whereYear('date_approved', $year)
+            ->groupBy('month_no')
+            ->pluck('aggregate', 'month_no');
+
+        $appropriationCounts = $this->appropriationQuery()
+            ->selectRaw($monthSelect.' as month_no, count(*) as aggregate')
+            ->where('series_year', $year)
+            ->whereNotNull('date_approved')
+            ->whereYear('date_approved', $year)
+            ->groupBy('month_no')
+            ->pluck('aggregate', 'month_no');
+
+        return collect(range(1, 12))
+            ->map(function (int $month) use ($resolutionCounts, $ordinanceCounts, $appropriationCounts): array {
+                $resolutions = (int) ($resolutionCounts[$month] ?? 0);
+                $ordinances = (int) ($ordinanceCounts[$month] ?? 0) + (int) ($appropriationCounts[$month] ?? 0);
+
+                return [
+                    'month' => now()->setMonth($month)->startOfMonth()->format('M'),
+                    'resolutions' => $resolutions,
+                    'ordinances' => $ordinances,
+                    'total' => $resolutions + $ordinances,
+                ];
+            })
+            ->all();
+    }
+
+    /**
+     * @return list<array{label: string, value: int, color: string}>
+     */
+    protected function agendaStatusDistribution(int $yearFrom, int $yearTo): array
+    {
+        $startDate = $yearFrom.'-01-01';
+        $endDate = $yearTo.'-12-31';
+
+        $counts = $this->agendaQuery()
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->selectRaw('status, count(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        $labels = config('agenda.statuses', [
+            AgendaItem::STATUS_PENDING => 'Pending',
+            AgendaItem::STATUS_DONE => 'Accomplished',
+            AgendaItem::STATUS_LAPSED => 'Lapsed',
+            AgendaItem::STATUS_NO_DUE_DATE => 'No due date',
+        ]);
+
+        $colors = [
+            AgendaItem::STATUS_PENDING => '#f59e0b',
+            AgendaItem::STATUS_DONE => '#10b981',
+            AgendaItem::STATUS_LAPSED => '#f97316',
+            AgendaItem::STATUS_NO_DUE_DATE => '#64748b',
+        ];
+
+        return collect($labels)
+            ->map(fn (string $label, string $status): array => [
+                'label' => $label,
+                'value' => (int) ($counts[$status] ?? 0),
+                'color' => $colors[$status] ?? '#38bdf8',
+            ])
+            ->filter(fn (array $row): bool => $row['value'] > 0)
+            ->values()
+            ->all();
     }
 
     /**
@@ -180,6 +465,12 @@ class ExecutiveAnalyticsService
      */
     public function mapCommitteeOptions(): \Illuminate\Support\Collection
     {
+        if (! $this->scope->isFull()) {
+            return ($this->scope->committees ?? collect())
+                ->sortBy('sort_order')
+                ->values();
+        }
+
         return Committee::query()
             ->active()
             ->ordered()
@@ -188,7 +479,7 @@ class ExecutiveAnalyticsService
 
     public function filteredBudgetApproved(?int $year = null, ?int $municipalityId = null, string $scope = 'all'): int
     {
-        $query = Resolution::query()
+        $query = $this->resolutionQuery()
             ->where('status', 'approved')
             ->whereNotNull('amount');
 
@@ -219,17 +510,17 @@ class ExecutiveAnalyticsService
         $today = now()->toDateString();
 
         return [
-            'total_agenda_items' => AgendaItem::query()->count(),
-            'pending_agenda' => AgendaItem::query()->where('status', AgendaItem::STATUS_PENDING)->count(),
-            'due_today' => AgendaItem::query()
+            'total_agenda_items' => $this->agendaQuery()->count(),
+            'pending_agenda' => $this->agendaQuery()->where('status', AgendaItem::STATUS_PENDING)->count(),
+            'due_today' => $this->agendaQuery()
                 ->where('status', AgendaItem::STATUS_PENDING)
                 ->whereDate('due_date', $today)
                 ->count(),
-            'lapsed_requests' => AgendaItem::query()->where('status', AgendaItem::STATUS_LAPSED)->count(),
-            'approved_resolutions' => Resolution::query()->where('status', 'approved')->count(),
-            'ordinances_enacted' => Ordinance::query()->count(),
-            'appropriation_ordinances' => AppropriationOrdinance::query()->count(),
-            'urgent_requests' => AgendaItem::query()->where('is_urgent_request', true)->count(),
+            'lapsed_requests' => $this->agendaQuery()->where('status', AgendaItem::STATUS_LAPSED)->count(),
+            'approved_resolutions' => $this->resolutionQuery()->where('status', 'approved')->count(),
+            'ordinances_enacted' => $this->ordinanceQuery()->count(),
+            'appropriation_ordinances' => $this->appropriationQuery()->count(),
+            'urgent_requests' => $this->agendaQuery()->where('is_urgent_request', true)->count(),
             'total_budget_approved' => $this->filteredBudgetApproved(),
         ];
     }
@@ -242,7 +533,7 @@ class ExecutiveAnalyticsService
         $previousYear = $focusYear - 1;
 
         return [
-            'status_distribution' => $this->dashboard->agendaStatusDistribution($yearFrom, $yearTo),
+            'status_distribution' => $this->agendaStatusDistribution($yearFrom, $yearTo),
             'monthly_intake' => $this->monthlyAgendaIntake($focusYear),
             'monthly_intake_comparison' => [
                 'labels' => collect(range(1, 12))->map(fn (int $m) => Carbon::create(null, $m, 1)->format('M'))->all(),
@@ -265,7 +556,7 @@ class ExecutiveAnalyticsService
     {
         $monthExpr = SqlDateExpression::month('date_received');
 
-        $counts = AgendaItem::query()
+        $counts = $this->agendaQuery()
             ->whereNotNull('date_received')
             ->whereYear('date_received', $year)
             ->selectRaw($monthExpr.' as month_no, count(*) as aggregate')
@@ -283,7 +574,7 @@ class ExecutiveAnalyticsService
         $start = $yearFrom.'-01-01';
         $end = $yearTo.'-12-31';
 
-        $days = AgendaItem::query()
+        $days = $this->agendaQuery()
             ->where('status', AgendaItem::STATUS_DONE)
             ->whereNotNull('date_received')
             ->whereBetween('date_received', [$start, $end])
@@ -334,7 +625,7 @@ class ExecutiveAnalyticsService
             '60+' => 0,
         ];
 
-        AgendaItem::query()
+        $this->agendaQuery()
             ->where('status', AgendaItem::STATUS_PENDING)
             ->whereNotNull('date_received')
             ->get(['date_received'])
@@ -377,7 +668,7 @@ class ExecutiveAnalyticsService
             'overdue' => 0,
         ];
 
-        AgendaItem::query()
+        $this->agendaQuery()
             ->where('status', AgendaItem::STATUS_PENDING)
             ->whereNotNull('due_date')
             ->get(['due_date'])
@@ -408,12 +699,12 @@ class ExecutiveAnalyticsService
      */
     public function urgentRequests(): array
     {
-        $pending = AgendaItem::query()
+        $pending = $this->agendaQuery()
             ->where('is_urgent_request', true)
             ->where('status', AgendaItem::STATUS_PENDING)
             ->count();
 
-        $completed = AgendaItem::query()
+        $completed = $this->agendaQuery()
             ->where('is_urgent_request', true)
             ->where('status', AgendaItem::STATUS_DONE)
             ->count();
@@ -448,7 +739,7 @@ class ExecutiveAnalyticsService
             'Others' => 0,
         ];
 
-        AgendaItem::query()
+        $this->agendaQuery()
             ->whereBetween('created_at', [$start, $end])
             ->whereNotNull('sender')
             ->where('sender', '!=', '')
@@ -497,7 +788,7 @@ class ExecutiveAnalyticsService
         $start = $yearFrom.'-01-01';
         $end = $yearTo.'-12-31';
 
-        $rows = AgendaItem::query()
+        $rows = $this->agendaQuery()
             ->whereBetween('created_at', [$start, $end])
             ->whereNotNull('sender')
             ->where('sender', '!=', '')
@@ -523,7 +814,7 @@ class ExecutiveAnalyticsService
         $start = $yearFrom.'-01-01';
         $end = $yearTo.'-12-31';
 
-        $resolutionCounts = Resolution::query()
+        $resolutionCounts = $this->resolutionQuery()
             ->whereBetween('created_at', [$start, $end])
             ->whereNotNull('municipality_id')
             ->selectRaw('municipality_id, count(*) as aggregate')
@@ -537,7 +828,7 @@ class ExecutiveAnalyticsService
                 $label = $municipality->senderLabel();
                 $senderPattern = $label;
 
-                $agendaCount = AgendaItem::query()
+                $agendaCount = $this->agendaQuery()
                     ->whereBetween('created_at', [$start, $end])
                     ->where(function ($query) use ($senderPattern, $municipality): void {
                         $query->where('sender', 'like', '%'.$senderPattern.'%')
@@ -545,7 +836,7 @@ class ExecutiveAnalyticsService
                     })
                     ->count();
 
-                $pending = AgendaItem::query()
+                $pending = $this->agendaQuery()
                     ->where('status', AgendaItem::STATUS_PENDING)
                     ->where(function ($query) use ($senderPattern, $municipality): void {
                         $query->where('sender', 'like', '%'.$senderPattern.'%')
@@ -553,7 +844,7 @@ class ExecutiveAnalyticsService
                     })
                     ->count();
 
-                $appropriation = AppropriationOrdinance::query()
+                $appropriation = $this->appropriationQuery()
                     ->whereHas('agendaItem', function ($query) use ($senderPattern, $municipality): void {
                         $query->where('sender', 'like', '%'.$senderPattern.'%')
                             ->orWhere('sender', 'like', '%'.$municipality->description.'%');
@@ -582,7 +873,7 @@ class ExecutiveAnalyticsService
     {
         $monthExpr = SqlDateExpression::month('date_approved');
 
-        $monthlyApproved = Resolution::query()
+        $monthlyApproved = $this->resolutionQuery()
             ->where('status', 'approved')
             ->where('series', $focusYear)
             ->whereNotNull('date_approved')
@@ -591,7 +882,7 @@ class ExecutiveAnalyticsService
             ->groupBy('month_no')
             ->pluck('aggregate', 'month_no');
 
-        $categories = Resolution::query()
+        $categories = $this->resolutionQuery()
             ->whereBetween('series', [$yearFrom, $yearTo])
             ->whereNotNull('category_id')
             ->selectRaw('category_id, count(*) as aggregate')
@@ -609,7 +900,7 @@ class ExecutiveAnalyticsService
             })
             ->all();
 
-        $departments = Resolution::query()
+        $departments = $this->resolutionQuery()
             ->whereBetween('series', [$yearFrom, $yearTo])
             ->whereNotNull('department_id')
             ->selectRaw('department_id, count(*) as aggregate')
@@ -627,7 +918,7 @@ class ExecutiveAnalyticsService
             })
             ->all();
 
-        $committees = Resolution::query()
+        $committees = $this->resolutionQuery()
             ->whereBetween('series', [$yearFrom, $yearTo])
             ->whereNotNull('committee')
             ->where('committee', '!=', '')
@@ -642,7 +933,7 @@ class ExecutiveAnalyticsService
             ])
             ->all();
 
-        $sponsors = Resolution::query()
+        $sponsors = $this->resolutionQuery()
             ->whereBetween('series', [$yearFrom, $yearTo])
             ->whereNotNull('sponsored_by')
             ->where('sponsored_by', '!=', '')
@@ -657,16 +948,16 @@ class ExecutiveAnalyticsService
             ])
             ->all();
 
-        $provinceWide = Resolution::query()->whereBetween('series', [$yearFrom, $yearTo])->where('province', true)->count();
-        $municipal = Resolution::query()->whereBetween('series', [$yearFrom, $yearTo])->where('province', false)->count();
+        $provinceWide = $this->resolutionQuery()->whereBetween('series', [$yearFrom, $yearTo])->where('province', true)->count();
+        $municipal = $this->resolutionQuery()->whereBetween('series', [$yearFrom, $yearTo])->where('province', false)->count();
 
-        $totalBudget = (int) Resolution::query()
+        $totalBudget = (int) $this->resolutionQuery()
             ->whereBetween('series', [$yearFrom, $yearTo])
             ->where('status', 'approved')
             ->whereNotNull('amount')
             ->sum('amount');
 
-        $budgetByDepartment = Resolution::query()
+        $budgetByDepartment = $this->resolutionQuery()
             ->whereBetween('series', [$yearFrom, $yearTo])
             ->where('status', 'approved')
             ->whereNotNull('amount')
@@ -686,7 +977,7 @@ class ExecutiveAnalyticsService
             })
             ->all();
 
-        $budgetByMunicipality = Resolution::query()
+        $budgetByMunicipality = $this->resolutionQuery()
             ->whereBetween('series', [$yearFrom, $yearTo])
             ->where('status', 'approved')
             ->whereNotNull('amount')
@@ -706,7 +997,7 @@ class ExecutiveAnalyticsService
             })
             ->all();
 
-        $monthlyBudget = Resolution::query()
+        $monthlyBudget = $this->resolutionQuery()
             ->where('series', $focusYear)
             ->where('status', 'approved')
             ->whereNotNull('amount')
@@ -720,7 +1011,7 @@ class ExecutiveAnalyticsService
             ->map(fn (int $month): int => (int) ($monthlyBudget[$month] ?? 0))
             ->all();
 
-        $outputByYear = $this->dashboard->outputByYearRange($yearFrom, $yearTo);
+        $outputByYear = $this->legislativeOutputByYear($yearFrom, $yearTo);
 
         return [
             'monthly_approved' => $this->monthlySeries($monthlyApproved),
@@ -750,7 +1041,7 @@ class ExecutiveAnalyticsService
      */
     protected function ordinanceAnalytics(int $yearFrom, int $yearTo, int $focusYear): array
     {
-        $classifications = Ordinance::query()
+        $classifications = $this->ordinanceQuery()
             ->whereBetween('series_year', [$yearFrom, $yearTo])
             ->whereNotNull('classification')
             ->where('classification', '!=', '')
@@ -764,12 +1055,12 @@ class ExecutiveAnalyticsService
             ])
             ->all();
 
-        $published = Ordinance::query()
+        $published = $this->ordinanceQuery()
             ->whereBetween('series_year', [$yearFrom, $yearTo])
             ->where('publication_status', OrdinancePublicationStatus::Published)
             ->count();
 
-        $forPublication = Ordinance::query()
+        $forPublication = $this->ordinanceQuery()
             ->whereBetween('series_year', [$yearFrom, $yearTo])
             ->where('publication_status', OrdinancePublicationStatus::ForPublication)
             ->count();
@@ -779,7 +1070,7 @@ class ExecutiveAnalyticsService
         $posted = $this->ordinanceMonthlyCounts('date_posted', $focusYear);
         $effective = $this->ordinanceMonthlyCounts('effectivity_date', $focusYear);
 
-        $delays = Ordinance::query()
+        $delays = $this->ordinanceQuery()
             ->whereBetween('series_year', [$yearFrom, $yearTo])
             ->whereNotNull('date_enacted')
             ->whereNotNull('date_published_newspaper')
@@ -791,7 +1082,7 @@ class ExecutiveAnalyticsService
             })
             ->filter();
 
-        $effectivityHeatmap = Ordinance::query()
+        $effectivityHeatmap = $this->ordinanceQuery()
             ->whereBetween('series_year', [$yearFrom, $yearTo])
             ->whereNotNull('effectivity_date')
             ->selectRaw(SqlDateExpression::month('effectivity_date').' as month_no, count(*) as aggregate')
@@ -823,7 +1114,7 @@ class ExecutiveAnalyticsService
     {
         $monthExpr = SqlDateExpression::month($column);
 
-        $counts = Ordinance::query()
+        $counts = $this->ordinanceQuery()
             ->where('series_year', $year)
             ->whereNotNull($column)
             ->whereYear($column, $year)
@@ -841,11 +1132,16 @@ class ExecutiveAnalyticsService
      */
     public function authorshipAnalytics(): array
     {
-        $roleCounts = DB::table('ordinance_board_member')
+        $roleCountsQuery = DB::table('ordinance_board_member')
             ->selectRaw('board_member_id, role, count(*) as aggregate')
             ->groupBy('board_member_id', 'role')
-            ->orderByDesc('aggregate')
-            ->get();
+            ->orderByDesc('aggregate');
+
+        if (! $this->scope->isFull() && $this->scope->boardMemberId) {
+            $roleCountsQuery->where('board_member_id', $this->scope->boardMemberId);
+        }
+
+        $roleCounts = $roleCountsQuery->get();
 
         $memberNames = DB::table('board_members')->pluck('name', 'id');
 
@@ -884,7 +1180,7 @@ class ExecutiveAnalyticsService
      */
     protected function appropriationAnalytics(int $yearFrom, int $yearTo, int $focusYear): array
     {
-        $annual = AppropriationOrdinance::query()
+        $annual = $this->appropriationQuery()
             ->whereBetween('series_year', [$yearFrom, $yearTo])
             ->whereNotNull('date_passed')
             ->selectRaw('series_year, count(*) as aggregate')
@@ -894,7 +1190,7 @@ class ExecutiveAnalyticsService
 
         $monthExpr = SqlDateExpression::month('date_passed');
 
-        $monthly = AppropriationOrdinance::query()
+        $monthly = $this->appropriationQuery()
             ->where('series_year', $focusYear)
             ->whereNotNull('date_passed')
             ->whereYear('date_passed', $focusYear)
@@ -902,7 +1198,7 @@ class ExecutiveAnalyticsService
             ->groupBy('month_no')
             ->pluck('aggregate', 'month_no');
 
-        $approvalDays = AppropriationOrdinance::query()
+        $approvalDays = $this->appropriationQuery()
             ->whereBetween('series_year', [$yearFrom, $yearTo])
             ->whereNotNull('date_received')
             ->whereNotNull('date_approved')
@@ -937,7 +1233,7 @@ class ExecutiveAnalyticsService
      */
     public function slaAnalytics(): array
     {
-        $prescribed = AgendaItem::query()
+        $prescribed = $this->agendaQuery()
             ->selectRaw('prescribed_days, count(*) as aggregate')
             ->whereNotNull('prescribed_days')
             ->groupBy('prescribed_days')
@@ -949,7 +1245,7 @@ class ExecutiveAnalyticsService
             ])
             ->all();
 
-        $withDue = AgendaItem::query()
+        $withDue = $this->agendaQuery()
             ->where('status', AgendaItem::STATUS_DONE)
             ->whereNotNull('due_date')
             ->get(['due_date', 'published_at', 'date_passed', 'updated_at']);
@@ -972,7 +1268,7 @@ class ExecutiveAnalyticsService
 
         $slaTotal = $onTime + $late;
 
-        $avgDaysRemaining = AgendaItem::query()
+        $avgDaysRemaining = $this->agendaQuery()
             ->where('status', AgendaItem::STATUS_PENDING)
             ->whereNotNull('due_date')
             ->get(['due_date'])
@@ -993,9 +1289,9 @@ class ExecutiveAnalyticsService
      */
     protected function historicalTrends(int $yearFrom, int $yearTo): array
     {
-        $outputByYear = $this->dashboard->outputByYearRange($yearFrom, $yearTo);
+        $outputByYear = $this->legislativeOutputByYear($yearFrom, $yearTo);
 
-        $agendaGrowth = AgendaItem::query()
+        $agendaGrowth = $this->agendaQuery()
             ->whereBetween('created_at', [$yearFrom.'-01-01', $yearTo.'-12-31'])
             ->selectRaw(SqlDateExpression::year('created_at').' as year_no, count(*) as aggregate')
             ->groupBy('year_no')
@@ -1018,7 +1314,7 @@ class ExecutiveAnalyticsService
     {
         $monthAgenda = $this->monthlyAgendaIntake($focusYear);
 
-        $committeeResolutions = Resolution::query()
+        $committeeResolutions = $this->resolutionQuery()
             ->whereBetween('series', [$yearFrom, $yearTo])
             ->whereNotNull('committee')
             ->where('committee', '!=', '')
@@ -1045,13 +1341,13 @@ class ExecutiveAnalyticsService
     protected function bottomRow(): array
     {
         $funnel = [
-            ['label' => 'Intake', 'value' => AgendaItem::query()->whereNotNull('date_received')->count()],
-            ['label' => 'Committee', 'value' => AgendaItem::query()->whereNotNull('committee_referred')->count()],
-            ['label' => 'Output', 'value' => AgendaItem::query()->where(function ($query): void {
+            ['label' => 'Intake', 'value' => $this->agendaQuery()->whereNotNull('date_received')->count()],
+            ['label' => 'Committee', 'value' => $this->agendaQuery()->whereNotNull('committee_referred')->count()],
+            ['label' => 'Output', 'value' => $this->agendaQuery()->where(function ($query): void {
                 $query->whereNotNull('reso_ord_ao_no')
                     ->orWhere('status', AgendaItem::STATUS_DONE);
             })->count()],
-            ['label' => 'Published', 'value' => AgendaItem::query()->where(function ($q): void {
+            ['label' => 'Published', 'value' => $this->agendaQuery()->where(function ($q): void {
                 $q->whereNotNull('published_at')
                     ->orWhereNotNull('resolution_id')
                     ->orWhereNotNull('ordinance_id')
@@ -1059,7 +1355,7 @@ class ExecutiveAnalyticsService
             })->count()],
         ];
 
-        $dueCalendar = AgendaItem::query()
+        $dueCalendar = $this->agendaQuery()
             ->where('status', AgendaItem::STATUS_PENDING)
             ->whereNotNull('due_date')
             ->whereBetween('due_date', [now()->startOfMonth(), now()->endOfMonth()])
@@ -1074,9 +1370,18 @@ class ExecutiveAnalyticsService
             ])
             ->all();
 
-        $recentActivity = ActivityLog::query()
+        $recentActivityQuery = ActivityLog::query()
             ->with('user')
-            ->latest('created_at')
+            ->latest('created_at');
+
+        if (! $this->scope->isFull()) {
+            $agendaIds = $this->agendaQuery()->select('id');
+            $recentActivityQuery
+                ->where('subject_type', AgendaItem::class)
+                ->whereIn('subject_id', $agendaIds);
+        }
+
+        $recentActivity = $recentActivityQuery
             ->limit(8)
             ->get()
             ->map(fn (ActivityLog $log): array => [
@@ -1086,7 +1391,7 @@ class ExecutiveAnalyticsService
             ])
             ->all();
 
-        $topSponsors = Resolution::query()
+        $topSponsors = $this->resolutionQuery()
             ->whereNotNull('sponsored_by')
             ->where('sponsored_by', '!=', '')
             ->selectRaw('sponsored_by, count(*) as aggregate')

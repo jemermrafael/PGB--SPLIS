@@ -21,6 +21,11 @@ Schedule::command('splis:notify-expiring-agendas')
     ->withoutOverlapping()
     ->onOneServer();
 
+Schedule::command('splis:dispatch-scheduled-committee-referrals')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->onOneServer();
+
 Schedule::command('splis:prune-notifications')
     ->dailyAt('03:15')
     ->withoutOverlapping()

@@ -224,6 +224,32 @@ class BoardMemberController extends Controller
                 : "{$deleted} Board Members moved to trash.");
     }
 
+    public function move(Request $request, BoardMember $boardMember): RedirectResponse
+    {
+        $this->authorize('update', $boardMember);
+
+        $data = $request->validate([
+            'term' => ['required', 'integer', 'exists:committee_terms,id'],
+            'direction' => ['required', 'integer', 'in:-1,1'],
+        ]);
+
+        $term = CommitteeTerm::query()->findOrFail((int) $data['term']);
+        $assignment = $this->rosterService->assignmentFor($boardMember, $term);
+
+        abort_unless($assignment !== null, 404);
+
+        $moved = $this->rosterService->moveAssignment($assignment, (int) $data['direction']);
+
+        return redirect()
+            ->route('board-members.index', ['term' => $term->id])
+            ->with(
+                'status',
+                $moved
+                    ? 'Board Member order updated for '.$term->label.'.'
+                    : 'Board Member is already at the edge of this district.',
+            );
+    }
+
     /**
      * @return array<string, mixed>
      */

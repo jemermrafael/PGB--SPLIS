@@ -151,7 +151,7 @@ class SessionAttendanceServiceTest extends TestCase
             'committee_term_id' => $term->id,
             'district' => '1st District',
             'is_active' => true,
-            'sort_order' => 0,
+            'sort_order' => 1,
         ]);
 
         LegislativeSession::query()->create([
@@ -165,6 +165,17 @@ class SessionAttendanceServiceTest extends TestCase
             ->all();
 
         $this->assertSame(['Jovy Z. Banzon', 'Feliciano G. Magay, Jr.'], $names);
+
+        app(\App\Services\BoardMemberRosterService::class)->moveAssignment(
+            BoardMemberTerm::query()->where('board_member_id', $magay->id)->firstOrFail(),
+            -1,
+        );
+
+        $reordered = collect(app(SessionAttendanceService::class)->monthlySummary(2026, 3))
+            ->pluck('member.name')
+            ->all();
+
+        $this->assertSame(['Feliciano G. Magay, Jr.', 'Jovy Z. Banzon'], $reordered);
     }
 
     public function test_monthly_print_payload_groups_roster_and_pads_session_columns(): void

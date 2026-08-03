@@ -7,7 +7,6 @@
     id="directory-search"
     class="w-full"
     data-search-url="{{ route('directory.search') }}"
-    data-category="{{ $selectedCategoryId ?? '' }}"
     data-current-page="{{ $entries->currentPage() }}"
     data-last-page="{{ $entries->lastPage() }}"
 >
@@ -20,9 +19,6 @@
         />
         <div class="flex flex-wrap gap-2">
             @can('create', App\Models\DirectoryEntry::class)
-                <a href="{{ route('directory.categories.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
-                    Manage Categories
-                </a>
                 <a href="{{ route('directory.create') }}" class="splis-btn-primary inline-flex items-center gap-2">
                     <x-icon name="plus" class="h-4 w-4" stroke-width="2" />
                     Add Entry
@@ -30,27 +26,6 @@
             @endcan
         </div>
     </div>
-
-    @if ($categories->isNotEmpty())
-        <div class="mb-4 flex flex-wrap gap-2">
-            <a
-                href="{{ route('directory.index') }}"
-                @class([
-                    'splis-btn-secondary text-sm',
-                    'ring-2 ring-brand-200' => ! $selectedCategoryId,
-                ])
-            >All</a>
-            @foreach ($categories as $category)
-                <a
-                    href="{{ route('directory.index', ['category' => $category->id]) }}"
-                    @class([
-                        'splis-btn-secondary text-sm',
-                        'ring-2 ring-brand-200' => (int) $selectedCategoryId === (int) $category->id,
-                    ])
-                >{{ $category->name }}</a>
-            @endforeach
-        </div>
-    @endif
 
     <form id="directory-search-form" class="splis-filter-panel mb-4" role="search">
         <label class="sr-only" for="directory-search-input">Search directory</label>
@@ -74,10 +49,8 @@
                 <thead>
                     <tr>
                         <th>Name</th>
-                        <th>Category</th>
                         <th>Contact Number</th>
                         <th>Email</th>
-                        <th>Focal persons</th>
                         <th>Designation</th>
                         <th class="text-right">Actions</th>
                     </tr>

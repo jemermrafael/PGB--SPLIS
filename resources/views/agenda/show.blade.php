@@ -24,6 +24,9 @@
     >
         <x-slot:badges>
             <span class="splis-agenda-status splis-agenda-status--{{ $agenda->status }}">{{ config('agenda.statuses.'.$agenda->status, $agenda->status) }}</span>
+            @if ($agenda->isArchived())
+                <span class="splis-badge-linked whitespace-nowrap">Archived</span>
+            @endif
             @if ($agenda->is_urgent_request)
                 <span class="splis-badge-linked whitespace-nowrap">Urgent Request</span>
             @endif
@@ -100,6 +103,35 @@
                     <a href="{{ route('agenda.edit', $agenda) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-nowrap">
                         <x-icon name="edit" class="h-4 w-4" />
                         Edit
+                    </a>
+                @endcan
+                @can('archive', $agenda)
+                    <form
+                        method="POST"
+                        action="{{ route('agenda.archive', $agenda) }}"
+                        data-confirm-submit
+                        data-confirm-title="Archive agenda?"
+                        data-confirm-message="Archive &quot;{{ $agenda->displayLabel() }}&quot;? It will be hidden from the Agenda list and can be restored from Archives."
+                        data-confirm-label="Archive"
+                    >
+                        @csrf
+                        <button type="submit" class="splis-btn-secondary inline-flex items-center gap-2 text-nowrap">
+                            <x-icon name="archive" class="h-4 w-4" />
+                            Archive
+                        </button>
+                    </form>
+                @endcan
+                @can('restoreArchive', $agenda)
+                    <form method="POST" action="{{ route('agenda.restore-archive', $agenda) }}">
+                        @csrf
+                        <button type="submit" class="splis-btn-primary inline-flex items-center gap-2 text-nowrap">
+                            <x-icon name="check-circle" class="h-4 w-4" />
+                            Restore from Archives
+                        </button>
+                    </form>
+                    <a href="{{ route('admin.archives.index') }}" class="splis-btn-ghost inline-flex items-center gap-2 text-nowrap">
+                        <x-icon name="archive" class="h-4 w-4" />
+                        Archives
                     </a>
                 @endcan
                 @can('delete', $agenda)

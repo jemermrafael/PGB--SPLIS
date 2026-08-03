@@ -11,6 +11,7 @@ class BoardMemberBriefingService
 {
     public function __construct(
         protected BoardMemberDashboardService $dashboard,
+        protected CommitteeReferralScheduleService $referralSchedule,
     ) {}
 
     /**
@@ -48,9 +49,6 @@ class BoardMemberBriefingService
         $myItems = $nextSession
             ? $this->dashboard->myCommitteeItemsOnSession($user, $nextSession)
             : collect();
-        $incoming = $nextSession
-            ? $this->dashboard->incomingForReferralOnSession($nextSession)
-            : collect();
 
         $deadlineCount = $this->dashboard->agendaStatsFor($user)['expiring_soon'] ?? 0;
         $stats = $this->dashboard->agendaStatsFor($user);
@@ -64,7 +62,7 @@ class BoardMemberBriefingService
             'unread_notifications' => $user->unreadNotifications()->count(),
             'pending_count' => $stats['pending'] ?? 0,
             'session_today' => $nextSession?->session_date?->isToday() ?? false,
-            'incoming_for_referral' => $incoming,
+            'incoming_for_referral' => $this->referralSchedule->incomingForChair($user),
         ];
     }
 

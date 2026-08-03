@@ -12,7 +12,6 @@ export function initDirectorySearch() {
     const pagination = document.getElementById('directory-search-pagination');
     const results = document.getElementById('directory-search-results');
     const searchUrl = root.dataset.searchUrl;
-    const category = root.dataset.category || '';
 
     let currentPage = Number(root.dataset.currentPage) || 1;
     let debounceTimer;
@@ -76,9 +75,6 @@ export function initDirectorySearch() {
         const params = new URLSearchParams();
         if (q !== '') {
             params.set('q', q);
-        }
-        if (category !== '') {
-            params.set('category', category);
         }
         params.set('page', String(currentPage));
 

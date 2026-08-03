@@ -68,6 +68,47 @@ class BoardMemberNotifier
         }
     }
 
+    /**
+     * Notify only the committee chair about a scheduled Regular Unassigned referral.
+     */
+    public function notifyScheduledCommitteeReferralToChair(
+        AgendaItem $agenda,
+        \App\Models\Committee $committee,
+        User $chairUser,
+    ): void {
+        $label = $agenda->displayLabel();
+        $body = sprintf(
+            '%s from Regular Unassigned Business is ready for referral to %s (you are Chair).',
+            $label,
+            $committee->name,
+        );
+
+        $notification = $this->createNotificationForUser($chairUser, UserNotification::TYPE_COMMITTEE_REFERRAL, [
+            [
+                'user_id' => $chairUser->id,
+                'agenda_item_id' => $agenda->id,
+            ],
+            [
+                'title' => 'Incoming agenda for referral',
+                'body' => $body,
+                'link' => route('agenda.show', $agenda, absolute: false),
+            ],
+        ]);
+
+        $this->sendBoardMemberEmail(
+            $chairUser,
+            $notification,
+            UserNotification::TYPE_COMMITTEE_REFERRAL,
+            [
+                'label' => $label,
+                'committee' => $committee->name,
+                'title' => 'Incoming agenda for referral',
+                'body' => $body,
+            ],
+            route('agenda.show', $agenda, absolute: false),
+        );
+    }
+
     public function notifyAgendaPublished(AgendaItem $agenda): void
     {
         $agenda->loadMissing(['resolution', 'ordinance', 'appropriationOrdinance']);

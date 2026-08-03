@@ -3281,18 +3281,14 @@
         @apply text-blue-700 underline;
     }
 
-    .ob-print-guests-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        column-gap: 1.25rem;
-        align-items: start;
-    }
-
-    .ob-print-guests-col {
+    .ob-print-guests-list {
         display: flex;
         flex-direction: column;
         row-gap: 0.35em;
-        min-width: 0;
+        width: fit-content;
+        max-width: 85%;
+        margin-left: 22%;
+        text-align: left;
     }
 
     .ob-print-guest-line {

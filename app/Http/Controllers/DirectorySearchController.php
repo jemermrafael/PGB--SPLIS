@@ -12,12 +12,9 @@ class DirectorySearchController extends Controller
     {
         $this->authorize('viewAny', DirectoryEntry::class);
 
-        $categoryId = $request->integer('category') ?: null;
         $term = trim($request->string('q')->toString());
 
         $entries = DirectoryEntry::query()
-            ->with('category')
-            ->when($categoryId, fn ($query) => $query->where('directory_category_id', $categoryId))
             ->search($term)
             ->orderBy('sort_order')
             ->orderBy('name')
