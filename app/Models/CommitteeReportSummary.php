@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ObAgendaSnapshot;
 use App\Support\ObTitleMarkup;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -75,6 +76,7 @@ class CommitteeReportSummary extends Model
                             ),
                         ];
                     })
+                    ->sortBy(fn (array $item) => ObAgendaSnapshot::agendaNoSortKey((string) ($item['agenda_no'] ?? '')))
                     ->values()
                     ->all();
 

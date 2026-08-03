@@ -177,6 +177,7 @@ class CommitteeReportSummaryService
 
                         return $item;
                     })
+                    ->sortBy(fn (array $item) => ObAgendaSnapshot::agendaNoSortKey((string) ($item['agenda_no'] ?? '')))
                     ->values()
                     ->all();
 
@@ -324,8 +325,25 @@ class CommitteeReportSummaryService
         }
 
         return collect(array_values($grouped))
+            ->map(function (array $group): array {
+                $group['items'] = $this->sortItemsByAgendaNo($group['items'] ?? []);
+
+                return $group;
+            })
             ->filter(fn (array $group) => ($group['items'] ?? []) !== [])
             ->values();
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $items
+     * @return list<array<string, mixed>>
+     */
+    protected function sortItemsByAgendaNo(array $items): array
+    {
+        return collect($items)
+            ->sortBy(fn (array $item) => ObAgendaSnapshot::agendaNoSortKey((string) ($item['agenda_no'] ?? '')))
+            ->values()
+            ->all();
     }
 
     /**

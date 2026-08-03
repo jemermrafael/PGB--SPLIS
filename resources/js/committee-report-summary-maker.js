@@ -1,3 +1,5 @@
+import { showConfirmDialog } from './confirm-dialog';
+
 function escapeHtml(value) {
     return String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -178,7 +180,6 @@ export function initCommitteeReportSummaryMaker() {
     const form = root.querySelector('form[data-scr-maker-form]');
     const saveStatus = document.getElementById('scr-save-status');
     const saveBtn = document.getElementById('scr-save-document');
-    const discardBtn = document.getElementById('scr-discard-changes');
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content
         ?? form?.querySelector('input[name="_token"]')?.value
         ?? '';
@@ -199,12 +200,8 @@ export function initCommitteeReportSummaryMaker() {
 
     function updateSaveButtons() {
         const disabled = !dirty || isSaving;
-        [saveBtn, discardBtn].forEach((button) => {
-            if (button) {
-                button.disabled = disabled;
-            }
-        });
         if (saveBtn) {
+            saveBtn.disabled = disabled;
             saveBtn.innerHTML = isSaving
                 ? 'Saving…'
                 : '<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3a9 9 0 1 1 0 18a9 9 0 0 1 0-18"/><path stroke-linecap="round" stroke-linejoin="round" d="m9 12 2 2 4-4"/></svg> Save';
@@ -329,18 +326,17 @@ export function initCommitteeReportSummaryMaker() {
         }
     }
 
-    function discardChanges() {
+    async function confirmLeaveIfDirty(message = 'You have unsaved changes. Leave this page and discard them?') {
         if (!dirty) {
-            return;
+            return true;
         }
 
-        const confirmed = window.confirm('Discard unsaved changes and reload the last saved summary?');
-        if (!confirmed) {
-            return;
-        }
-
-        suppressLeavePrompt = true;
-        window.location.reload();
+        return showConfirmDialog({
+            title: 'Unsaved changes',
+            message,
+            confirmLabel: 'Leave',
+            danger: true,
+        });
     }
 
     root.querySelectorAll('[data-scr-rich-wrap]').forEach((wrap) => {
@@ -412,11 +408,6 @@ export function initCommitteeReportSummaryMaker() {
     });
 
     root.addEventListener('click', (event) => {
-        if (event.target.closest('#scr-discard-changes')) {
-            discardChanges();
-            return;
-        }
-
         const revisedAdd = event.target.closest('[data-scr-revised-add]');
         if (revisedAdd) {
             const wrap = revisedAdd.closest('[data-scr-revised-wrap]');
@@ -548,20 +539,26 @@ export function initCommitteeReportSummaryMaker() {
         saveSummary();
     });
 
-    root.querySelector('[data-scr-sync-form]')?.addEventListener('submit', (event) => {
+    root.querySelector('[data-scr-sync-form]')?.addEventListener('submit', async (event) => {
         if (!dirty) {
             return;
         }
 
-        const confirmed = window.confirm(
-            'You have unsaved changes. Refresh from OB will reload the page and discard them. Continue?',
-        );
+        event.preventDefault();
+
+        const confirmed = await showConfirmDialog({
+            title: 'Refresh from Order of Business?',
+            message: 'You have unsaved changes. Refresh from OB will reload the page and discard them. Continue?',
+            confirmLabel: 'Refresh',
+            danger: true,
+        });
+
         if (!confirmed) {
-            event.preventDefault();
             return;
         }
 
         suppressLeavePrompt = true;
+        event.target.submit();
     });
 
     window.addEventListener('beforeunload', (event) => {
@@ -572,7 +569,7 @@ export function initCommitteeReportSummaryMaker() {
         event.returnValue = '';
     });
 
-    document.addEventListener('click', (event) => {
+    document.addEventListener('click', async (event) => {
         if (suppressLeavePrompt || !dirty) {
             return;
         }
@@ -589,9 +586,6 @@ export function initCommitteeReportSummaryMaker() {
         }
         if (link.hasAttribute('data-pdf-modal-open')) {
             return;
-        }
-        if (link.closest('#scr-maker') && link.closest('form[data-scr-maker-form]')) {
-            // allow in-form links handled elsewhere
         }
 
         const href = link.getAttribute('href');
@@ -610,12 +604,19 @@ export function initCommitteeReportSummaryMaker() {
             return;
         }
 
-        const leave = window.confirm('You have unsaved changes. Leave this page and discard them?');
+        event.preventDefault();
+
+        const leave = await confirmLeaveIfDirty(
+            link.hasAttribute('data-scr-back')
+                ? 'You have unsaved changes. Go back to the session and discard them?'
+                : 'You have unsaved changes. Leave this page and discard them?',
+        );
+
         if (!leave) {
-            event.preventDefault();
             return;
         }
 
         suppressLeavePrompt = true;
+        window.location.href = url.href;
     });
 }

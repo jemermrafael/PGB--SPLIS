@@ -68,15 +68,15 @@
             <p id="scr-save-status" class="text-sm text-slate-500" aria-live="polite">All changes saved</p>
         </div>
         <div class="flex flex-wrap items-center justify-end gap-2">
-            <button
-                type="button"
-                id="scr-discard-changes"
+            <a
+                href="{{ route('ob.sessions.show', $session) }}"
+                id="scr-back-to-session"
                 class="splis-btn-secondary"
-                disabled
-                title="Reload the last saved summary and discard local edits"
+                data-scr-back
+                title="Back to session"
             >
-                Discard
-            </button>
+                Back
+            </a>
             <button
                 type="submit"
                 form="scr-maker-form"

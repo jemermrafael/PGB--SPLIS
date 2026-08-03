@@ -158,7 +158,7 @@ class ObAgendaSnapshot
         return $nos;
     }
 
-    protected static function agendaNoSortKey(string $no): string
+    public static function agendaNoSortKey(string $no): string
     {
         $no = trim($no);
 

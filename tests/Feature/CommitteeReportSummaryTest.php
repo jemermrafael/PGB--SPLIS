@@ -222,6 +222,54 @@ class CommitteeReportSummaryTest extends TestCase
         $this->assertSame('<mark>TO DECLARE THE VALIDITY</mark>', $item['recommendation_html'] ?? null);
     }
 
+    public function test_items_within_a_committee_are_sorted_by_agenda_number(): void
+    {
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'is_active' => true]);
+        [$session] = $this->seedCommitteeReportsOnSession($admin);
+        $document = $session->obDocument;
+
+        $later = AgendaItem::query()->create([
+            'tracking_no' => '328',
+            'title' => 'Later number',
+            'committee_referred' => 'Finance, Budget, Appropriations and Ways and Means',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 0,
+            'created_by' => $admin->id,
+        ]);
+        $earlier = AgendaItem::query()->create([
+            'tracking_no' => '311',
+            'title' => 'Earlier number',
+            'committee_referred' => 'Finance, Budget, Appropriations and Ways and Means',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 0,
+            'created_by' => $admin->id,
+        ]);
+
+        ObBlock::query()->create([
+            'ob_document_id' => $document->id,
+            'type' => ObBlockType::CommitteeReport,
+            'sort_order' => 41,
+            'agenda_item_id' => $later->id,
+            'content' => [
+                'committee_name' => 'Finance, Budget, Appropriations and Ways and Means',
+                'chair_name' => 'BM Jovy Z. Banzon',
+                'agenda_no' => '328',
+                'agenda_item_ids' => [$later->id, $earlier->id],
+                'agenda_nos' => ['328', '311'],
+            ],
+        ]);
+
+        $service = app(CommitteeReportSummaryService::class);
+        $summary = $service->ensureForSession($session->fresh(), $admin->id);
+        $service->syncFromSessionOb($summary, preserveRecommendations: false);
+
+        $nos = collect($summary->fresh()->normalizedContent()['groups'][0]['items'])
+            ->pluck('agenda_no')
+            ->all();
+
+        $this->assertSame(['311', '328', '501'], $nos);
+    }
+
     protected int $lastAgendaId = 0;
 
     /**
