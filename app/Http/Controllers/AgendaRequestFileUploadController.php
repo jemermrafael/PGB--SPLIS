@@ -19,7 +19,7 @@ class AgendaRequestFileUploadController extends Controller
         $validated = $request->validate([
             'relative_folder' => ['nullable', 'string', 'max:500'],
             'request_packet_files' => ['required', 'array', 'min:1'],
-            'request_packet_files.*' => ['file', 'mimes:pdf,jpg,jpeg,png,gif,webp,doc,docx', 'max:51200'],
+            'request_packet_files.*' => ['file', 'mimes:pdf,jpg,jpeg,png,gif,webp,doc,docx', 'max:307200'],
         ]);
 
         $folder = $validated['relative_folder'] ?? null;

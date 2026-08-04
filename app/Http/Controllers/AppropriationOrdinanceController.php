@@ -162,7 +162,7 @@ class AppropriationOrdinanceController extends Controller
             'date_passed' => ['nullable', 'date'],
             'date_approved' => ['nullable', 'date'],
             'pdf_url' => ['nullable', 'string', 'max:500'],
-            'pdf' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp', 'max:51200'],
+            'pdf' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp', 'max:307200'],
         ]);
 
         unset($validated['pdf']);

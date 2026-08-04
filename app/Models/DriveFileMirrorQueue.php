@@ -60,6 +60,20 @@ class DriveFileMirrorQueue extends Model
         return $type.' #'.$this->entity_id;
     }
 
+    public function entityUrl(): ?string
+    {
+        if (! filled($this->entity_id)) {
+            return null;
+        }
+
+        return match ($this->entity_type) {
+            DriveMirrorEntity::AGENDA_ITEM => route('agenda.show', $this->entity_id),
+            DriveMirrorEntity::ORDINANCE => route('ordinances.show', $this->entity_id),
+            DriveMirrorEntity::APPROPRIATION_ORDINANCE => route('appropriation-ordinances.show', $this->entity_id),
+            default => null,
+        };
+    }
+
     public function summaryLabel(): string
     {
         return $this->entityLabel().' — '.$this->documentLabel();

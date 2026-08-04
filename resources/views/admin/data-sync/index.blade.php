@@ -217,7 +217,13 @@
                 <tbody>
                     @foreach ($driveMirrorItems as $item)
                         <tr class="border-b border-slate-100 dark:border-slate-800">
-                            <td class="px-3 py-2 font-medium text-slate-800 dark:text-slate-200">{{ $item->entityLabel() }}</td>
+                            <td class="px-3 py-2 font-medium text-slate-800 dark:text-slate-200">
+                                @if ($item->entityUrl())
+                                    <a href="{{ $item->entityUrl() }}" class="splis-link">{{ $item->entityLabel() }}</a>
+                                @else
+                                    {{ $item->entityLabel() }}
+                                @endif
+                            </td>
                             <td class="px-3 py-2">{{ $item->documentLabel() }}</td>
                             <td class="px-3 py-2">
                                 <span @class([
@@ -249,7 +255,14 @@
                     <div class="rounded-xl border border-red-200 bg-red-50/60 p-4 dark:border-red-900/60 dark:bg-red-950/20">
                         <div class="flex flex-wrap items-start justify-between gap-3">
                             <div>
-                                <p class="font-medium text-slate-900 dark:text-slate-100">{{ $item->entityLabel() }} — {{ $item->documentLabel() }}</p>
+                                <p class="font-medium text-slate-900 dark:text-slate-100">
+                                    @if ($item->entityUrl())
+                                        <a href="{{ $item->entityUrl() }}" class="splis-link">{{ $item->entityLabel() }}</a>
+                                    @else
+                                        {{ $item->entityLabel() }}
+                                    @endif
+                                    — {{ $item->documentLabel() }}
+                                </p>
                                 <p class="mt-1 text-xs text-slate-500">
                                     Attempts: {{ $item->attempts }}
                                     · Last tried: {{ $item->completed_at?->format('M j, Y g:i A') ?: ($item->queued_at?->format('M j, Y g:i A') ?: '—') }}

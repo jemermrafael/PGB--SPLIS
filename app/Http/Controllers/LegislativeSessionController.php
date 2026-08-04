@@ -195,11 +195,11 @@ class LegislativeSessionController extends Controller
 
         foreach (SessionPdfSlot::mirrorable() as $slot) {
             $upload = SessionPdfSlot::config($slot)['upload'];
-            $rules[$upload] = ['nullable', 'file', 'mimes:'.SessionPdfSlot::uploadMimes($slot), 'max:51200'];
+            $rules[$upload] = ['nullable', 'file', 'mimes:'.SessionPdfSlot::uploadMimes($slot), 'max:307200'];
         }
 
         $rules['committee_report_files'] = ['nullable', 'array'];
-        $rules['committee_report_files.*'] = ['file', 'mimes:pdf,jpg,jpeg,png,gif,webp', 'max:51200'];
+        $rules['committee_report_files.*'] = ['file', 'mimes:pdf,jpg,jpeg,png,gif,webp', 'max:307200'];
 
         return $request->validate($rules);
     }
