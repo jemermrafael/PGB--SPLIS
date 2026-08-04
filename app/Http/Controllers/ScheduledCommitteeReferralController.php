@@ -69,7 +69,10 @@ class ScheduledCommitteeReferralController extends Controller
             'legislative_session_id' => ['required', 'integer', 'exists:legislative_sessions,id'],
             'scheduled_at' => ['required', 'date'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'send_email' => ['nullable', 'boolean'],
         ]);
+
+        $sendEmail = $request->boolean('send_email');
 
         $session = LegislativeSession::query()
             ->with('obDocument.blocks.agendaItem')
@@ -81,6 +84,7 @@ class ScheduledCommitteeReferralController extends Controller
                 \Illuminate\Support\Carbon::parse($data['scheduled_at']),
                 $request->user(),
                 $data['notes'] ?? null,
+                $sendEmail,
             );
         } catch (\InvalidArgumentException $e) {
             throw ValidationException::withMessages([
@@ -88,18 +92,20 @@ class ScheduledCommitteeReferralController extends Controller
             ]);
         }
 
+        $emailNote = $sendEmail ? ' (including email)' : '';
+
         if ($schedule->scheduled_at->lte(now())) {
             $this->scheduleService->dispatch($schedule->fresh());
             $schedule->refresh();
 
             return redirect()
                 ->route('scheduled-committee-referrals.index')
-                ->with('status', 'Committee referrals sent to committee chairmen.');
+                ->with('status', 'Committee Referrals sent to Committee Chairs'.$emailNote.'.');
         }
 
         return redirect()
             ->route('scheduled-committee-referrals.index')
-            ->with('status', 'Committee referral scheduled for '.$schedule->scheduled_at->timezone(config('app.timezone'))->format('M j, Y g:i A').'.');
+            ->with('status', 'Committee referral scheduled for '.$schedule->scheduled_at->timezone(config('app.timezone'))->format('M j, Y g:i A').$emailNote.'.');
     }
 
     public function cancel(Request $request, ScheduledCommitteeReferral $scheduledCommitteeReferral): RedirectResponse

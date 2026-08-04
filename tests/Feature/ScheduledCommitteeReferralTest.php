@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\CommitteeMembershipRole;
 use App\Enums\ObBlockType;
 use App\Enums\UserRole;
+use App\Mail\SystemNotificationMail;
 use App\Models\AgendaItem;
 use App\Models\BoardMember;
 use App\Models\Committee;
@@ -18,12 +19,24 @@ use App\Models\ScheduledCommitteeReferral;
 use App\Models\User;
 use App\Models\UserNotification;
 use App\Services\CommitteeReferralScheduleService;
+use App\Services\EmailNotificationSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class ScheduledCommitteeReferralTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function tearDown(): void
+    {
+        $path = app(EmailNotificationSettings::class)->path();
+        if (is_file($path)) {
+            @unlink($path);
+        }
+
+        parent::tearDown();
+    }
 
     public function test_encoder_can_schedule_and_dispatch_referrals_to_chair_only(): void
     {
@@ -61,15 +74,54 @@ class ScheduledCommitteeReferralTest extends TestCase
 
         $this->assertDatabaseHas('user_notifications', [
             'user_id' => $chairUser->id,
-            'type' => UserNotification::TYPE_COMMITTEE_REFERRAL,
+            'type' => UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL,
             'agenda_item_id' => $agenda->id,
         ]);
 
         $this->assertDatabaseMissing('user_notifications', [
             'user_id' => $memberUser->id,
-            'type' => UserNotification::TYPE_COMMITTEE_REFERRAL,
+            'type' => UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL,
             'agenda_item_id' => $agenda->id,
         ]);
+
+        $this->assertFalse((bool) $schedule->send_email);
+    }
+
+    public function test_encoder_can_schedule_with_email_to_chair(): void
+    {
+        Mail::fake();
+
+        $encoder = User::factory()->create(['role' => UserRole::Encoder, 'is_active' => true]);
+        [$chairUser, , , $session, $agenda] = $this->sessionWithRegularUnassigned();
+        $chairUser->forceFill(['email' => 'chair@example.com'])->save();
+
+        app(EmailNotificationSettings::class)->update([
+            'enabled' => true,
+            'types' => [
+                EmailNotificationSettings::AUDIENCE_BOARD_MEMBER => [
+                    UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL => true,
+                ],
+            ],
+        ]);
+
+        $this->actingAs($encoder)
+            ->post(route('scheduled-committee-referrals.store'), [
+                'legislative_session_id' => $session->id,
+                'scheduled_at' => now()->subMinute()->format('Y-m-d H:i:s'),
+                'send_email' => '1',
+            ])
+            ->assertRedirect(route('scheduled-committee-referrals.index'));
+
+        $schedule = ScheduledCommitteeReferral::query()->first();
+        $this->assertNotNull($schedule);
+        $this->assertTrue((bool) $schedule->send_email);
+        $this->assertSame(ScheduledCommitteeReferral::STATUS_SENT, $schedule->status);
+
+        Mail::assertSent(SystemNotificationMail::class, function (SystemNotificationMail $mail) use ($chairUser, $agenda) {
+            return $mail->hasTo($chairUser->email)
+                && $mail->notificationTitle === 'Incoming agenda for referral'
+                && str_contains($mail->notificationBody, $agenda->displayLabel());
+        });
     }
 
     public function test_board_member_incoming_shows_two_hours_after_session_for_chair_only(): void

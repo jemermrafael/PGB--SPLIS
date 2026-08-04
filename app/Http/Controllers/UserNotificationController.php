@@ -179,6 +179,7 @@ class UserNotificationController extends Controller
 
         return match ($notification->type) {
             UserNotification::TYPE_COMMITTEE_REFERRAL,
+            UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL,
             UserNotification::TYPE_AGENDA_PUBLISHED,
             UserNotification::TYPE_AGENDA_ADDED_TO_OB,
             UserNotification::TYPE_AGENDA_EXPIRING_SOON,

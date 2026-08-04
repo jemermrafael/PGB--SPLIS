@@ -12,7 +12,7 @@ class SyncObSessionAgendas extends Command
                             {session? : Legislative session ID}
                             {--latest : Sync the nearest upcoming draft/scheduled session}';
 
-    protected $description = 'Sync eligible agenda items into Order of Business session(s) using lifecycle rules';
+    protected $description = 'Sync eligible Agenda items into Order of Business Session(s) using lifecycle rules';
 
     public function handle(AgendaLifecycleService $lifecycle): int
     {

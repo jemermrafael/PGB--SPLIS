@@ -9,7 +9,7 @@ class DispatchScheduledCommitteeReferrals extends Command
 {
     protected $signature = 'splis:dispatch-scheduled-committee-referrals';
 
-    protected $description = 'Send due scheduled committee referrals to committee chairmen';
+    protected $description = 'Send due Scheduled Committee Referrals to Committee Chairs';
 
     public function handle(CommitteeReferralScheduleService $service): int
     {

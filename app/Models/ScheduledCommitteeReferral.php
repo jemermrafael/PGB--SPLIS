@@ -21,6 +21,7 @@ class ScheduledCommitteeReferral extends Model
         'sent_at',
         'created_by',
         'notes',
+        'send_email',
     ];
 
     protected function casts(): array
@@ -28,6 +29,7 @@ class ScheduledCommitteeReferral extends Model
         return [
             'scheduled_at' => 'datetime',
             'sent_at' => 'datetime',
+            'send_email' => 'boolean',
         ];
     }
 

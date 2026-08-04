@@ -238,6 +238,14 @@ class BoardMemberPortalFeatureTest extends TestCase
         [$user, , , $boardMember] = $this->linkedBoardMemberWithCommittee();
 
         $this->actingAs($user)
+            ->get(route('board-member.profile.edit'))
+            ->assertOk()
+            ->assertSee('Notification Preferences')
+            ->assertSee('Scheduled Committee Referral')
+            ->assertSee('In-app')
+            ->assertSee('Email');
+
+        $this->actingAs($user)
             ->put(route('board-member.profile.update'), [
                 'name' => 'Hon. Updated Login',
                 'username' => 'bm_updated',

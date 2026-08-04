@@ -305,7 +305,7 @@
                                     <a href="{{ route('resolutions.show', $agenda->resolution) }}" class="font-medium text-brand-700 hover:underline dark:text-brand-200">
                                         Resolution {{ $agenda->resolution->resolution_no }}
                                         @if (filled($agenda->resolution->series))
-                                            · Series {{ $agenda->resolution->series }}
+                                           
                                         @endif
                                     </a>
                                 </div>
@@ -319,7 +319,7 @@
                                         data-confirm-label="Unlink"
                                     >
                                         @csrf
-                                        <button type="submit" class="splis-btn-ghost text-sm text-red-600 hover:text-red-700">Unlink</button>
+                                        <button type="submit" class="splis-btn-danger inline-flex items-center gap-2 text-nowrap">Unlink</button>
                                     </form>
                                 @endcan
                             </div>

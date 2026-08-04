@@ -69,6 +69,7 @@ class CommitteeReferralScheduleService
         \DateTimeInterface $scheduledAt,
         User $actor,
         ?string $notes = null,
+        bool $sendEmail = false,
     ): ScheduledCommitteeReferral {
         $preview = $this->previewForSession($session);
 
@@ -82,6 +83,7 @@ class CommitteeReferralScheduleService
             'status' => ScheduledCommitteeReferral::STATUS_PENDING,
             'created_by' => $actor->id,
             'notes' => filled($notes) ? trim($notes) : null,
+            'send_email' => $sendEmail,
         ]);
     }
 
@@ -165,7 +167,12 @@ class CommitteeReferralScheduleService
                     $delivery->forceFill(['delivered_at' => now()])->save();
                 }
 
-                $this->notifier->notifyScheduledCommitteeReferralToChair($agenda, $committee, $chairUser);
+                $this->notifier->notifyScheduledCommitteeReferralToChair(
+                    $agenda,
+                    $committee,
+                    $chairUser,
+                    (bool) $schedule->send_email,
+                );
             }
 
             $schedule->forceFill([

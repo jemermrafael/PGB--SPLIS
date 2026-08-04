@@ -7,7 +7,7 @@
     <div class="splis-page-header">
         <x-page-heading
             title="Schedule Committee Referral"
-            subtitle="Choose a session with Regular Unassigned Business, then set when chairmen should receive the referral."
+            subtitle="Choose a Session with Regular Unassigned Business, then set when Chairs should receive the Referral."
             icon="meeting"
             page="scheduled-committee-referrals"
         />
@@ -31,7 +31,7 @@
                 @endforeach
             </select>
         </div>
-        <p class="mt-2 text-xs text-slate-500">Only agendas under <strong>2. REGULAR UNASSIGNED BUSINESS</strong> are included. Each item is sent only to that committee’s Chair.</p>
+        <p class="mt-2 text-xs text-slate-500">Only agendas under <strong>2. REGULAR UNASSIGNED BUSINESS</strong> are included. Each item is sent only to that Committee’s Chair.</p>
     </form>
 
     @if ($selectedSession)
@@ -112,12 +112,32 @@
                     </div>
                 </div>
 
+                <div class="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/40">
+                    <label class="flex items-start gap-3 text-sm text-slate-800 dark:text-slate-100">
+                        <input
+                            type="checkbox"
+                            name="send_email"
+                            value="1"
+                            class="mt-0.5"
+                            @checked(old('send_email'))
+                        >
+                        <span>
+                            <span class="font-medium">Also send email to Committee Chairs</span>
+                            <span class="mt-0.5 block text-xs font-normal text-slate-500">
+                                In-app alerts always go to chairs with linked BM accounts. Emails use the
+                                <strong>Scheduled Committee Referral</strong> template under Email Notifications,
+                                and each BM can opt in or out on My Profile.
+                            </span>
+                        </span>
+                    </label>
+                </div>
+
                 @error('legislative_session_id')
                     <p class="mt-3 text-sm text-rose-600">{{ $message }}</p>
                 @enderror
 
                 <div class="mt-5 flex flex-wrap gap-2">
-                    <button type="submit" class="splis-btn-primary">Schedule referral to chairmen</button>
+                    <button type="submit" class="splis-btn-primary">Schedule Referral to Chairs</button>
                     <a href="{{ route('scheduled-committee-referrals.index') }}" class="splis-btn-ghost">Cancel</a>
                 </div>
             </form>

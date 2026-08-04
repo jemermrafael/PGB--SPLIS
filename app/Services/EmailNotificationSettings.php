@@ -57,6 +57,7 @@ class EmailNotificationSettings
         return [
             self::AUDIENCE_BOARD_MEMBER => [
                 \App\Models\UserNotification::TYPE_COMMITTEE_REFERRAL,
+                \App\Models\UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL,
                 \App\Models\UserNotification::TYPE_AGENDA_PUBLISHED,
                 self::TYPE_RESOLUTION_PUBLISHED,
                 self::TYPE_ORDINANCE_PUBLISHED,
@@ -65,7 +66,6 @@ class EmailNotificationSettings
                 \App\Models\UserNotification::TYPE_SESSION_CREATED,
                 \App\Models\UserNotification::TYPE_OB_DOCUMENT_CREATED,
                 \App\Models\UserNotification::TYPE_AGENDA_EXPIRING_SOON,
-                \App\Models\UserNotification::TYPE_WATCHLIST_PUBLISHED,
             ],
             self::AUDIENCE_MUNICIPAL => [
                 \App\Models\UserNotification::TYPE_COMMITTEE_REFERRAL,
@@ -81,7 +81,6 @@ class EmailNotificationSettings
                 \App\Models\UserNotification::TYPE_SESSION_CREATED,
                 \App\Models\UserNotification::TYPE_OB_DOCUMENT_CREATED,
                 \App\Models\UserNotification::TYPE_AGENDA_EXPIRING_SOON,
-                \App\Models\UserNotification::TYPE_WATCHLIST_PUBLISHED,
             ],
         ];
     }
@@ -96,6 +95,7 @@ class EmailNotificationSettings
         return [
             self::AUDIENCE_BOARD_MEMBER => [
                 \App\Models\UserNotification::TYPE_COMMITTEE_REFERRAL,
+                \App\Models\UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL,
                 \App\Models\UserNotification::TYPE_AGENDA_PUBLISHED,
                 \App\Models\UserNotification::TYPE_AGENDA_ADDED_TO_OB,
                 \App\Models\UserNotification::TYPE_SESSION_CREATED,
@@ -127,12 +127,12 @@ class EmailNotificationSettings
     {
         return [
             \App\Models\UserNotification::TYPE_COMMITTEE_REFERRAL => 'Committee Referral',
+            \App\Models\UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL => 'Scheduled Committee Referral',
             \App\Models\UserNotification::TYPE_AGENDA_PUBLISHED => 'Agenda published (any target)',
             \App\Models\UserNotification::TYPE_AGENDA_ADDED_TO_OB => 'Agenda added to Order of Business',
             \App\Models\UserNotification::TYPE_SESSION_CREATED => 'New Session scheduled',
             \App\Models\UserNotification::TYPE_OB_DOCUMENT_CREATED => 'Order of Business created',
             \App\Models\UserNotification::TYPE_AGENDA_EXPIRING_SOON => 'Agenda deadline approaching',
-            \App\Models\UserNotification::TYPE_WATCHLIST_PUBLISHED => 'Watched item published',
             \App\Models\UserNotification::TYPE_ACTIVITY_LOG => 'Activity log events',
             self::TYPE_RESOLUTION_PUBLISHED => 'Agenda was published to Resolution',
             self::TYPE_ORDINANCE_PUBLISHED => 'New Ordinance published',
@@ -151,6 +151,11 @@ class EmailNotificationSettings
                 \App\Models\UserNotification::TYPE_COMMITTEE_REFERRAL => [
                     'subject' => 'Agenda referred to your Committee',
                     'body' => "{{label}} was referred to {{committee}}.\n\nOpen SPLIS for details.",
+                    'action_label' => 'View Agenda',
+                ],
+                \App\Models\UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL => [
+                    'subject' => 'Incoming agenda for referral',
+                    'body' => "{{label}} from Regular Unassigned Business is ready for referral to {{committee}} (you are Chair).\n\nOpen SPLIS for details.",
                     'action_label' => 'View Agenda',
                 ],
                 \App\Models\UserNotification::TYPE_AGENDA_PUBLISHED => [
@@ -192,11 +197,6 @@ class EmailNotificationSettings
                     'subject' => 'Agenda deadline approaching',
                     'body' => "{{label}} is due on {{due_date}}{{days_left_suffix}}.\n\nPlease take action before the deadline.",
                     'action_label' => 'View Agenda',
-                ],
-                \App\Models\UserNotification::TYPE_WATCHLIST_PUBLISHED => [
-                    'subject' => 'Watched item published',
-                    'body' => "{{label}} was published to {{target}}.\n\nOpen SPLIS for details.",
-                    'action_label' => 'View published item',
                 ],
             ],
             self::AUDIENCE_MUNICIPAL => [

@@ -7,13 +7,13 @@
     <div class="splis-page-header">
         <x-page-heading
             title="Schedule Committee Referral"
-            subtitle="Send Regular Unassigned Business agendas from an Order of Business to committee chairmen at a chosen date and time."
+            subtitle="Send Regular Unassigned Business Agendas from an Order of Business to Committee Chairs at a chosen date and time."
             icon="meeting"
             page="scheduled-committee-referrals"
         />
         <a href="{{ route('scheduled-committee-referrals.create') }}" class="splis-btn-primary inline-flex items-center gap-2 whitespace-nowrap">
             <x-icon name="plus" class="h-4 w-4" stroke-width="2" />
-            Schedule referral
+            Schedule Referral
         </a>
     </div>
 
@@ -30,6 +30,7 @@
                     <th>Session</th>
                     <th>Scheduled</th>
                     <th>Status</th>
+                    <th class="hidden sm:table-cell">Email</th>
                     <th class="hidden md:table-cell">Deliveries</th>
                     <th class="hidden lg:table-cell">Created by</th>
                     <th class="text-right">Actions</th>
@@ -68,6 +69,9 @@
                                 <span class="splis-badge splis-badge--muted">Cancelled</span>
                             @endif
                         </td>
+                        <td class="hidden sm:table-cell text-sm text-slate-600 dark:text-slate-300">
+                            {{ $schedule->send_email ? 'Yes' : 'No' }}
+                        </td>
                         <td class="hidden md:table-cell text-sm text-slate-600 dark:text-slate-300">
                             {{ number_format($schedule->deliveries->count()) }}
                         </td>
@@ -88,7 +92,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="py-8 text-center text-sm text-slate-500">
+                        <td colspan="7" class="py-8 text-center text-sm text-slate-500">
                             No scheduled committee referrals yet.
                             <a href="{{ route('scheduled-committee-referrals.create') }}" class="splis-link font-medium">Schedule one</a>
                             from Regular Unassigned Business on an OB.

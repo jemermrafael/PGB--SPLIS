@@ -76,6 +76,7 @@ class BoardMemberNotifier
         AgendaItem $agenda,
         \App\Models\Committee $committee,
         User $chairUser,
+        bool $sendEmail = false,
     ): void {
         $label = $agenda->displayLabel();
         $body = sprintf(
@@ -83,8 +84,10 @@ class BoardMemberNotifier
             $label,
             $committee->name,
         );
+        $type = UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL;
+        $link = route('agenda.show', $agenda, absolute: false);
 
-        $notification = $this->createNotificationForUser($chairUser, UserNotification::TYPE_COMMITTEE_REFERRAL, [
+        $notification = $this->createNotificationForUser($chairUser, $type, [
             [
                 'user_id' => $chairUser->id,
                 'agenda_item_id' => $agenda->id,
@@ -92,21 +95,25 @@ class BoardMemberNotifier
             [
                 'title' => 'Incoming agenda for referral',
                 'body' => $body,
-                'link' => route('agenda.show', $agenda, absolute: false),
+                'link' => $link,
             ],
         ]);
+
+        if (! $sendEmail) {
+            return;
+        }
 
         $this->sendBoardMemberEmail(
             $chairUser,
             $notification,
-            UserNotification::TYPE_COMMITTEE_REFERRAL,
+            $type,
             [
                 'label' => $label,
                 'committee' => $committee->name,
                 'title' => 'Incoming agenda for referral',
                 'body' => $body,
             ],
-            route('agenda.show', $agenda, absolute: false),
+            $link,
         );
     }
 

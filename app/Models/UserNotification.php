@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class UserNotification extends Model
 {
     public const TYPE_COMMITTEE_REFERRAL = 'committee_referral';
+    public const TYPE_SCHEDULED_COMMITTEE_REFERRAL = 'scheduled_committee_referral';
     public const TYPE_ACTIVITY_LOG = 'activity_log';
     public const TYPE_AGENDA_PUBLISHED = 'agenda_published';
     public const TYPE_AGENDA_ADDED_TO_OB = 'agenda_added_to_ob';
@@ -100,6 +101,7 @@ class UserNotification extends Model
     {
         return [
             self::TYPE_COMMITTEE_REFERRAL,
+            self::TYPE_SCHEDULED_COMMITTEE_REFERRAL,
             self::TYPE_AGENDA_PUBLISHED,
             self::TYPE_AGENDA_ADDED_TO_OB,
             self::TYPE_SESSION_CREATED,

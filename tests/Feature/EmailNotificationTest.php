@@ -42,6 +42,7 @@ class EmailNotificationTest extends TestCase
             ->assertSee('Email Notifications', false)
             ->assertSee('Board Members', false)
             ->assertSee('Municipal Accounts', false)
+            ->assertSee('Scheduled Committee Referral', false)
             ->assertSee('Agenda was published to Resolution', false)
             ->assertSee('New Ordinance published', false)
             ->assertSee('New Appropriation Ordinance published', false)
@@ -57,6 +58,7 @@ class EmailNotificationTest extends TestCase
             ->assertSee('splis-email-message-card', false);
 
         $defaults = app(EmailNotificationSettings::class)->get();
+        $this->assertTrue($defaults['types'][EmailNotificationSettings::AUDIENCE_BOARD_MEMBER][UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL]);
         $this->assertFalse($defaults['types'][EmailNotificationSettings::AUDIENCE_BOARD_MEMBER][EmailNotificationSettings::TYPE_RESOLUTION_PUBLISHED]);
         $this->assertFalse($defaults['types'][EmailNotificationSettings::AUDIENCE_MUNICIPAL][EmailNotificationSettings::TYPE_APPROPRIATION_ORDINANCE_PUBLISHED]);
         $this->assertFalse($defaults['types'][EmailNotificationSettings::AUDIENCE_STAFF][UserNotification::TYPE_ACTIVITY_LOG]);

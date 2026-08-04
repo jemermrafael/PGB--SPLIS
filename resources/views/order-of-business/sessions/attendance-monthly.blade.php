@@ -7,7 +7,7 @@
     <div class="splis-page-header !mb-6">
         <x-page-heading
             title="Monthly Attendance Report"
-            subtitle="{{ \Carbon\Carbon::create($year, $month, 1)->format('F Y') }} · {{ $sessions->count() }} session(s)"
+            subtitle="{{ \Carbon\Carbon::create($year, $month, 1)->format('F Y') }} · {{ $sessions->count() }} Session(s)"
             icon="clipboard-check"
             page="attendance_monthly"
         />

@@ -15,7 +15,6 @@ use Illuminate\Support\Collection;
 class BoardMemberWatchlistService
 {
     public function __construct(
-        protected EmailNotificationService $emails,
         protected UserNotificationPreferenceService $preferences,
     ) {}
 
@@ -113,49 +112,21 @@ class BoardMemberWatchlistService
         $link = $agenda->publishedTargetRoute() ?? route('agenda.show', $agenda, absolute: false);
 
         foreach ($watchers as $user) {
-            $notification = null;
-            if ($this->preferences->allowsInApp($user, UserNotification::TYPE_WATCHLIST_PUBLISHED)) {
-                $notification = UserNotification::query()->firstOrCreate(
-                    [
-                        'user_id' => $user->id,
-                        'agenda_item_id' => $agenda->id,
-                        'type' => UserNotification::TYPE_WATCHLIST_PUBLISHED,
-                    ],
-                    [
-                        'title' => 'Watched item published',
-                        'body' => $body,
-                        'link' => $link,
-                    ],
-                );
-            }
-
-            if ($notification) {
-                $this->emails->sendForNotification(
-                    $user,
-                    $notification,
-                    EmailNotificationSettings::AUDIENCE_BOARD_MEMBER,
-                    vars: [
-                        'label' => $label,
-                        'target' => $target,
-                        'title' => 'Watched item published',
-                        'body' => $body,
-                    ],
-                );
-
+            if (! $this->preferences->allowsInApp($user, UserNotification::TYPE_WATCHLIST_PUBLISHED)) {
                 continue;
             }
 
-            $this->emails->sendTemplated(
-                $user,
-                EmailNotificationSettings::AUDIENCE_BOARD_MEMBER,
-                UserNotification::TYPE_WATCHLIST_PUBLISHED,
+            UserNotification::query()->firstOrCreate(
                 [
-                    'label' => $label,
-                    'target' => $target,
+                    'user_id' => $user->id,
+                    'agenda_item_id' => $agenda->id,
+                    'type' => UserNotification::TYPE_WATCHLIST_PUBLISHED,
+                ],
+                [
                     'title' => 'Watched item published',
                     'body' => $body,
+                    'link' => $link,
                 ],
-                url($link),
             );
         }
     }
