@@ -121,7 +121,7 @@ class AgendaItemRequestFileService
             $originalName .= '.'.$extension;
         }
 
-        return $agenda->requestFiles()->create([
+        $file = $agenda->requestFiles()->create([
             'relative_folder' => $folder,
             'original_filename' => $originalName !== '' ? $originalName : $storedName,
             'stored_path' => $relative,
@@ -130,6 +130,10 @@ class AgendaItemRequestFileService
             'sort_order' => (int) $agenda->requestFiles()->max('sort_order') + 1,
             'created_by' => $userId,
         ]);
+
+        $this->syncPrimaryRequestPdfFromRootPacket($agenda);
+
+        return $file;
     }
 
     /**
@@ -163,7 +167,7 @@ class AgendaItemRequestFileService
         $abs = $this->absolutePath($storedPath);
         $media = $abs !== null ? MediaType::fromPath($abs) : null;
 
-        return $agenda->requestFiles()->create([
+        $file = $agenda->requestFiles()->create([
             'relative_folder' => $this->normalizeFolder($relativeFolder),
             'original_filename' => $originalFilename,
             'stored_path' => $storedPath,
@@ -172,6 +176,10 @@ class AgendaItemRequestFileService
             'sort_order' => (int) $agenda->requestFiles()->max('sort_order') + 1,
             'created_by' => $userId,
         ]);
+
+        $this->syncPrimaryRequestPdfFromRootPacket($agenda);
+
+        return $file;
     }
 
     /**
@@ -230,7 +238,49 @@ class AgendaItemRequestFileService
             }
         }
 
+        $this->syncPrimaryRequestPdfFromRootPacket($agenda);
+
         return compact('registered', 'skipped');
+    }
+
+    /**
+     * Root-level packet PDFs (no folder) are the agenda's primary Request PDF.
+     * Updates request_pdf_path quietly — does not create an agenda version.
+     */
+    public function syncPrimaryRequestPdfFromRootPacket(AgendaItem $agenda): void
+    {
+        $agenda->unsetRelation('requestFiles');
+
+        $primary = $agenda->requestFiles()
+            ->where(function ($query): void {
+                $query->whereNull('relative_folder')
+                    ->orWhere('relative_folder', '');
+            })
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->first(function (AgendaItemRequestFile $file): bool {
+                if (! $this->exists($file)) {
+                    return false;
+                }
+
+                $ext = strtolower(pathinfo($file->original_filename, PATHINFO_EXTENSION));
+                $mime = strtolower((string) $file->mime_type);
+
+                return $ext === 'pdf' || $mime === 'application/pdf' || str_ends_with(strtolower($file->stored_path), '.pdf');
+            });
+
+        if ($primary === null) {
+            return;
+        }
+
+        if ((string) $agenda->request_pdf_path === (string) $primary->stored_path) {
+            return;
+        }
+
+        $agenda->forceFill([
+            'request_pdf_path' => $primary->stored_path,
+        ])->saveQuietly();
     }
 
     public function hasFileInFolder(AgendaItem $agenda, string $originalFilename, ?string $relativeFolder = null): bool
@@ -267,6 +317,7 @@ class AgendaItemRequestFileService
 
     public function delete(AgendaItemRequestFile $file): void
     {
+        $agenda = $file->agendaItem;
         $path = $file->stored_path;
 
         // Only delete files we own under request-packet/ — leave manually placed trees intact on disk.
@@ -279,6 +330,13 @@ class AgendaItemRequestFileService
         }
 
         $file->delete();
+
+        if ($agenda !== null) {
+            if ((string) $agenda->request_pdf_path === (string) $path) {
+                $agenda->forceFill(['request_pdf_path' => null])->saveQuietly();
+            }
+            $this->syncPrimaryRequestPdfFromRootPacket($agenda->fresh() ?? $agenda);
+        }
     }
 
     public function stream(AgendaItemRequestFile $file): StreamedResponse

@@ -58,6 +58,47 @@ class AgendaRequestPacketTest extends TestCase
             && $file->original_filename === '1. BOSS LEAGUE OF BATAAN.pdf'));
         $this->assertTrue($files->contains(fn (AgendaItemRequestFile $file) => $file->relative_folder === null
             && $file->original_filename === 'Letter from OPPDO.pdf'));
+
+        $this->assertSame(
+            $files->firstWhere('original_filename', 'Letter from OPPDO.pdf')?->stored_path,
+            $agenda->fresh()->request_pdf_path,
+        );
+    }
+
+    public function test_root_packet_pdf_becomes_primary_request_pdf(): void
+    {
+        Storage::fake('local');
+
+        $encoder = User::factory()->create(['role' => UserRole::Encoder, 'is_active' => true]);
+        $agenda = AgendaItem::query()->create([
+            'tracking_no' => '107',
+            'title' => 'Root is request pdf',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 0,
+            'created_by' => $encoder->id,
+        ]);
+
+        $this->actingAs($encoder)
+            ->post(route('agenda.request-files.store', $agenda), [
+                'relative_folder' => '',
+                'request_packet_files' => [
+                    UploadedFile::fake()->create('1. BATAAN PENINSULA TOUR GUIDES.pdf', 100, 'application/pdf'),
+                ],
+            ])
+            ->assertRedirect(route('agenda.show', $agenda));
+
+        $agenda->refresh();
+        $root = $agenda->requestFiles()->first();
+
+        $this->assertNotNull($root);
+        $this->assertNull($root->relative_folder);
+        $this->assertSame($root->stored_path, $agenda->request_pdf_path);
+
+        $this->actingAs($encoder)
+            ->get(route('agenda.show', $agenda))
+            ->assertOk()
+            ->assertSee('Request PDF')
+            ->assertSee('Request packet');
     }
 
     public function test_upload_to_named_folder_does_not_create_agenda_version(): void

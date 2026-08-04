@@ -8,6 +8,7 @@ use App\Models\LegislativeSession;
 use App\Services\AgendaExpirationNotifier;
 use App\Services\AgendaIncomingPromoter;
 use App\Services\AgendaItemRepository;
+use App\Services\AgendaItemRequestFileService;
 use App\Services\AgendaLifecycleService;
 use App\Services\AgendaLinkService;
 use App\Services\AgendaOutputLinker;
@@ -158,6 +159,12 @@ class AgendaItemController extends Controller
             'obPlacements.obDocument',
             'activityLogs.user',
         ]);
+
+        if ($agenda->requestFiles->isNotEmpty()) {
+            app(AgendaItemRequestFileService::class)->syncPrimaryRequestPdfFromRootPacket($agenda);
+            $agenda->refresh();
+            $agenda->load('requestFiles');
+        }
 
         $obSessions = LegislativeSession::query()
             ->with('obDocument')

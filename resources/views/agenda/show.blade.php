@@ -79,6 +79,15 @@
                         </form>
                     @endif
                 @endcan
+                @if ($agenda->pdfPublicUrlFor(AgendaPdfSlot::REQUEST))
+                    @include('partials.pdf-modal-trigger', [
+                        'url' => $agenda->pdfPublicUrlFor(AgendaPdfSlot::REQUEST),
+                        'viewer' => $agenda->pdfViewerModeFor(AgendaPdfSlot::REQUEST),
+                        'title' => 'Request PDF — '.$agenda->displayLabel(),
+                        'label' => 'Request PDF',
+                        'class' => 'splis-btn-secondary inline-flex items-center gap-2 text-nowrap',
+                    ])
+                @endif
                 @if ($agenda->hasRequestPacketFiles())
                     <button
                         type="button"
@@ -89,14 +98,6 @@
                         <x-icon name="folder" class="h-4 w-4" />
                         Request packet ({{ $agenda->requestFiles->count() }})
                     </button>
-                @elseif ($agenda->pdfPublicUrlFor(AgendaPdfSlot::REQUEST))
-                    @include('partials.pdf-modal-trigger', [
-                        'url' => $agenda->pdfPublicUrlFor(AgendaPdfSlot::REQUEST),
-                        'viewer' => $agenda->pdfViewerModeFor(AgendaPdfSlot::REQUEST),
-                        'title' => 'Request PDF — '.$agenda->displayLabel(),
-                        'label' => 'Request PDF',
-                        'class' => 'splis-btn-secondary inline-flex items-center gap-2 text-nowrap',
-                    ])
                 @endif
                 @can('update', $agenda)
                     @if ($agenda->missingPdfMirrorSlots() !== [])
@@ -108,13 +109,6 @@
                             </button>
                         </form>
                     @endif
-                    <form method="POST" action="{{ route('agenda.request-files.import-disk', $agenda) }}">
-                        @csrf
-                        <button type="submit" class="splis-btn-secondary inline-flex items-center gap-2 text-nowrap" title="Register files already under storage/app/private/agenda/{{ $agenda->id }}">
-                            <x-icon name="folder" class="h-4 w-4" />
-                            Register local folders
-                        </button>
-                    </form>
                 @endcan
                 @can('update', $agenda)
                     <a href="{{ route('agenda.edit', $agenda) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-nowrap">
@@ -491,8 +485,10 @@
                                 @endforeach
                             </div>
                         @else
-                            <p class="text-sm text-slate-500">No request packet files yet. Place folders under <code>storage/app/private/agenda/{{ $agenda->id }}</code> and click Register local folders, or upload below.</p>
+                            <p class="text-sm text-slate-500">No request packet files yet. Upload files below (leave folder blank for the primary Request PDF).</p>
                         @endif
+
+                        <p class="text-xs text-slate-500">Files uploaded with an empty folder name go in Root and become the primary Request PDF.</p>
 
                         @can('update', $agenda)
                             <form method="POST" action="{{ route('agenda.request-files.store', $agenda) }}" enctype="multipart/form-data" class="space-y-3 border-t border-slate-200 pt-4 dark:border-slate-700">
@@ -500,6 +496,7 @@
                                 <div>
                                     <label class="splis-label" for="agenda-request-folder">Folder name (optional)</label>
                                     <input type="text" name="relative_folder" id="agenda-request-folder" class="splis-input" placeholder="FOR ACCREDITATION">
+                                    <p class="mt-1 text-xs text-slate-500">Leave blank for Root — that PDF is used as the Request PDF.</p>
                                 </div>
                                 <div>
                                     <label class="splis-label" for="agenda-request-packet-files">Files</label>
