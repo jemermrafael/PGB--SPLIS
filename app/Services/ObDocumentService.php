@@ -466,9 +466,9 @@ class ObDocumentService
             ]);
         }
 
-        $alreadyLinked = $this->linkedAgendaItemIds($document);
-
-        $items = $items->reject(fn (AgendaItem $item) => $alreadyLinked->contains($item->id))->values();
+        $items = $items
+            ->reject(fn (AgendaItem $item) => ! $this->canAddAgendaToSection($document, $item->id, $section))
+            ->values();
 
         if ($items->isEmpty()) {
             throw ValidationException::withMessages([
@@ -910,11 +910,63 @@ class ObDocumentService
         return $this->linkedAgendaItemIds($document)->contains($agendaItemId);
     }
 
+    public function agendaIsInSection(ObDocument $document, int $agendaItemId, string $section): bool
+    {
+        return $this->sectionsForAgendaInDocument($document, $agendaItemId)->contains($section);
+    }
+
+    /**
+     * @return Collection<int, string>
+     */
+    public function sectionsForAgendaInDocument(ObDocument $document, int $agendaItemId): Collection
+    {
+        return $this->findBlocksForAgenda($document, $agendaItemId)
+            ->map(fn (ObBlock $block) => $this->inferSectionFromBlock($block))
+            ->unique()
+            ->values();
+    }
+
     public function sectionForAgendaInDocument(ObDocument $document, int $agendaItemId): ?string
     {
-        $block = $this->findPrimaryBlockForAgenda($document, $agendaItemId);
+        $sections = $this->sectionsForAgendaInDocument($document, $agendaItemId);
 
-        return $block ? $this->inferSectionFromBlock($block) : null;
+        if ($sections->isEmpty()) {
+            return null;
+        }
+
+        // Prefer committee reports as the primary section when dual-placed with unfinished.
+        if ($sections->contains('committee_reports')) {
+            return 'committee_reports';
+        }
+
+        return $sections->first();
+    }
+
+    /**
+     * Whether this agenda may be added to $section while possibly already linked elsewhere.
+     * Dual placement is allowed only for unfinished + committee_reports.
+     */
+    public function canAddAgendaToSection(ObDocument $document, int $agendaItemId, string $section): bool
+    {
+        $sections = $this->sectionsForAgendaInDocument($document, $agendaItemId);
+
+        if ($sections->isEmpty()) {
+            return true;
+        }
+
+        if ($sections->contains($section)) {
+            return false;
+        }
+
+        if ($section === 'committee_reports' && $sections->diff(['unfinished'])->isEmpty()) {
+            return true;
+        }
+
+        if ($section === 'unfinished' && $sections->diff(['committee_reports'])->isEmpty()) {
+            return true;
+        }
+
+        return false;
     }
 
     public function moveAgendaBlockToSection(ObBlock $block, string $targetSection, ?int $userId = null): ObDocument
@@ -941,7 +993,7 @@ class ObDocumentService
             : null;
 
         DB::transaction(function () use ($document, $agenda, $currentSection, $targetSection, $committeeId, $userId): void {
-            $this->removeAgendaFromDocument($document, $agenda, $userId, 'relocation');
+            $this->removeAgendaFromDocument($document, $agenda, $userId, 'relocation', $currentSection);
             $this->addAgendaItems(
                 $document,
                 [$agenda->id],
@@ -1013,11 +1065,19 @@ class ObDocumentService
         AgendaItem $agenda,
         ?int $userId = null,
         string $source = 'automatic',
+        ?string $onlySection = null,
     ): void {
         $blocks = $this->findBlocksForAgenda($document, $agenda->id);
         $touchedCommitteeReport = false;
+        $touchedUnfinished = false;
 
         foreach ($blocks as $block) {
+            $blockSection = $this->inferSectionFromBlock($block);
+
+            if ($onlySection !== null && $blockSection !== $onlySection) {
+                continue;
+            }
+
             if ($block->type === ObBlockType::CommitteeReport) {
                 $touchedCommitteeReport = true;
                 $ids = collect($block->content['agenda_item_ids'] ?? [])
@@ -1044,11 +1104,19 @@ class ObDocumentService
                 continue;
             }
 
+            if ($blockSection === 'unfinished') {
+                $touchedUnfinished = true;
+            }
+
             $this->deleteBlock($block, $userId, $source);
         }
 
         if ($touchedCommitteeReport) {
             $this->normalizeCommitteeReportSection($document);
+        }
+
+        if ($touchedUnfinished) {
+            $this->regroupUnfinishedBusiness($document->fresh() ?? $document);
         }
     }
 

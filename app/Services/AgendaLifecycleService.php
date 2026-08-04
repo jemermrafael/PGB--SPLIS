@@ -152,15 +152,6 @@ class AgendaLifecycleService
                             continue;
                         }
 
-                        $currentSection = $this->documentService->sectionForAgendaInDocument(
-                            $session->obDocument,
-                            $fresh->id,
-                        );
-
-                        if ($currentSection === $targetSection) {
-                            continue;
-                        }
-
                         $forceCommitteeReportRelocate = $targetSection === 'committee_reports'
                             && $this->hasCommitteeReport($fresh);
 
@@ -173,7 +164,7 @@ class AgendaLifecycleService
                             $fresh->refresh();
                         }
 
-                        if ($this->relocateAgendaInSession($fresh, $session, $targetSection, $userId)) {
+                        if ($this->ensureAgendaSectionsInSession($fresh, $session, $targetSection, $userId)) {
                             $relocated++;
                         }
 
@@ -267,8 +258,15 @@ class AgendaLifecycleService
     {
         $session->loadMissing('obDocument');
 
-        if (! $session->obDocument || $this->isAgendaInSession($agenda, $session)) {
+        if (! $session->obDocument) {
             return false;
+        }
+
+        if ($this->isAgendaInSession($agenda, $session)) {
+            $section = $this->resolveTargetSection($agenda, $session);
+
+            return $section !== null
+                && $this->ensureAgendaSectionsInSession($agenda, $session, $section, $userId);
         }
 
         $section = $this->resolveTargetSection($agenda, $session);
@@ -288,6 +286,18 @@ class AgendaLifecycleService
                     $userId,
                     'automatic',
                 );
+
+                if ($section === 'committee_reports' && $this->shouldAlsoPlaceInUnfinished($agenda, $session)) {
+                    $this->documentService->addAgendaItems(
+                        $session->obDocument,
+                        [$agenda->id],
+                        null,
+                        'unfinished',
+                        null,
+                        $userId,
+                        'automatic',
+                    );
+                }
 
                 $this->updateAgendaAfterSync($agenda, $session, $section);
                 $this->logAddedToOb($agenda, $session, $section, 'automatic', $userId);
@@ -322,41 +332,148 @@ class AgendaLifecycleService
             return false;
         }
 
-        $document = $session->obDocument;
-        $currentSection = $this->documentService->sectionForAgendaInDocument($document, $agenda->id);
-
-        if ($currentSection === $targetSection) {
-            return false;
-        }
-
         if (! $this->isAgendaInSession($agenda, $session)) {
             return $this->syncAgendaToSession($agenda, $session, $userId);
         }
 
-        try {
-            DB::transaction(function () use ($agenda, $session, $document, $targetSection, $currentSection, $userId): void {
-                $this->documentService->removeAgendaFromDocument($document, $agenda, $userId, 'relocation');
-                $this->documentService->addAgendaItems(
-                    $document,
-                    [$agenda->id],
-                    null,
-                    $targetSection,
-                    null,
-                    $userId,
-                    'automatic',
-                );
+        return $this->ensureAgendaSectionsInSession($agenda, $session, $targetSection, $userId);
+    }
 
-                $this->updateAgendaAfterSync($agenda, $session, $targetSection);
-                $this->logRelocatedInOb($agenda, $session, $currentSection, $targetSection, $userId);
+    /**
+     * Ensure the agenda is in the target section, keeping unfinished when dual-placing with CR.
+     */
+    public function ensureAgendaSectionsInSession(
+        AgendaItem $agenda,
+        LegislativeSession $session,
+        string $targetSection,
+        ?int $userId = null,
+    ): bool {
+        if ($agenda->hasObManualOverride() || $agenda->isObLifecycleResolved()) {
+            return false;
+        }
+
+        $session->loadMissing('obDocument');
+        $document = $session->obDocument;
+
+        if ($document === null) {
+            return false;
+        }
+
+        $sections = $this->documentService->sectionsForAgendaInDocument($document, $agenda->id);
+        $changed = false;
+        $fromSection = $sections->first();
+
+        try {
+            DB::transaction(function () use (
+                $agenda,
+                $session,
+                $document,
+                $targetSection,
+                $sections,
+                $userId,
+                &$changed,
+                &$fromSection,
+            ): void {
+                $mirrorUnfinished = $targetSection === 'committee_reports'
+                    && $this->shouldAlsoPlaceInUnfinished($agenda, $session);
+
+                if ($targetSection === 'committee_reports') {
+                    // Drop unassigned/other exclusive homes, but keep unfinished when dual-placing.
+                    foreach ($sections as $section) {
+                        if ($section === 'committee_reports') {
+                            continue;
+                        }
+                        if ($section === 'unfinished' && $mirrorUnfinished) {
+                            continue;
+                        }
+                        $this->documentService->removeAgendaFromDocument(
+                            $document,
+                            $agenda,
+                            $userId,
+                            'relocation',
+                            $section,
+                        );
+                        $changed = true;
+                    }
+
+                    if (! $this->documentService->agendaIsInSection($document->fresh() ?? $document, $agenda->id, 'committee_reports')) {
+                        $this->documentService->addAgendaItems(
+                            $document,
+                            [$agenda->id],
+                            null,
+                            'committee_reports',
+                            null,
+                            $userId,
+                            'automatic',
+                        );
+                        $changed = true;
+                    }
+
+                    if ($mirrorUnfinished
+                        && ! $this->documentService->agendaIsInSection($document->fresh() ?? $document, $agenda->id, 'unfinished')) {
+                        $this->documentService->addAgendaItems(
+                            $document,
+                            [$agenda->id],
+                            null,
+                            'unfinished',
+                            null,
+                            $userId,
+                            'automatic',
+                        );
+                        $changed = true;
+                    }
+                } else {
+                    if ($sections->contains($targetSection) && $sections->count() === 1) {
+                        return;
+                    }
+
+                    // Standard relocate: remove all, then add target.
+                    if ($sections->isNotEmpty() && ! ($sections->count() === 1 && $sections->first() === $targetSection)) {
+                        $this->documentService->removeAgendaFromDocument($document, $agenda, $userId, 'relocation');
+                        $changed = true;
+                    }
+
+                    if (! $this->documentService->agendaIsInSection($document->fresh() ?? $document, $agenda->id, $targetSection)) {
+                        $this->documentService->addAgendaItems(
+                            $document,
+                            [$agenda->id],
+                            null,
+                            $targetSection,
+                            null,
+                            $userId,
+                            'automatic',
+                        );
+                        $changed = true;
+                    }
+                }
+
+                if ($changed) {
+                    $this->updateAgendaAfterSync($agenda, $session, $targetSection);
+                    if ($fromSection !== $targetSection) {
+                        $this->logRelocatedInOb($agenda, $session, $fromSection, $targetSection, $userId);
+                    }
+                }
             });
         } catch (ValidationException $exception) {
-            Log::warning('Automatic OB relocation failed for agenda item.', [
+            Log::warning('Automatic OB section ensure failed for agenda item.', [
                 'agenda_item_id' => $agenda->id,
                 'legislative_session_id' => $session->id,
                 'target_section' => $targetSection,
                 'errors' => $exception->errors(),
             ]);
 
+            return false;
+        }
+
+        return $changed;
+    }
+
+    /**
+     * Agendas under IV. Committee Reports also appear under A. Unfinished Business.
+     */
+    protected function shouldAlsoPlaceInUnfinished(AgendaItem $agenda, LegislativeSession $session): bool
+    {
+        if (! $this->hasCommitteeReport($agenda) || $agenda->isObLifecycleResolved()) {
             return false;
         }
 

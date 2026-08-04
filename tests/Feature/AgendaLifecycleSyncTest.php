@@ -262,6 +262,170 @@ class AgendaLifecycleSyncTest extends TestCase
         ]);
     }
 
+    public function test_committee_report_agenda_also_remains_in_unfinished_when_carried(): void
+    {
+        $user = User::factory()->create();
+        $lifecycle = app(AgendaLifecycleService::class);
+
+        $agenda = AgendaItem::create([
+            'tracking_no' => '777',
+            'title' => 'CR and unfinished',
+            'committee_referred' => 'Tourism',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 0,
+            'created_by' => $user->id,
+        ]);
+
+        $firstSession = LegislativeSession::create([
+            'session_date' => now()->addWeek(),
+            'session_kind' => 'regular',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+        $firstDocument = ObDocument::create([
+            'legislative_session_id' => $firstSession->id,
+            'title' => 'OB 1',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+        app(ObDocumentTemplateService::class)->seedDefaultBlocks($firstDocument);
+        $lifecycle->syncNewSession($firstSession, $user->id);
+
+        $agenda->update([
+            'committee_report_pdf_path' => 'agenda-pdfs/777/committee-report.pdf',
+        ]);
+
+        $secondSession = LegislativeSession::create([
+            'session_date' => now()->addWeeks(2),
+            'session_kind' => 'regular',
+            'status' => 'draft',
+            'prior_session_id' => $firstSession->id,
+            'created_by' => $user->id,
+        ]);
+        $secondDocument = ObDocument::create([
+            'legislative_session_id' => $secondSession->id,
+            'title' => 'OB 2',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+        app(ObDocumentTemplateService::class)->seedDefaultBlocks($secondDocument);
+        $lifecycle->syncNewSession($secondSession, $user->id);
+
+        $documentService = app(\App\Services\ObDocumentService::class);
+        $sections = $documentService->sectionsForAgendaInDocument($secondDocument->fresh(), $agenda->id);
+
+        $this->assertTrue($sections->contains('committee_reports'));
+        $this->assertTrue($sections->contains('unfinished'));
+        $this->assertDatabaseHas('ob_blocks', [
+            'ob_document_id' => $secondDocument->id,
+            'type' => ObBlockType::CommitteeReport,
+            'agenda_item_id' => $agenda->id,
+        ]);
+        $this->assertDatabaseHas('ob_blocks', [
+            'ob_document_id' => $secondDocument->id,
+            'type' => ObBlockType::UnfinishedAgenda,
+            'agenda_item_id' => $agenda->id,
+        ]);
+    }
+
+    public function test_filing_committee_report_keeps_existing_unfinished_placement(): void
+    {
+        $user = User::factory()->create();
+        $lifecycle = app(AgendaLifecycleService::class);
+        $documentService = app(\App\Services\ObDocumentService::class);
+
+        $agenda = AgendaItem::create([
+            'tracking_no' => '888',
+            'title' => 'Unfinished then CR',
+            'committee_referred' => 'Tourism',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 0,
+            'created_by' => $user->id,
+        ]);
+
+        $firstSession = LegislativeSession::create([
+            'session_date' => now()->addWeek(),
+            'session_kind' => 'regular',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+        $firstDocument = ObDocument::create([
+            'legislative_session_id' => $firstSession->id,
+            'title' => 'OB 1',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+        app(ObDocumentTemplateService::class)->seedDefaultBlocks($firstDocument);
+        $lifecycle->syncNewSession($firstSession, $user->id);
+        $firstSession->update(['status' => 'completed']);
+
+        $secondSession = LegislativeSession::create([
+            'session_date' => now()->addWeeks(2),
+            'session_kind' => 'regular',
+            'status' => 'draft',
+            'prior_session_id' => $firstSession->id,
+            'created_by' => $user->id,
+        ]);
+        $secondDocument = ObDocument::create([
+            'legislative_session_id' => $secondSession->id,
+            'title' => 'OB 2',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+        app(ObDocumentTemplateService::class)->seedDefaultBlocks($secondDocument);
+        $lifecycle->syncNewSession($secondSession, $user->id);
+
+        $this->assertTrue($documentService->agendaIsInSection($secondDocument->fresh(), $agenda->id, 'unfinished'));
+
+        $agenda->update([
+            'committee_report_pdf_path' => 'agenda-pdfs/888/committee-report.pdf',
+        ]);
+        $lifecycle->handleAgendaSaved($agenda->fresh(['boardMemberCommitteeReports']), [
+            'committee_report_pdf_path',
+        ], $user->id);
+
+        $sections = $documentService->sectionsForAgendaInDocument($secondDocument->fresh(), $agenda->id);
+        $this->assertTrue($sections->contains('unfinished'), 'sections: '.$sections->implode(','));
+        $this->assertTrue($sections->contains('committee_reports'), 'sections: '.$sections->implode(','));
+    }
+
+    public function test_first_session_committee_report_agenda_also_placed_in_unfinished(): void
+    {
+        $user = User::factory()->create();
+
+        $agenda = AgendaItem::create([
+            'tracking_no' => '901',
+            'title' => 'CR on first session',
+            'committee_referred' => 'Tourism',
+            'committee_report_pdf_path' => 'agenda-pdfs/901/committee-report.pdf',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 0,
+            'created_by' => $user->id,
+        ]);
+
+        $session = LegislativeSession::create([
+            'session_date' => now()->addWeek(),
+            'session_kind' => 'regular',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+        $document = ObDocument::create([
+            'legislative_session_id' => $session->id,
+            'title' => 'CR first OB',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+        app(ObDocumentTemplateService::class)->seedDefaultBlocks($document);
+
+        app(AgendaLifecycleService::class)->syncNewSession($session, $user->id);
+
+        $sections = app(\App\Services\ObDocumentService::class)
+            ->sectionsForAgendaInDocument($document->fresh(), $agenda->id);
+
+        $this->assertTrue($sections->contains('committee_reports'));
+        $this->assertTrue($sections->contains('unfinished'));
+    }
+
     public function test_sync_recovers_agenda_linked_to_board_member_report_even_when_legacy_agenda_fields_are_empty(): void
     {
         $user = User::factory()->create();

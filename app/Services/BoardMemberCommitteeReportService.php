@@ -583,12 +583,20 @@ class BoardMemberCommitteeReportService
                     $agenda,
                     $userId,
                     'automatic',
+                    'committee_reports',
+                );
+
+                $remaining = $this->documentService->sectionsForAgendaInDocument(
+                    $currentSession->obDocument->fresh() ?? $currentSession->obDocument,
+                    $agenda->id,
                 );
 
                 $agenda->forceFill([
-                    'ob_lifecycle_stage' => filled($agenda->committee_referred)
-                        ? AgendaItem::OB_STAGE_UNASSIGNED
-                        : null,
+                    'ob_lifecycle_stage' => $remaining->contains('unfinished')
+                        ? AgendaItem::OB_STAGE_UNFINISHED
+                        : (filled($agenda->committee_referred)
+                            ? AgendaItem::OB_STAGE_UNASSIGNED
+                            : null),
                 ])->saveQuietly();
             }
         }
