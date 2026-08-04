@@ -79,7 +79,10 @@ class AgendaRequestPacketTest extends TestCase
         ]);
 
         $this->actingAs($encoder)
-            ->post(route('agenda.request-files.store', $agenda), [
+            ->put(route('agenda.update', $agenda), [
+                'title' => $agenda->title,
+                'status' => $agenda->status,
+                'prescribed_days' => 0,
                 'relative_folder' => '',
                 'request_packet_files' => [
                     UploadedFile::fake()->create('1. BATAAN PENINSULA TOUR GUIDES.pdf', 100, 'application/pdf'),
@@ -93,12 +96,20 @@ class AgendaRequestPacketTest extends TestCase
         $this->assertNotNull($root);
         $this->assertNull($root->relative_folder);
         $this->assertSame($root->stored_path, $agenda->request_pdf_path);
+        $this->assertSame(1, $agenda->versions()->count());
+
+        $this->actingAs($encoder)
+            ->get(route('agenda.edit', $agenda))
+            ->assertOk()
+            ->assertSee('Request packet')
+            ->assertDontSee('Request file (upload)');
 
         $this->actingAs($encoder)
             ->get(route('agenda.show', $agenda))
             ->assertOk()
             ->assertSee('Request PDF')
-            ->assertSee('Request packet');
+            ->assertSee('Request packet')
+            ->assertDontSee('Upload to request packet');
     }
 
     public function test_upload_to_named_folder_does_not_create_agenda_version(): void
@@ -115,10 +126,15 @@ class AgendaRequestPacketTest extends TestCase
             'created_by' => $encoder->id,
         ]);
 
-        $beforeVersions = $agenda->versions()->count();
+        app(\App\Services\AgendaVersionService::class)->recordInitialVersion($agenda, $encoder->id);
+        $beforeVersions = $agenda->fresh()->versions()->count();
+        $this->assertSame(1, $beforeVersions);
 
         $this->actingAs($encoder)
-            ->post(route('agenda.request-files.store', $agenda), [
+            ->put(route('agenda.update', $agenda), [
+                'title' => $agenda->title,
+                'status' => $agenda->status,
+                'prescribed_days' => 0,
                 'relative_folder' => 'FOR RECOGNITION',
                 'request_packet_files' => [
                     UploadedFile::fake()->create('guides.pdf', 100, 'application/pdf'),

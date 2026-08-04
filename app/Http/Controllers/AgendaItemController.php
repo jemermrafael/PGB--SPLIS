@@ -79,6 +79,7 @@ class AgendaItemController extends Controller
         AgendaOutputPublisher $publisher,
         AgendaVersionService $versions,
         AgendaLifecycleService $lifecycle,
+        AgendaItemRequestFileService $requestFiles,
     ): RedirectResponse {
         $this->authorize('create', AgendaItem::class);
 
@@ -88,6 +89,8 @@ class AgendaItemController extends Controller
         ));
 
         $this->storeUploadedPdfs($request, $agenda);
+        $this->storeRequestPacketFiles($request, $agenda, $requestFiles);
+        $agenda->refresh();
 
         $versions->recordInitialVersion($agenda, $request->user()->id);
 
@@ -196,7 +199,7 @@ class AgendaItemController extends Controller
     {
         $this->authorize('update', $agenda);
 
-        $agenda->load(['resolution', 'ordinance', 'appropriationOrdinance']);
+        $agenda->load(['resolution', 'ordinance', 'appropriationOrdinance', 'requestFiles']);
 
         return view('agenda.form', $this->formData($agenda));
     }
@@ -209,6 +212,7 @@ class AgendaItemController extends Controller
         AgendaOutputPublisher $publisher,
         AgendaVersionService $versions,
         AgendaLifecycleService $lifecycle,
+        AgendaItemRequestFileService $requestFiles,
     ): RedirectResponse {
         $this->authorize('update', $agenda);
 
@@ -217,15 +221,19 @@ class AgendaItemController extends Controller
             ->all();
 
         $previousOutputConnection = $agenda->outputConnectionKey();
-
-        if ($request->hasFile('request_pdf')) {
-            $versions->preserveRequestPdfInCurrentVersion($agenda, $request->user()->id);
-        }
+        $hasPacketUpload = $request->hasFile('request_packet_files');
 
         $agenda->update($this->validated($request));
         $this->storeUploadedPdfs($request, $agenda);
+        $this->storeRequestPacketFiles($request, $agenda, $requestFiles);
         $changedFields = array_keys($agenda->getChanges());
         $agenda->refresh();
+
+        if ($hasPacketUpload) {
+            // Root packet PDF may quietly set request_pdf_path — don't force a new version for that alone.
+            $before['request_pdf_path'] = $agenda->getAttribute('request_pdf_path');
+            $versions->preserveRequestPdfInCurrentVersion($agenda, $request->user()->id);
+        }
 
         $versions->recordVersionIfChanged($agenda, $before, $request->user()->id);
 
@@ -541,7 +549,9 @@ class AgendaItemController extends Controller
         $data = $request->validate([
             'tracking_no' => ['nullable', 'string', 'max:20'],
             'request_pdf_url' => ['nullable', 'string', 'max:500'],
-            'request_pdf' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp', 'max:51200'],
+            'relative_folder' => ['nullable', 'string', 'max:500'],
+            'request_packet_files' => ['nullable', 'array'],
+            'request_packet_files.*' => ['file', 'mimes:pdf,jpg,jpeg,png,gif,webp,doc,docx', 'max:51200'],
             'date_received' => ['nullable', 'date'],
             'time_received' => ['nullable', 'date_format:H:i'],
             'prescribed_days' => ['nullable', 'integer', 'in:0,30,60,90'],
@@ -582,7 +592,8 @@ class AgendaItemController extends Controller
         $data['is_urgent_request'] = $request->boolean('is_urgent_request');
 
         unset(
-            $data['request_pdf'],
+            $data['request_packet_files'],
+            $data['relative_folder'],
             $data['committee_report_pdf'],
             $data['reso_ord_ao_pdf'],
             $data['journal_pdf'],
@@ -595,18 +606,40 @@ class AgendaItemController extends Controller
     protected function storeUploadedPdfs(Request $request, AgendaItem $agenda): void
     {
         foreach (AgendaPdfSlot::all() as $slot) {
+            if ($slot === AgendaPdfSlot::REQUEST) {
+                continue;
+            }
+
             $field = AgendaPdfSlot::config($slot)['upload'];
 
             if (! $request->hasFile($field)) {
                 continue;
             }
 
-            $path = $slot === AgendaPdfSlot::REQUEST
-                ? $this->agendaPdfService->storeVersioned($request->file($field), $agenda, $slot)
-                : $this->agendaPdfService->store($request->file($field), $agenda, $slot);
+            $path = $this->agendaPdfService->store($request->file($field), $agenda, $slot);
 
             $pathColumn = AgendaPdfSlot::config($slot)['path'];
             $agenda->update([$pathColumn => $path]);
+        }
+    }
+
+    protected function storeRequestPacketFiles(
+        Request $request,
+        AgendaItem $agenda,
+        AgendaItemRequestFileService $requestFiles,
+    ): void {
+        if (! $request->hasFile('request_packet_files')) {
+            return;
+        }
+
+        $folder = $request->input('relative_folder');
+
+        foreach ($request->file('request_packet_files', []) as $uploaded) {
+            if ($uploaded === null) {
+                continue;
+            }
+
+            $requestFiles->store($uploaded, $agenda, $folder, $request->user()?->id);
         }
     }
 }

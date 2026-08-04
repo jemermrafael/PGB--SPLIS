@@ -38,20 +38,40 @@
                         <p class="mt-1 text-xs text-slate-500">Leave blank until the SP Secretary assigns an official agenda number.</p>
                     @endif
                 </div>
-                <div>
-                    <label class="splis-label" for="request_pdf">Request file (upload)</label>
-                    <input type="file" name="request_pdf" id="request_pdf" accept="application/pdf,image/jpeg,image/png,image/gif,image/webp,.pdf,.jpg,.jpeg,.png,.gif,.webp" class="splis-input">
-                    @if ($isEdit && $agenda->hasLocalPdfFor(App\Support\AgendaPdfSlot::REQUEST))
-                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            Local file: <code>{{ $agenda->request_pdf_path }}</code>
-                            — uploading replaces it.
+                <div class="md:col-span-2 space-y-3 rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Request packet</h3>
+                        <p class="mt-1 text-xs text-slate-500">Upload one or more files. Leave folder blank for Root — that PDF becomes the primary Request PDF. Named folders (e.g. FOR ACCREDITATION) keep files grouped.</p>
+                    </div>
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                            <label class="splis-label" for="relative_folder">Folder name (optional)</label>
+                            <input type="text" name="relative_folder" id="relative_folder" value="{{ old('relative_folder') }}" class="splis-input" placeholder="FOR ACCREDITATION">
+                        </div>
+                        <div>
+                            <label class="splis-label" for="request_packet_files">Files</label>
+                            <input type="file" name="request_packet_files[]" id="request_packet_files" class="splis-input" multiple accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,application/pdf,image/jpeg,image/png,image/gif,image/webp">
+                        </div>
+                    </div>
+                    @if ($isEdit && $agenda->requestFiles->isNotEmpty())
+                        <ul class="space-y-1 text-sm text-slate-600 dark:text-slate-300">
+                            @foreach ($agenda->requestFilesGroupedByFolder() as $folderLabel => $folderFiles)
+                                <li>
+                                    <span class="font-medium">{{ $folderLabel }}</span>
+                                    — {{ $folderFiles->pluck('original_filename')->join(', ') }}
+                                </li>
+                            @endforeach
+                        </ul>
+                    @elseif ($isEdit && $agenda->hasLocalPdfFor(App\Support\AgendaPdfSlot::REQUEST))
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                            Current Request PDF: <code>{{ $agenda->request_pdf_path }}</code>
                         </p>
                     @endif
                 </div>
                 <div>
                     <label class="splis-label" for="request_pdf_url">Request PDF URL (fallback)</label>
                     <input type="url" name="request_pdf_url" id="request_pdf_url" value="{{ old('request_pdf_url', $agenda->request_pdf_url) }}" class="splis-input" placeholder="Google Drive file or folder link">
-                    <p class="mt-1 text-xs text-slate-500">Single file or Drive folder. Folder links become a request packet (subfolder names preserved). Manage packet files on the agenda page.</p>
+                    <p class="mt-1 text-xs text-slate-500">Single file or Drive folder. Folder links download into a request packet with subfolder names preserved.</p>
                 </div>
                 <div>
                     <label class="splis-label" for="date_received">Date received</label>

@@ -485,25 +485,14 @@
                                 @endforeach
                             </div>
                         @else
-                            <p class="text-sm text-slate-500">No request packet files yet. Upload files below (leave folder blank for the primary Request PDF).</p>
+                            <p class="text-sm text-slate-500">No request packet files yet. Add them from Edit Agenda.</p>
                         @endif
 
-                        <p class="text-xs text-slate-500">Files uploaded with an empty folder name go in Root and become the primary Request PDF.</p>
-
                         @can('update', $agenda)
-                            <form method="POST" action="{{ route('agenda.request-files.store', $agenda) }}" enctype="multipart/form-data" class="space-y-3 border-t border-slate-200 pt-4 dark:border-slate-700">
-                                @csrf
-                                <div>
-                                    <label class="splis-label" for="agenda-request-folder">Folder name (optional)</label>
-                                    <input type="text" name="relative_folder" id="agenda-request-folder" class="splis-input" placeholder="FOR ACCREDITATION">
-                                    <p class="mt-1 text-xs text-slate-500">Leave blank for Root — that PDF is used as the Request PDF.</p>
-                                </div>
-                                <div>
-                                    <label class="splis-label" for="agenda-request-packet-files">Files</label>
-                                    <input type="file" name="request_packet_files[]" id="agenda-request-packet-files" class="splis-input" multiple accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,application/pdf">
-                                </div>
-                                <button type="submit" class="splis-btn-secondary w-full text-sm">Upload to request packet</button>
-                            </form>
+                            <a href="{{ route('agenda.edit', $agenda) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-sm">
+                                <x-icon name="edit" class="h-4 w-4" />
+                                Manage on Edit
+                            </a>
                         @endcan
                     </div>
                 </div>
