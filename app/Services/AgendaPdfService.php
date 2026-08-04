@@ -171,6 +171,17 @@ class AgendaPdfService
             $hasUrl = filled($agenda->{$config['url']});
             $hasLocal = $this->existsFor($agenda, $slot);
 
+            if ($slot === AgendaPdfSlot::REQUEST && $hasUrl) {
+                $url = trim((string) $agenda->{$config['url']});
+                if (app(GoogleDrivePdfDownloader::class)->extractFolderId($url) !== null) {
+                    if (! $agenda->hasRequestPacketFiles()) {
+                        $missing[] = $slot;
+                    }
+
+                    continue;
+                }
+            }
+
             if ($hasUrl && ! $hasLocal) {
                 $missing[] = $slot;
             }

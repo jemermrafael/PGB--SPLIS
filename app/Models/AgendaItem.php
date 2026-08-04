@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\HasActivityLogs;
 use App\Models\Concerns\NavigatesById;
+use App\Services\AgendaItemRequestFileService;
 use App\Services\AgendaPdfService;
 use App\Support\AgendaDeadline;
 use App\Support\AgendaMeasureType;
@@ -165,6 +166,11 @@ class AgendaItem extends Model
     public function versions(): HasMany
     {
         return $this->hasMany(AgendaItemVersion::class)->orderByDesc('version_no');
+    }
+
+    public function requestFiles(): HasMany
+    {
+        return $this->hasMany(AgendaItemRequestFile::class)->orderBy('sort_order')->orderBy('id');
     }
 
     public function obPlacements(): HasMany
@@ -571,6 +577,23 @@ class AgendaItem extends Model
     public function missingPdfMirrorSlots(): array
     {
         return app(AgendaPdfService::class)->missingMirrorSlots($this);
+    }
+
+    public function hasRequestPacketFiles(): bool
+    {
+        if ($this->relationLoaded('requestFiles')) {
+            return $this->requestFiles->contains(fn (AgendaItemRequestFile $file) => $file->existsLocally());
+        }
+
+        return $this->requestFiles()->exists();
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<string, \Illuminate\Support\Collection<int, AgendaItemRequestFile>>
+     */
+    public function requestFilesGroupedByFolder()
+    {
+        return app(AgendaItemRequestFileService::class)->groupedByFolder($this);
     }
 
     public function outputPdfUrl(): ?string

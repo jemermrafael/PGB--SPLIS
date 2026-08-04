@@ -354,6 +354,24 @@ class DriveFileMirrorQueueService
 
         $result = $this->agendaMirror->mirror($agenda, $item->document_slot);
 
+        if (
+            ! $result['ok']
+            && $item->document_slot === \App\Support\AgendaPdfSlot::REQUEST
+            && str_contains($result['message'], 'request packet')
+        ) {
+            $packet = $this->agendaMirror->mirrorRequestPacketFolder($agenda);
+            $ok = $packet['failed'] === 0 && ($packet['mirrored'] > 0 || $packet['skipped'] > 0);
+
+            return [
+                'ok' => $ok,
+                'message' => $packet['messages'][0]
+                    ?? ($packet['mirrored'] > 0
+                        ? $packet['mirrored'].' request packet file(s) mirrored.'
+                        : 'Request packet already registered.'),
+                'path' => null,
+            ];
+        }
+
         return [
             'ok' => $result['ok'],
             'message' => $result['message'],

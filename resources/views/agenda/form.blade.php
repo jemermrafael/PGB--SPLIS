@@ -50,8 +50,8 @@
                 </div>
                 <div>
                     <label class="splis-label" for="request_pdf_url">Request PDF URL (fallback)</label>
-                    <input type="url" name="request_pdf_url" id="request_pdf_url" value="{{ old('request_pdf_url', $agenda->request_pdf_url) }}" class="splis-input" placeholder="Google Drive link">
-                    <p class="mt-1 text-xs text-slate-500">Used when no local file is present. Can be mirrored from the agenda page or Data Sync queue.</p>
+                    <input type="url" name="request_pdf_url" id="request_pdf_url" value="{{ old('request_pdf_url', $agenda->request_pdf_url) }}" class="splis-input" placeholder="Google Drive file or folder link">
+                    <p class="mt-1 text-xs text-slate-500">Single file or Drive folder. Folder links become a request packet (subfolder names preserved). Manage packet files on the agenda page.</p>
                 </div>
                 <div>
                     <label class="splis-label" for="date_received">Date received</label>

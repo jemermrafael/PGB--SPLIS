@@ -79,7 +79,17 @@
                         </form>
                     @endif
                 @endcan
-                @if ($agenda->pdfPublicUrlFor(AgendaPdfSlot::REQUEST))
+                @if ($agenda->hasRequestPacketFiles())
+                    <button
+                        type="button"
+                        class="splis-btn-secondary inline-flex items-center gap-2 text-nowrap"
+                        data-folder-modal-open
+                        data-folder-modal-target="#agenda-request-packet-modal"
+                    >
+                        <x-icon name="folder" class="h-4 w-4" />
+                        Request packet ({{ $agenda->requestFiles->count() }})
+                    </button>
+                @elseif ($agenda->pdfPublicUrlFor(AgendaPdfSlot::REQUEST))
                     @include('partials.pdf-modal-trigger', [
                         'url' => $agenda->pdfPublicUrlFor(AgendaPdfSlot::REQUEST),
                         'viewer' => $agenda->pdfViewerModeFor(AgendaPdfSlot::REQUEST),
@@ -98,6 +108,13 @@
                             </button>
                         </form>
                     @endif
+                    <form method="POST" action="{{ route('agenda.request-files.import-disk', $agenda) }}">
+                        @csrf
+                        <button type="submit" class="splis-btn-secondary inline-flex items-center gap-2 text-nowrap" title="Register files already under storage/app/private/agenda/{{ $agenda->id }}">
+                            <x-icon name="folder" class="h-4 w-4" />
+                            Register local folders
+                        </button>
+                    </form>
                 @endcan
                 @can('update', $agenda)
                     <a href="{{ route('agenda.edit', $agenda) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-nowrap">
@@ -444,6 +461,57 @@
                 </div>
             </aside>
 
+            @if ($agenda->hasRequestPacketFiles() || auth()->user()?->can('update', $agenda))
+                <div class="splis-card overflow-hidden">
+                    <div class="splis-card-header splis-card-header--emphasis">
+                        <h2 class="splis-card-title">Request packet</h2>
+                        <p class="splis-card-subtitle">Multiple files with folder names (e.g. FOR RECOGNITION)</p>
+                    </div>
+                    <div class="splis-card-body space-y-4">
+                        @if ($agenda->hasRequestPacketFiles())
+                            <div class="space-y-3">
+                                @foreach ($agenda->requestFilesGroupedByFolder() as $folderLabel => $folderFiles)
+                                    <div>
+                                        <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $folderLabel }}</p>
+                                        <ul class="space-y-1 text-sm">
+                                            @foreach ($folderFiles as $file)
+                                                <li class="flex flex-wrap items-center justify-between gap-2">
+                                                    <span class="min-w-0 truncate" title="{{ $file->original_filename }}">{{ $file->original_filename }}</span>
+                                                    @include('partials.pdf-modal-trigger', [
+                                                        'url' => $file->publicUrl(),
+                                                        'viewer' => $file->viewerMode(),
+                                                        'title' => $file->original_filename,
+                                                        'label' => 'View',
+                                                        'class' => 'splis-btn-ghost text-sm',
+                                                    ])
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <p class="text-sm text-slate-500">No request packet files yet. Place folders under <code>storage/app/private/agenda/{{ $agenda->id }}</code> and click Register local folders, or upload below.</p>
+                        @endif
+
+                        @can('update', $agenda)
+                            <form method="POST" action="{{ route('agenda.request-files.store', $agenda) }}" enctype="multipart/form-data" class="space-y-3 border-t border-slate-200 pt-4 dark:border-slate-700">
+                                @csrf
+                                <div>
+                                    <label class="splis-label" for="agenda-request-folder">Folder name (optional)</label>
+                                    <input type="text" name="relative_folder" id="agenda-request-folder" class="splis-input" placeholder="FOR ACCREDITATION">
+                                </div>
+                                <div>
+                                    <label class="splis-label" for="agenda-request-packet-files">Files</label>
+                                    <input type="file" name="request_packet_files[]" id="agenda-request-packet-files" class="splis-input" multiple accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,application/pdf">
+                                </div>
+                                <button type="submit" class="splis-btn-secondary w-full text-sm">Upload to request packet</button>
+                            </form>
+                        @endcan
+                    </div>
+                </div>
+            @endif
+
             @if ($agenda->pdfPublicUrlFor(AgendaPdfSlot::COMMITTEE_REPORT) || $agenda->pdfPublicUrlFor(AgendaPdfSlot::RESO_ORD_AO) || $agenda->pdfPublicUrlFor(AgendaPdfSlot::JOURNAL) || $agenda->pdfPublicUrlFor(AgendaPdfSlot::MINUTES) || $agenda->isPublished())
                 <div class="splis-card overflow-hidden">
                     <div class="splis-card-header splis-card-header--emphasis">
@@ -493,6 +561,15 @@
     </div>
 
     @include('agenda.partials.version-history', ['agenda' => $agenda])
+
+    @include('partials.document-folder-modal', [
+        'modalId' => 'agenda-request-packet-modal',
+        'title' => 'Request packet — '.$agenda->displayLabel(),
+        'grouped' => $agenda->requestFilesGroupedByFolder(),
+        'driveUrl' => $agenda->request_pdf_url,
+        'canManage' => auth()->user()?->can('update', $agenda),
+        'agenda' => $agenda,
+    ])
 
     @include('agenda.partials.splis-activity-logs', [
         'splisActivityLogs' => $splisActivityLogs ?? collect(),

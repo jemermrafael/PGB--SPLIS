@@ -82,18 +82,47 @@ class GoogleDrivePdfDownloader
 
     /**
      * List files inside a publicly shared Google Drive folder.
+     * When $recursive is true, nested subfolders are walked and each file
+     * includes a relative_folder path (e.g. "FOR RECOGNITION").
      *
-     * @return list<array{id: string, name: string, url: string, kind: string}>
+     * @return list<array{id: string, name: string, url: string, kind: string, relative_folder: ?string}>
      *
      * @throws RuntimeException
      */
-    public function listFolderFiles(string $folderUrl): array
+    public function listFolderFiles(string $folderUrl, bool $recursive = false, int $maxDepth = 4): array
     {
         $folderId = $this->extractFolderId($folderUrl);
 
         if ($folderId === null) {
             throw new RuntimeException('Not a Google Drive folder URL.');
         }
+
+        $visitedFolders = [];
+        $files = $this->listFolderFilesById($folderId, $recursive ? '' : null, $recursive, $maxDepth, 0, $visitedFolders);
+
+        if ($files === []) {
+            throw new RuntimeException('No files found in the Google Drive folder (empty, private, or unsupported listing).');
+        }
+
+        return array_values($files);
+    }
+
+    /**
+     * @param  array<string, true>  $visitedFolders
+     * @return list<array{id: string, name: string, url: string, kind: string, relative_folder: ?string}>
+     */
+    protected function listFolderFilesById(
+        string $folderId,
+        ?string $relativeFolder,
+        bool $recursive,
+        int $maxDepth,
+        int $depth,
+        array &$visitedFolders,
+    ): array {
+        if (isset($visitedFolders[$folderId])) {
+            return [];
+        }
+        $visitedFolders[$folderId] = true;
 
         $response = $this->httpClient()->get(
             'https://drive.google.com/embeddedfolderview?id='.rawurlencode($folderId).'#list'
@@ -107,7 +136,6 @@ class GoogleDrivePdfDownloader
         $files = [];
         $seen = [];
 
-        // Regular Drive files: /file/d/{id}/...
         if (preg_match_all(
             '#href="(https://drive\.google\.com/file/d/([^/"?]+)/[^"]*)"[^>]*>(.*?)</a>#is',
             $html,
@@ -126,11 +154,11 @@ class GoogleDrivePdfDownloader
                     'name' => $name !== '' ? $name : $id,
                     'url' => 'https://drive.google.com/file/d/'.$id.'/view',
                     'kind' => 'file',
+                    'relative_folder' => $relativeFolder !== '' && $relativeFolder !== null ? $relativeFolder : null,
                 ];
             }
         }
 
-        // Native Google Docs / Sheets / Slides linked from the folder view.
         if (preg_match_all(
             '#href="(https://docs\.google\.com/(document|spreadsheets|presentation)/d/([^/"?]+)/[^"]*)"[^>]*>(.*?)</a>#is',
             $html,
@@ -149,12 +177,50 @@ class GoogleDrivePdfDownloader
                     'name' => $name !== '' ? $name : $id,
                     'url' => 'https://docs.google.com/'.$match[2].'/d/'.$id.'/edit',
                     'kind' => strtolower($match[2]),
+                    'relative_folder' => $relativeFolder !== '' && $relativeFolder !== null ? $relativeFolder : null,
                 ];
             }
         }
 
-        // Fallback: data-id attributes when anchor text parsing fails.
-        if ($files === [] && preg_match_all('/data-id="([^"]+)"/', $html, $idMatches)) {
+        if ($recursive && $depth < $maxDepth) {
+            if (preg_match_all(
+                '#href="(https://drive\.google\.com/drive/(?:u/\d+/)?folders/([^/"?]+)[^"]*)"[^>]*>(.*?)</a>#is',
+                $html,
+                $folderMatches,
+                PREG_SET_ORDER
+            )) {
+                foreach ($folderMatches as $match) {
+                    $childId = html_entity_decode($match[2], ENT_QUOTES | ENT_HTML5);
+                    if ($childId === $folderId || isset($visitedFolders[$childId])) {
+                        continue;
+                    }
+
+                    $childName = trim(html_entity_decode(strip_tags($match[3]), ENT_QUOTES | ENT_HTML5));
+                    if ($childName === '' || strcasecmp($childName, $childId) === 0) {
+                        $childName = $childId;
+                    }
+
+                    $childFolder = trim(
+                        (($relativeFolder !== null && $relativeFolder !== '') ? $relativeFolder.'/' : '').$childName,
+                        '/',
+                    );
+
+                    $files = array_merge(
+                        $files,
+                        $this->listFolderFilesById(
+                            $childId,
+                            $childFolder,
+                            true,
+                            $maxDepth,
+                            $depth + 1,
+                            $visitedFolders,
+                        ),
+                    );
+                }
+            }
+        }
+
+        if ($files === [] && ! $recursive && preg_match_all('/data-id="([^"]+)"/', $html, $idMatches)) {
             foreach (array_unique($idMatches[1]) as $id) {
                 if ($id === $folderId || isset($seen[$id])) {
                     continue;
@@ -165,15 +231,12 @@ class GoogleDrivePdfDownloader
                     'name' => $id,
                     'url' => 'https://drive.google.com/file/d/'.$id.'/view',
                     'kind' => 'file',
+                    'relative_folder' => null,
                 ];
             }
         }
 
-        if ($files === []) {
-            throw new RuntimeException('No files found in the Google Drive folder (empty, private, or unsupported listing).');
-        }
-
-        return array_values($files);
+        return $files;
     }
 
     /**

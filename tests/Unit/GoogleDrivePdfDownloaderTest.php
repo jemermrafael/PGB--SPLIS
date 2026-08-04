@@ -73,7 +73,52 @@ class GoogleDrivePdfDownloaderTest extends TestCase
         $this->assertSame('fileAaa111', $files[0]['id']);
         $this->assertSame('Report One.pdf', $files[0]['name']);
         $this->assertSame('file', $files[0]['kind']);
+        $this->assertNull($files[0]['relative_folder']);
         $this->assertSame('docCcc333', $files[2]['id']);
         $this->assertSame('document', $files[2]['kind']);
+    }
+
+    public function test_list_folder_files_recursive_keeps_subfolder_names(): void
+    {
+        Http::fake(function (\Illuminate\Http\Client\Request $request) {
+            $url = $request->url();
+
+            if (str_contains($url, 'id=parentFolder')) {
+                return Http::response(
+                    '<html><body>
+                        <a href="https://drive.google.com/drive/folders/childFolderA">FOR RECOGNITION</a>
+                        <a href="https://drive.google.com/file/d/rootFile111/view">Letter from OPPDO.pdf</a>
+                    </body></html>',
+                    200,
+                );
+            }
+
+            if (str_contains($url, 'id=childFolderA')) {
+                return Http::response(
+                    '<html><body>
+                        <a href="https://drive.google.com/file/d/nestedFile222/view">1. BATAAN PENINSULA TOUR GUIDES.pdf</a>
+                    </body></html>',
+                    200,
+                );
+            }
+
+            return Http::response('not found', 404);
+        });
+
+        $files = app(GoogleDrivePdfDownloader::class)->listFolderFiles(
+            'https://drive.google.com/drive/folders/parentFolder',
+            recursive: true,
+        );
+
+        $this->assertCount(2, $files);
+
+        $root = collect($files)->firstWhere('id', 'rootFile111');
+        $nested = collect($files)->firstWhere('id', 'nestedFile222');
+
+        $this->assertNotNull($root);
+        $this->assertNull($root['relative_folder']);
+        $this->assertNotNull($nested);
+        $this->assertSame('FOR RECOGNITION', $nested['relative_folder']);
+        $this->assertSame('1. BATAAN PENINSULA TOUR GUIDES.pdf', $nested['name']);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AgendaItem;
 use App\Support\AgendaPdfSlot;
+use App\Support\MediaType;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -12,6 +13,7 @@ class AgendaPdfMirrorService
     public function __construct(
         protected GoogleDrivePdfDownloader $downloader,
         protected AgendaPdfService $pdfs,
+        protected AgendaItemRequestFileService $requestFiles,
     ) {}
 
     /**
@@ -44,6 +46,14 @@ class AgendaPdfMirrorService
             ];
         }
 
+        if ($slot === AgendaPdfSlot::REQUEST && $this->downloader->extractFolderId($url) !== null) {
+            return [
+                'ok' => false,
+                'message' => 'Request PDF URL is a Drive folder — use the request packet mirror.',
+                'slot' => $slot,
+            ];
+        }
+
         try {
             $file = $this->downloader->downloadFile($url);
             $path = $this->pdfs->storeBytes($file['contents'], $agenda, $slot, $file['extension']);
@@ -72,6 +82,106 @@ class AgendaPdfMirrorService
     }
 
     /**
+     * Download a Drive folder (with nested subfolders) into agenda request packet files.
+     *
+     * @return array{mirrored: int, skipped: int, failed: int, messages: list<string>}
+     */
+    public function mirrorRequestPacketFolder(AgendaItem $agenda, ?string $folderUrl = null): array
+    {
+        $url = trim((string) ($folderUrl ?? $agenda->request_pdf_url ?? ''));
+        $mirrored = 0;
+        $skipped = 0;
+        $failed = 0;
+        $messages = [];
+
+        if ($url === '' || $this->downloader->extractFolderId($url) === null) {
+            return [
+                'mirrored' => 0,
+                'skipped' => 0,
+                'failed' => 0,
+                'messages' => [],
+            ];
+        }
+
+        try {
+            $entries = $this->downloader->listFolderFiles($url, recursive: true);
+        } catch (Throwable $e) {
+            Log::warning('Agenda request packet folder listing failed', [
+                'agenda_id' => $agenda->id,
+                'url' => $url,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'mirrored' => 0,
+                'skipped' => 0,
+                'failed' => 1,
+                'messages' => ['Request packet folder: '.$e->getMessage()],
+            ];
+        }
+
+        foreach ($entries as $entry) {
+            $displayName = trim((string) ($entry['name'] ?? ''));
+            if ($displayName === '') {
+                $displayName = (string) $entry['id'];
+            }
+            if (! str_contains(strtolower($displayName), '.') && in_array($entry['kind'], ['document', 'spreadsheets', 'presentation'], true)) {
+                $displayName .= '.pdf';
+            }
+
+            $folder = $entry['relative_folder'] ?? null;
+
+            if ($this->requestFiles->hasFileInFolder($agenda, $displayName, $folder)) {
+                $skipped++;
+
+                continue;
+            }
+
+            try {
+                $forceFormat = in_array($entry['kind'], ['document', 'spreadsheets', 'presentation'], true)
+                    ? 'pdf'
+                    : null;
+                $file = $this->downloader->downloadFile($entry['url'], $forceFormat);
+
+                if (! $this->isSupportedMedia($file['mime'], $file['extension'])) {
+                    $skipped++;
+                    $messages[] = $displayName.': unsupported file type, skipped.';
+
+                    continue;
+                }
+
+                $this->requestFiles->storeBytes(
+                    $file['contents'],
+                    $agenda,
+                    $displayName,
+                    $folder,
+                    $file['extension'],
+                    $file['mime'],
+                    null,
+                    strlen($file['contents']),
+                );
+                $mirrored++;
+            } catch (Throwable $e) {
+                $failed++;
+                $messages[] = $displayName.': '.$e->getMessage();
+                Log::warning('Agenda request packet file mirror failed', [
+                    'agenda_id' => $agenda->id,
+                    'file_id' => $entry['id'],
+                    'name' => $displayName,
+                    'folder' => $folder,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        if ($mirrored === 0 && $failed === 0 && $skipped > 0 && $messages === []) {
+            $messages[] = 'All request packet files are already registered locally.';
+        }
+
+        return compact('mirrored', 'skipped', 'failed', 'messages');
+    }
+
+    /**
      * @return array{mirrored: int, skipped: int, failed: int, messages: list<string>}
      */
     public function mirrorAllFor(AgendaItem $agenda, bool $overwrite = false): array
@@ -81,7 +191,31 @@ class AgendaPdfMirrorService
         $failed = 0;
         $messages = [];
 
+        $imported = $this->requestFiles->importFromDisk($agenda);
+        $mirrored += $imported['registered'];
+        $skipped += $imported['skipped'] > 0 && $imported['registered'] === 0 ? 0 : 0;
+        if ($imported['registered'] > 0) {
+            $messages[] = $imported['registered'].' local request packet file(s) registered from disk.';
+        }
+
+        $requestUrl = trim((string) ($agenda->request_pdf_url ?? ''));
+        if ($requestUrl !== '' && $this->downloader->extractFolderId($requestUrl) !== null) {
+            $packet = $this->mirrorRequestPacketFolder($agenda, $requestUrl);
+            $mirrored += $packet['mirrored'];
+            $skipped += $packet['skipped'];
+            $failed += $packet['failed'];
+            $messages = array_merge($messages, $packet['messages']);
+        }
+
         foreach (AgendaPdfSlot::all() as $slot) {
+            if (
+                $slot === AgendaPdfSlot::REQUEST
+                && $requestUrl !== ''
+                && $this->downloader->extractFolderId($requestUrl) !== null
+            ) {
+                continue;
+            }
+
             $result = $this->mirror($agenda, $slot, $overwrite);
 
             if ($result['ok'] && str_contains($result['message'], 'skipped')) {
@@ -98,5 +232,14 @@ class AgendaPdfMirrorService
         }
 
         return compact('mirrored', 'skipped', 'failed', 'messages');
+    }
+
+    protected function isSupportedMedia(string $mime, string $extension): bool
+    {
+        if (MediaType::isImageMime($mime) || $mime === 'application/pdf') {
+            return true;
+        }
+
+        return in_array(strtolower($extension), ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'doc', 'docx'], true);
     }
 }

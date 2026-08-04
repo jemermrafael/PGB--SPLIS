@@ -148,6 +148,7 @@ class AgendaItemController extends Controller
             'appropriationOrdinance',
             'creator',
             'versions.creator',
+            'requestFiles',
             'finalObPlacements.legislativeSession',
             'finalObPlacements.agendaItemVersion',
             'finalObPlacements.obBlock',
