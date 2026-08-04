@@ -70,34 +70,87 @@ class BoardMemberNotifier
     }
 
     /**
-     * Notify only the committee chair about a scheduled Regular Unassigned referral.
+     * One in-app notification (+ optional email) per chair for a scheduled referral batch.
+     *
+     * @param  \Illuminate\Support\Collection<int, array{agenda: AgendaItem, committee: \App\Models\Committee}>  $rows
      */
-    public function notifyScheduledCommitteeReferralToChair(
-        AgendaItem $agenda,
-        \App\Models\Committee $committee,
+    public function notifyScheduledCommitteeReferralsToChair(
         User $chairUser,
+        Collection $rows,
+        ?LegislativeSession $session = null,
         bool $sendEmail = false,
     ): void {
-        $label = $agenda->displayLabel();
-        $body = sprintf(
-            '%s from Regular Unassigned Business is ready for referral to %s (you are Chair).',
-            $label,
-            $committee->name,
-        );
-        $type = UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL;
-        $link = route('agenda.show', $agenda, absolute: false);
+        $rows = $rows
+            ->filter(fn ($row) => is_array($row)
+                && ($row['agenda'] ?? null) instanceof AgendaItem
+                && ($row['committee'] ?? null) instanceof \App\Models\Committee)
+            ->unique(fn (array $row) => $row['agenda']->id)
+            ->sortBy(fn (array $row) => [
+                (int) preg_replace('/\D+/', '', (string) $row['agenda']->tracking_no),
+                $row['agenda']->id,
+            ])
+            ->values();
 
-        $notification = $this->createNotificationForUser($chairUser, $type, [
-            [
+        if ($rows->isEmpty()) {
+            return;
+        }
+
+        $labels = $rows
+            ->map(fn (array $row) => $row['agenda']->displayLabel())
+            ->filter()
+            ->values()
+            ->all();
+
+        if ($labels === []) {
+            return;
+        }
+
+        $labelList = implode(', ', $labels);
+        $committees = $rows
+            ->map(fn (array $row) => $row['committee']->name)
+            ->unique()
+            ->values();
+        $verb = count($labels) === 1 ? 'is' : 'are';
+
+        if ($committees->count() === 1) {
+            $body = sprintf(
+                '%s from Regular Unassigned Business %s ready for referral to %s (you are Chair).',
+                $labelList,
+                $verb,
+                $committees->first(),
+            );
+            $committeeLabel = (string) $committees->first();
+        } else {
+            $body = sprintf(
+                '%s from Regular Unassigned Business %s ready for referral to your committees (you are Chair).',
+                $labelList,
+                $verb,
+            );
+            $committeeLabel = $committees->implode(', ');
+        }
+
+        $type = UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL;
+        $singleAgenda = $rows->count() === 1 ? $rows->first()['agenda'] : null;
+        $link = $singleAgenda
+            ? route('agenda.show', $singleAgenda, absolute: false)
+            : route('dashboard', absolute: false);
+        $title = count($labels) === 1
+            ? 'Incoming agenda for referral'
+            : 'Incoming agendas for referral';
+
+        $notification = null;
+        if ($this->preferences->allowsInApp($chairUser, $type)) {
+            $notification = UserNotification::query()->create([
                 'user_id' => $chairUser->id,
-                'agenda_item_id' => $agenda->id,
-            ],
-            [
-                'title' => 'Incoming agenda for referral',
+                'agenda_item_id' => $singleAgenda?->id,
+                'legislative_session_id' => $session?->id,
+                'type' => $type,
+                'title' => $title,
                 'body' => $body,
                 'link' => $link,
-            ],
-        ]);
+                'read_at' => null,
+            ]);
+        }
 
         if (! $sendEmail) {
             return;
@@ -108,12 +161,15 @@ class BoardMemberNotifier
             $notification,
             $type,
             [
-                'label' => $label,
-                'committee' => $committee->name,
-                'title' => 'Incoming agenda for referral',
+                'label' => $labelList,
+                'committee' => $committeeLabel,
+                'summary' => $body,
+                'title' => $title,
                 'body' => $body,
+                'email_subject' => $title,
             ],
             $link,
+            force: true,
         );
     }
 

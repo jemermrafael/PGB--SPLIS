@@ -46,7 +46,6 @@
                         <td>
                             @if ($session)
                                 <div class="font-medium text-slate-900 dark:text-slate-100">{{ $session->displayTitle() }}</div>
-                                <div class="text-xs text-slate-500">{{ $session->session_date?->format('M j, Y') }}</div>
                             @else
                                 <span class="text-slate-400">Session removed</span>
                             @endif
@@ -79,15 +78,32 @@
                             {{ $schedule->creator?->name ?? '—' }}
                         </td>
                         <td class="text-right">
-                            @if ($schedule->isPending())
-                                <form method="POST" action="{{ route('scheduled-committee-referrals.cancel', $schedule) }}" class="inline" onsubmit="return confirm('Cancel this scheduled referral?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="splis-btn-ghost !py-1.5 text-sm text-rose-700 dark:text-rose-300">Cancel</button>
-                                </form>
-                            @else
-                                <span class="text-slate-400">—</span>
-                            @endif
+                            <div class="flex flex-wrap justify-end gap-2">
+                                @if ($schedule->isPending())
+                                    <form method="POST" action="{{ route('scheduled-committee-referrals.cancel', $schedule) }}" class="inline" onsubmit="return confirm('Cancel this scheduled referral?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="splis-btn-ghost !py-1.5 text-sm text-rose-700 dark:text-rose-300">Cancel</button>
+                                    </form>
+                                @endif
+                                @if (auth()->user()?->canAdmin())
+                                    <form
+                                        method="POST"
+                                        action="{{ route('scheduled-committee-referrals.destroy', $schedule) }}"
+                                        class="inline"
+                                        data-confirm-submit
+                                        data-confirm-title="Move scheduled referral to trash?"
+                                        data-confirm-message="Move this Scheduled Committee Referral to trash? Superadmin can restore from Trash."
+                                        data-confirm-label="Delete"
+                                    >
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="splis-btn-ghost !py-1.5 text-sm text-rose-700 dark:text-rose-300">Delete</button>
+                                    </form>
+                                @elseif (! $schedule->isPending())
+                                    <span class="text-slate-400">—</span>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                 @empty

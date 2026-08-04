@@ -12,6 +12,7 @@ use App\Models\LegislativeSession;
 use App\Models\Ordinance;
 use App\Models\ReferenceMaterial;
 use App\Models\Resolution;
+use App\Models\ScheduledCommitteeReferral;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
@@ -91,6 +92,14 @@ class TrashController extends Controller
                 'restored_action' => 'legislative_session.restored',
                 'deleted_action' => 'legislative_session.deleted',
                 'show_route' => 'ob.sessions.show',
+            ],
+            'scheduled-committee-referrals' => [
+                'label' => 'Scheduled Referrals',
+                'model' => ScheduledCommitteeReferral::class,
+                'trashed_action' => 'scheduled_committee_referral.trashed',
+                'restored_action' => 'scheduled_committee_referral.restored',
+                'deleted_action' => 'scheduled_committee_referral.deleted',
+                'show_route' => null,
             ],
         ];
     }
@@ -380,6 +389,10 @@ class TrashController extends Controller
             'sessions' => $base + [
                 'primary' => $model->displayTitle(),
                 'secondary' => (string) ($model->venue ?: $model->status ?: '—'),
+            ],
+            'scheduled-committee-referrals' => $base + [
+                'primary' => $model->trashLabel(),
+                'secondary' => ucfirst((string) ($model->status ?: '—')),
             ],
             default => $base + [
                 'primary' => '#'.$model->id,

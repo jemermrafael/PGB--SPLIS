@@ -139,7 +139,10 @@ class CommitteeReferralScheduleService
 
         $preview = $this->previewForSession($session);
 
-        DB::transaction(function () use ($schedule, $preview): void {
+        DB::transaction(function () use ($schedule, $preview, $session): void {
+            /** @var array<int, array{user: User, rows: list<array{agenda: AgendaItem, committee: Committee}>}> $byChair */
+            $byChair = [];
+
             foreach ($preview as $row) {
                 /** @var AgendaItem $agenda */
                 $agenda = $row['agenda'];
@@ -167,11 +170,21 @@ class CommitteeReferralScheduleService
                     $delivery->forceFill(['delivered_at' => now()])->save();
                 }
 
-                $this->notifier->notifyScheduledCommitteeReferralToChair(
-                    $agenda,
-                    $committee,
-                    $chairUser,
-                    (bool) $schedule->send_email,
+                $byChair[$chairUser->id] ??= ['user' => $chairUser, 'rows' => []];
+                $byChair[$chairUser->id]['rows'][] = [
+                    'agenda' => $agenda,
+                    'committee' => $committee,
+                ];
+            }
+
+            $sendEmail = (bool) $schedule->send_email;
+
+            foreach ($byChair as $entry) {
+                $this->notifier->notifyScheduledCommitteeReferralsToChair(
+                    $entry['user'],
+                    collect($entry['rows']),
+                    $session,
+                    $sendEmail,
                 );
             }
 

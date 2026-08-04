@@ -105,7 +105,7 @@ class ScheduledCommitteeReferralController extends Controller
 
         return redirect()
             ->route('scheduled-committee-referrals.index')
-            ->with('status', 'Committee referral scheduled for '.$schedule->scheduled_at->timezone(config('app.timezone'))->format('M j, Y g:i A').$emailNote.'.');
+            ->with('status', 'Committee Referral scheduled for '.$schedule->scheduled_at->timezone(config('app.timezone'))->format('M j, Y g:i A').$emailNote.'.');
     }
 
     public function cancel(Request $request, ScheduledCommitteeReferral $scheduledCommitteeReferral): RedirectResponse
@@ -122,7 +122,30 @@ class ScheduledCommitteeReferralController extends Controller
 
         return redirect()
             ->route('scheduled-committee-referrals.index')
-            ->with('status', 'Scheduled committee referral cancelled.');
+            ->with('status', 'Scheduled Committee Referral cancelled.');
+    }
+
+    public function destroy(Request $request, ScheduledCommitteeReferral $scheduledCommitteeReferral): RedirectResponse
+    {
+        abort_unless($request->user()?->canAdmin() ?? false, 403);
+
+        $scheduledCommitteeReferral->loadMissing('legislativeSession');
+
+        \App\Support\TrashActivity::record('scheduled_committee_referral.trashed', $scheduledCommitteeReferral, [
+            'label' => $scheduledCommitteeReferral->trashLabel(),
+            'status' => $scheduledCommitteeReferral->status,
+        ]);
+        $scheduledCommitteeReferral->delete();
+
+        if ($request->user()?->isSuperadmin()) {
+            return redirect()
+                ->route('admin.trash.index', ['type' => 'scheduled-committee-referrals'])
+                ->with('status', 'Scheduled committee referral moved to trash.');
+        }
+
+        return redirect()
+            ->route('scheduled-committee-referrals.index')
+            ->with('status', 'Scheduled committee referral moved to trash.');
     }
 
     protected function authorizeEncode(Request $request): void

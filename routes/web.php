@@ -288,7 +288,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/scheduled-committee-referrals', [ScheduledCommitteeReferralController::class, 'index'])->name('scheduled-committee-referrals.index');
     Route::get('/scheduled-committee-referrals/create', [ScheduledCommitteeReferralController::class, 'create'])->name('scheduled-committee-referrals.create');
     Route::post('/scheduled-committee-referrals', [ScheduledCommitteeReferralController::class, 'store'])->name('scheduled-committee-referrals.store');
-    Route::delete('/scheduled-committee-referrals/{scheduledCommitteeReferral}', [ScheduledCommitteeReferralController::class, 'cancel'])->name('scheduled-committee-referrals.cancel');
+    Route::delete('/scheduled-committee-referrals/{scheduledCommitteeReferral}/cancel', [ScheduledCommitteeReferralController::class, 'cancel'])->name('scheduled-committee-referrals.cancel');
+    Route::delete('/scheduled-committee-referrals/{scheduledCommitteeReferral}', [ScheduledCommitteeReferralController::class, 'destroy'])->name('scheduled-committee-referrals.destroy');
 
     Route::get('/board-members', [BoardMemberController::class, 'index'])->name('board-members.index');
     Route::get('/board-members/create', [BoardMemberController::class, 'create'])->name('board-members.create');

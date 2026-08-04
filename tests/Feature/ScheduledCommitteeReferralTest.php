@@ -78,13 +78,83 @@ class ScheduledCommitteeReferralTest extends TestCase
             'agenda_item_id' => $agenda->id,
         ]);
 
+        $this->assertSame(
+            1,
+            UserNotification::query()
+                ->where('user_id', $chairUser->id)
+                ->where('type', UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL)
+                ->count(),
+        );
+
         $this->assertDatabaseMissing('user_notifications', [
             'user_id' => $memberUser->id,
             'type' => UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL,
-            'agenda_item_id' => $agenda->id,
         ]);
 
         $this->assertFalse((bool) $schedule->send_email);
+    }
+
+    public function test_dispatch_joins_multiple_agendas_into_one_notification_per_chair(): void
+    {
+        Mail::fake();
+
+        $encoder = User::factory()->create(['role' => UserRole::Encoder, 'is_active' => true]);
+        [$chairUser, , $committee, $session, $agenda] = $this->sessionWithRegularUnassigned();
+        $chairUser->forceFill(['email' => 'chair@example.com'])->save();
+
+        $second = AgendaItem::query()->create([
+            'tracking_no' => '502',
+            'title' => 'Second unassigned housing agenda',
+            'committee_referred' => $committee->name,
+            'status' => AgendaItem::STATUS_PENDING,
+            'date_of_referral' => now()->toDateString(),
+            'prescribed_days' => 0,
+            'created_by' => $encoder->id,
+        ]);
+
+        ObBlock::query()->create([
+            'ob_document_id' => $session->obDocument->id,
+            'type' => ObBlockType::UnassignedAgenda,
+            'sort_order' => 101,
+            'content' => ['title' => $second->title, 'kind' => 'regular'],
+            'agenda_item_id' => $second->id,
+        ]);
+
+        app(EmailNotificationSettings::class)->update([
+            'enabled' => true,
+            'types' => [
+                EmailNotificationSettings::AUDIENCE_BOARD_MEMBER => [
+                    UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL => true,
+                ],
+            ],
+        ]);
+
+        $this->actingAs($encoder)
+            ->post(route('scheduled-committee-referrals.store'), [
+                'legislative_session_id' => $session->id,
+                'scheduled_at' => now()->subMinute()->format('Y-m-d H:i:s'),
+                'send_email' => '1',
+            ])
+            ->assertRedirect(route('scheduled-committee-referrals.index'));
+
+        $notifications = UserNotification::query()
+            ->where('user_id', $chairUser->id)
+            ->where('type', UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL)
+            ->get();
+
+        $this->assertCount(1, $notifications);
+        $this->assertNull($notifications->first()->agenda_item_id);
+        $this->assertSame($session->id, $notifications->first()->legislative_session_id);
+        $this->assertStringContainsString($agenda->displayLabel(), (string) $notifications->first()->body);
+        $this->assertStringContainsString($second->displayLabel(), (string) $notifications->first()->body);
+
+        Mail::assertSent(SystemNotificationMail::class, 1);
+        Mail::assertSent(SystemNotificationMail::class, function (SystemNotificationMail $mail) use ($chairUser, $agenda, $second) {
+            return $mail->hasTo($chairUser->email)
+                && $mail->notificationTitle === 'Incoming agendas for referral'
+                && str_contains($mail->notificationBody, $agenda->displayLabel())
+                && str_contains($mail->notificationBody, $second->displayLabel());
+        });
     }
 
     public function test_encoder_can_schedule_with_email_to_chair(): void
@@ -190,6 +260,36 @@ class ScheduledCommitteeReferralTest extends TestCase
         $this->actingAs($chairUser)
             ->get(route('scheduled-committee-referrals.index'))
             ->assertForbidden();
+    }
+
+    public function test_admin_can_soft_delete_schedule_but_encoder_cannot(): void
+    {
+        $encoder = User::factory()->create(['role' => UserRole::Encoder, 'is_active' => true]);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'is_active' => true]);
+        [, , , $session] = $this->sessionWithRegularUnassigned();
+
+        $schedule = ScheduledCommitteeReferral::query()->create([
+            'legislative_session_id' => $session->id,
+            'scheduled_at' => now()->addDay(),
+            'status' => ScheduledCommitteeReferral::STATUS_PENDING,
+            'created_by' => $encoder->id,
+            'send_email' => false,
+        ]);
+
+        $this->actingAs($encoder)
+            ->delete(route('scheduled-committee-referrals.destroy', $schedule))
+            ->assertForbidden();
+
+        $this->assertNull($schedule->fresh()->deleted_at);
+
+        $this->actingAs($admin)
+            ->delete(route('scheduled-committee-referrals.destroy', $schedule))
+            ->assertRedirect(route('scheduled-committee-referrals.index'));
+
+        $this->assertSoftDeleted('scheduled_committee_referrals', ['id' => $schedule->id]);
+        $this->assertNull(
+            ScheduledCommitteeReferral::query()->find($schedule->id),
+        );
     }
 
     /**

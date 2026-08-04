@@ -5,9 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ScheduledCommitteeReferral extends Model
 {
+    use SoftDeletes;
+
     public const STATUS_PENDING = 'pending';
 
     public const STATUS_SENT = 'sent';
@@ -30,6 +33,7 @@ class ScheduledCommitteeReferral extends Model
             'scheduled_at' => 'datetime',
             'sent_at' => 'datetime',
             'send_email' => 'boolean',
+            'deleted_at' => 'datetime',
         ];
     }
 
@@ -51,5 +55,17 @@ class ScheduledCommitteeReferral extends Model
     public function isPending(): bool
     {
         return $this->status === self::STATUS_PENDING;
+    }
+
+    public function trashLabel(): string
+    {
+        $session = $this->legislativeSession;
+        $when = $this->scheduled_at?->timezone(config('app.timezone'))->format('M j, Y g:i A');
+
+        if ($session) {
+            return trim($session->displayTitle().($when ? ' — '.$when : ''));
+        }
+
+        return 'Scheduled referral #'.$this->id.($when ? ' — '.$when : '');
     }
 }

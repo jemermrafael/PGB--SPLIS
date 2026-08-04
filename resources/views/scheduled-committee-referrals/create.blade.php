@@ -124,7 +124,7 @@
                         <span>
                             <span class="font-medium">Also send email to Committee Chairs</span>
                             <span class="mt-0.5 block text-xs font-normal text-slate-500">
-                                In-app alerts always go to chairs with linked BM accounts. Emails use the
+                                In-app alerts always go to Chairs with linked BM accounts. Emails use the
                                 <strong>Scheduled Committee Referral</strong> template under Email Notifications,
                                 and each BM can opt in or out on My Profile.
                             </span>

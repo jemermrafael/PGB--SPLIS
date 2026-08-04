@@ -154,9 +154,9 @@ class EmailNotificationSettings
                     'action_label' => 'View Agenda',
                 ],
                 \App\Models\UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL => [
-                    'subject' => 'Incoming agenda for referral',
-                    'body' => "{{label}} from Regular Unassigned Business is ready for referral to {{committee}} (you are Chair).\n\nOpen SPLIS for details.",
-                    'action_label' => 'View Agenda',
+                    'subject' => '{{email_subject}}',
+                    'body' => "{{summary}}\n\nOpen SPLIS for details.",
+                    'action_label' => 'Open SPLIS',
                 ],
                 \App\Models\UserNotification::TYPE_AGENDA_PUBLISHED => [
                     'subject' => 'Agenda published',
