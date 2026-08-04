@@ -10,10 +10,12 @@ use App\Services\BoardMemberNotifier;
 use App\Services\ObDocumentTemplateService;
 use App\Services\ObSectionThreeSyncService;
 use App\Services\SessionCommitteeReportFileService;
+use App\Services\SessionFinalMinutesTagService;
 use App\Services\SessionPdfService;
 use App\Support\SessionPdfSlot;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class LegislativeSessionController extends Controller
@@ -21,6 +23,7 @@ class LegislativeSessionController extends Controller
     public function __construct(
         protected SessionPdfService $sessionPdfService,
         protected SessionCommitteeReportFileService $committeeReportFileService,
+        protected SessionFinalMinutesTagService $finalMinutesTagService,
     ) {}
     public function index(): View
     {
@@ -99,7 +102,7 @@ class LegislativeSessionController extends Controller
     {
         $this->authorize('update', $legislativeSession);
 
-        $legislativeSession->load('committeeReportFiles');
+        $legislativeSession->load(['committeeReportFiles', 'finalMinutesAgendaItems', 'obDocument.blocks']);
 
         return view('order-of-business.sessions.form', $this->formData($legislativeSession));
     }
@@ -110,17 +113,24 @@ class LegislativeSessionController extends Controller
 
         $priorSessionChanged = (int) $request->input('prior_session_id') !== (int) $legislativeSession->prior_session_id;
 
-        $validated = $this->validated($request);
+        $validated = $this->validated($request, $legislativeSession);
 
         foreach (SessionPdfSlot::mirrorable() as $slot) {
             unset($validated[SessionPdfSlot::config($slot)['upload']]);
         }
-        unset($validated['committee_report_files']);
+        unset($validated['committee_report_files'], $validated['final_minutes_agenda_ids']);
 
         $legislativeSession->update($validated);
 
         $this->storeUploadedPdfs($request, $legislativeSession);
         $this->storeUploadedCommitteeReportFiles($request, $legislativeSession, $request->user()?->id);
+
+        $legislativeSession->refresh();
+        $this->finalMinutesTagService->syncFinalMinutesTags(
+            $legislativeSession,
+            $request->input('final_minutes_agenda_ids', []),
+            $request->user()?->id,
+        );
 
         if ($priorSessionChanged) {
             $sectionThreeSync->syncForSession($legislativeSession->fresh(['priorSession', 'obDocument.blocks']), force: true);
@@ -160,19 +170,31 @@ class LegislativeSessionController extends Controller
             ->limit(50)
             ->get();
 
+        $finalMinutesCandidateAgendas = collect();
+        $finalMinutesTaggedIds = [];
+
+        if ($session->exists) {
+            $finalMinutesCandidateAgendas = $this->finalMinutesTagService->committeeReportAgendasForSession($session);
+            $finalMinutesTaggedIds = $session->relationLoaded('finalMinutesAgendaItems')
+                ? $session->finalMinutesAgendaItems->pluck('id')->map(fn ($id) => (int) $id)->all()
+                : $session->finalMinutesAgendaItems()->pluck('agenda_items.id')->map(fn ($id) => (int) $id)->all();
+        }
+
         return [
             'session' => $session,
             'sessionKinds' => config('order_of_business.session_kinds', []),
             'sessionStatuses' => config('order_of_business.session_statuses', []),
             'priorSessions' => $priorSessions,
             'sessionPdfLinks' => config('order_of_business.session_pdf_links', []),
+            'finalMinutesCandidateAgendas' => $finalMinutesCandidateAgendas,
+            'finalMinutesTaggedIds' => $finalMinutesTaggedIds,
         ];
     }
 
     /**
      * @return array<string, mixed>
      */
-    protected function validated(Request $request): array
+    protected function validated(Request $request, ?LegislativeSession $session = null): array
     {
         $rules = [
             'session_date' => ['required', 'date'],
@@ -200,6 +222,15 @@ class LegislativeSessionController extends Controller
 
         $rules['committee_report_files'] = ['nullable', 'array'];
         $rules['committee_report_files.*'] = ['file', 'mimes:pdf,jpg,jpeg,png,gif,webp', 'max:307200'];
+
+        if ($session !== null && $session->exists) {
+            $candidateIds = $this->finalMinutesTagService
+                ->committeeReportAgendaIdsForSession($session)
+                ->all();
+
+            $rules['final_minutes_agenda_ids'] = ['nullable', 'array'];
+            $rules['final_minutes_agenda_ids.*'] = ['integer', Rule::in($candidateIds)];
+        }
 
         return $request->validate($rules);
     }

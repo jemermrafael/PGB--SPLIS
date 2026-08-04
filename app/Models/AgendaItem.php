@@ -188,6 +188,16 @@ class AgendaItem extends Model
         );
     }
 
+    public function finalMinutesSessions(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            LegislativeSession::class,
+            'legislative_session_final_minutes_agenda_item',
+            'agenda_item_id',
+            'legislative_session_id',
+        )->withTimestamps();
+    }
+
     public function finalObPlacements(): HasMany
     {
         return $this->obPlacements()

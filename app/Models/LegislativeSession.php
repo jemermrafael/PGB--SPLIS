@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -97,6 +98,16 @@ class LegislativeSession extends Model
         return $this->hasMany(LegislativeSessionCommitteeReportFile::class)
             ->orderBy('sort_order')
             ->orderBy('id');
+    }
+
+    public function finalMinutesAgendaItems(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            AgendaItem::class,
+            'legislative_session_final_minutes_agenda_item',
+            'legislative_session_id',
+            'agenda_item_id',
+        )->withTimestamps();
     }
 
     public function committeeReportSummary(): HasOne

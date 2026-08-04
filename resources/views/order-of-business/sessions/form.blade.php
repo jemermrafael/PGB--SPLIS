@@ -275,6 +275,42 @@
                                             >
                                             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Used when no local file is present. Can be mirrored using the button above.</p>
                                         </div>
+                                        @if ($link['field'] === 'pdf_final_minutes' && ($finalMinutesCandidateAgendas ?? collect())->isNotEmpty())
+                                            @php
+                                                $candidateIds = $finalMinutesCandidateAgendas->pluck('id')->map(fn ($id) => (int) $id)->all();
+                                                $taggedIds = collect($finalMinutesTaggedIds ?? [])->map(fn ($id) => (int) $id)->all();
+                                                if (old('final_minutes_agenda_ids') !== null) {
+                                                    $checkedFinalMinutesAgendaIds = collect(old('final_minutes_agenda_ids'))->map(fn ($id) => (int) $id)->all();
+                                                } elseif ($taggedIds !== []) {
+                                                    $checkedFinalMinutesAgendaIds = $taggedIds;
+                                                } else {
+                                                    $checkedFinalMinutesAgendaIds = $candidateIds;
+                                                }
+                                            @endphp
+                                            <div class="border-t border-slate-200 pt-4 dark:border-slate-700">
+                                                <p class="splis-label">Apply Final Minutes to IV. Committee Report agendas</p>
+                                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                                    Applies this file to tagged agendas’ Minutes; agendas can still upload their own Journal/Minutes/Output.
+                                                </p>
+                                                <div class="mt-3 max-h-56 space-y-2 overflow-y-auto rounded-md border border-slate-200 p-3 dark:border-slate-700">
+                                                    @foreach ($finalMinutesCandidateAgendas as $candidate)
+                                                        <label class="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
+                                                            <input
+                                                                type="checkbox"
+                                                                name="final_minutes_agenda_ids[]"
+                                                                value="{{ $candidate->id }}"
+                                                                class="mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-800"
+                                                                @checked(in_array((int) $candidate->id, $checkedFinalMinutesAgendaIds, true))
+                                                            >
+                                                            <span>
+                                                                <span class="font-medium">#{{ $candidate->tracking_no }}</span>
+                                                                — {{ \Illuminate\Support\Str::limit($candidate->title ?? 'Untitled', 80) }}
+                                                            </span>
+                                                        </label>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             @endif

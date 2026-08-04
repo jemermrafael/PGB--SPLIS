@@ -539,6 +539,9 @@
                                 'label' => 'Minutes of Session',
                                 'class' => 'splis-btn-secondary text-sm inline-flex items-center justify-center gap-2',
                             ])
+                            @if (is_string($agenda->minutes_pdf_path) && str_starts_with($agenda->minutes_pdf_path, 'order-of-business/'))
+                                <span class="text-xs text-slate-500 dark:text-slate-400">From session Final Minutes</span>
+                            @endif
                         @endif
                     </div>
                 </div>
