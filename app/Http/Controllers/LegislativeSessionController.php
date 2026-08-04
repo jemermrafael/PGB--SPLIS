@@ -102,7 +102,12 @@ class LegislativeSessionController extends Controller
     {
         $this->authorize('update', $legislativeSession);
 
-        $legislativeSession->load(['committeeReportFiles', 'finalMinutesAgendaItems', 'obDocument.blocks']);
+        $legislativeSession->load([
+            'committeeReportFiles',
+            'finalMinutesAgendaItems',
+            'finalJournalAgendaItems',
+            'obDocument.blocks',
+        ]);
 
         return view('order-of-business.sessions.form', $this->formData($legislativeSession));
     }
@@ -118,7 +123,11 @@ class LegislativeSessionController extends Controller
         foreach (SessionPdfSlot::mirrorable() as $slot) {
             unset($validated[SessionPdfSlot::config($slot)['upload']]);
         }
-        unset($validated['committee_report_files'], $validated['final_minutes_agenda_ids']);
+        unset(
+            $validated['committee_report_files'],
+            $validated['final_minutes_agenda_ids'],
+            $validated['final_journal_agenda_ids'],
+        );
 
         $legislativeSession->update($validated);
 
@@ -129,6 +138,11 @@ class LegislativeSessionController extends Controller
         $this->finalMinutesTagService->syncFinalMinutesTags(
             $legislativeSession,
             $request->input('final_minutes_agenda_ids', []),
+            $request->user()?->id,
+        );
+        $this->finalMinutesTagService->syncFinalJournalTags(
+            $legislativeSession,
+            $request->input('final_journal_agenda_ids', []),
             $request->user()?->id,
         );
 
@@ -170,14 +184,18 @@ class LegislativeSessionController extends Controller
             ->limit(50)
             ->get();
 
-        $finalMinutesCandidateAgendas = collect();
+        $finalDocumentCandidateAgendas = collect();
         $finalMinutesTaggedIds = [];
+        $finalJournalTaggedIds = [];
 
         if ($session->exists) {
-            $finalMinutesCandidateAgendas = $this->finalMinutesTagService->committeeReportAgendasForSession($session);
+            $finalDocumentCandidateAgendas = $this->finalMinutesTagService->committeeReportAgendasForSession($session);
             $finalMinutesTaggedIds = $session->relationLoaded('finalMinutesAgendaItems')
                 ? $session->finalMinutesAgendaItems->pluck('id')->map(fn ($id) => (int) $id)->all()
                 : $session->finalMinutesAgendaItems()->pluck('agenda_items.id')->map(fn ($id) => (int) $id)->all();
+            $finalJournalTaggedIds = $session->relationLoaded('finalJournalAgendaItems')
+                ? $session->finalJournalAgendaItems->pluck('id')->map(fn ($id) => (int) $id)->all()
+                : $session->finalJournalAgendaItems()->pluck('agenda_items.id')->map(fn ($id) => (int) $id)->all();
         }
 
         return [
@@ -186,8 +204,10 @@ class LegislativeSessionController extends Controller
             'sessionStatuses' => config('order_of_business.session_statuses', []),
             'priorSessions' => $priorSessions,
             'sessionPdfLinks' => config('order_of_business.session_pdf_links', []),
-            'finalMinutesCandidateAgendas' => $finalMinutesCandidateAgendas,
+            'finalMinutesCandidateAgendas' => $finalDocumentCandidateAgendas,
             'finalMinutesTaggedIds' => $finalMinutesTaggedIds,
+            'finalJournalCandidateAgendas' => $finalDocumentCandidateAgendas,
+            'finalJournalTaggedIds' => $finalJournalTaggedIds,
         ];
     }
 
@@ -230,6 +250,8 @@ class LegislativeSessionController extends Controller
 
             $rules['final_minutes_agenda_ids'] = ['nullable', 'array'];
             $rules['final_minutes_agenda_ids.*'] = ['integer', Rule::in($candidateIds)];
+            $rules['final_journal_agenda_ids'] = ['nullable', 'array'];
+            $rules['final_journal_agenda_ids.*'] = ['integer', Rule::in($candidateIds)];
         }
 
         return $request->validate($rules);

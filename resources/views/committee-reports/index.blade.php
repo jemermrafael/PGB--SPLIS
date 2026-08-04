@@ -70,7 +70,7 @@
                 <tr>
                     <th class="whitespace-nowrap">Submitted</th>
                     <th class="whitespace-nowrap">Board Member</th>
-                    <th>Title / File</th>
+                    <th>File</th>
                     <th>Agenda tags</th>
                     <th class="hidden lg:table-cell whitespace-nowrap">Submitted by</th>
                     <th class="text-right">Actions</th>

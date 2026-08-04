@@ -130,7 +130,7 @@ class StaffCommitteeReportController extends Controller
 
                 return [
                     'id' => $report->id,
-                    'title' => $report->title ?: '—',
+                    'title' => $report->title ?: ($report->original_filename ?: 'Committee Report'),
                     'filename' => $report->original_filename,
                     'submitted_at' => $report->submitted_at?->toIso8601String(),
                     'submitted_at_label' => $report->submitted_at?->format('M j, Y g:i A') ?? '—',

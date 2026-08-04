@@ -53,12 +53,7 @@ function renderRow(report) {
         <tr>
             <td class="whitespace-nowrap text-sm">${escapeHtml(report.submitted_at_label)}</td>
             <td class="whitespace-nowrap font-medium">${escapeHtml(report.board_member)}</td>
-            <td>
-                <div>${escapeHtml(report.title)}</div>
-                ${report.filename
-                    ? `<div class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">${escapeHtml(report.filename)}</div>`
-                    : ''}
-            </td>
+            <td class="text-sm">${escapeHtml(report.filename || '')}</td>
             <td class="text-sm">${renderAgendas(report.agendas)}</td>
             <td class="hidden lg:table-cell whitespace-nowrap text-sm">
                 ${escapeHtml(report.submitted_by)}

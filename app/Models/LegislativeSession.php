@@ -110,6 +110,16 @@ class LegislativeSession extends Model
         )->withTimestamps();
     }
 
+    public function finalJournalAgendaItems(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            AgendaItem::class,
+            'legislative_session_final_journal_agenda_item',
+            'legislative_session_id',
+            'agenda_item_id',
+        )->withTimestamps();
+    }
+
     public function committeeReportSummary(): HasOne
     {
         return $this->hasOne(CommitteeReportSummary::class);

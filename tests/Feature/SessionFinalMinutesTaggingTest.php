@@ -96,6 +96,7 @@ class SessionFinalMinutesTaggingTest extends TestCase
             ->get(route('ob.sessions.edit', $session))
             ->assertOk()
             ->assertSee('Apply Final Minutes to IV. Committee Report agendas', false)
+            ->assertSee('Apply Final Journal to IV. Committee Report agendas', false)
             ->assertSee('#'.$agendaA->tracking_no, false)
             ->assertSee('#'.$agendaB->tracking_no, false);
 
@@ -108,6 +109,82 @@ class SessionFinalMinutesTaggingTest extends TestCase
             '/name="final_minutes_agenda_ids\[\]"[^>]*value="'.$agendaB->id.'"[^>]*checked/',
             $html,
         );
+        $this->assertMatchesRegularExpression(
+            '/name="final_journal_agenda_ids\[\]"[^>]*value="'.$agendaA->id.'"[^>]*checked/',
+            $html,
+        );
+        $this->assertMatchesRegularExpression(
+            '/name="final_journal_agenda_ids\[\]"[^>]*value="'.$agendaB->id.'"[^>]*checked/',
+            $html,
+        );
+    }
+
+    public function test_final_journal_upload_with_default_tags_applies_shared_journal_path(): void
+    {
+        Storage::fake('local');
+
+        [$admin, $session, $agendaA, $agendaB] = $this->seedSessionWithCommitteeReportAgendas();
+
+        $this->actingAs($admin)
+            ->put(route('ob.sessions.update', $session), $this->sessionPayload($session, [
+                'pdf_final_journal_file' => UploadedFile::fake()->create('final-journal.pdf', 120, 'application/pdf'),
+                'final_journal_agenda_ids' => [$agendaA->id, $agendaB->id],
+            ]))
+            ->assertRedirect(route('ob.sessions.show', $session));
+
+        $session->refresh();
+        $this->assertNotNull($session->pdf_final_journal_path);
+
+        $agendaA->refresh();
+        $agendaB->refresh();
+        $this->assertSame($session->pdf_final_journal_path, $agendaA->journal_pdf_path);
+        $this->assertSame($session->pdf_final_journal_path, $agendaB->journal_pdf_path);
+        $this->assertDatabaseHas('legislative_session_final_journal_agenda_item', [
+            'legislative_session_id' => $session->id,
+            'agenda_item_id' => $agendaA->id,
+        ]);
+        $this->assertDatabaseHas('legislative_session_final_journal_agenda_item', [
+            'legislative_session_id' => $session->id,
+            'agenda_item_id' => $agendaB->id,
+        ]);
+    }
+
+    public function test_untagging_clears_shared_journal_path_but_keeps_agenda_owned_path(): void
+    {
+        Storage::fake('local');
+
+        [$admin, $session, $agendaA, $agendaB] = $this->seedSessionWithCommitteeReportAgendas();
+
+        $sessionPath = 'order-of-business/'.$session->id.'/final-journal.pdf';
+        Storage::disk('local')->put($sessionPath, '%PDF-1.4 session journal');
+        $session->update(['pdf_final_journal_path' => $sessionPath]);
+
+        $ownedPath = 'agenda/'.$agendaB->id.'/journal.pdf';
+        Storage::disk('local')->put($ownedPath, '%PDF-1.4 agenda journal');
+
+        $agendaA->update(['journal_pdf_path' => $sessionPath]);
+        $agendaB->update(['journal_pdf_path' => $ownedPath]);
+
+        $session->finalJournalAgendaItems()->sync([$agendaA->id, $agendaB->id]);
+
+        $this->actingAs($admin)
+            ->put(route('ob.sessions.update', $session), $this->sessionPayload($session, [
+                'final_journal_agenda_ids' => [],
+            ]))
+            ->assertRedirect(route('ob.sessions.show', $session));
+
+        $agendaA->refresh();
+        $agendaB->refresh();
+        $this->assertNull($agendaA->journal_pdf_path);
+        $this->assertSame($ownedPath, $agendaB->journal_pdf_path);
+        $this->assertDatabaseMissing('legislative_session_final_journal_agenda_item', [
+            'legislative_session_id' => $session->id,
+            'agenda_item_id' => $agendaA->id,
+        ]);
+        $this->assertDatabaseMissing('legislative_session_final_journal_agenda_item', [
+            'legislative_session_id' => $session->id,
+            'agenda_item_id' => $agendaB->id,
+        ]);
     }
 
     /**

@@ -530,6 +530,9 @@
                                 'label' => 'Journal of Proceedings',
                                 'class' => 'splis-btn-secondary text-sm inline-flex items-center justify-center gap-2',
                             ])
+                            @if (is_string($agenda->journal_pdf_path) && str_starts_with($agenda->journal_pdf_path, 'order-of-business/'))
+                                <span class="text-xs text-slate-500 dark:text-slate-400">From session Final Journal</span>
+                            @endif
                         @endif
                         @if ($agenda->pdfPublicUrlFor(AgendaPdfSlot::MINUTES))
                             @include('partials.pdf-modal-trigger', [

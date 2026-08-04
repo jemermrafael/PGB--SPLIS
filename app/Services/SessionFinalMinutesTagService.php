@@ -69,6 +69,42 @@ class SessionFinalMinutesTagService
         array $selectedIds,
         ?int $userId = null,
     ): void {
+        $this->syncSharedPdfTags(
+            session: $session,
+            selectedIds: $selectedIds,
+            relation: 'finalMinutesAgendaItems',
+            sessionPathColumn: 'pdf_final_minutes_path',
+            agendaPathColumn: 'minutes_pdf_path',
+        );
+    }
+
+    /**
+     * @param  list<int|string>  $selectedIds
+     */
+    public function syncFinalJournalTags(
+        LegislativeSession $session,
+        array $selectedIds,
+        ?int $userId = null,
+    ): void {
+        $this->syncSharedPdfTags(
+            session: $session,
+            selectedIds: $selectedIds,
+            relation: 'finalJournalAgendaItems',
+            sessionPathColumn: 'pdf_final_journal_path',
+            agendaPathColumn: 'journal_pdf_path',
+        );
+    }
+
+    /**
+     * @param  list<int|string>  $selectedIds
+     */
+    protected function syncSharedPdfTags(
+        LegislativeSession $session,
+        array $selectedIds,
+        string $relation,
+        string $sessionPathColumn,
+        string $agendaPathColumn,
+    ): void {
         $candidates = $this->committeeReportAgendaIdsForSession($session)->all();
 
         $selected = collect($selectedIds)
@@ -77,11 +113,11 @@ class SessionFinalMinutesTagService
             ->unique()
             ->values();
 
-        DB::transaction(function () use ($session, $selected): void {
-            $session->finalMinutesAgendaItems()->sync($selected->all());
+        DB::transaction(function () use ($session, $selected, $relation, $sessionPathColumn, $agendaPathColumn): void {
+            $session->{$relation}()->sync($selected->all());
 
-            $sessionPath = filled($session->pdf_final_minutes_path)
-                ? (string) $session->pdf_final_minutes_path
+            $sessionPath = filled($session->{$sessionPathColumn})
+                ? (string) $session->{$sessionPathColumn}
                 : null;
 
             if ($sessionPath === null) {
@@ -89,12 +125,12 @@ class SessionFinalMinutesTagService
             }
 
             $toClear = AgendaItem::query()
-                ->where('minutes_pdf_path', $sessionPath)
+                ->where($agendaPathColumn, $sessionPath)
                 ->whereNotIn('id', $selected->all())
                 ->get();
 
             foreach ($toClear as $agenda) {
-                $agenda->forceFill(['minutes_pdf_path' => null])->saveQuietly();
+                $agenda->forceFill([$agendaPathColumn => null])->saveQuietly();
             }
 
             $toApply = AgendaItem::query()
@@ -102,10 +138,10 @@ class SessionFinalMinutesTagService
                 ->get();
 
             foreach ($toApply as $agenda) {
-                if ((string) $agenda->minutes_pdf_path === $sessionPath) {
+                if ((string) $agenda->{$agendaPathColumn} === $sessionPath) {
                     continue;
                 }
-                $agenda->forceFill(['minutes_pdf_path' => $sessionPath])->saveQuietly();
+                $agenda->forceFill([$agendaPathColumn => $sessionPath])->saveQuietly();
             }
         });
     }
