@@ -24,7 +24,7 @@
             <thead>
                 <tr>
                     <th>Submitted</th>
-                    <th>Title / File</th>
+                    <th>File</th>
                     <th>Agenda tags</th>
                     <th class="text-right">Actions</th>
                 </tr>
@@ -33,12 +33,7 @@
                 @forelse ($reports as $report)
                     <tr>
                         <td class="whitespace-nowrap text-sm">{{ $report->submitted_at?->format('M j, Y g:i A') }}</td>
-                        <td>
-                            <div>{{ $report->title ?: '—' }}</div>
-                            @if ($report->original_filename)
-                                <div class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ $report->original_filename }}</div>
-                            @endif
-                        </td>
+                        <td class="text-sm">{{ $report->original_filename }}</td>
                         <td class="text-sm">
                             @if ($report->agendaItems->isEmpty())
                                 —
