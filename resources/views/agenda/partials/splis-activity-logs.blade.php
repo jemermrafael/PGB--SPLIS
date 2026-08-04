@@ -30,6 +30,8 @@
                         <p class="splis-activity-timeline-action">
                             @if ($log->action === 'agenda.ob_relocated' && ! empty($log->properties['to_section_label']))
                                 Moved to {{ $log->properties['to_section_label'] }}
+                            @elseif ($log->action === 'agenda.added_to_ob' && ! empty($log->properties['section_labels']) && count($log->properties['section_labels']) > 1)
+                                Added to {{ implode(' and ', $log->properties['section_labels']) }}
                             @elseif ($log->action === 'agenda.added_to_ob' && ! empty($log->properties['section_label']))
                                 Added to {{ $log->properties['section_label'] }}
                             @else

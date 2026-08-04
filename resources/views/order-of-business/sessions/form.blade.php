@@ -88,7 +88,7 @@
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                         <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">Session Documents</h2>
-                        <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Upload files locally or keep a Google Drive link as fallback. Local files are used first on the session page. Summary of Comm. Reports uses Open Maker / Preview. Draft Journal and Draft Minutes are Google Drive links only (Word .docx).</p>
+                        <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Upload Final Journal and Final Minutes locally. Summary of Comm. Reports uses Open Maker / Preview. Draft Journal and Draft Minutes are Google Drive links only (Word .docx). Committee Reports come from the Submit Committee Report flow.</p>
                     </div>
                     @if ($session->missingMirrorSessionPdfSlots() !== [] || filled($session->pdf_committee_reports))
                         <button type="submit" form="mirror-session-pdfs-form" class="splis-btn-secondary inline-flex items-center gap-2 whitespace-nowrap">
@@ -101,40 +101,19 @@
                     @foreach ($session->sessionPdfLinkRows() as $link)
                         @if ($link['kind'] === 'folder')
                             <div class="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
-                                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                                    <div>
-                                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $link['label'] }}</h3>
-                                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Upload one or more committee report PDFs, or download everything from the Google Drive folder link below.</p>
-                                    </div>
-                                    @if (filled($session->pdf_committee_reports))
-                                        <button
-                                            type="submit"
-                                            form="mirror-committee-reports-form"
-                                            class="splis-btn-secondary inline-flex items-center gap-2 whitespace-nowrap text-sm"
-                                        >
-                                            <x-icon name="download" class="h-4 w-4" />
-                                            Download folder from Drive
-                                        </button>
-                                    @endif
+                                <div>
+                                    <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $link['label'] }}</h3>
+                                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                        Submitted via
+                                        <a href="{{ route('committee-reports.index') }}" class="splis-link">Committee Reports</a>
+                                        (Board Member / staff submit). Files attached to this session appear below.
+                                    </p>
                                 </div>
 
                                 <div class="mt-4 space-y-4">
-                                    <div>
-                                        <label class="splis-label" for="committee_report_files">Upload PDF files</label>
-                                        <input
-                                            type="file"
-                                            name="committee_report_files[]"
-                                            id="committee_report_files"
-                                            accept="application/pdf,image/jpeg,image/png,image/gif,image/webp,.pdf,.jpg,.jpeg,.png,.gif,.webp"
-                                            class="splis-input"
-                                            multiple
-                                        >
-                                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">You can select multiple files. New uploads are added to the folder.</p>
-                                    </div>
-
                                     @if ($session->committeeReportFiles->isNotEmpty())
                                         <div>
-                                            <p class="splis-label">Uploaded files ({{ $session->committeeReportFiles->count() }})</p>
+                                            <p class="splis-label">Session files ({{ $session->committeeReportFiles->count() }})</p>
                                             <ul class="mt-2 divide-y divide-slate-200 rounded-lg border border-slate-200 dark:divide-slate-700 dark:border-slate-700">
                                                 @foreach ($session->committeeReportFiles as $file)
                                                     <li class="flex items-center justify-between gap-3 px-3 py-2.5">
@@ -162,20 +141,9 @@
                                                 @endforeach
                                             </ul>
                                         </div>
+                                    @else
+                                        <p class="text-sm text-slate-500 dark:text-slate-400">No committee report files attached to this session yet.</p>
                                     @endif
-
-                                    <div>
-                                        <label class="splis-label" for="{{ $link['field'] }}">Google Drive folder link (fallback)</label>
-                                        <input
-                                            type="url"
-                                            name="{{ $link['field'] }}"
-                                            id="{{ $link['field'] }}"
-                                            value="{{ old($link['field'], $session->{$link['field']}) }}"
-                                            class="splis-input"
-                                            placeholder="https://drive.google.com/drive/folders/..."
-                                        >
-                                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Folder must be shared so anyone with the link can view. Save the link first, then use Download folder from Drive.</p>
-                                    </div>
                                 </div>
                             </div>
                         @else
@@ -263,18 +231,20 @@
                                                 </div>
                                             @endif
                                         </div>
-                                        <div>
-                                            <label class="splis-label" for="{{ $link['field'] }}">{{ $link['label'] }} URL (fallback)</label>
-                                            <input
-                                                type="url"
-                                                name="{{ $link['field'] }}"
-                                                id="{{ $link['field'] }}"
-                                                value="{{ old($link['field'], $session->{$link['field']}) }}"
-                                                class="splis-input"
-                                                placeholder="https://"
-                                            >
-                                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Used when no local file is present. Can be mirrored using the button above.</p>
-                                        </div>
+                                        @if (! in_array($link['field'], ['pdf_final_journal', 'pdf_final_minutes'], true))
+                                            <div>
+                                                <label class="splis-label" for="{{ $link['field'] }}">{{ $link['label'] }} URL (fallback)</label>
+                                                <input
+                                                    type="url"
+                                                    name="{{ $link['field'] }}"
+                                                    id="{{ $link['field'] }}"
+                                                    value="{{ old($link['field'], $session->{$link['field']}) }}"
+                                                    class="splis-input"
+                                                    placeholder="https://"
+                                                >
+                                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Used when no local file is present. Can be mirrored using the button above.</p>
+                                            </div>
+                                        @endif
                                         @if ($link['field'] === 'pdf_final_journal' && ($finalJournalCandidateAgendas ?? collect())->isNotEmpty())
                                             @php
                                                 $journalCandidateIds = $finalJournalCandidateAgendas->pluck('id')->map(fn ($id) => (int) $id)->all();
@@ -394,7 +364,7 @@
                 action="{{ route('ob.sessions.committee-report-file.destroy', [$session, $file]) }}"
                 data-confirm-submit
                 data-confirm-title="Remove this file?"
-                data-confirm-message="This removes the local copy only. The Google Drive folder link is not affected."
+                data-confirm-message="This removes the locally stored committee report file from this session."
                 data-confirm-label="Remove"
             >
                 @csrf
@@ -409,7 +379,7 @@
                     action="{{ route('ob.sessions.pdf.destroy', [$session, $link['field']]) }}"
                     data-confirm-submit
                     data-confirm-title="Remove local file?"
-                    data-confirm-message="This removes the locally stored {{ $link['label'] }} file only. The URL fallback is not affected."
+                    data-confirm-message="This removes the locally stored {{ $link['label'] }} file."
                     data-confirm-label="Remove"
                 >
                     @csrf

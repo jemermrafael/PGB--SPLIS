@@ -424,6 +424,16 @@ class AgendaLifecycleSyncTest extends TestCase
 
         $this->assertTrue($sections->contains('committee_reports'));
         $this->assertTrue($sections->contains('unfinished'));
+
+        $addedLogs = $agenda->activityLogs()
+            ->where('action', 'agenda.added_to_ob')
+            ->get();
+
+        $this->assertCount(1, $addedLogs);
+        $this->assertSame(
+            ['committee_reports', 'unfinished'],
+            $addedLogs->first()->properties['sections'] ?? null,
+        );
     }
 
     public function test_sync_recovers_agenda_linked_to_board_member_report_even_when_legacy_agenda_fields_are_empty(): void

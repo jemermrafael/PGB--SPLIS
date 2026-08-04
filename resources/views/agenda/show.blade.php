@@ -269,10 +269,10 @@
         </div>
 
         <div class="splis-detail-sidebar-column">
-            @if ($agenda->hasIncoming() || $agenda->resolution || $agenda->ordinance || $agenda->appropriationOrdinance || $obPlacements->isNotEmpty() || auth()->user()?->can('addToOrderOfBusiness', $agenda) || auth()->user()?->can('linkOutput', $agenda) || auth()->user()?->can('removeFromOrderOfBusiness', $agenda))
+            @if ($agenda->hasIncoming() || $agenda->resolution || $agenda->ordinance || $agenda->appropriationOrdinance || auth()->user()?->can('linkOutput', $agenda) || auth()->user()?->can('unlinkIncoming', $agenda))
                 <aside class="splis-card overflow-hidden">
                     <div class="splis-card-header splis-card-header--emphasis">
-                        <h2 class="splis-card-title">Connections</h2>
+                        <h2 class="splis-card-title">Legislative Measure</h2>
                     </div>
                     <div class="splis-card-body space-y-4">
                         @if ($agenda->hasIncoming() && $agenda->incomingDocument)
@@ -301,9 +301,12 @@
                         @if ($agenda->resolution)
                             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
-                                    <p class="splis-detail-label">{{ $agenda->outputConnectionLabel() }}:</p>
+                                    <p class="splis-detail-label">{{ $agenda->outputConnectionLabel() }}</p>
                                     <a href="{{ route('resolutions.show', $agenda->resolution) }}" class="font-medium text-brand-700 hover:underline dark:text-brand-200">
                                         Resolution {{ $agenda->resolution->resolution_no }}
+                                        @if (filled($agenda->resolution->series))
+                                            · Series {{ $agenda->resolution->series }}
+                                        @endif
                                     </a>
                                 </div>
                                 @can('unlinkResolution', $agenda)
@@ -320,29 +323,39 @@
                                     </form>
                                 @endcan
                             </div>
-                        @endif
-                        @if ($agenda->ordinance)
-                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                <div>
-                                    <p class="splis-detail-label">{{ $agenda->outputConnectionLabel() }}:</p>
-                                    <a href="{{ route('ordinances.show', $agenda->ordinance) }}" class="font-medium text-brand-700 hover:underline dark:text-brand-200">
-                                        {{ $agenda->ordinance->displayNumber() }} ({{ $agenda->ordinance->series_year }})
-                                    </a>
-                                </div>
+                        @elseif ($agenda->ordinance)
+                            <div>
+                                <p class="splis-detail-label">{{ $agenda->outputConnectionLabel() }}</p>
+                                <a href="{{ route('ordinances.show', $agenda->ordinance) }}" class="font-medium text-brand-700 hover:underline dark:text-brand-200">
+                                    {{ $agenda->ordinance->displayNumber() }}
+                                    @if (filled($agenda->ordinance->series_year))
+                                        · Series {{ $agenda->ordinance->series_year }}
+                                    @endif
+                                </a>
                             </div>
-                        @endif
-                        @if ($agenda->appropriationOrdinance)
-                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                <div>
-                                    <p class="splis-detail-label">{{ $agenda->outputConnectionLabel() }}:</p>
-                                    <a href="{{ route('appropriation-ordinances.show', $agenda->appropriationOrdinance) }}" class="font-medium text-brand-700 hover:underline dark:text-brand-200">
-                                        {{ $agenda->appropriationOrdinance->displayNumber() }} ({{ $agenda->appropriationOrdinance->series_year }})
-                                    </a>
-                                </div>
+                        @elseif ($agenda->appropriationOrdinance)
+                            <div>
+                                <p class="splis-detail-label">{{ $agenda->outputConnectionLabel() }}</p>
+                                <a href="{{ route('appropriation-ordinances.show', $agenda->appropriationOrdinance) }}" class="font-medium text-brand-700 hover:underline dark:text-brand-200">
+                                    {{ $agenda->appropriationOrdinance->displayNumber() }}
+                                    @if (filled($agenda->appropriationOrdinance->series_year))
+                                        · Series {{ $agenda->appropriationOrdinance->series_year }}
+                                    @endif
+                                </a>
+                            </div>
+                        @elseif ($agenda->publishedTargetLabel())
+                            <div>
+                                <p class="splis-detail-label">{{ $agenda->outputConnectionLabel() }}</p>
+                                <p class="font-medium text-slate-900 dark:text-slate-100">
+                                    {{ $agenda->publishedTargetLabel() }}
+                                    @if ($agenda->provincialOutputNumberDisplay())
+                                        {{ $agenda->provincialOutputNumberDisplay() }}
+                                    @endif
+                                </p>
                             </div>
                         @endif
                         @can('linkOutput', $agenda)
-                            <div class="border-t border-slate-200 pt-4 dark:border-slate-700">
+                            <div @class(['border-t border-slate-200 pt-4 dark:border-slate-700' => $agenda->hasIncoming() || $agenda->resolution || $agenda->ordinance || $agenda->appropriationOrdinance || $agenda->publishedTargetLabel()])>
                                 <p class="splis-detail-label">Link provincial output</p>
                                 <p class="mt-1 text-xs text-slate-500">
                                     No exact match for
@@ -370,38 +383,6 @@
                                 @error('link_output')
                                     <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
-                            </div>
-                        @endcan
-                        @include('agenda.partials.ob-placements', ['agenda' => $agenda, 'placements' => $obPlacements])
-                        @can('addToOrderOfBusiness', $agenda)
-                            <div class="border-t border-slate-200 pt-4 dark:border-slate-700">
-                                <p class="splis-detail-label">Add to Order of Business</p>
-                                @if ($obSessions->isEmpty())
-                                    <p class="mt-2 text-sm text-slate-500">
-                                        No sessions yet.
-                                        <a href="{{ route('ob.sessions.create') }}" class="splis-link">Create a session</a>
-                                        to add this agenda item.
-                                    </p>
-                                @else
-                                    <form method="POST" action="{{ route('agenda.add-to-order-of-business', $agenda) }}" class="mt-2 space-y-2">
-                                        @csrf
-                                        <select name="legislative_session_id" class="splis-select" required>
-                                            <option value="">Select session…</option>
-                                            @foreach ($obSessions as $obSession)
-                                                <option value="{{ $obSession->id }}">{{ $obSession->displayTitle() }}</option>
-                                            @endforeach
-                                        </select>
-                                        <select name="agenda_section" class="splis-select">
-                                            @foreach (config('order_of_business.agenda_sections', []) as $value => $label)
-                                                <option value="{{ $value }}" @selected($value === 'unassigned_regular')>{{ $label }}</option>
-                                            @endforeach
-                                        </select>
-                                        <button type="submit" class="splis-btn-secondary w-full text-sm">Add to OB document</button>
-                                    </form>
-                                    <p class="mt-2 text-xs text-slate-500">
-                                        Or <a href="{{ route('ob.sessions.create') }}" class="splis-link">create a new session</a> and add this item in the OB Maker.
-                                    </p>
-                                @endif
                             </div>
                         @endcan
                     </div>

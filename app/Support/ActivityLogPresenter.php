@@ -119,7 +119,9 @@ class ActivityLogPresenter
             $details[] = 'Source: '.$log->properties['source'];
         }
 
-        if (! empty($log->properties['section_label'])) {
+        if (! empty($log->properties['section_labels']) && is_array($log->properties['section_labels'])) {
+            $details[] = implode(' and ', $log->properties['section_labels']);
+        } elseif (! empty($log->properties['section_label'])) {
             $details[] = $log->properties['section_label'];
         }
 

@@ -287,6 +287,8 @@ class AgendaLifecycleService
                     'automatic',
                 );
 
+                $loggedSections = [$section];
+
                 if ($section === 'committee_reports' && $this->shouldAlsoPlaceInUnfinished($agenda, $session)) {
                     $this->documentService->addAgendaItems(
                         $session->obDocument,
@@ -297,10 +299,11 @@ class AgendaLifecycleService
                         $userId,
                         'automatic',
                     );
+                    $loggedSections[] = 'unfinished';
                 }
 
                 $this->updateAgendaAfterSync($agenda, $session, $section);
-                $this->logAddedToOb($agenda, $session, $section, 'automatic', $userId);
+                $this->logAddedToOb($agenda, $session, $loggedSections, 'automatic', $userId);
             });
         } catch (ValidationException $exception) {
             Log::warning('Automatic OB sync failed for agenda item.', [
@@ -362,6 +365,7 @@ class AgendaLifecycleService
         $sections = $this->documentService->sectionsForAgendaInDocument($document, $agenda->id);
         $changed = false;
         $fromSection = $sections->first();
+        $addedSections = [];
 
         try {
             DB::transaction(function () use (
@@ -373,6 +377,7 @@ class AgendaLifecycleService
                 $userId,
                 &$changed,
                 &$fromSection,
+                &$addedSections,
             ): void {
                 $mirrorUnfinished = $targetSection === 'committee_reports'
                     && $this->shouldAlsoPlaceInUnfinished($agenda, $session);
@@ -406,6 +411,7 @@ class AgendaLifecycleService
                             $userId,
                             'automatic',
                         );
+                        $addedSections[] = 'committee_reports';
                         $changed = true;
                     }
 
@@ -420,7 +426,16 @@ class AgendaLifecycleService
                             $userId,
                             'automatic',
                         );
+                        $addedSections[] = 'unfinished';
                         $changed = true;
+                    }
+
+                    // Already in unfinished and newly added to CR → one combined History entry.
+                    if ($mirrorUnfinished
+                        && in_array('committee_reports', $addedSections, true)
+                        && $this->documentService->agendaIsInSection($document->fresh() ?? $document, $agenda->id, 'unfinished')
+                        && ! in_array('unfinished', $addedSections, true)) {
+                        $addedSections[] = 'unfinished';
                     }
                 } else {
                     if ($sections->contains($targetSection) && $sections->count() === 1) {
@@ -443,13 +458,17 @@ class AgendaLifecycleService
                             $userId,
                             'automatic',
                         );
+                        $addedSections[] = $targetSection;
                         $changed = true;
                     }
                 }
 
                 if ($changed) {
                     $this->updateAgendaAfterSync($agenda, $session, $targetSection);
-                    if ($fromSection !== $targetSection) {
+
+                    if ($addedSections !== []) {
+                        $this->logAddedToOb($agenda, $session, $addedSections, 'automatic', $userId);
+                    } elseif ($fromSection !== null && $fromSection !== $targetSection) {
                         $this->logRelocatedInOb($agenda, $session, $fromSection, $targetSection, $userId);
                     }
                 }
@@ -480,17 +499,28 @@ class AgendaLifecycleService
         return true;
     }
 
+    /**
+     * @param  string|list<string>  $section
+     */
     public function logAddedToOb(
         AgendaItem $agenda,
         LegislativeSession $session,
-        string $section,
+        string|array $section,
         string $source,
         ?int $userId = null,
     ): void {
+        $sections = array_values(array_unique(is_array($section) ? $section : [$section]));
+        $labels = collect($sections)
+            ->map(fn (string $key) => (string) config('order_of_business.agenda_sections.'.$key, $key))
+            ->values()
+            ->all();
+
         ActivityLogger::log('agenda.added_to_ob', $agenda, ActivityLogger::agendaObProperties($agenda, [
             'source' => $source,
-            'section' => $section,
-            'section_label' => config('order_of_business.agenda_sections.'.$section, $section),
+            'section' => $sections[0] ?? null,
+            'sections' => $sections,
+            'section_label' => $labels[0] ?? null,
+            'section_labels' => $labels,
             'session_id' => $session->id,
             'session_title' => $session->displayTitle(),
             'session_date' => $session->session_date?->format('Y-m-d'),

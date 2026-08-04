@@ -300,8 +300,8 @@
                         </button>
                         <div class="splis-nav-dropdown-panel" data-dropdown-panel role="menu">
                             <a href="{{ route('board-member.agenda.index') }}" role="menuitem" @class(['splis-nav-dropdown-link', 'splis-nav-dropdown-link-active' => request()->routeIs('board-member.agenda.*')])>My Agenda</a>
-                            <a href="{{ route('board-member.resolutions.index') }}" role="menuitem" @class(['splis-nav-dropdown-link', 'splis-nav-dropdown-link-active' => request()->routeIs('board-member.resolutions.*')])>Resolutions</a>
                             <a href="{{ route('agenda.index') }}" role="menuitem" @class(['splis-nav-dropdown-link', 'splis-nav-dropdown-link-active' => request()->routeIs('agenda.*') && ! request()->routeIs('board-member.agenda.*')])>All Agenda</a>
+                            <a href="{{ route('board-member.resolutions.index') }}" role="menuitem" @class(['splis-nav-dropdown-link', 'splis-nav-dropdown-link-active' => request()->routeIs('board-member.resolutions.*')])>Resolutions</a>
                         </div>
                     </div>
                     @endif
