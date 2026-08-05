@@ -154,45 +154,59 @@
     </div>
 
     @if ($otherTerms->isNotEmpty())
-        <div class="space-y-6">
-            <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Other terms</h2>
-
-            @foreach ($otherTerms as $entry)
-                <div class="splis-card overflow-hidden">
-                    <div class="splis-card-header splis-card-header--emphasis flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <h2 class="splis-card-title">{{ $entry['term']->label }}</h2>
-                            @if ($entry['term']->year_from || $entry['term']->year_to)
-                                <p class="splis-card-subtitle">{{ $entry['term']->year_from ?? '?' }}–{{ $entry['term']->year_to ?? 'present' }}</p>
-                            @endif
-                        </div>
-                        <a href="{{ route('board-members.show', ['boardMember' => $boardMember, 'term' => $entry['term']->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-sm">
-                            <x-icon name="eye" class="h-4 w-4" />
-                            View Term
-                        </a>
+        <details class="splis-card mt-6 overflow-hidden splis-accordion">
+            <summary class="splis-accordion-summary !px-5 !py-4">
+                <div class="splis-accordion-summary-top">
+                    <div class="min-w-0">
+                        <h2 class="splis-card-title">Other terms</h2>
+                        <p class="splis-card-subtitle">Committee Assignments in previous election periods</p>
                     </div>
-                    <div class="splis-card-body">
-                    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                        @include('board-members.partials.role-list', [
-                            'title' => 'Chairmanship',
-                            'memberships' => $entry['roles']['chair'],
-                            'empty' => '—',
-                        ])
-                        @include('board-members.partials.role-list', [
-                            'title' => 'Vice Chairmanship',
-                            'memberships' => $entry['roles']['vice_chair'],
-                            'empty' => '—',
-                        ])
-                        @include('board-members.partials.role-list', [
-                            'title' => 'Committee membership',
-                            'memberships' => $entry['roles']['member'],
-                            'empty' => '—',
-                        ])
-                    </div>
-                    </div>
+                    <span class="flex shrink-0 items-center gap-2">
+                        <span class="splis-accordion-count">{{ number_format($otherTerms->count()) }}</span>
+                        <svg class="splis-accordion-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                        </svg>
+                    </span>
                 </div>
-            @endforeach
-        </div>
+            </summary>
+            <div class="splis-accordion-body !space-y-6 !px-5 !py-5">
+                @foreach ($otherTerms as $entry)
+                    <div class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/60">
+                            <div>
+                                <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ $entry['term']->label }}</h3>
+                                @if ($entry['term']->year_from || $entry['term']->year_to)
+                                    <p class="text-sm text-slate-500">{{ $entry['term']->year_from ?? '?' }}–{{ $entry['term']->year_to ?? 'present' }}</p>
+                                @endif
+                            </div>
+                            <a href="{{ route('board-members.show', ['boardMember' => $boardMember, 'term' => $entry['term']->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-sm">
+                                <x-icon name="eye" class="h-4 w-4" />
+                                View Term
+                            </a>
+                        </div>
+                        <div class="bg-white p-4 dark:bg-slate-900/40">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                @include('board-members.partials.role-list', [
+                                    'title' => 'Chairmanship',
+                                    'memberships' => $entry['roles']['chair'],
+                                    'empty' => '—',
+                                ])
+                                @include('board-members.partials.role-list', [
+                                    'title' => 'Vice Chairmanship',
+                                    'memberships' => $entry['roles']['vice_chair'],
+                                    'empty' => '—',
+                                ])
+                                @include('board-members.partials.role-list', [
+                                    'title' => 'Committee membership',
+                                    'memberships' => $entry['roles']['member'],
+                                    'empty' => '—',
+                                ])
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </details>
     @endif
 
     @include('partials.detail-prev-next', [

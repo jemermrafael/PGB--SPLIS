@@ -120,8 +120,24 @@
                                     </td>
                                 @endif
                                 <td class="font-medium text-slate-900 dark:text-slate-100">
-                                    <a href="{{ route('board-members.show', ['boardMember' => $member, 'term' => $selectedTerm->id]) }}" class="hover:text-brand-700 dark:hover:text-brand-300">
-                                        {{ $member->displayName() }}
+                                    <a
+                                        href="{{ route('board-members.show', ['boardMember' => $member, 'term' => $selectedTerm->id]) }}"
+                                        class="inline-flex min-w-0 items-center gap-3 hover:text-brand-700 dark:hover:text-brand-300"
+                                    >
+                                        @if ($member->photo_path)
+                                            <span class="splis-bm-photo-avatar" aria-hidden="true">
+                                                <img
+                                                    src="{{ route('board-members.photo', $member) }}"
+                                                    alt=""
+                                                    loading="lazy"
+                                                >
+                                            </span>
+                                        @else
+                                            <span class="splis-bm-photo-avatar splis-bm-photo-avatar--empty" aria-hidden="true">
+                                                <x-icon name="user" class="h-4 w-4" />
+                                            </span>
+                                        @endif
+                                        <span class="min-w-0">{{ $member->displayName() }}</span>
                                     </a>
                                 </td>
                                 <td>{{ $member->contactNumber() ?: '—' }}</td>

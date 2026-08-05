@@ -123,7 +123,7 @@
             </dt>
             <dd>
                 @if ($memberRows->isNotEmpty())
-                    <ul class="list-inside list-disc space-y-1 text-slate-900 dark:text-slate-100">
+                    <ul class="space-y-2 text-slate-900 dark:text-slate-100">
                         @foreach ($memberRows as $membership)
                             <li>
                                 @include('committees.partials.roster-member-link', [
