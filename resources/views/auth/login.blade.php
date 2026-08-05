@@ -22,10 +22,12 @@
 
         <div class="flex flex-1 items-center justify-center p-6 sm:p-10">
             <div class="w-full max-w-md">
-                <div class="mb-8 lg:hidden text-center">
-                    <img src="{{ asset('images/bataan-seal.png') }}" alt="Province of Bataan official seal" class="mx-auto mb-4 h-14 w-14 rounded-full object-cover ring-2 ring-brand-900/10">
-                    <h2 class="text-2xl font-semibold text-slate-900">PGB - SPLIS</h2>
-                    <p class="mt-1 text-sm text-slate-500">Sangguniang Panlalawigan</p>
+                <div class="mb-6 text-center">
+                    <img
+                        src="{{ asset('images/splis-logo.png') }}"
+                        alt="Provincial Government of Bataan — Sangguniang Panlalawigan Legislative Information System"
+                        class="mx-auto h-[337px] w-full max-w-[300px] object-contain"
+                    >
                 </div>
 
                 <div class="splis-card splis-card-body">
