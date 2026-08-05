@@ -6,7 +6,7 @@
 @php
     $canManage = auth()->user()?->can('create', App\Models\BoardMember::class);
 @endphp
-<div id="board-members-index" class="max-w-6xl">
+<div id="board-members-index" class="max-w-6xl" @if ($canManage) data-board-member-roster @endif>
     <div class="splis-page-header">
         <x-page-heading
             title="Board Members"
@@ -15,22 +15,35 @@
             page="board_members"
         />
         @can('create', App\Models\BoardMember::class)
-            <a href="{{ route('board-members.create', ['term' => $selectedTerm->id]) }}" class="splis-btn-primary inline-flex items-center gap-2">
+            <a href="{{ route('board-members.create', ['term' => $selectedTerm->id]) }}" class="splis-btn-primary inline-flex shrink-0 items-center gap-2 whitespace-nowrap">
                 <x-icon name="plus" class="h-4 w-4" stroke-width="2" />
                 Add Board Member
             </a>
         @endcan
     </div>
 
-    <div class="mb-4 flex flex-wrap gap-2 text-sm">
-        <a href="{{ route('committees.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2">
-            <x-icon name="eye" class="h-4 w-4" />
-            Committees
-        </a>
-        <a href="{{ route('committee-terms.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
-            <x-icon name="eye" class="h-4 w-4" />
-            Election Terms
-        </a>
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ route('committees.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="eye" class="h-4 w-4" />
+                Committees
+            </a>
+            <a href="{{ route('committee-terms.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="eye" class="h-4 w-4" />
+                Election Terms
+            </a>
+        </div>
+        @if ($canManage && $boardMembersByDistrict->isNotEmpty())
+            <button
+                type="button"
+                class="splis-btn-secondary inline-flex items-center gap-2"
+                data-board-member-edit-toggle
+                aria-pressed="false"
+            >
+                <x-icon name="edit" class="h-4 w-4" />
+                <span data-board-member-edit-label>Edit roster</span>
+            </button>
+        @endif
     </div>
 
     @include('partials.term-switcher', [
@@ -40,7 +53,10 @@
     ])
 
     @if ($canManage && $boardMembersByDistrict->isNotEmpty())
-        <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <div
+            class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-900"
+            data-board-member-edit-only
+        >
             <label class="flex items-center gap-2.5 text-sm text-slate-700 dark:text-slate-300">
                 <input type="checkbox" data-board-member-select-all class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
                 <span>Select all</span>
@@ -71,7 +87,7 @@
                     <thead>
                         <tr>
                             @if ($canManage)
-                                <th class="w-12">
+                                <th class="w-12" data-board-member-edit-only>
                                     <span class="sr-only">Select</span>
                                 </th>
                             @endif
@@ -91,7 +107,7 @@
                             @php $member = $assignment->boardMember; @endphp
                             <tr>
                                 @if ($canManage)
-                                    <td>
+                                    <td data-board-member-edit-only>
                                         @can('delete', $member)
                                             <input
                                                 type="checkbox"
@@ -119,7 +135,7 @@
                                 <td class="text-right">
                                     <div class="flex flex-wrap justify-end gap-2">
                                         @can('update', $member)
-                                            <div class="flex items-center gap-1">
+                                            <div class="flex items-center gap-1" data-board-member-edit-only>
                                                 <form method="POST" action="{{ route('board-members.move', $member) }}">
                                                     @csrf
                                                     <input type="hidden" name="term" value="{{ $selectedTerm->id }}">
@@ -162,6 +178,7 @@
                                             <form
                                                 method="POST"
                                                 action="{{ route('board-members.destroy', $member) }}"
+                                                data-board-member-edit-only
                                                 data-confirm-submit
                                                 data-confirm-title="Move Board Member to trash?"
                                                 data-confirm-message="Move {{ $member->displayName() }} to trash? Superadmin can restore from Trash."

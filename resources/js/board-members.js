@@ -94,6 +94,29 @@ export function initBoardMemberBulkDelete() {
     const bulkForm = root.querySelector('[data-board-member-bulk-form]');
     const bulkButton = root.querySelector('[data-board-member-bulk-delete]');
     const selectedCount = root.querySelector('[data-board-member-selected-count]');
+    const editToggle = root.querySelector('[data-board-member-edit-toggle]');
+    const editLabel = root.querySelector('[data-board-member-edit-label]');
+
+    function setEditing(editing) {
+        root.dataset.editing = editing ? '1' : '0';
+        editToggle?.setAttribute('aria-pressed', editing ? 'true' : 'false');
+
+        if (editLabel) {
+            editLabel.textContent = editing ? 'Done' : 'Edit roster';
+        }
+
+        if (! editing) {
+            checkboxes().forEach((box) => {
+                box.checked = false;
+            });
+            if (selectAll) {
+                selectAll.checked = false;
+                selectAll.indeterminate = false;
+            }
+        }
+
+        syncSelectionUi();
+    }
 
     function syncSelectionUi() {
         const boxes = checkboxes();
@@ -115,6 +138,10 @@ export function initBoardMemberBulkDelete() {
             bulkButton.disabled = selected.length === 0;
         }
     }
+
+    editToggle?.addEventListener('click', () => {
+        setEditing(root.dataset.editing !== '1');
+    });
 
     selectAll?.addEventListener('change', () => {
         checkboxes().forEach((box) => {
@@ -169,5 +196,5 @@ export function initBoardMemberBulkDelete() {
         bulkForm.requestSubmit();
     });
 
-    syncSelectionUi();
+    setEditing(false);
 }

@@ -396,6 +396,10 @@
         @apply mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between;
     }
 
+    #board-members-index:not([data-editing="1"]) [data-board-member-edit-only] {
+        display: none !important;
+    }
+
     .splis-page-header-actions {
         @apply flex flex-wrap items-center gap-2 sm:justify-end sm:pt-1;
     }
