@@ -42,4 +42,23 @@ class IconLibraryItem extends Model
     {
         return route('icon-library.show', $this);
     }
+
+    public function isSvg(): bool
+    {
+        $mime = strtolower((string) ($this->mime_type ?? ''));
+        if (str_contains($mime, 'svg')) {
+            return true;
+        }
+
+        return str_ends_with(strtolower((string) ($this->stored_path ?? '')), '.svg')
+            || str_ends_with(strtolower((string) ($this->original_filename ?? '')), '.svg');
+    }
+
+    /**
+     * Raster icons (PNG, etc.) should keep their file colors; SVGs stay mask-tintable.
+     */
+    public function preservesOriginalColors(): bool
+    {
+        return ! $this->isSvg();
+    }
 }

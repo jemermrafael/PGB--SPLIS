@@ -199,7 +199,11 @@
                                     <label class="flex cursor-pointer flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-center text-xs transition @if ($selectedLibraryId === (string) $libraryIcon->id) border-brand-500 bg-white ring-2 ring-brand-200 dark:bg-slate-900 @else border-slate-200 bg-white hover:border-slate-300 dark:border-slate-600 dark:bg-slate-900/40 @endif" title="{{ $libraryIcon->name }}">
                                         <input type="radio" name="icon_library_id" value="{{ $libraryIcon->id }}" class="sr-only" @checked($selectedLibraryId === (string) $libraryIcon->id)>
                                         <span class="flex h-9 w-9 items-center justify-center">
-                                            <span class="splis-list-committee-icon-glyph" style="--committee-icon: url('{{ $libraryIcon->publicUrl() }}')"></span>
+                                            @if ($libraryIcon->preservesOriginalColors())
+                                                <img src="{{ $libraryIcon->publicUrl() }}" alt="" class="splis-list-committee-icon-img">
+                                            @else
+                                                <span class="splis-list-committee-icon-glyph" style="--committee-icon: url('{{ $libraryIcon->publicUrl() }}')"></span>
+                                            @endif
                                         </span>
                                         <span class="leading-tight truncate w-full text-slate-600 dark:text-slate-300">{{ $libraryIcon->name }}</span>
                                     </label>
@@ -217,9 +221,14 @@
                         @enderror
 
                         @if ($hasCustomIcon)
+                            @php($previewIcon = \App\Support\CommitteeIcon::customIcon($committee))
                             <div class="mt-3 flex items-center gap-3">
                                 <div class="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white p-2 dark:border-slate-600 dark:bg-slate-900">
-                                    <span class="splis-list-committee-icon-glyph" style="--committee-icon: url('{{ \App\Support\CommitteeIcon::customUrl($committee) }}')"></span>
+                                    @if ($previewIcon && $previewIcon['preserve_colors'])
+                                        <img src="{{ $previewIcon['url'] }}" alt="" class="splis-list-committee-icon-img">
+                                    @elseif ($previewIcon)
+                                        <span class="splis-list-committee-icon-glyph" style="--committee-icon: url('{{ $previewIcon['url'] }}')"></span>
+                                    @endif
                                 </div>
                                 <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
                                     <input type="checkbox" name="remove_icon" value="1" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">

@@ -44,7 +44,7 @@ function renderListItem(item) {
             </td>
             ${renderTitleCell(item.title)}
             <td class="hidden md:table-cell">${renderMunicipalityMeta(item.municipality)}</td>
-            <td class="hidden lg:table-cell">${renderCommitteeMeta(item.committee, { key: item.committee_icon_key, url: item.committee_icon_url })}</td>
+            <td class="hidden lg:table-cell">${renderCommitteeMeta(item.committee, { key: item.committee_icon_key, url: item.committee_icon_url, preserve_colors: item.committee_icon_preserve_colors })}</td>
             <td class="hidden sm:table-cell whitespace-nowrap">${renderDateMeta(formatDate(item.date))}</td>
             <td class="whitespace-nowrap">${escapeHtml(item.sp_number || '—')}</td>
             <td>${renderStatusBadge(item.is_linked ? 'Linked' : 'Unlinked')}</td>

@@ -9,7 +9,7 @@
             title="Schedule Committee Referral"
             subtitle="Send Regular Unassigned Business Agendas from an Order of Business to Committee Chairs at a chosen date and time."
             icon="meeting"
-            page="scheduled-committee-referrals"
+            page="scheduled_committee_referrals"
         />
         <a href="{{ route('scheduled-committee-referrals.create') }}" class="splis-btn-primary inline-flex items-center gap-2 whitespace-nowrap">
             <x-icon name="plus" class="h-4 w-4" stroke-width="2" />

@@ -87,7 +87,7 @@ function renderListItem(doc, canBulkDelete) {
             </td>
             ${renderTitleCell(doc.title)}
             <td class="hidden md:table-cell">${renderAuthorMeta(doc.author)}</td>
-            <td class="hidden lg:table-cell">${renderCommitteeMeta(doc.committee, { key: doc.committee_icon_key, url: doc.committee_icon_url })}</td>
+            <td class="hidden lg:table-cell">${renderCommitteeMeta(doc.committee, { key: doc.committee_icon_key, url: doc.committee_icon_url, preserve_colors: doc.committee_icon_preserve_colors })}</td>
             <td class="hidden sm:table-cell whitespace-nowrap">${renderDateMeta(formatDate(doc.date))}</td>
             <td>${renderStatusBadge(doc.status)}</td>
             <td class="hidden lg:table-cell text-slate-500">${escapeHtml(doc.series || '—')}</td>
@@ -120,7 +120,7 @@ function renderGridItem(doc, canBulkDelete) {
             <dl class="splis-doc-card-meta">
                 <div><dt>Author</dt><dd>${renderAuthorMeta(doc.author)}</dd></div>
                 <div><dt>Date</dt><dd>${renderDateMeta(formatDate(doc.date))}</dd></div>
-                <div class="col-span-2"><dt>Committee</dt><dd>${renderCommitteeMeta(doc.committee, { key: doc.committee_icon_key, url: doc.committee_icon_url })}</dd></div>
+                <div class="col-span-2"><dt>Committee</dt><dd>${renderCommitteeMeta(doc.committee, { key: doc.committee_icon_key, url: doc.committee_icon_url, preserve_colors: doc.committee_icon_preserve_colors })}</dd></div>
             </dl>
             <div class="mt-auto flex items-center justify-between gap-2 border-t border-slate-100 pt-3 dark:border-slate-700">
                 ${renderStatusBadge(doc.status)}

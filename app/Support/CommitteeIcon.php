@@ -96,19 +96,18 @@ class CommitteeIcon
 
     public static function hasCustomFile(?Committee $committee): bool
     {
-        if ($committee === null) {
-            return false;
-        }
-
-        if (self::libraryItemFor($committee) !== null) {
-            return true;
-        }
-
-        return filled($committee->icon_path)
-            && Storage::disk('local')->exists($committee->icon_path);
+        return self::customIcon($committee) !== null;
     }
 
     public static function customUrl(?Committee $committee): ?string
+    {
+        return self::customIcon($committee)['url'] ?? null;
+    }
+
+    /**
+     * @return array{url: string, preserve_colors: bool}|null
+     */
+    public static function customIcon(?Committee $committee): ?array
     {
         if ($committee === null) {
             return null;
@@ -116,14 +115,22 @@ class CommitteeIcon
 
         $library = self::libraryItemFor($committee);
         if ($library !== null) {
-            return $library->publicUrl();
+            return [
+                'url' => $library->publicUrl(),
+                'preserve_colors' => $library->preservesOriginalColors(),
+            ];
         }
 
         if (! filled($committee->icon_path) || ! Storage::disk('local')->exists($committee->icon_path)) {
             return null;
         }
 
-        return route('committees.icon', $committee);
+        $path = strtolower((string) $committee->icon_path);
+
+        return [
+            'url' => route('committees.icon', $committee),
+            'preserve_colors' => ! str_ends_with($path, '.svg'),
+        ];
     }
 
     public static function libraryItemFor(?Committee $committee): ?\App\Models\IconLibraryItem
@@ -200,16 +207,18 @@ class CommitteeIcon
     /**
      * Resolve list-row icon fields for a committee name (memoized per request).
      *
-     * @return array{committee_icon_key: string, committee_icon_url: string|null}
+     * @return array{committee_icon_key: string, committee_icon_url: string|null, committee_icon_preserve_colors: bool}
      */
     public static function listIconFields(?string $name): array
     {
         $label = trim((string) $name);
         $committee = self::lookupByName($label);
+        $custom = self::customIcon($committee);
 
         return [
             'committee_icon_key' => self::resolveKey($committee, $label),
-            'committee_icon_url' => self::customUrl($committee),
+            'committee_icon_url' => $custom['url'] ?? null,
+            'committee_icon_preserve_colors' => (bool) ($custom['preserve_colors'] ?? false),
         ];
     }
 

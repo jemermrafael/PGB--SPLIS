@@ -14,13 +14,17 @@
     <div class="splis-page-header">
         <div class="flex min-w-0 items-start gap-3">
             @php
-                $showCustomUrl = \App\Support\CommitteeIcon::customUrl($committee);
+                $showCustomIcon = \App\Support\CommitteeIcon::customIcon($committee);
                 $showIconKey = \App\Support\CommitteeIcon::resolveKey($committee);
                 $showIconPath = \App\Support\CommitteeIcon::pathFor($showIconKey);
             @endphp
             <span class="splis-committee-icon-frame" aria-hidden="true">
-                @if ($showCustomUrl)
-                    <span class="splis-list-committee-icon-glyph splis-list-committee-icon-glyph--lg" style="--committee-icon: url('{{ $showCustomUrl }}')"></span>
+                @if ($showCustomIcon)
+                    @if ($showCustomIcon['preserve_colors'])
+                        <img src="{{ $showCustomIcon['url'] }}" alt="" class="splis-list-committee-icon-img splis-list-committee-icon-img--lg">
+                    @else
+                        <span class="splis-list-committee-icon-glyph splis-list-committee-icon-glyph--lg" style="--committee-icon: url('{{ $showCustomIcon['url'] }}')"></span>
+                    @endif
                 @else
                     <svg class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                         <path stroke-linecap="round" stroke-linejoin="round" d="{{ $showIconPath }}" />

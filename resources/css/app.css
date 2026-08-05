@@ -439,6 +439,13 @@
         mask: var(--page-icon) center / contain no-repeat;
     }
 
+    .splis-page-heading-custom-icon-img {
+        display: block;
+        width: 1.75rem;
+        height: 1.75rem;
+        object-fit: contain;
+    }
+
     .splis-page-heading-copy {
         @apply min-w-0 pt-0.5;
     }
@@ -1330,6 +1337,11 @@
         height: 1.125rem;
     }
 
+    .splis-list-committee--lg .splis-list-committee-icon-img {
+        width: 1.125rem;
+        height: 1.125rem;
+    }
+
     .splis-list-committee-icon {
         @apply inline-flex shrink-0 text-sky-800;
     }
@@ -1344,7 +1356,20 @@
         mask: var(--committee-icon) center / contain no-repeat;
     }
 
+    .splis-list-committee-icon-img {
+        display: inline-block;
+        width: 0.875rem;
+        height: 0.875rem;
+        flex-shrink: 0;
+        object-fit: contain;
+    }
+
     .splis-list-committee-icon-glyph--lg {
+        width: 4rem;
+        height: 4rem;
+    }
+
+    .splis-list-committee-icon-img--lg {
         width: 4rem;
         height: 4rem;
     }

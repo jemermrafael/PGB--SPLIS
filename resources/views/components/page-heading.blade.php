@@ -24,7 +24,7 @@
     ];
 
     $pageKey = filled($page) ? (string) $page : null;
-    $customUrl = $pageKey ? \App\Support\PageIcon::customUrl($pageKey) : null;
+    $customIcon = $pageKey ? \App\Support\PageIcon::customIcon($pageKey) : null;
     $resolvedIcon = $pageKey
         ? \App\Support\PageIcon::defaultIcon($pageKey)
         : (string) $icon;
@@ -33,11 +33,19 @@
 
 <div {{ $attributes->class('splis-page-heading') }}>
     <div class="splis-page-heading-badge" aria-hidden="true">
-        @if ($customUrl)
-            <span
-                class="splis-page-heading-custom-icon"
-                style="--page-icon: url('{{ $customUrl }}')"
-            ></span>
+        @if ($customIcon)
+            @if ($customIcon['preserve_colors'])
+                <img
+                    src="{{ $customIcon['url'] }}"
+                    alt=""
+                    class="splis-page-heading-custom-icon-img"
+                >
+            @else
+                <span
+                    class="splis-page-heading-custom-icon"
+                    style="--page-icon: url('{{ $customIcon['url'] }}')"
+                ></span>
+            @endif
         @else
             <svg class="splis-page-heading-glyph-simple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
                 {!! $path !!}

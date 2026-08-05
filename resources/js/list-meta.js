@@ -130,9 +130,17 @@ export function renderCommitteeMeta(committee, icon = null) {
     const iconUrl = icon?.url
         ?? (typeof committee === 'object' && committee !== null ? committee.icon_url ?? committee.committee_icon_url : null)
         ?? null;
+    const preserveColors = icon?.preserve_colors
+        ?? icon?.preserveColors
+        ?? (typeof committee === 'object' && committee !== null
+            ? committee.committee_icon_preserve_colors ?? committee.preserve_colors
+            : null)
+        ?? false;
 
     let iconHtml;
-    if (iconUrl) {
+    if (iconUrl && preserveColors) {
+        iconHtml = `<img src="${escapeHtml(iconUrl)}" alt="" class="splis-list-committee-icon-img">`;
+    } else if (iconUrl) {
         iconHtml = `<span class="splis-list-committee-icon-glyph" style="--committee-icon:url('${escapeHtml(iconUrl)}')"></span>`;
     } else if (iconKey && listIcons[iconKey]) {
         iconHtml = listIcons[iconKey];

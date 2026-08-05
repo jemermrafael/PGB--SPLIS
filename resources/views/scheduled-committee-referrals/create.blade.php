@@ -9,7 +9,7 @@
             title="Schedule Committee Referral"
             subtitle="Choose a Session with Regular Unassigned Business, then set when Chairs should receive the Referral."
             icon="meeting"
-            page="scheduled-committee-referrals"
+            page="scheduled_committee_referrals"
         />
         <a href="{{ route('scheduled-committee-referrals.index') }}" class="splis-btn-secondary whitespace-nowrap">Back to list</a>
     </div>

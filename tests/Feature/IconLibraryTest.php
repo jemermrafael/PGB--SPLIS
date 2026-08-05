@@ -198,12 +198,14 @@ class IconLibraryTest extends TestCase
         ]);
 
         $this->assertSame(route('icon-library.show', $item), PageIcon::customUrl('resolutions'));
+        $this->assertTrue(PageIcon::customIcon('resolutions')['preserve_colors']);
         $this->assertNull(PageIcon::customUrl('ordinances'));
 
         $this->actingAs($user)
             ->get(route('resolutions.index'))
             ->assertOk()
-            ->assertSee(route('icon-library.show', $item), false);
+            ->assertSee(route('icon-library.show', $item), false)
+            ->assertSee('splis-page-heading-custom-icon-img', false);
     }
 
     public function test_superadmin_can_clear_page_title_icon(): void

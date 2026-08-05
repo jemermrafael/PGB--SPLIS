@@ -8,9 +8,9 @@ use Illuminate\Support\Collection;
 class PageIcon
 {
     /**
-     * @var array<string, ?string>|null
+     * @var array<string, array{url: string, preserve_colors: bool}|null>|null
      */
-    protected static ?array $urlCache = null;
+    protected static ?array $iconCache = null;
 
     /**
      * Pages with a title icon that can be overridden from the Icon Library.
@@ -38,6 +38,7 @@ class PageIcon
             'board_member_committee_reports' => ['label' => 'BM Committee Reports', 'default_icon' => 'file-text'],
             'board_member_ordinances_all' => ['label' => 'All Ordinances (BM)', 'default_icon' => 'ordinances'],
             'board_member_ordinances_report' => ['label' => 'BM Authored Ordinances', 'default_icon' => 'ordinances'],
+            'scheduled_committee_referrals' => ['label' => 'Schedule Committee Referral', 'default_icon' => 'meeting'],
         ];
     }
 
@@ -58,21 +59,29 @@ class PageIcon
 
     public static function customUrl(string $pageKey): ?string
     {
-        $urls = self::urlMap();
-
-        return $urls[$pageKey] ?? null;
+        return self::customIcon($pageKey)['url'] ?? null;
     }
 
     /**
-     * @return array<string, string>
+     * @return array{url: string, preserve_colors: bool}|null
      */
-    public static function urlMap(): array
+    public static function customIcon(string $pageKey): ?array
     {
-        if (self::$urlCache !== null) {
-            return array_filter(self::$urlCache, fn (?string $url) => $url !== null);
+        $icons = self::iconMap();
+
+        return $icons[$pageKey] ?? null;
+    }
+
+    /**
+     * @return array<string, array{url: string, preserve_colors: bool}>
+     */
+    public static function iconMap(): array
+    {
+        if (self::$iconCache !== null) {
+            return array_filter(self::$iconCache);
         }
 
-        self::$urlCache = [];
+        self::$iconCache = [];
 
         $overrides = PageIconOverride::query()
             ->with('iconLibraryItem')
@@ -81,18 +90,32 @@ class PageIcon
         foreach ($overrides as $override) {
             $item = $override->iconLibraryItem;
             if ($item !== null && $item->existsLocally()) {
-                self::$urlCache[$override->page_key] = $item->publicUrl();
+                self::$iconCache[$override->page_key] = [
+                    'url' => $item->publicUrl(),
+                    'preserve_colors' => $item->preservesOriginalColors(),
+                ];
             } else {
-                self::$urlCache[$override->page_key] = null;
+                self::$iconCache[$override->page_key] = null;
             }
         }
 
-        return array_filter(self::$urlCache, fn (?string $url) => $url !== null);
+        return array_filter(self::$iconCache);
+    }
+
+    /**
+     * @deprecated Use iconMap()
+     * @return array<string, string>
+     */
+    public static function urlMap(): array
+    {
+        return collect(self::iconMap())
+            ->map(fn (array $icon) => $icon['url'])
+            ->all();
     }
 
     public static function flushCache(): void
     {
-        self::$urlCache = null;
+        self::$iconCache = null;
     }
 
     /**
