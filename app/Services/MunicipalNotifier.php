@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\UserRole;
 use App\Models\AgendaItem;
+use App\Models\AgendaObPlacement;
 use App\Models\LegislativeSession;
 use App\Models\User;
 use App\Models\UserNotification;
@@ -123,9 +124,9 @@ class MunicipalNotifier
         }
     }
 
-    public function notifyAgendaAddedToOb(AgendaItem $agenda, LegislativeSession $session): void
+    public function notifyAgendaAddedToOb(AgendaItem $agenda, LegislativeSession $session, ?string $section = null): void
     {
-        $this->notifyAgendasAddedToOb([$agenda], $session);
+        $this->notifyAgendasAddedToOb([$agenda], $session, $section);
     }
 
     /**
@@ -135,7 +136,7 @@ class MunicipalNotifier
      *
      * @param  iterable<int, AgendaItem>  $agendas
      */
-    public function notifyAgendasAddedToOb(iterable $agendas, LegislativeSession $session): void
+    public function notifyAgendasAddedToOb(iterable $agendas, LegislativeSession $session, ?string $section = null): void
     {
         $session->loadMissing('obDocument');
 
@@ -151,6 +152,15 @@ class MunicipalNotifier
         if ($agendas->isEmpty()) {
             return;
         }
+
+        $agendas = AgendaItem::query()
+            ->with('boardMemberCommitteeReports:id')
+            ->whereIn('id', $agendas->pluck('id'))
+            ->get()
+            ->sortBy(fn (AgendaItem $agenda) => [(int) preg_replace('/\D+/', '', (string) $agenda->tracking_no), $agenda->id])
+            ->values();
+
+        $sectionsByAgendaId = $this->resolveSectionsForAgendas($agendas, $session, $section);
 
         $sessionTitle = $session->displayTitle();
         $byUser = [];
@@ -173,20 +183,40 @@ class MunicipalNotifier
                     ->sortBy(fn (AgendaItem $agenda) => [(int) preg_replace('/\D+/', '', (string) $agenda->tracking_no), $agenda->id])
                     ->values(),
             );
-            $labels = $userAgendas
-                ->map(fn (AgendaItem $agenda) => $agenda->displayLabel())
+
+            if ($userAgendas->isEmpty()) {
+                continue;
+            }
+
+            $lines = $userAgendas
+                ->map(function (AgendaItem $agenda) use ($sectionsByAgendaId): string {
+                    return $this->formatAgendaObLine(
+                        $agenda,
+                        $sectionsByAgendaId[$agenda->id] ?? null,
+                    );
+                })
                 ->filter()
                 ->values()
                 ->all();
 
-            if ($labels === []) {
+            if ($lines === []) {
                 continue;
             }
 
             $title = 'Your request was added to the Order of Business';
-            $labelList = implode(', ', $labels);
-            $summary = sprintf('%s was added to %s.', $labelList, $sessionTitle);
-            $link = count($labels) === 1
+            $hasCommitteeReport = $userAgendas->contains(
+                fn (AgendaItem $agenda) => $this->agendaAppearsWithCommitteeReport(
+                    $agenda,
+                    $sectionsByAgendaId[$agenda->id] ?? null,
+                ),
+            );
+
+            if ($hasCommitteeReport) {
+                $title = 'Your request was added under Committee Reports';
+            }
+
+            $summary = $this->buildObAddedSummary($sessionTitle, $lines);
+            $link = $userAgendas->count() === 1
                 ? route('municipal.requests.show', $userAgendas->first(), absolute: false)
                 : route('municipal.requests.index', absolute: false);
 
@@ -207,13 +237,102 @@ class MunicipalNotifier
                 EmailNotificationSettings::AUDIENCE_MUNICIPAL,
                 force: true,
                 vars: [
-                    'label' => $labelList,
+                    'label' => $userAgendas
+                        ->map(fn (AgendaItem $agenda) => $agenda->displayLabel())
+                        ->filter()
+                        ->implode(', '),
                     'summary' => $summary,
                     'session' => $sessionTitle,
                     'email_subject' => $title,
                 ],
             );
         }
+    }
+
+    /**
+     * @param  Collection<int, AgendaItem>  $agendas
+     * @return array<int, string|null>
+     */
+    protected function resolveSectionsForAgendas(Collection $agendas, LegislativeSession $session, ?string $section): array
+    {
+        if ($section !== null && $section !== '') {
+            return $agendas
+                ->mapWithKeys(fn (AgendaItem $agenda) => [$agenda->id => $section])
+                ->all();
+        }
+
+        $placements = AgendaObPlacement::query()
+            ->where('legislative_session_id', $session->id)
+            ->whereIn('agenda_item_id', $agendas->pluck('id'))
+            ->orderByDesc('id')
+            ->get(['agenda_item_id', 'section'])
+            ->unique('agenda_item_id')
+            ->keyBy('agenda_item_id');
+
+        return $agendas
+            ->mapWithKeys(function (AgendaItem $agenda) use ($placements) {
+                return [$agenda->id => $placements->get($agenda->id)?->section];
+            })
+            ->all();
+    }
+
+    protected function formatAgendaObLine(AgendaItem $agenda, ?string $section): string
+    {
+        $label = $agenda->displayLabel();
+        $sectionLabel = $this->sectionLabel($section);
+        $withReport = $this->agendaAppearsWithCommitteeReport($agenda, $section);
+
+        if ($sectionLabel === null) {
+            return $withReport
+                ? sprintf('%s (with committee report)', $label)
+                : $label;
+        }
+
+        return $withReport
+            ? sprintf('%s — %s (with committee report)', $label, $sectionLabel)
+            : sprintf('%s — %s', $label, $sectionLabel);
+    }
+
+    /**
+     * @param  list<string>  $lines
+     */
+    protected function buildObAddedSummary(string $sessionTitle, array $lines): string
+    {
+        if (count($lines) === 1) {
+            return sprintf('%s was added to %s.', $lines[0], $sessionTitle);
+        }
+
+        return sprintf(
+            "The following were added to %s:\n%s",
+            $sessionTitle,
+            collect($lines)->map(fn (string $line) => '• '.$line)->implode("\n"),
+        );
+    }
+
+    protected function sectionLabel(?string $section): ?string
+    {
+        if ($section === null || $section === '') {
+            return null;
+        }
+
+        $label = config('order_of_business.agenda_sections.'.$section);
+
+        return is_string($label) && $label !== '' ? $label : $section;
+    }
+
+    protected function agendaAppearsWithCommitteeReport(AgendaItem $agenda, ?string $section): bool
+    {
+        if ($section === 'committee_reports') {
+            return true;
+        }
+
+        if (filled($agenda->committee_report_url) || filled($agenda->committee_report_pdf_path)) {
+            return true;
+        }
+
+        return $agenda->relationLoaded('boardMemberCommitteeReports')
+            ? $agenda->boardMemberCommitteeReports->isNotEmpty()
+            : $agenda->boardMemberCommitteeReports()->exists();
     }
 
     public function notifyAgendaExpiringSoon(AgendaItem $agenda): void

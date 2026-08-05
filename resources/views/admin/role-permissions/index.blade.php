@@ -43,9 +43,11 @@
         </table>
     </div>
 
-    <div class="splis-help-callout mt-6 text-sm text-slate-600 dark:text-slate-300">
-        <p><strong>Limited</strong> means scoped access (e.g. Board Members see scheduled OB / their committees; municipal viewers see their municipality’s requests).</p>
-        <p class="mt-2"><strong>Encoder with Delete</strong> historically meant resolution delete; soft-delete (`Delete`) is now allowed for all encode roles. Only Superadmin can open Trash, restore, or permanently delete.</p>
+    <div class="splis-help-callout mt-6 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+        <p><strong>Limited</strong> means scoped access — e.g. Board Members see scheduled sessions, their committees, and their own reports; municipal viewers see their municipality’s requests and related documents; Vice Governor Board Members can open the full executive dashboard.</p>
+        <p><strong>Soft-delete (trash)</strong> is available to all encode roles (Encoder, Encoder with Delete, Admin, Superadmin) where policies allow. Only Superadmin can open Trash, restore, or permanently delete.</p>
+        <p><strong>Encoder with Delete</strong> is a legacy label; soft-delete is no longer restricted to that role alone. Capability flags per encoder module are not implemented yet — encode access is still all-or-nothing via <code class="text-xs">canEncode()</code>.</p>
+        <p>This page is documentation. Enforcement lives in policies and route middleware.</p>
     </div>
 </div>
 @endsection

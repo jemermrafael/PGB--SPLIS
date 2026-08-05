@@ -575,7 +575,7 @@ class ObDocumentService
 
             if ($session->isNotifiableForObAgendaAdds()) {
                 $this->boardMemberNotifier->notifyAgendasAddedToOb($items, $session);
-                $this->municipalNotifier->notifyAgendasAddedToOb($items, $session);
+                $this->municipalNotifier->notifyAgendasAddedToOb($items, $session, $section);
             }
         }
 

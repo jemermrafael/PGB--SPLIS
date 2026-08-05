@@ -124,6 +124,10 @@ class EnhancementsTest extends TestCase
             ->get(route('admin.role-permissions.index'))
             ->assertOk()
             ->assertSee('Role permissions')
-            ->assertSee('Resolutions');
+            ->assertSee('Resolutions')
+            ->assertSee('Directory')
+            ->assertSee('Committee monitoring')
+            ->assertSee('Board Member portal')
+            ->assertSee('Email notification settings');
     }
 }

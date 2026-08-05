@@ -27,6 +27,9 @@
             data-view="referred"
             class="splis-stat splis-stat--brand splis-stat--clickable text-left {{ $activeView === 'referred' ? 'splis-stat--active' : '' }}"
         >
+            <div class="splis-stat-icon splis-stat-icon--brand">
+                <x-icon name="inbox" class="h-5 w-5" stroke-width="2" />
+            </div>
             <p class="splis-stat-label">Referred</p>
             <p class="splis-stat-value" id="committee-stat-total">{{ number_format($stats['total']) }}</p>
             <p class="splis-stat-meta">Total tracked items</p>
@@ -37,6 +40,9 @@
             data-view="pending"
             class="splis-stat splis-stat--gold splis-stat--clickable text-left {{ $activeView === 'pending' ? 'splis-stat--active' : '' }}"
         >
+            <div class="splis-stat-icon splis-stat-icon--gold">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
             <p class="splis-stat-label">Pending</p>
             <p class="splis-stat-value" id="committee-stat-pending">{{ number_format($stats['pending']) }}</p>
             <p class="splis-stat-meta">No outcome yet</p>
@@ -47,6 +53,9 @@
             data-view="scheduled"
             class="splis-stat splis-stat--sky splis-stat--clickable text-left {{ $activeView === 'scheduled' ? 'splis-stat--active' : '' }}"
         >
+            <div class="splis-stat-icon splis-stat-icon--sky">
+                <x-icon name="calendar" class="h-5 w-5" stroke-width="2" />
+            </div>
             <p class="splis-stat-label">Scheduled</p>
             <p class="splis-stat-value" id="committee-stat-scheduled">{{ number_format($stats['with_schedule']) }}</p>
             <p class="splis-stat-meta">With committee meeting date</p>
@@ -57,6 +66,9 @@
             data-view="reports"
             class="splis-stat splis-stat--green splis-stat--clickable text-left {{ $activeView === 'reports' ? 'splis-stat--active' : '' }}"
         >
+            <div class="splis-stat-icon splis-stat-icon--green">
+                <x-icon name="file-text" class="h-5 w-5" stroke-width="2" />
+            </div>
             <p class="splis-stat-label">Reports</p>
             <p class="splis-stat-value" id="committee-stat-reports">{{ number_format($stats['with_report']) }}</p>
             <p class="splis-stat-meta">With report link</p>
@@ -67,6 +79,9 @@
             data-view="completed"
             class="splis-stat splis-stat--clickable text-left {{ $activeView === 'completed' ? 'splis-stat--active' : '' }}"
         >
+            <div class="splis-stat-icon">
+                <x-icon name="check-circle" class="h-5 w-5" stroke-width="2" />
+            </div>
             <p class="splis-stat-label">Completed</p>
             <p class="splis-stat-value" id="committee-stat-completed">{{ number_format($stats['completed']) }}</p>
             <p class="splis-stat-meta">With outcome</p>

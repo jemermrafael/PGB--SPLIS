@@ -257,7 +257,9 @@ export function initCommitteeMonitoring() {
             .map(
                 (item) => `
             <tr>
-                <td class="whitespace-nowrap">${escapeHtml(item.display_label || '—')}</td>
+                <td class="whitespace-nowrap font-semibold">
+                    <a href="${escapeHtml(item.url)}" class="splis-doc-list-link">${escapeHtml(item.display_label || '—')}</a>
+                </td>
                 ${renderTitleCell(item)}
                 <td class="hidden md:table-cell">${escapeHtml(item.committee || '—')}</td>
                 <td class="hidden lg:table-cell whitespace-nowrap">${formatDate(item.date_of_referral)}</td>

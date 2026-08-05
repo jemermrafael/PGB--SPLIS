@@ -5,6 +5,9 @@
     $viceChair = $roster->get('vice_chair')?->first()?->boardMember;
     $members = $roster->get('member') ?? collect();
     $allowLegacy = $selectedTerm->is_current;
+    $showCustomIcon = \App\Support\CommitteeIcon::customIcon($committee);
+    $showIconKey = \App\Support\CommitteeIcon::resolveKey($committee);
+    $showIconPath = \App\Support\CommitteeIcon::pathFor($showIconKey);
 @endphp
 
 @section('title', $committee->name.' — My Committees — '.config('app.name'))
@@ -12,14 +15,31 @@
 @section('content')
 <div class="max-w-5xl">
     <div class="splis-page-header">
-        <div>
+        <div class="min-w-0">
             <p class="mb-1 text-sm text-slate-500">
                 <a href="{{ route('board-member.committees.index', ['term' => $selectedTerm->id]) }}" class="splis-link">My Committees</a>
                 <span class="mx-1">/</span>
                 <span>{{ $committee->name }}</span>
             </p>
-            <h1 class="splis-page-title">{{ $committee->name }}</h1>
-            <p class="splis-page-subtitle">Your role: {{ $roleLabel }} · {{ $selectedTerm->label }}</p>
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="splis-committee-icon-frame" aria-hidden="true">
+                    @if ($showCustomIcon)
+                        @if ($showCustomIcon['preserve_colors'])
+                            <img src="{{ $showCustomIcon['url'] }}" alt="" class="splis-list-committee-icon-img splis-list-committee-icon-img--lg">
+                        @else
+                            <span class="splis-list-committee-icon-glyph splis-list-committee-icon-glyph--lg" style="--committee-icon: url('{{ $showCustomIcon['url'] }}')"></span>
+                        @endif
+                    @else
+                        <svg class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="{{ $showIconPath }}" />
+                        </svg>
+                    @endif
+                </span>
+                <div class="min-w-0">
+                    <h1 class="splis-page-title">{{ $committee->name }}</h1>
+                    <p class="splis-page-subtitle">Your role: {{ $roleLabel }} · {{ $selectedTerm->label }}</p>
+                </div>
+            </div>
         </div>
         <a href="{{ route('board-member.agenda.committee', $committee) }}" class="splis-btn-secondary">Search Agenda</a>
     </div>
@@ -34,36 +54,70 @@
     <div class="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div class="splis-card splis-card-body space-y-5">
             <div>
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Committee roster</p>
+                <p class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <x-icon name="users" class="h-3.5 w-3.5 shrink-0 opacity-80" />
+                    Committee roster
+                </p>
                 <p class="text-sm text-slate-500">{{ $selectedTerm->label }}</p>
             </div>
             <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                    <dt class="splis-label">Chair</dt>
+                    <dt class="splis-label inline-flex items-center gap-1.5">
+                        <x-icon name="user" class="h-3.5 w-3.5 shrink-0 opacity-80" />
+                        Chair
+                    </dt>
                     <dd class="mt-1 text-slate-900 dark:text-slate-100">
-                        {{ $chair?->displayName() ?: ($allowLegacy ? ($committee->chair ?: '—') : '—') }}
+                        @include('committees.partials.roster-member-link', [
+                            'boardMember' => $chair,
+                            'fallback' => $allowLegacy ? $committee->chair : null,
+                            'term' => $selectedTerm,
+                        ])
                     </dd>
                 </div>
                 <div>
-                    <dt class="splis-label">Vice chair</dt>
+                    <dt class="splis-label inline-flex items-center gap-1.5">
+                        <x-icon name="user" class="h-3.5 w-3.5 shrink-0 opacity-80" />
+                        Vice chair
+                    </dt>
                     <dd class="mt-1 text-slate-900 dark:text-slate-100">
-                        {{ $viceChair?->displayName() ?: ($allowLegacy ? ($committee->vice_chair ?: '—') : '—') }}
+                        @include('committees.partials.roster-member-link', [
+                            'boardMember' => $viceChair,
+                            'fallback' => $allowLegacy ? $committee->vice_chair : null,
+                            'term' => $selectedTerm,
+                        ])
                     </dd>
                 </div>
-                <div class="sm:col-span-2">
-                    <dt class="splis-label">Secretary</dt>
+                <div>
+                    <dt class="splis-label inline-flex items-center gap-1.5">
+                        <x-icon name="edit" class="h-3.5 w-3.5 shrink-0 opacity-80" />
+                        Secretary
+                    </dt>
                     <dd class="mt-1 text-slate-900 dark:text-slate-100">
                         {{ $committee->secretaryDisplayName($selectedTerm->id, $allowLegacy) ?: '—' }}
                     </dd>
                 </div>
+                <div>
+                    <dt class="splis-label inline-flex items-center gap-1.5">
+                        <x-icon name="mail" class="h-3.5 w-3.5 shrink-0 opacity-80" />
+                        Email
+                    </dt>
+                    <dd class="mt-1 text-slate-900 dark:text-slate-100">{{ $committee->email ?: '—' }}</dd>
+                </div>
             </dl>
             <div>
-                <p class="splis-label mb-2">Members</p>
+                <p class="splis-label mb-2 inline-flex items-center gap-1.5">
+                    <x-icon name="users" class="h-3.5 w-3.5 shrink-0 opacity-80" />
+                    Members
+                </p>
                 @if ($members->isNotEmpty())
-                    <ul class="list-inside list-disc space-y-1 text-slate-900 dark:text-slate-100">
+                    <ul class="space-y-2 text-slate-900 dark:text-slate-100">
                         @foreach ($members as $membership)
-                            <li >
-                                {{ $membership->boardMember?->displayName() }}
+                            <li>
+                                @include('committees.partials.roster-member-link', [
+                                    'boardMember' => $membership->boardMember,
+                                    'fallback' => null,
+                                    'term' => $selectedTerm,
+                                ])
                             </li>
                         @endforeach
                     </ul>

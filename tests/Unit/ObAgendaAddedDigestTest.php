@@ -26,6 +26,9 @@ class ObAgendaAddedDigestTest extends TestCase
             'does not match prefix of longer tracking no' => ["#10, #11 was added to {$session}.", '#1', false],
             'longer tracking no matches itself' => ["#10, #11 was added to {$session}.", '#10', true],
             'missing' => ["#349 was added to {$session}.", '#350', false],
+            'with section label' => ["#349 — A. Unfinished Business was added to {$session}.", '#349', true],
+            'bullet with committee report' => ["The following were added to {$session}:\n• #350 — IV. Committee Reports (with committee report)", '#350', true],
+            'bullet does not match sibling' => ["The following were added to {$session}:\n• #349 — A. Unfinished Business", '#350', false],
         ];
     }
 }

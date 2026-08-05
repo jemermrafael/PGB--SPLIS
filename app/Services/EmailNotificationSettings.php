@@ -222,7 +222,7 @@ class EmailNotificationSettings
                 ],
                 \App\Models\UserNotification::TYPE_AGENDA_ADDED_TO_OB => [
                     'subject' => '{{email_subject}}',
-                    'body' => "{{summary}}\n\nYou can track this in SPLIS.",
+                    'body' => "{{summary}}\n\nYou can track this request in SPLIS.",
                     'action_label' => 'View Request',
                 ],
                 \App\Models\UserNotification::TYPE_AGENDA_EXPIRING_SOON => [

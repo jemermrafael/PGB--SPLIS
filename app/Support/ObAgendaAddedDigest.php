@@ -51,12 +51,17 @@ class ObAgendaAddedDigest
     }
 
     /**
-     * Bodies look like: "#349, #350, #351 was added to 53rd Regular Session."
+     * Bodies may look like:
+     * - "#349, #350 was added to …"
+     * - "#349 — A. Unfinished Business was added to …"
+     * - "• #349 — IV. Committee Reports (with committee report)"
      */
     public static function bodyMentionsLabel(string $body, string $label): bool
     {
+        $quoted = preg_quote($label, '/');
+
         return (bool) preg_match(
-            '/(?:^|,\s*)'.preg_quote($label, '/').'(?=,|\s+was\s+added\b)/u',
+            '/(?:^|[\n,•\s])'.$quoted.'(?![0-9A-Za-z])/u',
             $body,
         );
     }
