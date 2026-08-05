@@ -3,10 +3,14 @@
 @section('title', 'Committee Reports — '.config('app.name'))
 
 @section('content')
+@php
+    $canManage = auth()->user()?->can('create', App\Models\BoardMemberCommitteeReport::class);
+@endphp
 <div
     id="staff-committee-reports"
     class="max-w-6xl"
     data-search-url="{{ $searchUrl }}"
+    @if ($canManage) data-list-edit @endif
 >
     <div class="splis-page-header">
         <x-page-heading
@@ -15,12 +19,27 @@
             icon="file-text"
             page="committee_reports"
         />
-        @can('create', App\Models\BoardMemberCommitteeReport::class)
-            <a href="{{ route('committee-reports.create') }}" class="splis-btn-primary inline-flex items-center gap-2">
-                <x-icon name="plus" class="h-4 w-4" />
-                Submit Report
-            </a>
-        @endcan
+        <div class="flex flex-wrap items-center gap-2">
+            @if ($canManage)
+                <button
+                    type="button"
+                    class="splis-btn-secondary inline-flex items-center gap-2"
+                    data-list-edit-toggle
+                    data-edit-label="Edit List"
+                    data-done-label="Done"
+                    aria-pressed="false"
+                >
+                    <x-icon name="edit" class="h-4 w-4" />
+                    <span data-list-edit-label>Edit List</span>
+                </button>
+            @endif
+            @can('create', App\Models\BoardMemberCommitteeReport::class)
+                <a href="{{ route('committee-reports.create') }}" class="splis-btn-primary inline-flex items-center gap-2 whitespace-nowrap">
+                    <x-icon name="plus" class="h-4 w-4" />
+                    Submit Report
+                </a>
+            @endcan
+        </div>
     </div>
 
     <form id="staff-cr-search-form" class="splis-filter-panel mb-6">

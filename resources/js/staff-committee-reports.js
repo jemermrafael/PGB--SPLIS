@@ -32,12 +32,12 @@ function renderActions(report) {
     ];
 
     if (report.can_update && report.edit_url) {
-        parts.push(`<a href="${escapeHtml(report.edit_url)}" class="splis-btn-secondary inline-flex items-center gap-2 whitespace-nowrap text-sm">Edit</a>`);
+        parts.push(`<a href="${escapeHtml(report.edit_url)}" class="splis-btn-secondary inline-flex items-center gap-2 whitespace-nowrap text-sm" data-list-edit-only>Edit</a>`);
     }
 
     if (report.can_delete && report.delete_url) {
         parts.push(`
-            <form method="POST" action="${escapeHtml(report.delete_url)}" class="inline" data-confirm-submit data-confirm-title="Delete committee report?" data-confirm-message="Delete this uploaded committee report? Tagged agenda PDFs and related session folder copies from this submission will be removed." data-confirm-label="Delete">
+            <form method="POST" action="${escapeHtml(report.delete_url)}" class="inline" data-list-edit-only data-confirm-submit data-confirm-title="Delete committee report?" data-confirm-message="Delete this uploaded committee report? Tagged agenda PDFs and related session folder copies from this submission will be removed." data-confirm-label="Delete">
                 <input type="hidden" name="_token" value="${escapeHtml(csrfToken())}">
                 <input type="hidden" name="_method" value="DELETE">
                 <button type="submit" class="splis-btn-danger inline-flex items-center gap-2 whitespace-nowrap text-sm">Delete</button>

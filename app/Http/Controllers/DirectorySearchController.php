@@ -28,6 +28,8 @@ class DirectorySearchController extends Controller
             'html' => view('directory.partials.entries-tbody', [
                 'entries' => $entries,
                 'emptyMessage' => $emptyMessage,
+                'canManage' => $request->user()?->can('create', DirectoryEntry::class) ?? false,
+                'allowReorder' => $term === '',
             ])->render(),
             'meta' => [
                 'total' => $entries->total(),

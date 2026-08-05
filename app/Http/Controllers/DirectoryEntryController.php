@@ -80,6 +80,99 @@ class DirectoryEntryController extends Controller
             ->with('status', 'Directory entry removed.');
     }
 
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $this->authorize('create', DirectoryEntry::class);
+
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct', 'exists:directory_entries,id'],
+        ]);
+
+        $entries = DirectoryEntry::query()
+            ->whereIn('id', $data['ids'])
+            ->get();
+
+        $deleted = 0;
+
+        foreach ($entries as $entry) {
+            $this->authorize('delete', $entry);
+            $entry->delete();
+            $deleted++;
+        }
+
+        return redirect()
+            ->route('directory.index')
+            ->with('status', $deleted === 1
+                ? 'Directory entry removed.'
+                : "{$deleted} directory entries removed.");
+    }
+
+    public function move(Request $request, DirectoryEntry $directoryEntry): RedirectResponse
+    {
+        $this->authorize('update', $directoryEntry);
+
+        $data = $request->validate([
+            'direction' => ['required', 'integer', 'in:-1,1'],
+            'page' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        $moved = $this->moveEntry($directoryEntry, (int) $data['direction']);
+
+        return redirect()
+            ->route('directory.index', array_filter([
+                'page' => $data['page'] ?? null,
+            ]))
+            ->with(
+                'status',
+                $moved
+                    ? 'Directory order updated.'
+                    : 'Entry is already at the edge of the list.',
+            );
+    }
+
+    protected function moveEntry(DirectoryEntry $directoryEntry, int $direction): bool
+    {
+        if (! in_array($direction, [-1, 1], true)) {
+            return false;
+        }
+
+        $entries = DirectoryEntry::query()
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->orderBy('id')
+            ->get()
+            ->values();
+
+        $index = $entries->search(fn (DirectoryEntry $row) => $row->id === $directoryEntry->id);
+
+        if ($index === false) {
+            return false;
+        }
+
+        $target = $index + $direction;
+
+        if ($target < 0 || $target >= $entries->count()) {
+            return false;
+        }
+
+        $current = $entries[$index];
+        $neighbor = $entries[$target];
+
+        $entries[$index] = $neighbor;
+        $entries[$target] = $current;
+
+        foreach ($entries as $position => $row) {
+            $sortOrder = $position + 1;
+
+            if ((int) $row->sort_order !== $sortOrder) {
+                $row->forceFill(['sort_order' => $sortOrder])->saveQuietly();
+            }
+        }
+
+        return true;
+    }
+
     /**
      * @return array<string, mixed>
      */

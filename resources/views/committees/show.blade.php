@@ -33,7 +33,7 @@
             </span>
             <div class="min-w-0">
                 <h1 class="splis-page-title">{{ $committee->name }}</h1>
-                <p class="splis-page-subtitle">Committee roster by election term.</p>
+                <p class="splis-page-subtitle">Committee Roster by Election Term.</p>
             </div>
         </div>
         @can('update', $committee)

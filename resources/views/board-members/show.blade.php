@@ -43,7 +43,7 @@
             @can('update', $boardMember)
                 <a href="{{ route('board-members.edit', ['boardMember' => $boardMember, 'term' => $selectedTerm->id]) }}" class="splis-btn-primary inline-flex items-center gap-2">
                     <x-icon name="edit" class="h-4 w-4" />
-                    Edit profile
+                    Edit Profile
                 </a>
             @endcan
             @can('delete', $boardMember)

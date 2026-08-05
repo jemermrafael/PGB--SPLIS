@@ -3,7 +3,10 @@
 @section('title', 'Committees — '.config('app.name'))
 
 @section('content')
-<div class="max-w-6xl">
+@php
+    $canManage = auth()->user()?->can('create', App\Models\Committee::class);
+@endphp
+<div class="max-w-6xl" @if ($canManage) data-list-edit @endif>
     <div class="splis-page-header">
         <x-page-heading
             title="Committees"
@@ -12,22 +15,37 @@
             page="committees"
         />
         @can('create', App\Models\Committee::class)
-            <a href="{{ route('committees.create') }}" class="splis-btn-primary inline-flex items-center gap-2">
+            <a href="{{ route('committees.create') }}" class="splis-btn-primary inline-flex items-center gap-2 whitespace-nowrap">
                 <x-icon name="plus" class="h-4 w-4" stroke-width="2" />
                 Add Committee
             </a>
         @endcan
     </div>
 
-    <div class="mb-4 flex flex-wrap gap-2 text-sm">
-        <a href="{{ route('board-members.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2">
-            <x-icon name="users" class="h-4 w-4" />
-            Board Members
-        </a>
-        <a href="{{ route('committee-terms.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
-            <x-icon name="calendar" class="h-4 w-4" />
-            Election Terms
-        </a>
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ route('board-members.index', ['term' => $selectedTerm->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="users" class="h-4 w-4" />
+                Board Members
+            </a>
+            <a href="{{ route('committee-terms.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="calendar" class="h-4 w-4" />
+                Election Terms
+            </a>
+        </div>
+        @if ($canManage && $committees->isNotEmpty())
+            <button
+                type="button"
+                class="splis-btn-secondary inline-flex items-center gap-2"
+                data-list-edit-toggle
+                data-edit-label="Edit List"
+                data-done-label="Done"
+                aria-pressed="false"
+            >
+                <x-icon name="edit" class="h-4 w-4" />
+                <span data-list-edit-label>Edit List</span>
+            </button>
+        @endif
     </div>
 
     @include('partials.term-switcher', [
@@ -109,7 +127,7 @@
                                     Roster
                                 </a>
                                 @can('update', $committee)
-                                    <a href="{{ route('committees.edit', ['committee' => $committee, 'term' => $selectedTerm->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-sm">
+                                    <a href="{{ route('committees.edit', ['committee' => $committee, 'term' => $selectedTerm->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-sm" data-list-edit-only>
                                         <x-icon name="edit" class="h-4 w-4" />
                                         Edit
                                     </a>
@@ -118,6 +136,7 @@
                                     <form
                                         method="POST"
                                         action="{{ route('committees.destroy', $committee) }}"
+                                        data-list-edit-only
                                         data-confirm-submit
                                         data-confirm-title="Move committee to trash?"
                                         data-confirm-message="Move this committee to trash? Superadmin can restore from Trash."

@@ -41,7 +41,7 @@
                 aria-pressed="false"
             >
                 <x-icon name="edit" class="h-4 w-4" />
-                <span data-board-member-edit-label>Edit roster</span>
+                <span data-board-member-edit-label>Edit Roster</span>
             </button>
         @endif
     </div>
@@ -185,7 +185,11 @@
                                             Profile
                                         </a>
                                         @can('update', $member)
-                                            <a href="{{ route('board-members.edit', ['boardMember' => $member, 'term' => $selectedTerm->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2 text-sm">
+                                            <a
+                                                href="{{ route('board-members.edit', ['boardMember' => $member, 'term' => $selectedTerm->id]) }}"
+                                                class="splis-btn-secondary inline-flex items-center gap-2 text-sm"
+                                                data-board-member-edit-only
+                                            >
                                                 <x-icon name="edit" class="h-4 w-4" />
                                                 Edit
                                             </a>

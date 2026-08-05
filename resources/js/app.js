@@ -39,6 +39,7 @@ import { initCommitteeMunicipalityMap } from './geographic-analytics';
 import { initDragScroll } from './drag-scroll';
 import { initTableScrollHints } from './table-scroll-hint';
 import { initBoardMemberBulkDelete, initConfirmSubmitForms } from './board-members';
+import { initListEditMode } from './list-edit-mode';
 import { initCommitteeMonitoring } from './committee-monitoring';
 import { initSessionGuests, initSessionAttendanceSelectAll } from './session-guests';
 import { initTermSwitchers } from './term-switcher';
@@ -62,6 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initTableScrollHints();
     initConfirmSubmitForms();
     initBoardMemberBulkDelete();
+    initListEditMode();
     initAgendaForm();
     initAgendaVersionCompare();
     initResolutionVersionCompare();

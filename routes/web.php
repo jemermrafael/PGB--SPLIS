@@ -263,6 +263,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/directory', [DirectoryEntryController::class, 'index'])->name('directory.index');
     Route::get('/directory/search', DirectorySearchController::class)->name('directory.search');
+    Route::delete('/directory/bulk', [DirectoryEntryController::class, 'bulkDestroy'])->name('directory.bulk-destroy');
     Route::get('/directory/categories', [DirectoryCategoryController::class, 'index'])->name('directory.categories.index');
     Route::post('/directory/categories', [DirectoryCategoryController::class, 'store'])->name('directory.categories.store');
     Route::put('/directory/categories/{directoryCategory}', [DirectoryCategoryController::class, 'update'])->name('directory.categories.update');
@@ -270,6 +271,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/directory/create', [DirectoryEntryController::class, 'create'])->name('directory.create');
     Route::post('/directory', [DirectoryEntryController::class, 'store'])->name('directory.store');
     Route::get('/directory/{directoryEntry}/edit', [DirectoryEntryController::class, 'edit'])->name('directory.edit');
+    Route::post('/directory/{directoryEntry}/move', [DirectoryEntryController::class, 'move'])->name('directory.move');
     Route::put('/directory/{directoryEntry}', [DirectoryEntryController::class, 'update'])->name('directory.update');
     Route::delete('/directory/{directoryEntry}', [DirectoryEntryController::class, 'destroy'])->name('directory.destroy');
 

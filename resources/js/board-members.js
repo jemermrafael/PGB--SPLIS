@@ -102,7 +102,7 @@ export function initBoardMemberBulkDelete() {
         editToggle?.setAttribute('aria-pressed', editing ? 'true' : 'false');
 
         if (editLabel) {
-            editLabel.textContent = editing ? 'Done' : 'Edit roster';
+            editLabel.textContent = editing ? 'Done' : 'Edit Roster';
         }
 
         if (! editing) {

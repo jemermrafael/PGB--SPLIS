@@ -217,4 +217,92 @@ class DirectoryAndFocalPersonsTest extends TestCase
             ->assertJsonPath('meta.total', 1)
             ->assertSee('Records Office', false);
     }
+
+    public function test_encoder_can_bulk_delete_directory_entries(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Encoder, 'is_active' => true]);
+
+        $first = DirectoryEntry::query()->create([
+            'name' => 'First Office',
+            'sort_order' => 1,
+        ]);
+        $second = DirectoryEntry::query()->create([
+            'name' => 'Second Office',
+            'sort_order' => 2,
+        ]);
+        $kept = DirectoryEntry::query()->create([
+            'name' => 'Kept Office',
+            'sort_order' => 3,
+        ]);
+
+        $this->actingAs($user)
+            ->delete(route('directory.bulk-destroy'), [
+                'ids' => [$first->id, $second->id],
+            ])
+            ->assertRedirect(route('directory.index'));
+
+        $this->assertSoftDeleted($first);
+        $this->assertSoftDeleted($second);
+        $this->assertDatabaseHas('directory_entries', [
+            'id' => $kept->id,
+            'deleted_at' => null,
+        ]);
+    }
+
+    public function test_directory_index_shows_bulk_select_controls_for_encoders(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Encoder, 'is_active' => true]);
+
+        DirectoryEntry::query()->create([
+            'name' => 'Records Office',
+            'sort_order' => 1,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('directory.index'))
+            ->assertOk()
+            ->assertSee('data-directory-select-all', false)
+            ->assertSee('data-directory-checkbox', false)
+            ->assertSee('data-directory-bulk-form', false)
+            ->assertSee('Edit List', false);
+    }
+
+    public function test_encoder_can_reorder_directory_entries_with_move(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Encoder, 'is_active' => true]);
+
+        $first = DirectoryEntry::query()->create([
+            'name' => 'Alpha Office',
+            'sort_order' => 1,
+        ]);
+        $second = DirectoryEntry::query()->create([
+            'name' => 'Beta Office',
+            'sort_order' => 2,
+        ]);
+        $third = DirectoryEntry::query()->create([
+            'name' => 'Gamma Office',
+            'sort_order' => 3,
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('directory.move', $second), [
+                'direction' => -1,
+            ])
+            ->assertRedirect(route('directory.index'));
+
+        $this->assertSame(1, $second->fresh()->sort_order);
+        $this->assertSame(2, $first->fresh()->sort_order);
+        $this->assertSame(3, $third->fresh()->sort_order);
+
+        $this->actingAs($user)
+            ->post(route('directory.move', $second), [
+                'direction' => 1,
+                'page' => 1,
+            ])
+            ->assertRedirect(route('directory.index', ['page' => 1]));
+
+        $this->assertSame(1, $first->fresh()->sort_order);
+        $this->assertSame(2, $second->fresh()->sort_order);
+        $this->assertSame(3, $third->fresh()->sort_order);
+    }
 }
