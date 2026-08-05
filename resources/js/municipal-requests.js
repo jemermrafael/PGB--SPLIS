@@ -42,6 +42,20 @@ function renderDaysLeftCell(label, tone) {
     return `<td class="whitespace-nowrap"><span class="splis-agenda-days${toneClass}">${safeLabel}</span></td>`;
 }
 
+function renderListNumberLink(item, { className = 'splis-doc-list-link' } = {}) {
+    const number = escapeHtml(item.list_number ?? item.display_label ?? item.tracking_no ?? 'Unnumbered');
+    const year = item.list_year ? String(item.list_year) : null;
+
+    if (year) {
+        return `<a href="${escapeHtml(item.url)}" class="${escapeHtml(className)}">
+            <span class="block leading-tight">${number}</span>
+            <span class="mt-0.5 block text-xs font-normal leading-tight text-slate-500">${escapeHtml(year)}</span>
+        </a>`;
+    }
+
+    return `<a href="${escapeHtml(item.url)}" class="${escapeHtml(className)}">${number}</a>`;
+}
+
 function updateStats(stats) {
     if (!stats) {
         return;
@@ -242,7 +256,7 @@ function initMunicipalSearch(root, { compact = false } = {}) {
                 return `
                     <tr class="splis-agenda-row" data-href="${escapeHtml(item.url)}">
                         <td class="whitespace-nowrap font-semibold">
-                            <a href="${escapeHtml(item.url)}" class="splis-doc-list-link">${escapeHtml(item.list_number ?? item.display_label ?? item.tracking_no ?? 'Unnumbered')}</a>
+                            ${renderListNumberLink(item)}
                         </td>
                         ${renderTitleCell(item.title)}
                         <td class="hidden sm:table-cell whitespace-nowrap">${formatDate(item.date_received)}</td>
@@ -256,7 +270,7 @@ function initMunicipalSearch(root, { compact = false } = {}) {
             return `
                 <tr class="splis-agenda-row" data-href="${escapeHtml(item.url)}">
                     <td class="whitespace-nowrap font-semibold">
-                        <a href="${escapeHtml(item.url)}" class="splis-doc-list-link">${escapeHtml(item.list_number ?? item.display_label ?? item.tracking_no ?? 'Unnumbered')}</a>
+                        ${renderListNumberLink(item)}
                     </td>
                     ${renderTitleCell(item.title)}
                     <td class="hidden sm:table-cell whitespace-nowrap">${formatDate(item.date_received)}</td>

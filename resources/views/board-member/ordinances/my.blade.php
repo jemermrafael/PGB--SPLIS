@@ -5,10 +5,12 @@
 @section('content')
 <div class="max-w-6xl">
     <div class="splis-page-header">
-        <div>
-            <h1 class="splis-page-title">My Ordinances</h1>
-            <p class="splis-page-subtitle">Provincial Ordinances you Authored or Sponsored.</p>
-        </div>
+        <x-page-heading
+            title="My Ordinances"
+            subtitle="Provincial Ordinances you Authored or Sponsored."
+            icon="ordinances"
+            page="ordinances"
+        />
     </div>
 
     @if ($unlinked)

@@ -677,6 +677,10 @@
         @apply bg-brand-gold/30 text-amber-900;
     }
 
+    .splis-stat-icon--amber {
+        @apply bg-orange-500/20 text-orange-800;
+    }
+
     .splis-stat-icon--green {
         @apply bg-brand-green/20 text-brand-green;
     }

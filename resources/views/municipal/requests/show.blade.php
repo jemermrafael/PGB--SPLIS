@@ -17,10 +17,15 @@
                             ->filter(fn ($placement) => $placement->legislativeSession?->session_date)
                             ->sortByDesc(fn ($placement) => $placement->legislativeSession->session_date)
                             ->first();
+                        $latestObSession = $latestObPlacement?->legislativeSession;
+                        $latestObSessionEnded = $latestObSession !== null && (
+                            in_array($latestObSession->status, ['completed', 'cancelled'], true)
+                            || $latestObSession->isPastSessionDate()
+                        );
                     @endphp
-                    @if ($latestObPlacement?->legislativeSession)
+                    @if ($latestObSession && ! $latestObSessionEnded)
                         <span class="splis-badge-linked whitespace-nowrap">
-                            Scheduled on {{ $latestObPlacement->legislativeSession->session_number ?: 'Order of Business' }} Order of Business {{ $latestObPlacement->legislativeSession->session_date?->format('M d, Y') }}
+                            Scheduled on {{ $latestObSession->session_number ?: 'Order of Business' }} Order of Business {{ $latestObSession->session_date?->format('M d, Y') }}
                         </span>
                     @endif
                 @endif
@@ -38,7 +43,12 @@
                     <a href="{{ route('appropriation-ordinances.show', $agenda->appropriationOrdinance) }}" class="splis-badge-linked whitespace-nowrap">{{ $agenda->outputConnectionLabel() }} Appropriation Ordinance</a>
                 @endif
             </div>
-            <h1 class="splis-page-title">Request {{ $agenda->displayLabel() }}</h1>
+            <h1 class="splis-page-title">
+                <span class="block leading-tight">Request {{ $agenda->displayLabel() }}</span>
+                @if ($agenda->listYearLabel())
+                    <span class="mt-1 block text-base font-normal leading-tight text-slate-500 dark:text-slate-400">{{ $agenda->listYearLabel() }}</span>
+                @endif
+            </h1>
         </div>
         <div class="flex flex-wrap gap-2">
             @if ($agenda->request_pdf_url)
@@ -142,10 +152,10 @@
                 </div>
             </aside>
 
-            @if ($agenda->resolution || $agenda->ordinance || $agenda->appropriationOrdinance || $finalObPlacements->isNotEmpty())
+            @if ($agenda->resolution || $agenda->ordinance || $agenda->appropriationOrdinance)
                 <aside class="splis-card overflow-hidden">
                     <div class="splis-card-header splis-card-header--emphasis">
-                        <h2 class="splis-card-title">Updates</h2>
+                        <h2 class="splis-card-title">Legislative Measure</h2>
                     </div>
                     <div class="splis-card-body space-y-4">
                         @if ($agenda->resolution)
@@ -172,7 +182,6 @@
                                 </a>
                             </div>
                         @endif
-                        @include('municipal.requests.partials.ob-placements', ['placements' => $finalObPlacements])
                     </div>
                 </aside>
             @endif

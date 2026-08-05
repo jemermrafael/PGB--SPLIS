@@ -34,7 +34,7 @@ class PageIcon
             'committee_reports' => ['label' => 'Committee Reports', 'default_icon' => 'file-text'],
             'committee_terms' => ['label' => 'Election Terms', 'default_icon' => 'calendar'],
             'attendance_monthly' => ['label' => 'Monthly Attendance', 'default_icon' => 'clipboard-check'],
-            'my_committees' => ['label' => 'My Committees', 'default_icon' => 'users'],
+            'my_committees' => ['label' => 'My Committees', 'default_icon' => 'meeting'],
             'board_member_committee_reports' => ['label' => 'BM Committee Reports', 'default_icon' => 'file-text'],
             'board_member_ordinances_all' => ['label' => 'All Ordinances (BM)', 'default_icon' => 'ordinances'],
             'board_member_ordinances_report' => ['label' => 'BM Authored Ordinances', 'default_icon' => 'ordinances'],

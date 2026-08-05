@@ -19,7 +19,7 @@
         :subtitle="$historySubtitle"
         :count="$historyCount"
         :aside="true"
-        :open="true"
+        :open="$historyOpen ?? false"
     >
         <div class="splis-card-body">
             <ul class="splis-activity-timeline">

@@ -4,11 +4,14 @@
 
 @section('content')
 <div class="max-w-6xl">
-    <x-page-header
-        class="!mb-6"
-        title="My Sessions"
-        subtitle="Scheduled and completed sessions for your session packet and attendance."
-    />
+    <div class="splis-page-header !mb-6">
+        <x-page-heading
+            title="My Sessions"
+            subtitle="Scheduled and completed sessions for your session packet and attendance."
+            icon="calendar"
+            page="order_of_business"
+        />
+    </div>
 
     <div class="splis-card mb-6 overflow-hidden">
         <div class="splis-card-header splis-card-header--emphasis">

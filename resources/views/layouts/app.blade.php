@@ -48,7 +48,7 @@
                 $navItems[] = ['label' => 'Directory', 'url' => route('directory.index'), 'active' => request()->routeIs('directory.*'), 'icon' => 'notebook'];
             }
         } elseif ($isBoardMember) {
-            $navItems[] = ['label' => 'My Committees', 'url' => route('board-member.committees.index'), 'active' => $myCommitteesNavActive, 'icon' => 'users'];
+            $navItems[] = ['label' => 'My Committees', 'url' => route('board-member.committees.index'), 'active' => $myCommitteesNavActive, 'icon' => 'meeting'];
             $navItems[] = ['label' => 'Order of Business', 'url' => route('ob.sessions.index'), 'active' => request()->routeIs('ob.*'), 'icon' => 'calendar'];
             $navItems[] = ['label' => 'My Sessions', 'url' => route('board-member.sessions.index'), 'active' => $mySessionsNavActive, 'icon' => 'calendar'];
             $navItems[] = ['label' => 'Committee Reports', 'url' => route('board-member.committee-reports.index'), 'active' => request()->routeIs('board-member.committee-reports.*'), 'icon' => 'file-text'];
@@ -120,7 +120,7 @@
                                         My Profile
                                     </a>
                                     <a href="{{ route('board-member.committees.index') }}" class="splis-user-menu-link inline-flex items-center gap-2">
-                                        <x-icon name="users" class="h-4 w-4 shrink-0 opacity-80" />
+                                        <x-icon name="meeting" class="h-4 w-4 shrink-0 opacity-80" />
                                         My Committees
                                     </a>
                                 @endif

@@ -5,8 +5,8 @@
 @section('content')
 <div class="max-w-5xl">
     <div class="splis-page-header">
-        <x-page-heading title="My Committees" icon="users"
-            page="my_committees">
+        <x-page-heading title="My Committees" icon="meeting"
+            page="committees">
             Your Chairmanship, Vice Chairmanship, and Membership for
             {{ $selectedTerm->label }}@if ($selectedTerm->is_current) (current term)@endif.
         </x-page-heading>

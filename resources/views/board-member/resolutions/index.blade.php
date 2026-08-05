@@ -9,10 +9,12 @@
     data-search-url="{{ route('board-member.resolutions.search') }}"
 >
     <div class="splis-page-header">
-        <div>
-            <h1 class="splis-page-title">Resolutions</h1>
-            <p class="splis-page-subtitle">Resolutions connected to agendas from committees you chair.</p>
-        </div>
+        <x-page-heading
+            title="Resolutions"
+            subtitle="Resolutions connected to agendas from committees you chair."
+            icon="file-text"
+            page="resolutions"
+        />
         <a href="{{ route('board-member.agenda.index') }}" class="splis-btn-ghost whitespace-nowrap">My Agenda</a>
     </div>
 
