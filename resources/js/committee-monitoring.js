@@ -257,6 +257,7 @@ export function initCommitteeMonitoring() {
             .map(
                 (item) => `
             <tr>
+            
                 <td class="whitespace-nowrap font-semibold">
                     <a href="${escapeHtml(item.url)}" class="splis-doc-list-link">${escapeHtml(item.display_label || '—')}</a>
                 </td>
