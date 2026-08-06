@@ -10,7 +10,16 @@ class AppropriationOrdinancePolicy
 {
     public function viewAny(User $user): bool
     {
-        return ! $user->isMunicipalViewer();
+        if ($user->isMunicipalViewer()) {
+            return false;
+        }
+
+        // Board members do not browse the full appropriation ordinance archive.
+        if ($user->isBoardMember() && ! $user->isViceGovernorBoardMember()) {
+            return false;
+        }
+
+        return true;
     }
 
     public function view(User $user, AppropriationOrdinance $appropriationOrdinance): bool

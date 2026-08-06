@@ -11,7 +11,7 @@
     <div class="splis-page-header">
         <x-page-heading
             title="Resolutions"
-            subtitle="Resolutions connected to agendas from committees you chair."
+            subtitle="Resolutions connected to agendas from committees where you are Chair, Vice Chair, or Member."
             icon="file-text"
             page="resolutions"
         />

@@ -46,7 +46,7 @@ class RolePermissionMatrix
 
         return [
             // Agenda
-            ['group' => 'Agenda', 'action' => 'View list / search', 'cells' => [$e => 'yes', $ed => 'yes', $a => 'yes', $s => 'yes', $b => 'yes', $m => 'limited']],
+            ['group' => 'Agenda', 'action' => 'View list / search', 'cells' => [$e => 'yes', $ed => 'yes', $a => 'yes', $s => 'yes', $b => 'limited', $m => 'limited']],
             ['group' => 'Agenda', 'action' => 'Create / edit', 'cells' => $encode],
             ['group' => 'Agenda', 'action' => 'Soft-delete (trash)', 'cells' => $encode],
             ['group' => 'Agenda', 'action' => 'Archive / restore archive', 'cells' => $admin],
@@ -67,7 +67,7 @@ class RolePermissionMatrix
             ['group' => 'Ordinances', 'action' => 'Create / edit / soft-delete', 'cells' => $encode],
 
             // Appropriation ordinances
-            ['group' => 'Appropriation ordinances', 'action' => 'View list / search', 'cells' => $everyoneButMunicipal],
+            ['group' => 'Appropriation ordinances', 'action' => 'View list / search', 'cells' => [$e => 'yes', $ed => 'yes', $a => 'yes', $s => 'yes', $b => 'limited', $m => 'limited']],
             ['group' => 'Appropriation ordinances', 'action' => 'Create / edit / soft-delete', 'cells' => $encode],
 
             // Committees & roster

@@ -10,7 +10,16 @@ class ResolutionPolicy
 {
     public function viewAny(User $user): bool
     {
-        return ! $user->isMunicipalViewer();
+        if ($user->isMunicipalViewer()) {
+            return false;
+        }
+
+        // Regular board members use /my-resolutions (scoped to their committees).
+        if ($user->isBoardMember() && ! $user->isViceGovernorBoardMember()) {
+            return false;
+        }
+
+        return true;
     }
 
     public function view(User $user, Resolution $resolution): bool

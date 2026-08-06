@@ -63,19 +63,7 @@ class MyResolutionService
             return Resolution::query()->whereRaw('0 = 1');
         }
 
-        $resolutionIds = $this->dashboard
-            ->chairmanshipAgendaQueryFor($user)
-            ->whereNotNull('resolution_id')
-            ->pluck('resolution_id')
-            ->unique()
-            ->filter()
-            ->values();
-
-        if ($resolutionIds->isEmpty()) {
-            return Resolution::query()->whereRaw('0 = 1');
-        }
-
-        return Resolution::query()->whereIn('id', $resolutionIds->all());
+        return $this->dashboard->accessibleResolutionQueryFor($user);
     }
 
     /**

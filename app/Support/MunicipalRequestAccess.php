@@ -8,6 +8,7 @@ use App\Models\Municipality;
 use App\Models\Ordinance;
 use App\Models\Resolution;
 use App\Models\User;
+use App\Services\BoardMemberDashboardService;
 
 class MunicipalRequestAccess
 {
@@ -36,8 +37,23 @@ class MunicipalRequestAccess
 
     public static function userCanViewAgenda(User $user, AgendaItem $agenda): bool
     {
-        if ($user->canEncode() || $user->isBoardMember()) {
+        if ($user->canEncode()) {
             return true;
+        }
+
+        if ($user->isBoardMember()) {
+            if ($user->isViceGovernorBoardMember()) {
+                return true;
+            }
+
+            if ($user->board_member_id === null) {
+                return false;
+            }
+
+            return app(BoardMemberDashboardService::class)
+                ->committeeAgendaQueryFor($user)
+                ->whereKey($agenda->getKey())
+                ->exists();
         }
 
         if (! $user->isMunicipalViewer() || $user->municipality === null) {
@@ -49,8 +65,30 @@ class MunicipalRequestAccess
 
     public static function userCanViewResolution(User $user, Resolution $resolution): bool
     {
-        if ($user->canEncode() || $user->isBoardMember()) {
+        if ($user->canEncode()) {
             return true;
+        }
+
+        if ($user->isBoardMember()) {
+            if ($user->isViceGovernorBoardMember()) {
+                return true;
+            }
+
+            if ($user->board_member_id === null) {
+                return false;
+            }
+
+            $agenda = $resolution->relationLoaded('publishedFromAgenda')
+                ? $resolution->publishedFromAgenda
+                : $resolution->publishedFromAgenda()->withTrashed()->first();
+
+            // Linked output of an agenda they may already open (committee referral match).
+            if ($agenda instanceof AgendaItem && self::userCanViewAgenda($user, $agenda)) {
+                return true;
+            }
+
+            return app(BoardMemberDashboardService::class)
+                ->canAccessResolution($user, $resolution);
         }
 
         if (! $user->isMunicipalViewer() || $user->municipality === null) {
@@ -76,8 +114,24 @@ class MunicipalRequestAccess
 
     public static function userCanViewAppropriationOrdinance(User $user, AppropriationOrdinance $appropriationOrdinance): bool
     {
-        if ($user->canEncode() || $user->isBoardMember()) {
+        if ($user->canEncode()) {
             return true;
+        }
+
+        if ($user->isBoardMember()) {
+            if ($user->isViceGovernorBoardMember()) {
+                return true;
+            }
+
+            $agenda = $appropriationOrdinance->relationLoaded('agendaItem')
+                ? $appropriationOrdinance->agendaItem
+                : $appropriationOrdinance->agendaItem()->withTrashed()->first();
+
+            if (! $agenda instanceof AgendaItem && $appropriationOrdinance->agenda_item_id !== null) {
+                $agenda = AgendaItem::query()->withTrashed()->find($appropriationOrdinance->agenda_item_id);
+            }
+
+            return $agenda instanceof AgendaItem && self::userCanViewAgenda($user, $agenda);
         }
 
         if (! $user->isMunicipalViewer() || $user->municipality === null) {

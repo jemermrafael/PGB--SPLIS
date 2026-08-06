@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Resolution;
 use App\Services\ResolutionRepository;
 use App\Support\DocumentType;
 use Illuminate\Http\JsonResponse;
@@ -11,6 +12,8 @@ class ResolutionSearchController extends Controller
 {
     public function __invoke(Request $request, ResolutionRepository $repository): JsonResponse
     {
+        $this->authorize('viewAny', Resolution::class);
+
         $filters = $request->only([
             'number',
             'title',

@@ -10,6 +10,7 @@ use App\Models\Committee;
 use App\Models\CommitteeMembership;
 use App\Models\CommitteeTerm;
 use App\Models\LegislativeSession;
+use App\Models\Resolution;
 use App\Models\User;
 use App\Support\AgendaDeadline;
 use App\Support\CommitteeLookup;
@@ -284,6 +285,83 @@ class BoardMemberDashboardService
     public function committeeAgendaQueryFor(User $user): Builder
     {
         return $this->agendaQueryForCommittees($this->committeesFor($user));
+    }
+
+    /**
+     * Resolutions the board member may open: linked from agendas referred to their
+     * committees (any role), or tagged with one of those committee names.
+     */
+    public function canAccessResolution(User $user, Resolution $resolution): bool
+    {
+        if ((int) ($user->board_member_id ?? 0) <= 0) {
+            return false;
+        }
+
+        if ($this->committeeAgendaQueryFor($user)->where('resolution_id', $resolution->id)->exists()) {
+            return true;
+        }
+
+        return $this->resolutionQueryForCommittees($this->committeesFor($user))
+            ->whereKey($resolution->id)
+            ->exists();
+    }
+
+    /**
+     * @return Builder<Resolution>
+     */
+    public function accessibleResolutionQueryFor(User $user): Builder
+    {
+        if ((int) ($user->board_member_id ?? 0) <= 0) {
+            return Resolution::query()->whereRaw('0 = 1');
+        }
+
+        $committees = $this->committeesFor($user);
+        $resolutionIds = $this->committeeAgendaQueryFor($user)
+            ->whereNotNull('resolution_id')
+            ->pluck('resolution_id')
+            ->unique()
+            ->filter()
+            ->values();
+
+        return Resolution::query()->where(function (Builder $query) use ($committees, $resolutionIds): void {
+            if ($resolutionIds->isNotEmpty()) {
+                $query->whereIn('id', $resolutionIds->all());
+            }
+
+            if ($committees->isNotEmpty()) {
+                $method = $resolutionIds->isNotEmpty() ? 'orWhere' : 'where';
+                $query->{$method}(function (Builder $nested) use ($committees): void {
+                    foreach ($committees as $committee) {
+                        $nested->orWhere(function (Builder $committeeQuery) use ($committee): void {
+                            CommitteeLookup::applyResolutionCommitteeFilter($committeeQuery, $committee);
+                        });
+                    }
+                });
+            }
+
+            if ($resolutionIds->isEmpty() && $committees->isEmpty()) {
+                $query->whereRaw('0 = 1');
+            }
+        });
+    }
+
+    /**
+     * @param  Collection<int, Committee>  $committees
+     * @return Builder<Resolution>
+     */
+    protected function resolutionQueryForCommittees(Collection $committees): Builder
+    {
+        if ($committees->isEmpty()) {
+            return Resolution::query()->whereRaw('0 = 1');
+        }
+
+        return Resolution::query()->where(function (Builder $query) use ($committees): void {
+            foreach ($committees as $committee) {
+                $query->orWhere(function (Builder $nested) use ($committee): void {
+                    CommitteeLookup::applyResolutionCommitteeFilter($nested, $committee);
+                });
+            }
+        });
     }
 
     /**

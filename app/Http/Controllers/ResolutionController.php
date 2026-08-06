@@ -32,8 +32,13 @@ class ResolutionController extends Controller
         protected ResolutionVersionService $versionService,
     ) {}
 
-    public function index(): View
+    public function index(): View|RedirectResponse
     {
+        $user = auth()->user();
+        if ($user?->isBoardMember() && ! $user->isViceGovernorBoardMember()) {
+            return redirect()->route('board-member.resolutions.index');
+        }
+
         $this->authorize('viewAny', Resolution::class);
 
         return view('resolutions.index', [
@@ -90,8 +95,8 @@ class ResolutionController extends Controller
             'isWatchingResolution' => auth()->user()?->isBoardMember()
                 ? $watchlist->isWatching(auth()->user(), $resolution)
                 : false,
-            'previousResolution' => $resolution->trashed() ? null : $resolution->previousInList(),
-            'nextResolution' => $resolution->trashed() ? null : $resolution->nextInList(),
+            'previousResolution' => $resolution->trashed() ? null : $this->adjacentAccessibleResolution($resolution, 'previous'),
+            'nextResolution' => $resolution->trashed() ? null : $this->adjacentAccessibleResolution($resolution, 'next'),
         ]);
     }
 
@@ -311,6 +316,31 @@ class ResolutionController extends Controller
         $data['province'] = $request->boolean('province');
 
         return $data;
+    }
+
+    /**
+     * Neighbor in the archive that the current user is allowed to open.
+     * Avoids BM prev/next links that immediately 403 on out-of-scope items.
+     */
+    protected function adjacentAccessibleResolution(Resolution $resolution, string $direction): ?Resolution
+    {
+        $candidate = $direction === 'previous'
+            ? $resolution->previousInList()
+            : $resolution->nextInList();
+
+        $guard = 0;
+        while ($candidate !== null && $guard < 50) {
+            if (auth()->user()?->can('view', $candidate)) {
+                return $candidate;
+            }
+
+            $candidate = $direction === 'previous'
+                ? $candidate->previousInList()
+                : $candidate->nextInList();
+            $guard++;
+        }
+
+        return null;
     }
 
     protected function formData(?Resolution $resolution = null): array
