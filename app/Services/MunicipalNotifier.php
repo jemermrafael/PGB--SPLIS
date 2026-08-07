@@ -19,30 +19,42 @@ class MunicipalNotifier
         protected EmailNotificationService $emails,
     ) {}
 
-    public function notifyCommitteeReferral(AgendaItem $agenda): void
+    public function notifyCommitteeReferral(AgendaItem $agenda, ?string $previousCommittee = null): void
     {
         $referral = trim((string) ($agenda->committee_referred ?? ''));
+        $previous = trim((string) ($previousCommittee ?? ''));
 
-        if ($referral === '') {
+        if ($referral === '' && $previous === '') {
             return;
         }
 
+        $isRereferral = $previous !== ''
+            && $referral !== ''
+            && mb_strtolower($previous) !== mb_strtolower($referral);
         $label = $agenda->displayLabel();
-        $body = sprintf('%s was referred to %s.', $label, $referral);
+        $committeeLabel = $referral !== '' ? $referral : $previous;
+
+        $title = $isRereferral
+            ? 'Your request was re-referred to another committee'
+            : ($referral === ''
+                ? 'Committee referral removed from your request'
+                : 'Your request was referred to a committee');
+
+        $body = match (true) {
+            $isRereferral => sprintf('%s was re-referred to %s (previously %s).', $label, $referral, $previous),
+            $referral === '' => sprintf('%s is no longer referred to %s.', $label, $previous),
+            default => sprintf('%s was referred to %s.', $label, $referral),
+        };
 
         foreach ($this->usersForAgenda($agenda) as $user) {
-            $notification = UserNotification::query()->firstOrCreate(
-                [
-                    'user_id' => $user->id,
-                    'agenda_item_id' => $agenda->id,
-                    'type' => UserNotification::TYPE_COMMITTEE_REFERRAL,
-                ],
-                [
-                    'title' => 'Your request was referred to a committee',
-                    'body' => $body,
-                    'link' => route('municipal.requests.show', $agenda, absolute: false),
-                ],
-            );
+            $notification = UserNotification::query()->create([
+                'user_id' => $user->id,
+                'agenda_item_id' => $agenda->id,
+                'type' => UserNotification::TYPE_COMMITTEE_REFERRAL,
+                'title' => $title,
+                'body' => $body,
+                'link' => route('municipal.requests.show', $agenda, absolute: false),
+            ]);
 
             $this->emails->sendForNotification(
                 $user,
@@ -50,7 +62,10 @@ class MunicipalNotifier
                 EmailNotificationSettings::AUDIENCE_MUNICIPAL,
                 vars: [
                     'label' => $label,
-                    'committee' => $referral,
+                    'committee' => $committeeLabel,
+                    'previous_committee' => $previous !== '' ? $previous : null,
+                    'title' => $title,
+                    'body' => $body,
                 ],
             );
         }

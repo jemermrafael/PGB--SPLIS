@@ -149,8 +149,8 @@ class EmailNotificationSettings
         $defaults = [
             self::AUDIENCE_BOARD_MEMBER => [
                 \App\Models\UserNotification::TYPE_COMMITTEE_REFERRAL => [
-                    'subject' => 'Agenda referred to your Committee',
-                    'body' => "{{label}} was referred to {{committee}}.\n\nOpen SPLIS for details.",
+                    'subject' => '{{title}}',
+                    'body' => "{{body}}\n\nOpen SPLIS for details.",
                     'action_label' => 'View Agenda',
                 ],
                 \App\Models\UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL => [
@@ -201,8 +201,8 @@ class EmailNotificationSettings
             ],
             self::AUDIENCE_MUNICIPAL => [
                 \App\Models\UserNotification::TYPE_COMMITTEE_REFERRAL => [
-                    'subject' => 'Your request was referred to a Committee',
-                    'body' => "{{label}} was referred to {{committee}}.\n\nYou can track this request in SPLIS.",
+                    'subject' => '{{title}}',
+                    'body' => "{{body}}\n\nYou can track this request in SPLIS.",
                     'action_label' => 'View Request',
                 ],
                 self::TYPE_RESOLUTION_PUBLISHED => [

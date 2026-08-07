@@ -24,6 +24,7 @@ use App\Support\ActivityLogger;
 use App\Support\AgendaFieldOptions;
 use App\Support\AgendaMeasureType;
 use App\Support\AgendaPdfSlot;
+use App\Support\CommitteeLookup;
 use App\Support\TrashActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -100,7 +101,7 @@ class AgendaItemController extends Controller
             'sender' => $agenda->sender,
         ]);
 
-        $outputHandled = $this->afterAgendaSave($agenda, $request, $notifier, $publisher);
+        $outputHandled = $this->afterAgendaSave($agenda, $request, $notifier, $publisher, previousCommittee: null, notifyCommitteeReferral: filled($agenda->committee_referred));
 
         $changedFields = array_values(array_filter([
             filled($agenda->committee_referred) ? 'committee_referred' : null,
@@ -221,6 +222,7 @@ class AgendaItemController extends Controller
             ->all();
 
         $previousOutputConnection = $agenda->outputConnectionKey();
+        $previousCommittee = $agenda->committee_referred;
         $hasPacketUpload = $request->hasFile('request_packet_files');
 
         $agenda->update($this->validated($request));
@@ -242,12 +244,16 @@ class AgendaItemController extends Controller
             $agenda->refresh();
         }
 
+        $referralChanged = ! $this->sameCommitteeReferral($previousCommittee, $agenda->committee_referred);
+
         $outputHandled = $this->afterAgendaSave(
             $agenda,
             $request,
             $notifier,
             $publisher,
             $previousOutputConnection,
+            previousCommittee: $previousCommittee,
+            notifyCommitteeReferral: $referralChanged,
         );
 
         $lifecycle->handleAgendaSaved($agenda, $changedFields, $request->user()->id);
@@ -277,12 +283,14 @@ class AgendaItemController extends Controller
         BoardMemberNotifier $notifier,
         AgendaOutputPublisher $publisher,
         ?string $previousOutputConnection = null,
+        ?string $previousCommittee = null,
+        bool $notifyCommitteeReferral = false,
     ): bool {
         $agenda->refresh();
 
-        if (filled($agenda->committee_referred)) {
-            $notifier->notifyCommitteeReferral($agenda);
-            app(MunicipalNotifier::class)->notifyCommitteeReferral($agenda);
+        if ($notifyCommitteeReferral) {
+            $notifier->notifyCommitteeReferral($agenda, $previousCommittee);
+            app(MunicipalNotifier::class)->notifyCommitteeReferral($agenda, $previousCommittee);
         }
 
         app(AgendaExpirationNotifier::class)->syncForAgenda($agenda);
@@ -325,6 +333,31 @@ class AgendaItemController extends Controller
         }
 
         return false;
+    }
+
+    protected function sameCommitteeReferral(?string $previous, ?string $current): bool
+    {
+        $previous = trim((string) $previous);
+        $current = trim((string) $current);
+
+        if ($previous === $current) {
+            return true;
+        }
+
+        if ($previous === '' || $current === '') {
+            return false;
+        }
+
+        if (mb_strtolower($previous) === mb_strtolower($current)) {
+            return true;
+        }
+
+        $previousCommittee = CommitteeLookup::findByName($previous);
+        $currentCommittee = CommitteeLookup::findByName($current);
+
+        return $previousCommittee !== null
+            && $currentCommittee !== null
+            && $previousCommittee->id === $currentCommittee->id;
     }
 
     public function destroy(AgendaItem $agenda): RedirectResponse

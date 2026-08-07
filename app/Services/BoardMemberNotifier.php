@@ -24,48 +24,124 @@ class BoardMemberNotifier
         protected UserNotificationPreferenceService $preferences,
     ) {}
 
-    public function notifyCommitteeReferral(AgendaItem $agenda): void
+    public function notifyCommitteeReferral(AgendaItem $agenda, ?string $previousCommittee = null): void
     {
         $referral = trim((string) ($agenda->committee_referred ?? ''));
+        $previous = trim((string) ($previousCommittee ?? ''));
 
-        if ($referral === '') {
+        if ($referral === '' && $previous === '') {
             return;
         }
 
-        $committee = CommitteeLookup::findByName($referral);
-
-        if ($committee === null) {
-            return;
-        }
-
+        $newCommittee = $referral !== '' ? CommitteeLookup::findByName($referral) : null;
+        $oldCommittee = $previous !== '' ? CommitteeLookup::findByName($previous) : null;
+        $isRereferral = $previous !== ''
+            && $referral !== ''
+            && (
+                ($oldCommittee && $newCommittee && $oldCommittee->id !== $newCommittee->id)
+                || ((! $oldCommittee || ! $newCommittee) && mb_strtolower($previous) !== mb_strtolower($referral))
+            );
         $label = $agenda->displayLabel();
-        $body = sprintf('%s was referred to %s.', $label, $committee->name);
+        $previousLabel = $oldCommittee?->name ?: ($previous !== '' ? $previous : null);
+        $newLabel = $newCommittee?->name ?: ($referral !== '' ? $referral : null);
 
-        foreach ($this->usersForAgendaCommittee($agenda) as $user) {
-            $notification = $this->createNotificationForUser($user, UserNotification::TYPE_COMMITTEE_REFERRAL, [
-                [
+        $newChairIds = collect();
+
+        if ($newCommittee !== null && $newLabel !== null) {
+            $title = $isRereferral
+                ? 'Agenda re-referred to your committee'
+                : 'Agenda referred to your committee';
+            $body = $isRereferral
+                ? sprintf('%s was re-referred to %s (previously %s).', $label, $newLabel, $previousLabel)
+                : sprintf('%s was referred to %s.', $label, $newLabel);
+
+            foreach ($this->usersForCommittee($newCommittee) as $user) {
+                $newChairIds->push($user->id);
+
+                $notification = $this->createFreshNotificationForUser($user, UserNotification::TYPE_COMMITTEE_REFERRAL, [
                     'user_id' => $user->id,
                     'agenda_item_id' => $agenda->id,
-                ],
-                [
-                    'title' => 'Agenda referred to your committee',
+                    'title' => $title,
                     'body' => $body,
                     'link' => route('agenda.show', $agenda, absolute: false),
-                ],
-            ]);
+                ]);
 
-            $this->sendBoardMemberEmail(
-                $user,
-                $notification,
-                UserNotification::TYPE_COMMITTEE_REFERRAL,
-                [
-                    'label' => $label,
-                    'committee' => $committee->name,
-                    'title' => 'Agenda referred to your committee',
+                $this->sendBoardMemberEmail(
+                    $user,
+                    $notification,
+                    UserNotification::TYPE_COMMITTEE_REFERRAL,
+                    [
+                        'label' => $label,
+                        'committee' => $newLabel,
+                        'previous_committee' => $previousLabel,
+                        'title' => $title,
+                        'body' => $body,
+                    ],
+                    route('agenda.show', $agenda, absolute: false),
+                );
+            }
+        }
+
+        if ($isRereferral && $oldCommittee !== null && $previousLabel !== null && $newLabel !== null) {
+            $title = 'Agenda re-referred from your committee';
+            $body = sprintf('%s was re-referred from %s to %s.', $label, $previousLabel, $newLabel);
+
+            foreach ($this->usersForCommittee($oldCommittee) as $user) {
+                if ($newChairIds->contains($user->id)) {
+                    continue;
+                }
+
+                $notification = $this->createFreshNotificationForUser($user, UserNotification::TYPE_COMMITTEE_REFERRAL, [
+                    'user_id' => $user->id,
+                    'agenda_item_id' => $agenda->id,
+                    'title' => $title,
                     'body' => $body,
-                ],
-                route('agenda.show', $agenda, absolute: false),
-            );
+                    'link' => route('agenda.show', $agenda, absolute: false),
+                ]);
+
+                $this->sendBoardMemberEmail(
+                    $user,
+                    $notification,
+                    UserNotification::TYPE_COMMITTEE_REFERRAL,
+                    [
+                        'label' => $label,
+                        'committee' => $newLabel,
+                        'previous_committee' => $previousLabel,
+                        'title' => $title,
+                        'body' => $body,
+                    ],
+                    route('agenda.show', $agenda, absolute: false),
+                );
+            }
+        }
+
+        // Referral cleared: tell the previous chair it is no longer with their committee.
+        if ($referral === '' && $oldCommittee !== null && $previousLabel !== null) {
+            $title = 'Agenda referral removed from your committee';
+            $body = sprintf('%s is no longer referred to %s.', $label, $previousLabel);
+
+            foreach ($this->usersForCommittee($oldCommittee) as $user) {
+                $notification = $this->createFreshNotificationForUser($user, UserNotification::TYPE_COMMITTEE_REFERRAL, [
+                    'user_id' => $user->id,
+                    'agenda_item_id' => $agenda->id,
+                    'title' => $title,
+                    'body' => $body,
+                    'link' => route('agenda.show', $agenda, absolute: false),
+                ]);
+
+                $this->sendBoardMemberEmail(
+                    $user,
+                    $notification,
+                    UserNotification::TYPE_COMMITTEE_REFERRAL,
+                    [
+                        'label' => $label,
+                        'committee' => $previousLabel,
+                        'title' => $title,
+                        'body' => $body,
+                    ],
+                    route('agenda.show', $agenda, absolute: false),
+                );
+            }
         }
     }
 
@@ -491,6 +567,12 @@ class BoardMemberNotifier
             return collect();
         }
 
+        return $this->usersForCommittee($committee);
+    }
+
+    /** @return Collection<int, User> */
+    protected function usersForCommittee(\App\Models\Committee $committee): Collection
+    {
         $termId = CommitteeTerm::query()->current()->orderByDesc('id')->value('id');
 
         $memberIds = CommitteeMembership::query()
@@ -551,6 +633,21 @@ class BoardMemberNotifier
             array_merge($payload[0], ['type' => $type]),
             $payload[1],
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    protected function createFreshNotificationForUser(User $user, string $type, array $attributes): ?UserNotification
+    {
+        if (! $this->preferences->allowsInApp($user, $type)) {
+            return null;
+        }
+
+        return UserNotification::query()->create(array_merge($attributes, [
+            'type' => $type,
+            'user_id' => $user->id,
+        ]));
     }
 
     /**

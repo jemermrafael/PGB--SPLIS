@@ -159,9 +159,8 @@ class EmailNotificationTest extends TestCase
             $html = $mail->render();
 
             return $mail->hasTo($user->email)
-                && $mail->notificationTitle === 'Agenda referred to your Committee'
-                && str_contains($mail->notificationBody, 'Agenda #1')
-                && str_contains($mail->notificationBody, 'Ways and Means')
+                && $mail->notificationTitle === 'Agenda referred to your committee'
+                && str_contains($mail->notificationBody, 'Test body')
                 && str_contains($html, 'Legislative Information System')
                 && str_contains($html, 'Sangguniang Panlalawigan')
                 && str_contains($html, 'bataan-seal.png');
