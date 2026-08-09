@@ -680,4 +680,88 @@ class AgendaLifecycleSyncTest extends TestCase
         ]);
         $this->assertSame(AgendaItem::OB_STAGE_RESOLVED, $agenda->fresh()->ob_lifecycle_stage);
     }
+
+    public function test_explicit_session_committee_report_does_not_relocate_onto_previous_ob(): void
+    {
+        $user = User::factory()->create();
+        $boardMember = BoardMember::query()->create([
+            'name' => 'Chair',
+            'honorific' => 'Hon.',
+            'is_active' => true,
+        ]);
+        $agenda = AgendaItem::create([
+            'tracking_no' => '912',
+            'title' => 'Already on earlier OB',
+            'committee_referred' => 'Tourism',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 0,
+            'created_by' => $user->id,
+        ]);
+
+        $firstSession = LegislativeSession::create([
+            'session_date' => now()->addWeek(),
+            'session_kind' => 'regular',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+        $firstDocument = ObDocument::create([
+            'legislative_session_id' => $firstSession->id,
+            'title' => 'Earlier OB',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+        app(ObDocumentTemplateService::class)->seedDefaultBlocks($firstDocument);
+
+        $lifecycle = app(AgendaLifecycleService::class);
+        $lifecycle->syncNewSession($firstSession, $user->id);
+
+        $this->assertDatabaseHas('ob_blocks', [
+            'ob_document_id' => $firstDocument->id,
+            'agenda_item_id' => $agenda->id,
+            'type' => ObBlockType::UnassignedAgenda,
+        ]);
+
+        $secondSession = LegislativeSession::create([
+            'session_date' => now()->addWeeks(2),
+            'session_kind' => 'regular',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+        $secondDocument = ObDocument::create([
+            'legislative_session_id' => $secondSession->id,
+            'title' => 'Chosen OB',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+        app(ObDocumentTemplateService::class)->seedDefaultBlocks($secondDocument);
+
+        $report = BoardMemberCommitteeReport::query()->create([
+            'board_member_id' => $boardMember->id,
+            'legislative_session_id' => $secondSession->id,
+            'title' => 'Target later session',
+            'pdf_path' => 'board-member-committee-reports/later.pdf',
+            'original_filename' => 'later.pdf',
+            'submitted_by' => $user->id,
+            'submitted_at' => now(),
+        ]);
+        $report->agendaItems()->attach($agenda->id);
+        $agenda->update([
+            'committee_report_pdf_path' => 'board-member-committee-reports/later.pdf',
+        ]);
+
+        $lifecycle->handleAgendaSaved($agenda->fresh(['boardMemberCommitteeReports', 'obPlacements']), [
+            'committee_report_pdf_path',
+        ], $user->id);
+
+        $this->assertDatabaseHas('ob_blocks', [
+            'ob_document_id' => $secondDocument->id,
+            'agenda_item_id' => $agenda->id,
+            'type' => ObBlockType::CommitteeReport,
+        ]);
+        $this->assertDatabaseMissing('ob_blocks', [
+            'ob_document_id' => $firstDocument->id,
+            'agenda_item_id' => $agenda->id,
+            'type' => ObBlockType::CommitteeReport,
+        ]);
+    }
 }

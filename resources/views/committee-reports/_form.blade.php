@@ -4,6 +4,7 @@
     $isEdit = $report !== null;
     $selectedAgendaIds = collect($selectedAgendaIds ?? [])->map(fn ($id) => (int) $id)->all();
     $chairMembers = $chairMembers ?? collect();
+    $selectionCommittees = $selectionCommittees ?? collect();
     $selectedSessionId = $selectedSessionId ?? null;
 @endphp
 
@@ -20,6 +21,25 @@
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div class="splis-card splis-card-body space-y-5">
             @if (! $isEdit)
+                <div>
+                    <label class="splis-label" for="staff-cr-committee-id">Committee</label>
+                    <select id="staff-cr-committee-id" class="splis-select">
+                        <option value="">Select committee</option>
+                        @foreach (($selectionCommittees ?? collect()) as $committee)
+                            <option
+                                value="{{ $committee['id'] }}"
+                                data-board-member-id="{{ $committee['board_member_id'] }}"
+                                @selected((int) ($committeeId ?? 0) === (int) $committee['id'])
+                            >
+                                {{ $committee['name'] }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        Choosing a committee selects its Board Member chair automatically.
+                    </p>
+                </div>
+
                 <div>
                     <label class="splis-label" for="board_member_id">Board Member (Chair)</label>
                     <select name="board_member_id" id="board_member_id" class="splis-select" required>
@@ -168,7 +188,7 @@
                 @empty
                     <p class="px-2 py-8 text-center text-sm text-slate-500">
                         @if (! $boardMemberId && ! $isEdit)
-                            Select a Board Member chair to load open agendas.
+                            Select a committee or Board Member chair to load open agendas.
                         @elseif ($q !== '' || $committeeId)
                             No chairmanship agenda items matched your filter.
                         @else

@@ -151,6 +151,42 @@ class StaffCommitteeReportTest extends TestCase
             ->assertSee('Curfew ordinance review');
     }
 
+    public function test_create_committee_selection_resolves_chair_board_member(): void
+    {
+        $encoder = User::factory()->create(['role' => UserRole::Encoder]);
+        [$bmUser, $committee, , $boardMember] = $this->linkedBoardMemberWithCommittee();
+
+        AgendaItem::query()->create([
+            'tracking_no' => '512',
+            'title' => 'Committee-first create agenda',
+            'committee_referred' => $committee->name,
+            'status' => AgendaItem::STATUS_PENDING,
+            'date_of_referral' => now()->toDateString(),
+            'prescribed_days' => 0,
+            'created_by' => $bmUser->id,
+        ]);
+
+        $response = $this->actingAs($encoder)
+            ->get(route('committee-reports.create', [
+                'committee_id' => $committee->id,
+            ]))
+            ->assertOk()
+            ->assertSee('staff-cr-committee-id', false)
+            ->assertSee($committee->name)
+            ->assertSee($boardMember->displayName())
+            ->assertSee('Committee-first create agenda');
+
+        $html = $response->getContent();
+        $this->assertMatchesRegularExpression(
+            '/id="board_member_id"[\s\S]*?<option[^>]*value="'.$boardMember->id.'"[^>]*selected/i',
+            $html,
+        );
+        $this->assertMatchesRegularExpression(
+            '/id="staff-cr-committee-id"[\s\S]*?<option[^>]*value="'.$committee->id.'"[^>]*selected/i',
+            $html,
+        );
+    }
+
     public function test_encoder_can_submit_report_on_behalf_of_chair(): void
     {
         Storage::fake('local');

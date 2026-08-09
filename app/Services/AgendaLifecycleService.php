@@ -655,6 +655,7 @@ class AgendaLifecycleService
     /**
      * Prefer the session chosen on the committee report; otherwise the next upcoming session with an OB.
      * If the chosen session is already done / has no OB, fall back to the next upcoming session.
+     * Reserved reports (null target) use the next upcoming session — not an older OB the agenda already sits on.
      */
     public function resolveCommitteeReportTargetSession(AgendaItem $agenda): ?LegislativeSession
     {
@@ -664,19 +665,29 @@ class AgendaLifecycleService
             ->sortByDesc('id')
             ->first();
 
-        if ($report?->legislative_session_id) {
-            $chosen = LegislativeSession::query()
-                ->with('obDocument')
-                ->whereKey($report->legislative_session_id)
-                ->first();
+        if ($report !== null) {
+            // Explicit target session on the BM/staff report submission.
+            if ($report->legislative_session_id) {
+                $chosen = LegislativeSession::query()
+                    ->with('obDocument')
+                    ->whereKey($report->legislative_session_id)
+                    ->first();
 
-            if ($chosen
-                && in_array($chosen->status, ['draft', 'scheduled'], true)
-                && $chosen->obDocument) {
-                return $chosen;
+                if ($chosen
+                    && in_array($chosen->status, ['draft', 'scheduled'], true)
+                    && $chosen->obDocument) {
+                    return $chosen;
+                }
+
+                // Chosen session is done / missing OB — reserve for the next available session.
+                return $this->nearestUpcomingSession();
             }
+
+            // Reserved for next available session/OB (do not pin to a previous OB the agenda is already on).
+            return $this->nearestUpcomingSession();
         }
 
+        // Legacy PDF/URL-only committee report (no BM report row): keep prior container if any.
         return $this->sessionContainingAgenda($agenda) ?? $this->nearestUpcomingSession();
     }
 

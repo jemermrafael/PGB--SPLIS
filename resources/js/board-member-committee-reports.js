@@ -41,6 +41,7 @@ export function initBoardMemberCommitteeReportAgendaSearch() {
 
     const list = document.getElementById('bm-cr-agenda-list');
     const committeeSelect = document.getElementById('bm-cr-committee-id');
+    const staffCommitteeSelect = document.getElementById('staff-cr-committee-id');
     const searchInput = document.getElementById('bm-cr-q');
     const boardMemberSelect = document.getElementById('board_member_id');
     const searchUrl = root.dataset.searchUrl;
@@ -53,6 +54,29 @@ export function initBoardMemberCommitteeReportAgendaSearch() {
     let debounceTimer;
     let requestId = 0;
 
+    staffCommitteeSelect?.addEventListener('change', () => {
+        if (!needsBoardMember || !boardMemberSelect) {
+            return;
+        }
+
+        const option = staffCommitteeSelect.selectedOptions[0];
+        const chairId = option?.dataset.boardMemberId || '';
+        const committeeId = staffCommitteeSelect.value;
+        const params = new URLSearchParams();
+
+        if (chairId !== '') {
+            params.set('board_member_id', chairId);
+        }
+        if (committeeId !== '') {
+            params.set('committee_id', committeeId);
+        }
+
+        const query = params.toString();
+        window.location.href = query
+            ? `${window.location.pathname}?${query}`
+            : window.location.pathname;
+    });
+
     boardMemberSelect?.addEventListener('change', () => {
         if (! needsBoardMember) {
             return;
@@ -62,6 +86,19 @@ export function initBoardMemberCommitteeReportAgendaSearch() {
         if (boardMemberSelect.value) {
             params.set('board_member_id', boardMemberSelect.value);
         }
+
+        // Keep committee filter only when it still belongs to the newly selected chair.
+        const staffOption = staffCommitteeSelect?.selectedOptions[0];
+        const staffCommitteeId = staffCommitteeSelect?.value || '';
+        const staffChairId = staffOption?.dataset.boardMemberId || '';
+        if (
+            staffCommitteeId !== ''
+            && boardMemberSelect.value !== ''
+            && String(staffChairId) === String(boardMemberSelect.value)
+        ) {
+            params.set('committee_id', staffCommitteeId);
+        }
+
         const query = params.toString();
         window.location.href = query
             ? `${window.location.pathname}?${query}`
@@ -123,7 +160,7 @@ export function initBoardMemberCommitteeReportAgendaSearch() {
 
     async function fetchAgendas() {
         if (needsBoardMember && boardMemberId() === '') {
-            list.innerHTML = '<p class="px-2 py-8 text-center text-sm text-slate-500">Select a Board Member chair to load open agendas.</p>';
+            list.innerHTML = '<p class="px-2 py-8 text-center text-sm text-slate-500">Select a committee or Board Member chair to load open agendas.</p>';
             return;
         }
 
@@ -172,11 +209,13 @@ export function initBoardMemberCommitteeReportAgendaSearch() {
             const items = payload.data || [];
             if (items.length === 0) {
                 const filtered = q !== '' || committeeId !== '';
-                list.innerHTML = `<p class="px-2 py-8 text-center text-sm text-slate-500">${
-                    filtered
-                        ? 'No chairmanship agenda items matched your filter.'
-                        : 'No open chairmanship agenda items need a committee report.'
-                }</p>`;
+                let emptyMessage = 'No open chairmanship agenda items need a committee report.';
+                if (filtered) {
+                    emptyMessage = 'No chairmanship agenda items matched your filter.';
+                } else if (needsBoardMember && boardMemberId() === '') {
+                    emptyMessage = 'Select a committee or Board Member chair to load open agendas.';
+                }
+                list.innerHTML = `<p class="px-2 py-8 text-center text-sm text-slate-500">${emptyMessage}</p>`;
             } else {
                 list.innerHTML = items.map((item) => renderAgendaItem(item, checked)).join('');
                 bindTitleTooltips(list);

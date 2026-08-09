@@ -361,7 +361,7 @@ class BoardMemberCommitteeReportService
 
         foreach ($agendas as $agenda) {
             $this->lifecycle->handleAgendaSaved(
-                $agenda->fresh(),
+                $agenda->fresh(['boardMemberCommitteeReports', 'obPlacements']),
                 ['committee_report_pdf_path'],
                 $user->id,
             );
@@ -378,12 +378,12 @@ class BoardMemberCommitteeReportService
         $this->syncSessionFileFilenamesForReport((int) $report->id, $filename);
 
         $this->attachSharedSessionFile(
+            $report->fresh(),
             $agendaItemIds,
             $contents,
             $filename,
             $user->id,
             $fileSize,
-            $report->id,
         );
     }
 
@@ -489,32 +489,46 @@ class BoardMemberCommitteeReportService
     }
 
     /**
+     * Attach the shared CR PDF only to the report's target session (or CR placements for that report),
+     * not every OB the tagged agendas happen to sit on (e.g. unfinished on a previous session).
+     *
      * @param  list<int>  $agendaItemIds
      */
     protected function attachSharedSessionFile(
+        BoardMemberCommitteeReport $report,
         array $agendaItemIds,
         string $contents,
         string $filename,
         ?int $userId,
         int $fileSize,
-        int $reportId,
     ): void {
-        $sessionIds = AgendaObPlacement::query()
-            ->whereIn('agenda_item_id', $agendaItemIds)
-            ->whereNotNull('legislative_session_id')
-            ->pluck('legislative_session_id')
-            ->merge(
-                ObBlock::query()
-                    ->where(function ($query) use ($agendaItemIds): void {
-                        $query->whereIn('agenda_item_id', $agendaItemIds);
-                        foreach ($agendaItemIds as $agendaId) {
-                            $query->orWhereJsonContains('content->agenda_item_ids', $agendaId);
-                        }
-                    })
-                    ->with('obDocument:id,legislative_session_id')
-                    ->get()
-                    ->map(fn (ObBlock $block) => $block->obDocument?->legislative_session_id)
-            )
+        $sessionIds = collect();
+
+        if ($report->legislative_session_id) {
+            $sessionIds->push((int) $report->legislative_session_id);
+        } else {
+            // Reserved / next-available: only sessions where these agendas landed under IV. Committee Reports.
+            $sessionIds = AgendaObPlacement::query()
+                ->whereIn('agenda_item_id', $agendaItemIds)
+                ->where('section', 'committee_reports')
+                ->whereNotNull('legislative_session_id')
+                ->pluck('legislative_session_id')
+                ->merge(
+                    ObBlock::query()
+                        ->where('type', ObBlockType::CommitteeReport)
+                        ->where(function ($query) use ($agendaItemIds): void {
+                            $query->whereIn('agenda_item_id', $agendaItemIds);
+                            foreach ($agendaItemIds as $agendaId) {
+                                $query->orWhereJsonContains('content->agenda_item_ids', $agendaId);
+                            }
+                        })
+                        ->with('obDocument:id,legislative_session_id')
+                        ->get()
+                        ->map(fn (ObBlock $block) => $block->obDocument?->legislative_session_id)
+                );
+        }
+
+        $sessionIds = $sessionIds
             ->filter()
             ->map(fn ($id) => (int) $id)
             ->unique()
@@ -534,7 +548,7 @@ class BoardMemberCommitteeReportService
                 'application/pdf',
                 $userId,
                 $fileSize,
-                $reportId,
+                $report->id,
             );
         }
     }

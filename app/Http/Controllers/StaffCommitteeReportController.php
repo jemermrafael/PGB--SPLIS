@@ -172,9 +172,20 @@ class StaffCommitteeReportController extends Controller
         abort_unless($request->user()?->canEncode(), 403);
 
         $chairMembers = $this->chairBoardMembers();
-        $boardMemberId = $request->integer('board_member_id') ?: null;
+        $selectionCommittees = $this->chairCommitteesForSelection();
+
+        $requestedCommitteeId = $request->integer('committee_id') ?: null;
+        $boardMemberId = $request->integer('board_member_id')
+            ?: (int) old('board_member_id', 0)
+            ?: null;
+
+        if ($boardMemberId === null && $requestedCommitteeId) {
+            $boardMemberId = $selectionCommittees
+                ->first(fn (array $row) => (int) $row['id'] === $requestedCommitteeId)['board_member_id'] ?? null;
+        }
+
         $selectedMember = $boardMemberId
-            ? $chairMembers->first(fn (BoardMember $member) => (int) $member->id === $boardMemberId)
+            ? $chairMembers->first(fn (BoardMember $member) => (int) $member->id === (int) $boardMemberId)
             : null;
 
         $chairCommittees = $selectedMember
@@ -184,6 +195,7 @@ class StaffCommitteeReportController extends Controller
 
         return view('committee-reports.create', [
             'chairMembers' => $chairMembers,
+            'selectionCommittees' => $selectionCommittees,
             'boardMemberId' => $selectedMember?->id,
             'q' => $filters['q'],
             'committeeId' => $filters['committee_id'],
@@ -383,6 +395,42 @@ class StaffCommitteeReportController extends Controller
             ->where('is_active', true)
             ->ordered()
             ->get();
+    }
+
+    /**
+     * Active committees that have a chair in the current term (for staff create picker).
+     *
+     * @return Collection<int, array{id: int, name: string, board_member_id: int}>
+     */
+    protected function chairCommitteesForSelection(): Collection
+    {
+        $term = $this->dashboard->resolveTerm();
+        $activeChairIds = BoardMember::query()
+            ->where('is_active', true)
+            ->pluck('id')
+            ->all();
+
+        if ($activeChairIds === []) {
+            return collect();
+        }
+
+        return CommitteeMembership::query()
+            ->where('committee_term_id', $term->id)
+            ->where('role', CommitteeMembershipRole::Chair)
+            ->whereIn('board_member_id', $activeChairIds)
+            ->with(['committee:id,name,is_active,sort_order'])
+            ->get()
+            ->filter(fn (CommitteeMembership $membership) => $membership->committee?->is_active)
+            ->sortBy(fn (CommitteeMembership $membership) => [
+                (int) ($membership->committee?->sort_order ?? 0),
+                (string) ($membership->committee?->name ?? ''),
+            ])
+            ->values()
+            ->map(fn (CommitteeMembership $membership) => [
+                'id' => (int) $membership->committee_id,
+                'name' => (string) $membership->committee?->name,
+                'board_member_id' => (int) $membership->board_member_id,
+            ]);
     }
 
     /**

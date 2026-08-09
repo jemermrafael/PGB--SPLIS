@@ -18,12 +18,15 @@
     @include('committee-reports._form', [
         'report' => null,
         'chairMembers' => $chairMembers,
+        'selectionCommittees' => $selectionCommittees,
         'boardMemberId' => $boardMemberId,
         'q' => $q,
         'committeeId' => $committeeId,
         'chairCommittees' => $chairCommittees,
         'agendaItems' => $agendaItems,
         'selectedAgendaIds' => $selectedAgendaIds,
+        'targetSessions' => $targetSessions,
+        'selectedSessionId' => $selectedSessionId,
         'agendaSearchUrl' => $agendaSearchUrl,
     ])
 </div>
