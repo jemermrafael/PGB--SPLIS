@@ -42,6 +42,36 @@ class ActivityLogDeleteTest extends TestCase
         $this->assertDatabaseMissing('activity_logs', ['id' => $log->id]);
     }
 
+    public function test_superadmin_can_delete_history_entry_via_ajax_without_redirect(): void
+    {
+        $superadmin = User::factory()->create(['role' => UserRole::Superadmin]);
+        $encoder = User::factory()->create(['role' => UserRole::Encoder]);
+
+        $agenda = AgendaItem::create([
+            'title' => 'Ajax agenda',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 0,
+            'created_by' => $encoder->id,
+        ]);
+
+        $this->actingAs($encoder);
+        $log = ActivityLogger::log('agenda.created', $agenda, [
+            'tracking_no' => 'TRK-2',
+            'title' => $agenda->title,
+        ]);
+
+        $this->actingAs($superadmin)
+            ->deleteJson(route('activity-logs.destroy', $log))
+            ->assertOk()
+            ->assertJson([
+                'ok' => true,
+                'message' => 'History entry removed.',
+                'action' => 'agenda.created',
+            ]);
+
+        $this->assertDatabaseMissing('activity_logs', ['id' => $log->id]);
+    }
+
     public function test_admin_cannot_delete_history_entry(): void
     {
         $admin = User::factory()->create(['role' => UserRole::Admin]);

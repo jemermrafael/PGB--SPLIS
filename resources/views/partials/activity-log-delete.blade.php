@@ -4,6 +4,7 @@
         action="{{ route('activity-logs.destroy', $log) }}"
         class="shrink-0"
         data-activity-log-delete-form
+        data-activity-log-action="{{ $log->action }}"
     >
         @csrf
         @method('DELETE')
