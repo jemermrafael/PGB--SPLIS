@@ -1279,6 +1279,14 @@ class ObDocumentService
     /**
      * @return Collection<int, int>
      */
+    public function agendaItemIdsOnDocument(ObDocument $document): Collection
+    {
+        return $this->linkedAgendaItemIds($document);
+    }
+
+    /**
+     * @return Collection<int, int>
+     */
     protected function linkedAgendaItemIds(ObDocument $document): Collection
     {
         return ObBlock::query()

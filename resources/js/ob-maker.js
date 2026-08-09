@@ -259,6 +259,7 @@ export function initObMaker() {
     const sectionNavCloseBtn = document.getElementById('ob-section-nav-close');
     const sectionNavDragHandle = document.getElementById('ob-section-nav-drag-handle');
     const sectionNavResizeHandle = document.getElementById('ob-section-nav-resize');
+    const scrollTopBtn = document.getElementById('ob-scroll-top');
     let sectionNavObserver = null;
     /** @type {Set<number>|null} null = expand every parent by default */
     let sectionNavExpandedIds = null;
@@ -2152,7 +2153,7 @@ export function initObMaker() {
         const confirmed = await confirmAction({
             title: 'Auto-place and sort Agendas?',
             message:
-                'Place eligible agendas into this Order of Business using lifecycle rules (unassigned, unfinished, or committee reports), then sort sections by year and Agenda No. and regroup Unfinished Business by committee. Manually moved items are left as-is. Items already in the correct section are skipped.',
+                'Place eligible agendas into this Order of Business using lifecycle rules (unassigned, unfinished, or committee reports), remove done/lapsed/resolved agendas already on this OB, then sort sections by year and Agenda No. and regroup Unfinished Business by committee. Manually moved items are left as-is. Items already in the correct section are skipped.',
             confirmLabel: 'Auto-place and sort',
             danger: false,
         });
@@ -2178,8 +2179,9 @@ export function initObMaker() {
 
             const added = Number(data.added ?? 0);
             const relocated = Number(data.relocated ?? 0);
-            if (added === 0 && relocated === 0) {
-                setStatus('No eligible agendas to place or move. Sections were re-sorted.');
+            const removed = Number(data.removed ?? 0);
+            if (added === 0 && relocated === 0 && removed === 0) {
+                setStatus('No eligible agendas to place, move, or remove. Sections were re-sorted.');
             } else {
                 const parts = [];
                 if (added > 0) {
@@ -2187,6 +2189,9 @@ export function initObMaker() {
                 }
                 if (relocated > 0) {
                     parts.push(`${relocated} moved`);
+                }
+                if (removed > 0) {
+                    parts.push(`${removed} removed (done/lapsed)`);
                 }
                 setStatus(`Auto-place and sort complete: ${parts.join(', ')}.`);
             }
@@ -3085,6 +3090,20 @@ export function initObMaker() {
     if (canEdit) {
         loadAgendaPool(1, false);
     }
+
+    function updateScrollTopVisibility() {
+        if (!scrollTopBtn) {
+            return;
+        }
+
+        scrollTopBtn.hidden = window.scrollY < 320;
+    }
+
+    scrollTopBtn?.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    window.addEventListener('scroll', updateScrollTopVisibility, { passive: true });
+    updateScrollTopVisibility();
 }
 
 document.addEventListener('DOMContentLoaded', () => {

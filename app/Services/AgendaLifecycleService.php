@@ -55,6 +55,7 @@ class AgendaLifecycleService
 
         if (in_array('status', $changedFields, true) && $agenda->status === AgendaItem::STATUS_DONE) {
             $agenda->forceFill(['ob_lifecycle_stage' => AgendaItem::OB_STAGE_RESOLVED])->saveQuietly();
+            $this->removeAgendaFromOpenSessions($agenda->fresh(), $userId);
 
             return;
         }
@@ -86,7 +87,7 @@ class AgendaLifecycleService
     /**
      * Place (and optionally relocate) eligible agendas into a session OB using lifecycle rules.
      *
-     * @return array{added: int, relocated: int}
+     * @return array{added: int, relocated: int, removed: int}
      */
     public function syncNewSession(
         LegislativeSession $session,
@@ -95,19 +96,23 @@ class AgendaLifecycleService
     ): array {
         $added = 0;
         $relocated = 0;
+        $removed = 0;
 
         if (! in_array($session->status, ['draft', 'scheduled'], true)) {
-            return compact('added', 'relocated');
+            return compact('added', 'relocated', 'removed');
         }
 
         $session->loadMissing(['obDocument', 'priorSession']);
 
         if (! $session->obDocument) {
-            return compact('added', 'relocated');
+            return compact('added', 'relocated', 'removed');
         }
+
+        $removed = $this->removeIneligibleAgendasFromSession($session, $userId);
 
         AgendaItem::query()
             ->where('status', '!=', AgendaItem::STATUS_DONE)
+            ->where('status', '!=', AgendaItem::STATUS_LAPSED)
             ->where(function ($query): void {
                 $query->where(function ($committee): void {
                     $committee->whereNotNull('committee_referred')
@@ -121,10 +126,6 @@ class AgendaLifecycleService
             ->orderBy('id')
             ->chunkById(100, function ($agendas) use ($session, $userId, $clearManualOverrides, &$added, &$relocated): void {
                 foreach ($agendas as $agenda) {
-                    if ($agenda->status === AgendaItem::STATUS_LAPSED) {
-                        continue;
-                    }
-
                     $hasCommitteeReport = $this->hasCommitteeReport($agenda);
 
                     // Filed committee reports still belong in IV even when prescription days have elapsed.
@@ -190,7 +191,51 @@ class AgendaLifecycleService
 
         $this->documentService->normalizeAgendaSections($session->obDocument);
 
-        return compact('added', 'relocated');
+        return compact('added', 'relocated', 'removed');
+    }
+
+    /**
+     * Drop done / lapsed / resolved agendas that are still sitting on this session's OB.
+     */
+    public function removeIneligibleAgendasFromSession(LegislativeSession $session, ?int $userId = null): int
+    {
+        $session->loadMissing('obDocument');
+        $document = $session->obDocument;
+
+        if ($document === null) {
+            return 0;
+        }
+
+        $agendaIds = $this->documentService->agendaItemIdsOnDocument($document);
+
+        if ($agendaIds->isEmpty()) {
+            return 0;
+        }
+
+        $ineligible = AgendaItem::query()
+            ->whereIn('id', $agendaIds)
+            ->get()
+            ->filter(fn (AgendaItem $agenda) => $agenda->status === AgendaItem::STATUS_DONE
+                || $agenda->status === AgendaItem::STATUS_LAPSED
+                || $agenda->isObLifecycleResolved());
+
+        $removed = 0;
+
+        foreach ($ineligible as $agenda) {
+            if (! $this->documentService->documentContainsAgenda($document, $agenda->id)) {
+                continue;
+            }
+
+            $this->documentService->removeAgendaFromDocument($document, $agenda, $userId, 'automatic');
+
+            if ($agenda->ob_lifecycle_stage !== AgendaItem::OB_STAGE_RESOLVED) {
+                $agenda->forceFill(['ob_lifecycle_stage' => AgendaItem::OB_STAGE_RESOLVED])->saveQuietly();
+            }
+
+            $removed++;
+        }
+
+        return $removed;
     }
 
     public function nearestUpcomingSession(): ?LegislativeSession
@@ -745,6 +790,25 @@ class AgendaLifecycleService
             'ob_lifecycle_stage' => $stage,
             'last_ob_synced_session_id' => $session->id,
         ])->saveQuietly();
+    }
+
+    protected function removeAgendaFromOpenSessions(AgendaItem $agenda, ?int $userId = null): void
+    {
+        $sessions = LegislativeSession::query()
+            ->with('obDocument')
+            ->whereIn('status', ['draft', 'scheduled'])
+            ->whereHas('obDocument')
+            ->get();
+
+        foreach ($sessions as $session) {
+            $document = $session->obDocument;
+
+            if ($document === null || ! $this->documentService->documentContainsAgenda($document, $agenda->id)) {
+                continue;
+            }
+
+            $this->documentService->removeAgendaFromDocument($document, $agenda, $userId, 'automatic');
+        }
     }
 
     protected function syncToNearestUpcomingSession(AgendaItem $agenda, ?int $userId = null): void

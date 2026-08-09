@@ -2861,6 +2861,14 @@
         transform: translateY(-50%);
     }
 
+    .splis-ob-scroll-top {
+        @apply fixed bottom-6 right-6 z-30 inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-lg ring-1 ring-slate-900/5 transition hover:border-brand-800 hover:text-brand-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-brand-gold dark:hover:text-brand-gold;
+    }
+
+    .splis-ob-scroll-top[hidden] {
+        display: none !important;
+    }
+
     .splis-ob-section-nav.is-repositioned,
     .splis-ob-section-nav.is-dragging,
     .splis-ob-section-nav.is-resizing {

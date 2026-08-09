@@ -194,6 +194,19 @@
         </div>
     </nav>
 
+    <button
+        type="button"
+        id="ob-scroll-top"
+        class="splis-ob-scroll-top"
+        title="Back to top"
+        aria-label="Back to top"
+        hidden
+    >
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+        </svg>
+    </button>
+
     <div id="ob-confirm-dialog" class="splis-ob-dialog" aria-hidden="true">
         <div class="splis-ob-dialog-backdrop" data-ob-confirm-cancel tabindex="-1"></div>
         <div class="splis-ob-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="ob-confirm-title">

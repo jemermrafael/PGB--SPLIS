@@ -634,4 +634,50 @@ class AgendaLifecycleSyncTest extends TestCase
             'type' => ObBlockType::CommitteeReport,
         ]);
     }
+
+    public function test_auto_place_removes_done_agendas_already_on_the_ob(): void
+    {
+        $user = User::factory()->create();
+        $lifecycle = app(AgendaLifecycleService::class);
+
+        $agenda = AgendaItem::create([
+            'tracking_no' => '920',
+            'title' => 'Later marked done',
+            'committee_referred' => 'Tourism',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 0,
+            'created_by' => $user->id,
+        ]);
+
+        $session = LegislativeSession::create([
+            'session_date' => now()->addWeek(),
+            'session_kind' => 'regular',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+        $document = ObDocument::create([
+            'legislative_session_id' => $session->id,
+            'title' => 'OB with done leftover',
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+        app(ObDocumentTemplateService::class)->seedDefaultBlocks($document);
+        $lifecycle->syncNewSession($session, $user->id);
+
+        $this->assertDatabaseHas('ob_blocks', [
+            'ob_document_id' => $document->id,
+            'agenda_item_id' => $agenda->id,
+        ]);
+
+        $agenda->update(['status' => AgendaItem::STATUS_DONE]);
+
+        $result = $lifecycle->syncNewSession($session->fresh(['obDocument']), $user->id, clearManualOverrides: false);
+
+        $this->assertSame(1, $result['removed']);
+        $this->assertDatabaseMissing('ob_blocks', [
+            'ob_document_id' => $document->id,
+            'agenda_item_id' => $agenda->id,
+        ]);
+        $this->assertSame(AgendaItem::OB_STAGE_RESOLVED, $agenda->fresh()->ob_lifecycle_stage);
+    }
 }

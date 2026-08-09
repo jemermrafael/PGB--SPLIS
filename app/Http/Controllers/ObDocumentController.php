@@ -278,6 +278,7 @@ class ObDocumentController extends Controller
         return response()->json([
             'added' => $result['added'],
             'relocated' => $result['relocated'],
+            'removed' => $result['removed'] ?? 0,
             'blocks' => $service->blocksPayload($document),
             'document' => $service->documentPayload($document),
         ]);
