@@ -154,9 +154,6 @@ class AgendaItemController extends Controller
             'creator',
             'versions.creator',
             'requestFiles',
-            'finalObPlacements.legislativeSession',
-            'finalObPlacements.agendaItemVersion',
-            'finalObPlacements.obBlock',
             'obPlacements.legislativeSession',
             'obPlacements.agendaItemVersion',
             'obPlacements.obBlock',
@@ -180,7 +177,6 @@ class AgendaItemController extends Controller
 
         return view('agenda.show', [
             'agenda' => $agenda,
-            'finalObPlacements' => $agenda->finalObPlacements,
             'obPlacements' => $agenda->obPlacements,
             'obSessions' => $obSessions,
             'splisActivityLogs' => $agenda->activityLogs,

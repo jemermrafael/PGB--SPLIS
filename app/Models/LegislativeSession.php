@@ -492,6 +492,14 @@ class LegislativeSession extends Model
             && $this->hasFinalObDocument();
     }
 
+    /**
+     * Agenda History should only record OB placement events once the OB is final.
+     */
+    public function shouldRecordObAgendaHistory(): bool
+    {
+        return $this->hasFinalObDocument();
+    }
+
     protected function hasFinalObDocument(): bool
     {
         if ($this->relationLoaded('obDocument')) {

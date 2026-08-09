@@ -425,6 +425,14 @@ class AgendaLifecycleSyncTest extends TestCase
         $this->assertTrue($sections->contains('committee_reports'));
         $this->assertTrue($sections->contains('unfinished'));
 
+        $this->assertSame(0, $agenda->activityLogs()
+            ->where('action', 'agenda.added_to_ob')
+            ->count());
+
+        app(\App\Services\ObDocumentService::class)->updateDocument($document, [
+            'status' => ObDocument::STATUS_FINAL,
+        ]);
+
         $addedLogs = $agenda->activityLogs()
             ->where('action', 'agenda.added_to_ob')
             ->get();

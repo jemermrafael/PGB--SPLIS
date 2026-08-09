@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\UserRole;
 use App\Models\ActivityLog;
+use App\Models\LegislativeSession;
 use App\Models\User;
 use App\Models\UserNotification;
 use App\Support\ActivityLogPresenter;
@@ -25,6 +26,17 @@ class ActivityLogNotifier
         'data_sync.resolutions_csv',
     ];
 
+    /**
+     * OB placement activity — only notify when the session is scheduled and OB is final.
+     *
+     * @var list<string>
+     */
+    public const OB_AGENDA_ACTIONS = [
+        'agenda.added_to_ob',
+        'agenda.removed_from_ob',
+        'agenda.ob_relocated',
+    ];
+
     public function __construct(
         protected EmailNotificationService $emails,
     ) {}
@@ -32,6 +44,10 @@ class ActivityLogNotifier
     public function notify(ActivityLog $log): void
     {
         if (in_array($log->action, self::HIDDEN_ACTIONS, true)) {
+            return;
+        }
+
+        if ($this->isObAgendaAction($log->action) && ! $this->obAgendaActionIsNotifiable($log)) {
             return;
         }
 
@@ -75,5 +91,43 @@ class ActivityLogNotifier
                 emailType: UserNotification::TYPE_ACTIVITY_LOG,
             );
         }
+    }
+
+    /**
+     * Flush deferred OB activity notifications once a session qualifies (scheduled + final OB).
+     */
+    public function notifyPendingObAgendaLogsForSession(LegislativeSession $session): void
+    {
+        $session->loadMissing('obDocument');
+
+        if (! $session->isNotifiableForObAgendaAdds()) {
+            return;
+        }
+
+        ActivityLog::query()
+            ->whereIn('action', self::OB_AGENDA_ACTIONS)
+            ->where('properties->session_id', $session->id)
+            ->orderBy('id')
+            ->each(fn (ActivityLog $log) => $this->notify($log));
+    }
+
+    protected function isObAgendaAction(string $action): bool
+    {
+        return in_array($action, self::OB_AGENDA_ACTIONS, true);
+    }
+
+    protected function obAgendaActionIsNotifiable(ActivityLog $log): bool
+    {
+        $sessionId = (int) ($log->properties['session_id'] ?? 0);
+
+        if ($sessionId <= 0) {
+            return false;
+        }
+
+        $session = LegislativeSession::query()
+            ->with('obDocument')
+            ->find($sessionId);
+
+        return $session?->isNotifiableForObAgendaAdds() ?? false;
     }
 }

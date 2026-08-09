@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\ObBlockType;
+use App\Models\ActivityLog;
 use App\Models\AgendaItem;
 use App\Models\AgendaObPlacement;
 use App\Models\LegislativeSession;
@@ -27,6 +28,7 @@ class ObDocumentService
         private BoardMemberNotifier $boardMemberNotifier,
         private MunicipalNotifier $municipalNotifier,
         private ObCommitteeReportConsolidator $committeeReports,
+        private ActivityLogNotifier $activityLogNotifier,
     ) {}
 
     /**
@@ -310,14 +312,18 @@ class ObDocumentService
             ->decrement('sort_order');
 
         if ($agenda && $session && $source !== 'relocation') {
-            ActivityLogger::log('agenda.removed_from_ob', $agenda, ActivityLogger::agendaObProperties($agenda, [
-                'source' => $source,
-                'section' => $section,
-                'section_label' => config('order_of_business.agenda_sections.'.$section, $section),
-                'session_id' => $session->id,
-                'session_title' => $session->displayTitle(),
-                'session_date' => $session->session_date?->format('Y-m-d'),
-            ]), $userId ?? auth()->id());
+            $session->setRelation('obDocument', $document);
+
+            if ($session->shouldRecordObAgendaHistory()) {
+                ActivityLogger::log('agenda.removed_from_ob', $agenda, ActivityLogger::agendaObProperties($agenda, [
+                    'source' => $source,
+                    'section' => $section,
+                    'section_label' => config('order_of_business.agenda_sections.'.$section, $section),
+                    'session_id' => $session->id,
+                    'session_title' => $session->displayTitle(),
+                    'session_date' => $session->session_date?->format('Y-m-d'),
+                ]), $userId ?? auth()->id());
+            }
         }
 
         if ($wasCommitteeReport && $normalizeCommitteeReports && $document !== null) {
@@ -590,15 +596,19 @@ class ObDocumentService
             $session = $document->legislativeSession;
 
             if ($session) {
-                foreach ($items as $item) {
-                    ActivityLogger::log('agenda.added_to_ob', $item, ActivityLogger::agendaObProperties($item, [
-                        'source' => 'manual',
-                        'section' => $section,
-                        'section_label' => config('order_of_business.agenda_sections.'.$section, $section),
-                        'session_id' => $session->id,
-                        'session_title' => $session->displayTitle(),
-                        'session_date' => $session->session_date?->format('Y-m-d'),
-                    ]), $placedBy);
+                $session->setRelation('obDocument', $document);
+
+                if ($session->shouldRecordObAgendaHistory()) {
+                    foreach ($items as $item) {
+                        ActivityLogger::log('agenda.added_to_ob', $item, ActivityLogger::agendaObProperties($item, [
+                            'source' => 'manual',
+                            'section' => $section,
+                            'section_label' => config('order_of_business.agenda_sections.'.$section, $section),
+                            'session_id' => $session->id,
+                            'session_title' => $session->displayTitle(),
+                            'session_date' => $session->session_date?->format('Y-m-d'),
+                        ]), $placedBy);
+                    }
                 }
             }
         }
@@ -700,9 +710,47 @@ class ObDocumentService
 
         $session->setRelation('obDocument', $document);
 
+        // One History entry per agenda for placements made while the OB was still draft.
+        $this->recordDeferredObAgendaHistory($document, $session);
+
         if (! $session->isNotifiableForObAgendaAdds()) {
             return;
         }
+
+        $agendaIds = $this->linkedAgendaItemIds($document);
+
+        if ($agendaIds->isEmpty()) {
+            $agendaIds = AgendaObPlacement::query()
+                ->where('ob_document_id', $document->id)
+                ->pluck('agenda_item_id')
+                ->unique()
+                ->values();
+        }
+
+        if ($agendaIds->isNotEmpty()) {
+            AgendaItem::query()
+                ->whereIn('id', $agendaIds)
+                ->get()
+                ->pipe(function ($items) use ($session): void {
+                    $this->boardMemberNotifier->notifyAgendasAddedToOb($items, $session);
+                    $this->municipalNotifier->notifyAgendasAddedToOb($items, $session);
+                });
+        }
+
+        $this->activityLogNotifier->notifyPendingObAgendaLogsForSession($session);
+    }
+
+    /**
+     * When an OB becomes final, write a single agenda.added_to_ob History entry per linked agenda
+     * for this session (skipping agendas that already have one).
+     */
+    protected function recordDeferredObAgendaHistory(ObDocument $document, LegislativeSession $session, ?int $userId = null): void
+    {
+        if (! $document->isFinal()) {
+            return;
+        }
+
+        $session->setRelation('obDocument', $document);
 
         $agendaIds = $this->linkedAgendaItemIds($document);
 
@@ -718,13 +766,50 @@ class ObDocumentService
             return;
         }
 
-        AgendaItem::query()
-            ->whereIn('id', $agendaIds)
-            ->get()
-            ->pipe(function ($items) use ($session): void {
-                $this->boardMemberNotifier->notifyAgendasAddedToOb($items, $session);
-                $this->municipalNotifier->notifyAgendasAddedToOb($items, $session);
-            });
+        $agendas = AgendaItem::query()->whereIn('id', $agendaIds)->get()->keyBy('id');
+
+        foreach ($agendaIds as $agendaId) {
+            $agenda = $agendas->get($agendaId);
+
+            if ($agenda === null) {
+                continue;
+            }
+
+            $alreadyLogged = ActivityLog::query()
+                ->where('subject_type', AgendaItem::class)
+                ->where('subject_id', $agenda->id)
+                ->where('action', 'agenda.added_to_ob')
+                ->where('properties->session_id', $session->id)
+                ->exists();
+
+            if ($alreadyLogged) {
+                continue;
+            }
+
+            $sections = $this->sectionsForAgendaInDocument($document, (int) $agenda->id)
+                ->values()
+                ->all();
+
+            if ($sections === []) {
+                continue;
+            }
+
+            $labels = collect($sections)
+                ->map(fn (string $key) => (string) config('order_of_business.agenda_sections.'.$key, $key))
+                ->values()
+                ->all();
+
+            ActivityLogger::log('agenda.added_to_ob', $agenda, ActivityLogger::agendaObProperties($agenda, [
+                'source' => 'automatic',
+                'section' => $sections[0] ?? null,
+                'sections' => $sections,
+                'section_label' => $labels[0] ?? null,
+                'section_labels' => $labels,
+                'session_id' => $session->id,
+                'session_title' => $session->displayTitle(),
+                'session_date' => $session->session_date?->format('Y-m-d'),
+            ]), $userId);
+        }
     }
 
     protected function nextSortOrder(ObDocument $document, ?int $afterBlockId): int
@@ -1008,16 +1093,20 @@ class ObDocumentService
             $session = $document->legislativeSession;
 
             if ($session) {
-                ActivityLogger::log('agenda.ob_relocated', $agenda, ActivityLogger::agendaObProperties($agenda, [
-                    'source' => 'manual',
-                    'from_section' => $currentSection,
-                    'from_section_label' => config('order_of_business.agenda_sections.'.$currentSection, $currentSection),
-                    'to_section' => $targetSection,
-                    'to_section_label' => config('order_of_business.agenda_sections.'.$targetSection, $targetSection),
-                    'session_id' => $session->id,
-                    'session_title' => $session->displayTitle(),
-                    'session_date' => $session->session_date?->format('Y-m-d'),
-                ]), $userId);
+                $session->setRelation('obDocument', $document);
+
+                if ($session->shouldRecordObAgendaHistory()) {
+                    ActivityLogger::log('agenda.ob_relocated', $agenda, ActivityLogger::agendaObProperties($agenda, [
+                        'source' => 'manual',
+                        'from_section' => $currentSection,
+                        'from_section_label' => config('order_of_business.agenda_sections.'.$currentSection, $currentSection),
+                        'to_section' => $targetSection,
+                        'to_section_label' => config('order_of_business.agenda_sections.'.$targetSection, $targetSection),
+                        'session_id' => $session->id,
+                        'session_title' => $session->displayTitle(),
+                        'session_date' => $session->session_date?->format('Y-m-d'),
+                    ]), $userId);
+                }
             }
         });
 
@@ -1168,6 +1257,12 @@ class ObDocumentService
         $session = $document->legislativeSession;
 
         if (! $session) {
+            return;
+        }
+
+        $session->setRelation('obDocument', $document);
+
+        if (! $session->shouldRecordObAgendaHistory()) {
             return;
         }
 

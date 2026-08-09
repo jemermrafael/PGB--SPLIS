@@ -520,6 +520,12 @@ class AgendaLifecycleService
         string $source,
         ?int $userId = null,
     ): void {
+        $session->loadMissing('obDocument');
+
+        if (! $session->shouldRecordObAgendaHistory()) {
+            return;
+        }
+
         $sections = array_values(array_unique(is_array($section) ? $section : [$section]));
         $labels = collect($sections)
             ->map(fn (string $key) => (string) config('order_of_business.agenda_sections.'.$key, $key))
@@ -545,6 +551,12 @@ class AgendaLifecycleService
         string $toSection,
         ?int $userId = null,
     ): void {
+        $session->loadMissing('obDocument');
+
+        if (! $session->shouldRecordObAgendaHistory()) {
+            return;
+        }
+
         ActivityLogger::log('agenda.ob_relocated', $agenda, ActivityLogger::agendaObProperties($agenda, [
             'source' => 'automatic',
             'from_section' => $fromSection,

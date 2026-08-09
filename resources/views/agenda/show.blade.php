@@ -12,10 +12,6 @@
         if ($agenda->versions->isNotEmpty()) {
             $agendaSubtitle = ($agendaSubtitle ? $agendaSubtitle.' · ' : '').'Version '.$agenda->current_version_no;
         }
-        $latestObPlacement = $finalObPlacements
-            ->filter(fn ($placement) => $placement->legislativeSession?->session_date)
-            ->sortByDesc(fn ($placement) => $placement->legislativeSession->session_date)
-            ->first();
     @endphp
     <x-page-header
         class="!mb-6"
@@ -29,11 +25,6 @@
             @endif
             @if ($agenda->is_urgent_request)
                 <span class="splis-badge-linked whitespace-nowrap">Urgent Request</span>
-            @endif
-            @if ($latestObPlacement?->legislativeSession)
-                <span class="splis-badge-linked whitespace-nowrap">
-                    Scheduled on {{ $latestObPlacement->legislativeSession->session_number ?: 'Order of Business' }} Order of Business {{ $latestObPlacement->legislativeSession->session_date?->format('M d, Y') }}
-                </span>
             @endif
             @if ($agenda->hasIncoming())
                 <a href="{{ route('incoming.show', $agenda->incomingDocument) }}" class="splis-badge-linked">Incoming linked</a>
