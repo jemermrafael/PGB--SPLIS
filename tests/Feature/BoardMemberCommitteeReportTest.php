@@ -171,10 +171,15 @@ class BoardMemberCommitteeReportTest extends TestCase
                 'title' => 'Auto OB Placement Report',
                 'pdf' => $pdf,
                 'agenda_item_ids' => [$agenda->id],
+                'legislative_session_id' => $session->id,
             ])
             ->assertRedirect(route('board-member.committee-reports.index'));
 
         $agenda->refresh();
+
+        $report = \App\Models\BoardMemberCommitteeReport::query()->first();
+        $this->assertNotNull($report);
+        $this->assertSame((int) $session->id, (int) $report->legislative_session_id);
 
         $this->assertNotNull($agenda->committee_report_pdf_path);
         $this->assertSame(AgendaItem::OB_STAGE_COMMITTEE_REPORT, $agenda->ob_lifecycle_stage);
@@ -529,6 +534,8 @@ class BoardMemberCommitteeReportTest extends TestCase
         $this->actingAs($user)
             ->get(route('board-member.committee-reports.create'))
             ->assertOk()
+            ->assertSee('Target session / Order of Business')
+            ->assertSee('Next available session / OB')
             ->assertSee('Chair open agenda')
             ->assertSee('All Chairmanships')
             ->assertSee($chairCommittee->name)

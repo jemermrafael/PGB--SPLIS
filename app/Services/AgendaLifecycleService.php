@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\ObBlockType;
 use App\Models\AgendaItem;
 use App\Models\LegislativeSession;
+use App\Models\ObBlock;
 use App\Support\ActivityLogger;
 use App\Support\AgendaDeadline;
 use Illuminate\Support\Facades\DB;
@@ -115,7 +117,7 @@ class AgendaLifecycleService
                     ->orWhereNotNull('committee_report_pdf_path')
                     ->orWhereHas('boardMemberCommitteeReports');
             })
-            ->with(['lastObSyncedSession', 'obPlacements.legislativeSession', 'boardMemberCommitteeReports:id'])
+            ->with(['lastObSyncedSession', 'obPlacements.legislativeSession', 'boardMemberCommitteeReports'])
             ->orderBy('id')
             ->chunkById(100, function ($agendas) use ($session, $userId, $clearManualOverrides, &$added, &$relocated): void {
                 foreach ($agendas as $agenda) {
@@ -138,7 +140,7 @@ class AgendaLifecycleService
                     $fresh = $agenda->fresh([
                         'lastObSyncedSession',
                         'obPlacements.legislativeSession',
-                        'boardMemberCommitteeReports:id',
+                        'boardMemberCommitteeReports',
                     ]);
 
                     if ($fresh === null) {
@@ -240,6 +242,15 @@ class AgendaLifecycleService
         }
 
         if ($hasCommitteeReport) {
+            if ($this->hasCommitteeReportPlacementOnOtherSession($agenda, $session)) {
+                // Already appeared under IV. Committee Reports on another session — do not carry to this OB.
+                return null;
+            }
+
+            if (! $this->committeeReportTargetsSession($agenda, $session)) {
+                return null;
+            }
+
             return 'committee_reports';
         }
 
@@ -567,9 +578,10 @@ class AgendaLifecycleService
             return;
         }
 
-        $session = $this->sessionContainingAgenda($agenda) ?? $this->nearestUpcomingSession();
+        $session = $this->resolveCommitteeReportTargetSession($agenda);
 
         if ($session === null) {
+            // No usable upcoming session/OB yet — reserved until the next one is created.
             return;
         }
 
@@ -581,6 +593,81 @@ class AgendaLifecycleService
 
         // Force IV. Committee Reports even on first placement (resolveTargetSection already prefers it).
         $this->syncAgendaToSession($agenda, $session, $userId);
+    }
+
+    /**
+     * Prefer the session chosen on the committee report; otherwise the next upcoming session with an OB.
+     * If the chosen session is already done / has no OB, fall back to the next upcoming session.
+     */
+    public function resolveCommitteeReportTargetSession(AgendaItem $agenda): ?LegislativeSession
+    {
+        $agenda->loadMissing('boardMemberCommitteeReports');
+
+        $report = $agenda->boardMemberCommitteeReports
+            ->sortByDesc('id')
+            ->first();
+
+        if ($report?->legislative_session_id) {
+            $chosen = LegislativeSession::query()
+                ->with('obDocument')
+                ->whereKey($report->legislative_session_id)
+                ->first();
+
+            if ($chosen
+                && in_array($chosen->status, ['draft', 'scheduled'], true)
+                && $chosen->obDocument) {
+                return $chosen;
+            }
+        }
+
+        return $this->sessionContainingAgenda($agenda) ?? $this->nearestUpcomingSession();
+    }
+
+    /**
+     * Whether this agenda should land under IV. Committee Reports on $session.
+     */
+    public function committeeReportTargetsSession(AgendaItem $agenda, LegislativeSession $session): bool
+    {
+        if ($this->hasCommitteeReportPlacementOnOtherSession($agenda, $session)) {
+            return false;
+        }
+
+        $target = $this->resolveCommitteeReportTargetSession($agenda);
+
+        return $target !== null && (int) $target->id === (int) $session->id;
+    }
+
+    protected function hasCommitteeReportPlacementOnOtherSession(AgendaItem $agenda, LegislativeSession $session): bool
+    {
+        $placementsWereLoaded = $agenda->relationLoaded('obPlacements');
+        $agenda->loadMissing(['obPlacements']);
+
+        $placementHit = $agenda->obPlacements
+            ->contains(function ($placement) use ($session): bool {
+                return $placement->section === 'committee_reports'
+                    && (int) $placement->legislative_session_id !== (int) $session->id
+                    && $placement->legislative_session_id !== null;
+            });
+
+        if ($placementHit) {
+            return true;
+        }
+
+        // Callers that stub obPlacements (unit tests) skip the legacy block scan.
+        if ($placementsWereLoaded) {
+            return false;
+        }
+
+        return ObBlock::query()
+            ->where('type', ObBlockType::CommitteeReport)
+            ->where(function ($query) use ($agenda): void {
+                $query->where('agenda_item_id', $agenda->id)
+                    ->orWhereJsonContains('content->agenda_item_ids', $agenda->id);
+            })
+            ->whereHas('obDocument', function ($query) use ($session): void {
+                $query->where('legislative_session_id', '!=', $session->id);
+            })
+            ->exists();
     }
 
     protected function handleUrgentRequestPlacement(AgendaItem $agenda, ?int $userId = null): void

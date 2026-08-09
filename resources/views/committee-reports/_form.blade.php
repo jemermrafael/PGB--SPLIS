@@ -4,6 +4,7 @@
     $isEdit = $report !== null;
     $selectedAgendaIds = collect($selectedAgendaIds ?? [])->map(fn ($id) => (int) $id)->all();
     $chairMembers = $chairMembers ?? collect();
+    $selectedSessionId = $selectedSessionId ?? null;
 @endphp
 
 <form
@@ -59,9 +60,32 @@
                 @endif
             </div>
 
+            <div>
+                <label class="splis-label" for="legislative_session_id">Target session / Order of Business</label>
+                <select name="legislative_session_id" id="legislative_session_id" class="splis-select">
+                    <option value="" @selected(($selectedSessionId ?? null) === null || $selectedSessionId === '')>
+                        Next available session / OB (reserve if none yet)
+                    </option>
+                    @foreach (($targetSessions ?? collect()) as $session)
+                        <option value="{{ $session->id }}" @selected((string) old('legislative_session_id', $selectedSessionId ?? '') === (string) $session->id)>
+                            {{ $session->displayTitle() }}
+                            @if ($session->session_date)
+                                — {{ $session->session_date->format('M j, Y') }}
+                            @endif
+                        </option>
+                    @endforeach
+                </select>
+                @error('legislative_session_id')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
             <p class="text-xs text-slate-500 dark:text-slate-400">
-                Tagged agendas will use this PDF as their Committee Report and are placed automatically under
-                <strong>IV. Committee Reports</strong> on the nearest upcoming Order of Business.
+                Tagged agendas use this PDF as their Committee Report and are placed under
+                <strong>IV. Committee Reports</strong> on the session you choose.
+                If you pick <em>Next available</em> and no upcoming session/OB exists yet (or the current one is already done),
+                the report is reserved until the next session/OB is created.
+                Agendas already placed under IV do not carry into later sessions.
             </p>
 
             <div class="flex flex-wrap gap-2">

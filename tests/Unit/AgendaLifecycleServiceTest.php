@@ -63,7 +63,7 @@ class AgendaLifecycleServiceTest extends TestCase
         $this->assertSame('unfinished', $service->resolveTargetSection($agenda, $nextSession));
     }
 
-    public function test_resolve_target_section_uses_committee_reports_when_report_exists(): void
+    public function test_resolve_target_section_does_not_carry_committee_report_already_on_other_session(): void
     {
         $service = new AgendaLifecycleService(
             $this->createMock(ObDocumentService::class),
@@ -71,7 +71,7 @@ class AgendaLifecycleServiceTest extends TestCase
 
         $priorSession = new LegislativeSession([
             'session_date' => Carbon::parse('2026-07-01'),
-            'status' => 'scheduled',
+            'status' => 'done',
         ]);
         $priorSession->id = 1;
 
@@ -86,19 +86,44 @@ class AgendaLifecycleServiceTest extends TestCase
             'committee_report_url' => 'https://example.com/report.pdf',
             'status' => AgendaItem::STATUS_PENDING,
             'prescribed_days' => 0,
-            'ob_lifecycle_stage' => AgendaItem::OB_STAGE_UNFINISHED,
+            'ob_lifecycle_stage' => AgendaItem::OB_STAGE_COMMITTEE_REPORT,
             'last_ob_synced_session_id' => $priorSession->id,
         ]);
+        $agenda->id = 10;
         $agenda->setRelation('lastObSyncedSession', $priorSession);
+        $agenda->setRelation('boardMemberCommitteeReports', collect());
+        $agenda->setRelation('obPlacements', collect([
+            new \App\Models\AgendaObPlacement([
+                'agenda_item_id' => 10,
+                'legislative_session_id' => 1,
+                'section' => 'committee_reports',
+            ]),
+        ]));
 
-        $this->assertSame('committee_reports', $service->resolveTargetSection($agenda, $nextSession));
+        $this->assertNull($service->resolveTargetSection($agenda, $nextSession));
     }
 
-    public function test_resolve_target_section_uses_committee_reports_when_pdf_path_exists(): void
+    public function test_resolve_target_section_uses_committee_reports_when_pdf_path_exists_for_target_session(): void
     {
-        $service = new AgendaLifecycleService(
-            $this->createMock(ObDocumentService::class),
-        );
+        $documentService = $this->createMock(ObDocumentService::class);
+        $documentService->method('documentContainsAgenda')->willReturn(false);
+
+        $service = new class($documentService) extends AgendaLifecycleService
+        {
+            public ?LegislativeSession $forcedTarget = null;
+
+            public function resolveCommitteeReportTargetSession(AgendaItem $agenda): ?LegislativeSession
+            {
+                return $this->forcedTarget;
+            }
+        };
+
+        $session = new LegislativeSession([
+            'session_date' => now()->addWeek(),
+            'status' => 'scheduled',
+        ]);
+        $session->id = 2;
+        $service->forcedTarget = $session;
 
         $agenda = new AgendaItem([
             'committee_referred' => 'Tourism',
@@ -106,21 +131,34 @@ class AgendaLifecycleServiceTest extends TestCase
             'status' => AgendaItem::STATUS_PENDING,
             'prescribed_days' => 0,
         ]);
-
-        $session = new LegislativeSession([
-            'session_date' => now()->addWeek(),
-            'status' => 'scheduled',
-        ]);
-        $session->id = 2;
+        $agenda->id = 11;
+        $agenda->setRelation('boardMemberCommitteeReports', collect());
+        $agenda->setRelation('obPlacements', collect());
 
         $this->assertSame('committee_reports', $service->resolveTargetSection($agenda, $session));
     }
 
     public function test_resolve_target_section_keeps_committee_reports_when_prescription_days_elapsed(): void
     {
-        $service = new AgendaLifecycleService(
-            $this->createMock(ObDocumentService::class),
-        );
+        $documentService = $this->createMock(ObDocumentService::class);
+        $documentService->method('documentContainsAgenda')->willReturn(false);
+
+        $service = new class($documentService) extends AgendaLifecycleService
+        {
+            public ?LegislativeSession $forcedTarget = null;
+
+            public function resolveCommitteeReportTargetSession(AgendaItem $agenda): ?LegislativeSession
+            {
+                return $this->forcedTarget;
+            }
+        };
+
+        $session = new LegislativeSession([
+            'session_date' => now()->addWeek(),
+            'status' => 'scheduled',
+        ]);
+        $session->id = 2;
+        $service->forcedTarget = $session;
 
         $agenda = new AgendaItem([
             'committee_referred' => 'Tourism',
@@ -131,13 +169,9 @@ class AgendaLifecycleServiceTest extends TestCase
             'due_date' => now()->subDays(30),
             'days_left_label' => '-30',
         ]);
+        $agenda->id = 12;
         $agenda->setRelation('boardMemberCommitteeReports', collect());
-
-        $session = new LegislativeSession([
-            'session_date' => now()->addWeek(),
-            'status' => 'scheduled',
-        ]);
-        $session->id = 2;
+        $agenda->setRelation('obPlacements', collect());
 
         $this->assertFalse($service->prescribedDaysPermit($agenda));
         $this->assertSame('committee_reports', $service->resolveTargetSection($agenda, $session));

@@ -11,6 +11,7 @@ class BoardMemberCommitteeReport extends Model
 {
     protected $fillable = [
         'board_member_id',
+        'legislative_session_id',
         'title',
         'pdf_path',
         'original_filename',
@@ -30,6 +31,19 @@ class BoardMemberCommitteeReport extends Model
     public function boardMember(): BelongsTo
     {
         return $this->belongsTo(BoardMember::class);
+    }
+
+    public function legislativeSession(): BelongsTo
+    {
+        return $this->belongsTo(LegislativeSession::class);
+    }
+
+    /**
+     * True when the submitter reserved this report for the next available session/OB.
+     */
+    public function isReservedForNextSession(): bool
+    {
+        return $this->legislative_session_id === null;
     }
 
     public function submitter(): BelongsTo

@@ -192,6 +192,8 @@ class StaffCommitteeReportController extends Controller
                 ? $this->filteredAgendaItems((int) $selectedMember->id, $filters['q'], $filters['committee'])
                 : collect(),
             'selectedAgendaIds' => old('agenda_item_ids', []),
+            'targetSessions' => $this->reports->selectableTargetSessions(),
+            'selectedSessionId' => old('legislative_session_id'),
             'agendaSearchUrl' => route('committee-reports.agendas'),
         ]);
     }
@@ -222,6 +224,8 @@ class StaffCommitteeReportController extends Controller
                 $committeeReport,
             ),
             'selectedAgendaIds' => $selectedIds,
+            'targetSessions' => $this->reports->selectableTargetSessions(),
+            'selectedSessionId' => old('legislative_session_id', $committeeReport->legislative_session_id),
             'agendaSearchUrl' => route('committee-reports.agendas', [
                 'report_id' => $committeeReport->id,
                 'board_member_id' => $committeeReport->board_member_id,
@@ -287,6 +291,7 @@ class StaffCommitteeReportController extends Controller
             'pdf' => ['required', 'file', 'mimes:pdf', 'max:20480'],
             'agenda_item_ids' => ['nullable', 'array'],
             'agenda_item_ids.*' => ['integer', 'exists:agenda_items,id'],
+            'legislative_session_id' => ['nullable', 'integer', 'exists:legislative_sessions,id'],
         ]);
 
         $this->reports->store(
@@ -295,6 +300,9 @@ class StaffCommitteeReportController extends Controller
             $validated['title'] ?? null,
             $validated['agenda_item_ids'] ?? [],
             (int) $validated['board_member_id'],
+            legislativeSessionId: isset($validated['legislative_session_id'])
+                ? (int) $validated['legislative_session_id']
+                : null,
         );
 
         return redirect()
@@ -312,6 +320,7 @@ class StaffCommitteeReportController extends Controller
             'pdf' => ['nullable', 'file', 'mimes:pdf', 'max:20480'],
             'agenda_item_ids' => ['nullable', 'array'],
             'agenda_item_ids.*' => ['integer', 'exists:agenda_items,id'],
+            'legislative_session_id' => ['nullable', 'integer', 'exists:legislative_sessions,id'],
         ]);
 
         $this->reports->update(
@@ -320,6 +329,10 @@ class StaffCommitteeReportController extends Controller
             $validated['pdf'] ?? null,
             $validated['title'] ?? null,
             $validated['agenda_item_ids'] ?? [],
+            legislativeSessionId: array_key_exists('legislative_session_id', $validated)
+                ? (isset($validated['legislative_session_id']) ? (int) $validated['legislative_session_id'] : null)
+                : null,
+            updateSessionTarget: true,
         );
 
         return redirect()

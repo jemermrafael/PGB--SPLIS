@@ -38,10 +38,12 @@ class BoardMemberCommitteeReportService
         ?string $title,
         array $agendaItemIds,
         ?int $onBehalfOfBoardMemberId = null,
+        ?int $legislativeSessionId = null,
     ): BoardMemberCommitteeReport {
         $boardMemberId = $this->resolveTargetBoardMemberId($user, $onBehalfOfBoardMemberId);
 
         $allowedIds = $this->resolveAllowedAgendaIds($boardMemberId, $agendaItemIds);
+        $targetSessionId = $this->resolveTargetSessionId($legislativeSessionId);
 
         $directory = "board-member-committee-reports/{$boardMemberId}";
         $storedPath = $pdf->store($directory, 'local');
@@ -57,9 +59,11 @@ class BoardMemberCommitteeReportService
             $reportTitle,
             $allowedIds,
             $fileSize,
+            $targetSessionId,
         ): BoardMemberCommitteeReport {
             $report = BoardMemberCommitteeReport::query()->create([
                 'board_member_id' => $boardMemberId,
+                'legislative_session_id' => $targetSessionId,
                 'title' => $reportTitle,
                 'pdf_path' => $storedPath,
                 'original_filename' => null,
@@ -77,7 +81,7 @@ class BoardMemberCommitteeReportService
                 clearPrevious: false,
             );
 
-            return $report->fresh(['agendaItems', 'boardMember']);
+            return $report->fresh(['agendaItems', 'boardMember', 'legislativeSession']);
         });
 
         $this->emails->notifyStaffOfCommitteeReport($report, $user);
@@ -94,11 +98,16 @@ class BoardMemberCommitteeReportService
         ?UploadedFile $pdf,
         ?string $title,
         array $agendaItemIds,
+        ?int $legislativeSessionId = null,
+        bool $updateSessionTarget = false,
     ): BoardMemberCommitteeReport {
         $this->assertCanMutate($user, $report);
 
         $allowedIds = $this->resolveAllowedAgendaIds((int) $report->board_member_id, $agendaItemIds, $report);
         $reportTitle = trim((string) $title) ?: null;
+        $targetSessionId = $updateSessionTarget
+            ? $this->resolveTargetSessionId($legislativeSessionId)
+            : $report->legislative_session_id;
 
         return DB::transaction(function () use (
             $user,
@@ -106,10 +115,14 @@ class BoardMemberCommitteeReportService
             $pdf,
             $reportTitle,
             $allowedIds,
+            $targetSessionId,
+            $updateSessionTarget,
         ): BoardMemberCommitteeReport {
-            $report->forceFill([
-                'title' => $reportTitle,
-            ])->save();
+            $fill = ['title' => $reportTitle];
+            if ($updateSessionTarget) {
+                $fill['legislative_session_id'] = $targetSessionId;
+            }
+            $report->forceFill($fill)->save();
 
             if ($pdf !== null) {
                 $directory = "board-member-committee-reports/{$report->board_member_id}";
@@ -137,7 +150,7 @@ class BoardMemberCommitteeReportService
                 clearPrevious: true,
             );
 
-            return $report->fresh(['agendaItems']);
+            return $report->fresh(['agendaItems', 'legislativeSession']);
         });
     }
 
@@ -159,6 +172,45 @@ class BoardMemberCommitteeReportService
             $report->agendaItems()->detach();
             $report->delete();
         });
+    }
+
+    /**
+     * Upcoming draft/scheduled sessions that already have an Order of Business.
+     *
+     * @return Collection<int, LegislativeSession>
+     */
+    public function selectableTargetSessions(): Collection
+    {
+        return LegislativeSession::query()
+            ->with('obDocument')
+            ->whereIn('status', ['draft', 'scheduled'])
+            ->whereDate('session_date', '>=', now()->toDateString())
+            ->whereHas('obDocument')
+            ->orderBy('session_date')
+            ->orderBy('session_time')
+            ->orderBy('id')
+            ->get();
+    }
+
+    /**
+     * Null means reserve for the next available session/OB.
+     */
+    protected function resolveTargetSessionId(?int $legislativeSessionId): ?int
+    {
+        if ($legislativeSessionId === null || $legislativeSessionId <= 0) {
+            return null;
+        }
+
+        $session = LegislativeSession::query()
+            ->with('obDocument')
+            ->whereKey($legislativeSessionId)
+            ->whereIn('status', ['draft', 'scheduled'])
+            ->whereHas('obDocument')
+            ->first();
+
+        abort_unless($session !== null, 422, 'Choose an upcoming draft or scheduled session that has an Order of Business, or reserve for the next session.');
+
+        return (int) $session->id;
     }
 
     protected function resolveTargetBoardMemberId(User $user, ?int $onBehalfOfBoardMemberId): int
