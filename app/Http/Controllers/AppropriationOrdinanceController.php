@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\AppropriationOrdinance;
 use App\Models\AppropriationOrdinanceVersion;
 use App\Services\AppropriationOrdinancePdfService;
@@ -103,6 +104,11 @@ class AppropriationOrdinanceController extends Controller
             $before,
             $request->user()->id,
         );
+
+        ActivityLog::record('appropriation_ordinance.updated', $appropriationOrdinance, [
+            'ordinance_no' => $appropriationOrdinance->ordinance_no,
+            'series_year' => $appropriationOrdinance->series_year,
+        ]);
 
         return redirect()
             ->route('appropriation-ordinances.show', $appropriationOrdinance)

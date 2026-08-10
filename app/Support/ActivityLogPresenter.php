@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\ActivityLog;
 use App\Models\AgendaItem;
+use App\Models\AppropriationOrdinance;
 use App\Models\IncomingDocument;
 use App\Models\Ordinance;
 use App\Models\ReferenceMaterial;
@@ -24,8 +25,11 @@ class ActivityLogPresenter
         'resolution.deleted' => 'Resolution permanently deleted',
         'resolution.published_from_incoming' => 'Published from incoming',
         'agenda.created' => 'Agenda created',
+        'agenda.updated' => 'Agenda updated',
         'agenda.published' => 'Agenda published',
         'ordinance.created' => 'Ordinance created',
+        'ordinance.updated' => 'Ordinance updated',
+        'appropriation_ordinance.updated' => 'Appropriation Ordinance updated',
         'reference_material.created' => 'Reference Material created',
         'reference_material.updated' => 'Reference Material updated',
         'reference_material.archived' => 'Reference Material archived',
@@ -100,7 +104,10 @@ class ActivityLogPresenter
 
         if (! empty($log->properties['ordinance_no'])) {
             $series = $log->properties['series_year'] ?? null;
-            $details[] = 'Ordinance '.($series ? $series.'-' : '').$log->properties['ordinance_no'];
+            $prefix = $log->action === 'appropriation_ordinance.updated'
+                ? 'Appro. Ord. '
+                : 'Ordinance ';
+            $details[] = $prefix.($series ? $series.'-' : '').$log->properties['ordinance_no'];
         }
 
         if (! empty($log->properties['tracking_no'])) {
@@ -160,6 +167,12 @@ class ActivityLogPresenter
             return $model ? route('ordinances.show', $model, absolute: false) : null;
         }
 
+        if ($log->subject_type === AppropriationOrdinance::class) {
+            $model = AppropriationOrdinance::withTrashed()->find($log->subject_id);
+
+            return $model ? route('appropriation-ordinances.show', $model, absolute: false) : null;
+        }
+
         return match ($log->subject_type) {
             IncomingDocument::class => route('incoming.show', $log->subject_id, absolute: false),
             ReferenceMaterial::class => route('references.show', $log->subject_id, absolute: false),
@@ -186,6 +199,7 @@ class ActivityLogPresenter
             Resolution::class => 'View Resolution',
             IncomingDocument::class => 'View incoming',
             Ordinance::class => 'View Ordinance',
+            AppropriationOrdinance::class => 'View Appropriation Ordinance',
             ReferenceMaterial::class => 'View Reference',
             default => 'View details',
         };

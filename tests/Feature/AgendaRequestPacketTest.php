@@ -97,6 +97,7 @@ class AgendaRequestPacketTest extends TestCase
         $this->assertNull($root->relative_folder);
         $this->assertSame($root->stored_path, $agenda->request_pdf_path);
         $this->assertSame(1, $agenda->versions()->count());
+        $this->assertSame(1, $agenda->current_version_no);
 
         $this->actingAs($encoder)
             ->get(route('agenda.edit', $agenda))
@@ -112,7 +113,7 @@ class AgendaRequestPacketTest extends TestCase
             ->assertDontSee('Upload to request packet');
     }
 
-    public function test_upload_to_named_folder_does_not_create_agenda_version(): void
+    public function test_upload_to_named_folder_creates_agenda_version(): void
     {
         Storage::fake('local');
 
@@ -127,8 +128,7 @@ class AgendaRequestPacketTest extends TestCase
         ]);
 
         app(\App\Services\AgendaVersionService::class)->recordInitialVersion($agenda, $encoder->id);
-        $beforeVersions = $agenda->fresh()->versions()->count();
-        $this->assertSame(1, $beforeVersions);
+        $this->assertSame(1, $agenda->fresh()->versions()->count());
 
         $this->actingAs($encoder)
             ->put(route('agenda.update', $agenda), [
@@ -142,9 +142,11 @@ class AgendaRequestPacketTest extends TestCase
             ])
             ->assertRedirect(route('agenda.show', $agenda));
 
-        $this->assertSame(1, $agenda->fresh()->requestFiles()->count());
+        $agenda->refresh();
+        $this->assertSame(1, $agenda->requestFiles()->count());
         $this->assertSame('FOR RECOGNITION', $agenda->requestFiles()->first()->relative_folder);
-        $this->assertSame($beforeVersions, $agenda->fresh()->versions()->count());
+        $this->assertSame(2, $agenda->versions()->count());
+        $this->assertSame(2, $agenda->current_version_no);
     }
 
     public function test_show_page_lists_request_packet_grouped_by_folder(): void

@@ -121,6 +121,11 @@ class OrdinanceController extends Controller
 
         $this->ordinanceVersionService->recordVersionIfChanged($ordinance, $before, $request->user()->id);
 
+        ActivityLog::record('ordinance.updated', $ordinance, [
+            'ordinance_no' => $ordinance->ordinance_no,
+            'series_year' => $ordinance->series_year,
+        ]);
+
         return redirect()
             ->route('ordinances.show', $ordinance)
             ->with('status', 'Ordinance updated.');

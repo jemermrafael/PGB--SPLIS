@@ -245,7 +245,7 @@ class AgendaItemRequestFileService
 
     /**
      * Root-level packet PDFs (no folder) are the agenda's primary Request PDF.
-     * Updates request_pdf_path quietly — does not create an agenda version.
+     * Updates request_pdf_path; agenda update flow versions when this path changes.
      */
     public function syncPrimaryRequestPdfFromRootPacket(AgendaItem $agenda): void
     {

@@ -66,6 +66,68 @@ class OrdinanceVersionHistoryTest extends TestCase
         $this->assertSame(2, $ordinance->current_version_no);
     }
 
+    public function test_subject_change_creates_version(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Encoder]);
+        $ordinance = Ordinance::query()->create([
+            'ordinance_no' => 24,
+            'series_year' => 2026,
+            'title' => 'Stable title',
+            'subject' => 'Old subject',
+        ]);
+        app(OrdinanceVersionService::class)->recordInitialVersion($ordinance, $user->id);
+
+        $this->actingAs($user)
+            ->put(route('ordinances.update', $ordinance), [
+                'ordinance_no' => 24,
+                'series_year' => 2026,
+                'title' => 'Stable title',
+                'subject' => 'New subject',
+            ])
+            ->assertRedirect(route('ordinances.show', $ordinance));
+
+        $ordinance->refresh();
+        $this->assertSame(2, $ordinance->versions()->count());
+        $this->assertSame('New subject', $ordinance->versions()->reorder()->orderByDesc('version_no')->first()->snapshotValue('subject'));
+    }
+
+    public function test_non_trigger_field_edits_do_not_create_version_but_log_activity(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Encoder]);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'is_active' => true]);
+        $ordinance = Ordinance::query()->create([
+            'ordinance_no' => 25,
+            'series_year' => 2026,
+            'title' => 'Stable title',
+            'subject' => 'Stable subject',
+            'date_enacted' => '2026-01-01',
+        ]);
+        app(OrdinanceVersionService::class)->recordInitialVersion($ordinance, $user->id);
+
+        $this->actingAs($user)
+            ->put(route('ordinances.update', $ordinance), [
+                'ordinance_no' => 25,
+                'series_year' => 2026,
+                'title' => 'Stable title',
+                'subject' => 'Stable subject',
+                'date_enacted' => '2026-02-15',
+            ])
+            ->assertRedirect(route('ordinances.show', $ordinance));
+
+        $ordinance->refresh();
+        $this->assertSame(1, $ordinance->versions()->count());
+        $this->assertSame('2026-02-15', $ordinance->date_enacted?->format('Y-m-d') ?? (string) $ordinance->date_enacted);
+
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'ordinance.updated',
+            'subject_id' => $ordinance->id,
+        ]);
+        $this->assertDatabaseHas('user_notifications', [
+            'user_id' => $admin->id,
+            'type' => \App\Models\UserNotification::TYPE_ACTIVITY_LOG,
+        ]);
+    }
+
     public function test_pdf_upload_creates_version_and_keeps_previous_file(): void
     {
         Storage::fake('local');

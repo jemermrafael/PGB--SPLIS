@@ -227,13 +227,20 @@ class AgendaItemController extends Controller
         $changedFields = array_keys($agenda->getChanges());
         $agenda->refresh();
 
+        $version = $versions->recordVersionIfChanged($agenda, $before, $request->user()->id);
+
+        // Packet uploads (root or folder) are part of the request PDF and always version.
+        if ($hasPacketUpload && $version === null) {
+            $versions->createVersion($agenda, 'session', $request->user()->id);
+        }
+
         if ($hasPacketUpload) {
-            // Root packet PDF may quietly set request_pdf_path — don't force a new version for that alone.
-            $before['request_pdf_path'] = $agenda->getAttribute('request_pdf_path');
             $versions->preserveRequestPdfInCurrentVersion($agenda, $request->user()->id);
         }
 
-        $versions->recordVersionIfChanged($agenda, $before, $request->user()->id);
+        ActivityLogger::log('agenda.updated', $agenda, [
+            'tracking_no' => $agenda->tracking_no,
+        ]);
 
         if ($previousOutputConnection !== null && $this->outputIdentityChanged($before, $agenda)) {
             $outputLinker->clearOutputLinks($agenda, clearBackReference: true);

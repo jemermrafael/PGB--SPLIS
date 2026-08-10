@@ -72,6 +72,43 @@ class AppropriationOrdinanceVersionHistoryTest extends TestCase
         $this->assertSame('subject', $changes[0]['field']);
     }
 
+    public function test_non_trigger_field_edits_do_not_create_version_but_log_activity(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Encoder, 'is_active' => true]);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'is_active' => true]);
+
+        $record = AppropriationOrdinance::query()->create([
+            'subject' => 'Stable title',
+            'ordinance_no' => 8,
+            'series_year' => 2026,
+            'date_passed' => '2026-01-01',
+            'created_by' => $user->id,
+        ]);
+        app(AppropriationOrdinanceVersionService::class)->recordInitialVersion($record, $user->id);
+
+        $this->actingAs($user)
+            ->put(route('appropriation-ordinances.update', $record), [
+                'subject' => 'Stable title',
+                'ordinance_no' => 8,
+                'series_year' => 2026,
+                'date_passed' => '2026-03-01',
+            ])
+            ->assertRedirect(route('appropriation-ordinances.show', $record));
+
+        $record->refresh();
+        $this->assertSame(1, $record->versions()->count());
+        $this->assertSame('2026-03-01', $record->date_passed?->format('Y-m-d') ?? (string) $record->date_passed);
+
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'appropriation_ordinance.updated',
+            'subject_id' => $record->id,
+        ]);
+        $this->assertDatabaseHas('user_notifications', [
+            'user_id' => $admin->id,
+            'type' => \App\Models\UserNotification::TYPE_ACTIVITY_LOG,
+        ]);
+    }
+
     public function test_pdf_upload_creates_version_and_keeps_previous_file(): void
     {
         $user = User::factory()->create(['role' => UserRole::Encoder, 'is_active' => true]);

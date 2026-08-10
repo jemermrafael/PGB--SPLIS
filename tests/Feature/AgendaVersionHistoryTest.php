@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Services\AgendaCsvImporter;
 use App\Services\AgendaVersionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -99,7 +98,7 @@ class AgendaVersionHistoryTest extends TestCase
         $this->assertSame(1, $agenda->current_version_no);
     }
 
-    public function test_request_pdf_upload_creates_version_and_keeps_previous_file(): void
+    public function test_request_pdf_path_change_creates_version_and_keeps_previous_file(): void
     {
         Storage::fake('local');
 
@@ -113,42 +112,162 @@ class AgendaVersionHistoryTest extends TestCase
         ]);
 
         $oldRelative = 'agenda/'.$agenda->id.'/request/old-file.pdf';
+        $newRelative = 'agenda/'.$agenda->id.'/request/replacement.pdf';
         Storage::disk('local')->put($oldRelative, '%PDF-1.4 old');
+        Storage::disk('local')->put($newRelative, '%PDF-1.4 new');
         $agenda->update(['request_pdf_path' => $oldRelative]);
 
-        app(AgendaVersionService::class)->recordInitialVersion($agenda, $user->id);
+        $versions = app(AgendaVersionService::class);
+        $versions->recordInitialVersion($agenda, $user->id);
 
-        $newUpload = UploadedFile::fake()->create('replacement.pdf', 120, 'application/pdf');
+        $before = collect(AgendaVersionService::VERSIONED_FIELDS)
+            ->mapWithKeys(fn (string $field) => [$field => $agenda->getAttribute($field)])
+            ->all();
 
-        $this->actingAs($user)
-            ->put(route('agenda.update', $agenda), [
-                'tracking_no' => '332',
-                'sender' => 'Mariveles',
-                'title' => 'PDF versioning',
-                'status' => AgendaItem::STATUS_PENDING,
-                'request_pdf' => $newUpload,
-            ])
-            ->assertRedirect(route('agenda.show', $agenda));
+        $agenda->update(['request_pdf_path' => $newRelative]);
+        $versions->recordVersionIfChanged($agenda->fresh(), $before, $user->id);
 
         $agenda->refresh();
-        $versions = $agenda->versions()->reorder()->orderBy('version_no')->get();
+        $versionRows = $agenda->versions()->reorder()->orderBy('version_no')->get();
 
-        $this->assertCount(2, $versions);
-        $this->assertSame(1, $versions[0]->version_no);
-        $this->assertSame(2, $versions[1]->version_no);
-        $this->assertSame($oldRelative, $versions[0]->snapshotValue('request_pdf_path'));
-        $this->assertNotSame($oldRelative, $agenda->request_pdf_path);
-        $this->assertSame($agenda->request_pdf_path, $versions[1]->snapshotValue('request_pdf_path'));
+        $this->assertCount(2, $versionRows);
+        $this->assertSame(1, $versionRows[0]->version_no);
+        $this->assertSame(2, $versionRows[1]->version_no);
+        $this->assertSame($oldRelative, $versionRows[0]->snapshotValue('request_pdf_path'));
+        $this->assertSame($newRelative, $agenda->request_pdf_path);
+        $this->assertSame($newRelative, $versionRows[1]->snapshotValue('request_pdf_path'));
         $this->assertTrue(Storage::disk('local')->exists($oldRelative));
-        $this->assertTrue(Storage::disk('local')->exists($agenda->request_pdf_path));
+        $this->assertTrue(Storage::disk('local')->exists($newRelative));
 
         $this->actingAs($user)
             ->get(route('agenda.versions.file', [
                 'agenda' => $agenda,
-                'version' => $versions[0],
+                'version' => $versionRows[0],
                 'slot' => 'request',
             ]))
             ->assertOk();
+    }
+
+    public function test_title_change_creates_version(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Encoder]);
+        $agenda = AgendaItem::query()->create([
+            'tracking_no' => '340',
+            'sender' => 'Balanga',
+            'title' => 'Original title',
+            'status' => AgendaItem::STATUS_PENDING,
+            'created_by' => $user->id,
+        ]);
+        app(AgendaVersionService::class)->recordInitialVersion($agenda, $user->id);
+
+        $this->actingAs($user)
+            ->put(route('agenda.update', $agenda), [
+                'tracking_no' => '340',
+                'sender' => 'Balanga',
+                'title' => 'Updated title',
+                'status' => AgendaItem::STATUS_PENDING,
+            ])
+            ->assertRedirect(route('agenda.show', $agenda));
+
+        $agenda->refresh();
+        $this->assertSame(2, $agenda->versions()->count());
+        $this->assertSame('Updated title', $agenda->versions()->reorder()->orderByDesc('version_no')->first()->snapshotValue('title'));
+    }
+
+    public function test_request_pdf_url_change_creates_version(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Encoder]);
+        $agenda = AgendaItem::query()->create([
+            'tracking_no' => '341',
+            'sender' => 'Orion',
+            'title' => 'Drive link agenda',
+            'status' => AgendaItem::STATUS_PENDING,
+            'request_pdf_url' => 'https://drive.google.com/file/d/old',
+            'created_by' => $user->id,
+        ]);
+        app(AgendaVersionService::class)->recordInitialVersion($agenda, $user->id);
+
+        $this->actingAs($user)
+            ->put(route('agenda.update', $agenda), [
+                'tracking_no' => '341',
+                'sender' => 'Orion',
+                'title' => 'Drive link agenda',
+                'status' => AgendaItem::STATUS_PENDING,
+                'request_pdf_url' => 'https://drive.google.com/file/d/new',
+            ])
+            ->assertRedirect(route('agenda.show', $agenda));
+
+        $this->assertSame(2, $agenda->fresh()->versions()->count());
+    }
+
+    public function test_non_title_non_pdf_edits_do_not_create_version(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Encoder]);
+        $agenda = AgendaItem::query()->create([
+            'tracking_no' => '342',
+            'sender' => 'Pilar',
+            'title' => 'Stable title',
+            'status' => AgendaItem::STATUS_PENDING,
+            'remarks' => 'Old remarks',
+            'prescribed_days' => 30,
+            'created_by' => $user->id,
+        ]);
+        app(AgendaVersionService::class)->recordInitialVersion($agenda, $user->id);
+
+        $this->actingAs($user)
+            ->put(route('agenda.update', $agenda), [
+                'tracking_no' => '342',
+                'sender' => 'Limay',
+                'title' => 'Stable title',
+                'status' => AgendaItem::STATUS_PENDING,
+                'remarks' => 'New remarks',
+                'prescribed_days' => 60,
+            ])
+            ->assertRedirect(route('agenda.show', $agenda));
+
+        $agenda->refresh();
+        $this->assertSame('Limay', $agenda->sender);
+        $this->assertSame('New remarks', $agenda->remarks);
+        $this->assertSame(60, $agenda->prescribed_days);
+        $this->assertSame(1, $agenda->versions()->count());
+        $this->assertSame(1, $agenda->current_version_no);
+    }
+
+    public function test_agenda_update_notifies_admins_for_non_version_edits(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Encoder]);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'is_active' => true]);
+        $agenda = AgendaItem::query()->create([
+            'tracking_no' => '343',
+            'sender' => 'Pilar',
+            'title' => 'Stable title',
+            'status' => AgendaItem::STATUS_PENDING,
+            'remarks' => 'Old remarks',
+            'prescribed_days' => 30,
+            'created_by' => $user->id,
+        ]);
+        app(AgendaVersionService::class)->recordInitialVersion($agenda, $user->id);
+
+        $this->actingAs($user)
+            ->put(route('agenda.update', $agenda), [
+                'tracking_no' => '343',
+                'sender' => 'Limay',
+                'title' => 'Stable title',
+                'status' => AgendaItem::STATUS_PENDING,
+                'remarks' => 'New remarks',
+                'prescribed_days' => 60,
+            ])
+            ->assertRedirect(route('agenda.show', $agenda));
+
+        $this->assertSame(1, $agenda->fresh()->versions()->count());
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'agenda.updated',
+            'subject_id' => $agenda->id,
+        ]);
+        $this->assertDatabaseHas('user_notifications', [
+            'user_id' => $admin->id,
+            'type' => \App\Models\UserNotification::TYPE_ACTIVITY_LOG,
+        ]);
     }
 
     /**

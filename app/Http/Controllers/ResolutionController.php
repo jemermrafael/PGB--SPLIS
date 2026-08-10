@@ -167,7 +167,7 @@ class ResolutionController extends Controller
         $resolution->refresh();
         $this->versionService->recordVersionIfChanged($resolution, $before, $request->user()->id);
 
-        ActivityLog::record('resolution.updated', $resolution);
+        ActivityLog::record('resolution.updated', $resolution, $this->resolutionLogProperties($resolution));
         IncomingFieldOptions::forgetKeywordCache();
 
         return redirect()->route('resolutions.show', $resolution)->with('status', 'Resolution updated.');

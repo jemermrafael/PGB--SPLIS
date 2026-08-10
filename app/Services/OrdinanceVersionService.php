@@ -10,10 +10,13 @@ use Illuminate\Support\Facades\DB;
 class OrdinanceVersionService
 {
     /**
+     * Fields stored on each version snapshot (for history comparison).
+     *
      * @var list<string>
      */
     public const VERSIONED_FIELDS = [
         'title',
+        'subject',
         'pdf_url',
         'pdf_path',
         'mov_bulletin_url',
@@ -25,12 +28,25 @@ class OrdinanceVersionService
     ];
 
     /**
+     * Only these edits create a new ordinance version.
+     *
+     * @var list<string>
+     */
+    public const VERSION_TRIGGER_FIELDS = [
+        'title',
+        'subject',
+        'pdf_url',
+        'pdf_path',
+    ];
+
+    /**
      * @return array<string, string>
      */
     public static function fieldLabels(): array
     {
         return [
             'title' => 'Title',
+            'subject' => 'Subject',
             'pdf_url' => 'Ordinance PDF URL',
             'pdf_path' => 'Ordinance PDF (local)',
             'mov_bulletin_url' => 'Bulletin PDF URL',
@@ -78,7 +94,7 @@ class OrdinanceVersionService
         $changed = false;
 
         foreach (self::VERSIONED_FIELDS as $field) {
-            if ($field === 'title') {
+            if (in_array($field, ['title', 'subject'], true)) {
                 continue;
             }
 
@@ -121,7 +137,7 @@ class OrdinanceVersionService
      */
     public function hasVersionableChanges(array $originalAttributes, Ordinance $ordinance): bool
     {
-        foreach (self::VERSIONED_FIELDS as $field) {
+        foreach (self::VERSION_TRIGGER_FIELDS as $field) {
             $before = $this->normalizeSnapshotValue($originalAttributes[$field] ?? null);
             $after = $this->normalizeSnapshotValue($ordinance->getAttribute($field));
 
@@ -217,25 +233,18 @@ class OrdinanceVersionService
     {
         $titleChanged = $this->normalizeSnapshotValue($before['title'] ?? null)
             !== $this->normalizeSnapshotValue($after->getAttribute('title'));
+        $subjectChanged = $this->normalizeSnapshotValue($before['subject'] ?? null)
+            !== $this->normalizeSnapshotValue($after->getAttribute('subject'));
+        $pdfChanged = $this->normalizeSnapshotValue($before['pdf_url'] ?? null)
+            !== $this->normalizeSnapshotValue($after->getAttribute('pdf_url'))
+            || $this->normalizeSnapshotValue($before['pdf_path'] ?? null)
+            !== $this->normalizeSnapshotValue($after->getAttribute('pdf_path'));
 
-        $pdfChanged = false;
-        foreach (self::VERSIONED_FIELDS as $field) {
-            if ($field === 'title') {
-                continue;
-            }
-
-            if ($this->normalizeSnapshotValue($before[$field] ?? null)
-                !== $this->normalizeSnapshotValue($after->getAttribute($field))) {
-                $pdfChanged = true;
-                break;
-            }
-        }
-
-        if ($titleChanged && $pdfChanged) {
+        if (($titleChanged || $subjectChanged) && $pdfChanged) {
             return 'general';
         }
 
-        if ($titleChanged) {
+        if ($titleChanged && ! $subjectChanged) {
             return 'title';
         }
 

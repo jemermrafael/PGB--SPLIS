@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 class AppropriationOrdinanceVersionService
 {
     /**
+     * Fields stored on each version snapshot (for history comparison).
+     *
      * @var list<string>
      */
     public const VERSIONED_FIELDS = [
@@ -19,6 +21,17 @@ class AppropriationOrdinanceVersionService
         'date_received',
         'date_passed',
         'date_approved',
+        'pdf_url',
+        'pdf_path',
+    ];
+
+    /**
+     * Only these edits create a new appropriation ordinance version.
+     *
+     * @var list<string>
+     */
+    public const VERSION_TRIGGER_FIELDS = [
+        'subject',
         'pdf_url',
         'pdf_path',
     ];
@@ -143,7 +156,7 @@ class AppropriationOrdinanceVersionService
      */
     public function hasVersionableChanges(array $originalAttributes, AppropriationOrdinance $record): bool
     {
-        foreach (self::VERSIONED_FIELDS as $field) {
+        foreach (self::VERSION_TRIGGER_FIELDS as $field) {
             $before = $this->normalizeSnapshotValue($field, $originalAttributes[$field] ?? null);
             $after = $this->normalizeSnapshotValue($field, $record->getAttribute($field));
 
@@ -295,17 +308,15 @@ class AppropriationOrdinanceVersionService
             !== $this->normalizeSnapshotValue('subject', $after->getAttribute('subject'));
         $pdfChanged = $this->anyFieldChanged($before, $after, ['pdf_path', 'pdf_url']);
 
-        if ($titleChanged && ! $pdfChanged && ! $this->anyFieldChanged($before, $after, array_diff(
-            self::VERSIONED_FIELDS,
-            ['subject', 'pdf_path', 'pdf_url'],
-        ))) {
+        if ($titleChanged && $pdfChanged) {
+            return 'general';
+        }
+
+        if ($titleChanged) {
             return 'title';
         }
 
-        if ($pdfChanged && ! $titleChanged && ! $this->anyFieldChanged($before, $after, array_diff(
-            self::VERSIONED_FIELDS,
-            ['pdf_path', 'pdf_url'],
-        ))) {
+        if ($pdfChanged) {
             return 'pdf';
         }
 

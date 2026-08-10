@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 class AgendaVersionService
 {
     /**
+     * Fields stored on each version snapshot (for history comparison).
+     *
      * @var list<string>
      */
     public const VERSIONED_FIELDS = [
@@ -39,6 +41,17 @@ class AgendaVersionService
         'journal_url',
         'minutes_url',
         'remarks',
+    ];
+
+    /**
+     * Only these edits create a new agenda version.
+     *
+     * @var list<string>
+     */
+    public const VERSION_TRIGGER_FIELDS = [
+        'title',
+        'request_pdf_url',
+        'request_pdf_path',
     ];
 
     /**
@@ -253,7 +266,7 @@ class AgendaVersionService
      */
     public function hasVersionableChanges(array $originalAttributes, AgendaItem $agenda): bool
     {
-        foreach (self::VERSIONED_FIELDS as $field) {
+        foreach (self::VERSION_TRIGGER_FIELDS as $field) {
             $before = $this->normalizeSnapshotValue($field, $originalAttributes[$field] ?? null);
             $after = $this->normalizeSnapshotValue($field, $agenda->getAttribute($field));
 
@@ -372,39 +385,11 @@ class AgendaVersionService
      */
     protected function inferChangeReason(array $before, AgendaItem $after): string
     {
-        $referralFields = ['committee_referred', 'date_of_referral'];
-        if ($this->anyFieldChanged($before, $after, $referralFields)) {
-            return 'referral';
+        if ($this->anyFieldChanged($before, $after, ['request_pdf_url', 'request_pdf_path'])) {
+            return 'session';
         }
 
-        $committeeMeetingFields = [
-            'date_of_committee_meeting',
-            'committee_meeting_minutes',
-            'outcome',
-            'committee_report_url',
-        ];
-        if ($this->anyFieldChanged($before, $after, $committeeMeetingFields)) {
-            return 'committee_meeting';
-        }
-
-        $outputFields = [
-            'reso_ord_ao_no',
-            'reso_ord_ao_series',
-            'reso_ord_ao_type',
-            'reso_ord_ao_url',
-            'resolution_title',
-            'date_passed',
-            'date_signed_by_gov',
-            'journal_url',
-            'minutes_url',
-            'remarks',
-        ];
-        if ($this->anyFieldChanged($before, $after, $outputFields)) {
-            return 'output';
-        }
-
-        $sessionFields = ['title', 'request_pdf_url', 'request_pdf_path', 'journal_url', 'minutes_url'];
-        if ($this->anyFieldChanged($before, $after, $sessionFields)) {
+        if ($this->anyFieldChanged($before, $after, ['title'])) {
             return 'session';
         }
 

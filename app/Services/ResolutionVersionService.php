@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\DB;
 class ResolutionVersionService
 {
     /**
+     * Fields stored on each version snapshot (for history comparison).
+     *
      * @var list<string>
      */
     public const VERSIONED_FIELDS = [
@@ -38,6 +40,17 @@ class ResolutionVersionService
         'pdf_path',
         'sp_pdf_url',
         'document_type',
+    ];
+
+    /**
+     * Only these edits create a new resolution version.
+     *
+     * @var list<string>
+     */
+    public const VERSION_TRIGGER_FIELDS = [
+        'resolution_title',
+        'pdf_path',
+        'sp_pdf_url',
     ];
 
     /**
@@ -203,7 +216,7 @@ class ResolutionVersionService
      */
     public function hasVersionableChanges(array $originalAttributes, Resolution $resolution): bool
     {
-        foreach (self::VERSIONED_FIELDS as $field) {
+        foreach (self::VERSION_TRIGGER_FIELDS as $field) {
             $before = $this->normalizeSnapshotValue($field, $originalAttributes[$field] ?? null);
             $after = $this->normalizeSnapshotValue($field, $resolution->getAttribute($field));
 
@@ -367,17 +380,15 @@ class ResolutionVersionService
             !== $this->normalizeSnapshotValue('resolution_title', $after->getAttribute('resolution_title'));
         $pdfChanged = $this->anyFieldChanged($before, $after, ['pdf_path', 'sp_pdf_url']);
 
-        if ($titleChanged && ! $pdfChanged && ! $this->anyFieldChanged($before, $after, array_diff(
-            self::VERSIONED_FIELDS,
-            ['resolution_title', 'pdf_path', 'sp_pdf_url'],
-        ))) {
+        if ($titleChanged && $pdfChanged) {
+            return 'general';
+        }
+
+        if ($titleChanged) {
             return 'title';
         }
 
-        if ($pdfChanged && ! $titleChanged && ! $this->anyFieldChanged($before, $after, array_diff(
-            self::VERSIONED_FIELDS,
-            ['pdf_path', 'sp_pdf_url'],
-        ))) {
+        if ($pdfChanged) {
             return 'pdf';
         }
 

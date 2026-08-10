@@ -74,6 +74,49 @@ class ResolutionVersionHistoryTest extends TestCase
         $this->assertSame('resolution_title', $changes[0]['field']);
     }
 
+    public function test_non_trigger_field_edits_do_not_create_version_but_notify_admins(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Encoder, 'is_active' => true]);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'is_active' => true]);
+
+        $resolution = Resolution::query()->create([
+            'resolution_no' => '104',
+            'resolution_title' => 'Stable title',
+            'series' => 2026,
+            'status' => 'draft',
+            'sponsored_by' => 'Old sponsor',
+            'created_by' => $user->id,
+        ]);
+        app(ResolutionVersionService::class)->recordInitialVersion($resolution, $user->id);
+
+        $this->actingAs($user)
+            ->put(route('resolutions.update', $resolution), [
+                'resolution_no' => '104',
+                'resolution_title' => 'Stable title',
+                'series' => 2026,
+                'status' => 'approved',
+                'sponsored_by' => 'New sponsor',
+                'keyword' => 'UPDATED',
+            ])
+            ->assertRedirect(route('resolutions.show', $resolution));
+
+        $resolution->refresh();
+        $this->assertSame(1, $resolution->versions()->count());
+        $this->assertSame(1, $resolution->current_version_no);
+        $this->assertSame('approved', $resolution->status);
+        $this->assertSame('New sponsor', $resolution->sponsored_by);
+
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'resolution.updated',
+            'subject_id' => $resolution->id,
+        ]);
+        $this->assertDatabaseHas('user_notifications', [
+            'user_id' => $admin->id,
+            'type' => \App\Models\UserNotification::TYPE_ACTIVITY_LOG,
+            'title' => 'Resolution updated',
+        ]);
+    }
+
     public function test_pdf_upload_creates_version_and_keeps_previous_file(): void
     {
         $user = User::factory()->create(['role' => UserRole::Encoder, 'is_active' => true]);
