@@ -41,11 +41,11 @@ export function initBoardMemberCommitteeReportAgendaSearch() {
 
     const list = document.getElementById('bm-cr-agenda-list');
     const committeeSelect = document.getElementById('bm-cr-committee-id');
-    const staffCommitteeSelect = document.getElementById('staff-cr-committee-id');
     const searchInput = document.getElementById('bm-cr-q');
     const boardMemberSelect = document.getElementById('board_member_id');
     const searchUrl = root.dataset.searchUrl;
     const needsBoardMember = root.dataset.boardMemberParam === '1';
+    const committeeSelectsChair = root.dataset.committeeSelectsChair === '1';
 
     if (!list || !committeeSelect || !searchInput || !searchUrl) {
         return;
@@ -54,31 +54,8 @@ export function initBoardMemberCommitteeReportAgendaSearch() {
     let debounceTimer;
     let requestId = 0;
 
-    staffCommitteeSelect?.addEventListener('change', () => {
-        if (!needsBoardMember || !boardMemberSelect) {
-            return;
-        }
-
-        const option = staffCommitteeSelect.selectedOptions[0];
-        const chairId = option?.dataset.boardMemberId || '';
-        const committeeId = staffCommitteeSelect.value;
-        const params = new URLSearchParams();
-
-        if (chairId !== '') {
-            params.set('board_member_id', chairId);
-        }
-        if (committeeId !== '') {
-            params.set('committee_id', committeeId);
-        }
-
-        const query = params.toString();
-        window.location.href = query
-            ? `${window.location.pathname}?${query}`
-            : window.location.pathname;
-    });
-
     boardMemberSelect?.addEventListener('change', () => {
-        if (! needsBoardMember) {
+        if (!needsBoardMember) {
             return;
         }
 
@@ -88,15 +65,15 @@ export function initBoardMemberCommitteeReportAgendaSearch() {
         }
 
         // Keep committee filter only when it still belongs to the newly selected chair.
-        const staffOption = staffCommitteeSelect?.selectedOptions[0];
-        const staffCommitteeId = staffCommitteeSelect?.value || '';
-        const staffChairId = staffOption?.dataset.boardMemberId || '';
+        const committeeOption = committeeSelect.selectedOptions[0];
+        const committeeId = committeeSelect.value;
+        const committeeChairId = committeeOption?.dataset.boardMemberId || '';
         if (
-            staffCommitteeId !== ''
+            committeeId !== ''
             && boardMemberSelect.value !== ''
-            && String(staffChairId) === String(boardMemberSelect.value)
+            && String(committeeChairId) === String(boardMemberSelect.value)
         ) {
-            params.set('committee_id', staffCommitteeId);
+            params.set('committee_id', committeeId);
         }
 
         const query = params.toString();
@@ -106,6 +83,28 @@ export function initBoardMemberCommitteeReportAgendaSearch() {
     });
 
     committeeSelect.addEventListener('change', () => {
+        if (committeeSelectsChair && needsBoardMember && boardMemberSelect) {
+            const option = committeeSelect.selectedOptions[0];
+            const chairId = option?.dataset.boardMemberId || '';
+            const committeeId = committeeSelect.value;
+
+            if (committeeId !== '' && chairId !== '' && String(chairId) !== String(boardMemberSelect.value)) {
+                const params = new URLSearchParams();
+                params.set('board_member_id', chairId);
+                params.set('committee_id', committeeId);
+                window.location.href = `${window.location.pathname}?${params.toString()}`;
+                return;
+            }
+
+            if (committeeId !== '' && chairId !== '' && boardMemberSelect.value === '') {
+                const params = new URLSearchParams();
+                params.set('board_member_id', chairId);
+                params.set('committee_id', committeeId);
+                window.location.href = `${window.location.pathname}?${params.toString()}`;
+                return;
+            }
+        }
+
         fetchAgendas();
         updateUrl();
     });
@@ -160,7 +159,7 @@ export function initBoardMemberCommitteeReportAgendaSearch() {
 
     async function fetchAgendas() {
         if (needsBoardMember && boardMemberId() === '') {
-            list.innerHTML = '<p class="px-2 py-8 text-center text-sm text-slate-500">Select a committee or Board Member chair to load open agendas.</p>';
+            list.innerHTML = '<p class="px-2 py-8 text-center text-sm text-slate-500">Select a committee to load open agendas (chair is selected automatically).</p>';
             return;
         }
 
@@ -213,7 +212,7 @@ export function initBoardMemberCommitteeReportAgendaSearch() {
                 if (filtered) {
                     emptyMessage = 'No chairmanship agenda items matched your filter.';
                 } else if (needsBoardMember && boardMemberId() === '') {
-                    emptyMessage = 'Select a committee or Board Member chair to load open agendas.';
+                    emptyMessage = 'Select a committee to load open agendas (chair is selected automatically).';
                 }
                 list.innerHTML = `<p class="px-2 py-8 text-center text-sm text-slate-500">${emptyMessage}</p>`;
             } else {

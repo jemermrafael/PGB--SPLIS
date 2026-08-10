@@ -171,7 +171,8 @@ class StaffCommitteeReportTest extends TestCase
                 'committee_id' => $committee->id,
             ]))
             ->assertOk()
-            ->assertSee('staff-cr-committee-id', false)
+            ->assertDontSee('staff-cr-committee-id', false)
+            ->assertSee('bm-cr-committee-id', false)
             ->assertSee($committee->name)
             ->assertSee($boardMember->displayName())
             ->assertSee('Committee-first create agenda');
@@ -182,7 +183,7 @@ class StaffCommitteeReportTest extends TestCase
             $html,
         );
         $this->assertMatchesRegularExpression(
-            '/id="staff-cr-committee-id"[\s\S]*?<option[^>]*value="'.$committee->id.'"[^>]*selected/i',
+            '/id="bm-cr-committee-id"[\s\S]*?<option[^>]*value="'.$committee->id.'"[^>]*data-board-member-id="'.$boardMember->id.'"[^>]*(selected|selected="selected")/i',
             $html,
         );
     }

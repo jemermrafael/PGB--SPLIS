@@ -4,8 +4,9 @@
     $isEdit = $report !== null;
     $selectedAgendaIds = collect($selectedAgendaIds ?? [])->map(fn ($id) => (int) $id)->all();
     $chairMembers = $chairMembers ?? collect();
-    $selectionCommittees = $selectionCommittees ?? collect();
+    $selectionCommittees = collect($selectionCommittees ?? []);
     $selectedSessionId = $selectedSessionId ?? null;
+    $useCommitteeChairPicker = ! $isEdit && $selectionCommittees->isNotEmpty();
 @endphp
 
 <form
@@ -22,25 +23,6 @@
         <div class="splis-card splis-card-body space-y-5">
             @if (! $isEdit)
                 <div>
-                    <label class="splis-label" for="staff-cr-committee-id">Committee</label>
-                    <select id="staff-cr-committee-id" class="splis-select">
-                        <option value="">Select committee</option>
-                        @foreach (($selectionCommittees ?? collect()) as $committee)
-                            <option
-                                value="{{ $committee['id'] }}"
-                                data-board-member-id="{{ $committee['board_member_id'] }}"
-                                @selected((int) ($committeeId ?? 0) === (int) $committee['id'])
-                            >
-                                {{ $committee['name'] }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        Choosing a committee selects its Board Member chair automatically.
-                    </p>
-                </div>
-
-                <div>
                     <label class="splis-label" for="board_member_id">Board Member (Chair)</label>
                     <select name="board_member_id" id="board_member_id" class="splis-select" required>
                         <option value="">Select Board Member</option>
@@ -53,6 +35,11 @@
                     @error('board_member_id')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
+                    @if ($useCommitteeChairPicker)
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            Or choose a committee on the right — the chair is selected automatically.
+                        </p>
+                    @endif
                 </div>
             @else
                 <input type="hidden" name="board_member_id" id="board_member_id" value="{{ $boardMemberId }}">
@@ -121,22 +108,41 @@
             class="splis-card overflow-hidden"
             data-search-url="{{ $agendaSearchUrl }}"
             data-board-member-param="1"
+            @if ($useCommitteeChairPicker) data-committee-selects-chair="1" @endif
         >
             <div class="splis-card-header">
                 <div>
                     <h2 class="splis-card-title">Chairmanship Agenda</h2>
-                    <p class="splis-card-subtitle">Items referred to committees this Board Member chairs (without a report yet).</p>
+                    <p class="splis-card-subtitle">
+                        @if ($useCommitteeChairPicker)
+                            Choose a committee to auto-select its chair and list open agendas without a report yet.
+                        @else
+                            Items referred to committees this Board Member chairs (without a report yet).
+                        @endif
+                    </p>
                 </div>
             </div>
             <div class="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                         <label class="splis-label" for="bm-cr-committee-id">Committee</label>
-                        <select id="bm-cr-committee-id" class="splis-select" @disabled(! $boardMemberId && ! $isEdit)>
-                            <option value="">All Chairmanships</option>
-                            @foreach ($chairCommittees as $committee)
-                                <option value="{{ $committee->id }}" @selected((int) $committeeId === (int) $committee->id)>{{ $committee->name }}</option>
-                            @endforeach
+                        <select id="bm-cr-committee-id" class="splis-select" @disabled(! $useCommitteeChairPicker && ! $boardMemberId && ! $isEdit)>
+                            <option value="">{{ $useCommitteeChairPicker ? 'Select committee' : 'All Chairmanships' }}</option>
+                            @if ($useCommitteeChairPicker)
+                                @foreach ($selectionCommittees as $committee)
+                                    <option
+                                        value="{{ $committee['id'] }}"
+                                        data-board-member-id="{{ $committee['board_member_id'] }}"
+                                        @selected((int) ($committeeId ?? 0) === (int) $committee['id'])
+                                    >
+                                        {{ $committee['name'] }}
+                                    </option>
+                                @endforeach
+                            @else
+                                @foreach ($chairCommittees as $committee)
+                                    <option value="{{ $committee->id }}" @selected((int) $committeeId === (int) $committee->id)>{{ $committee->name }}</option>
+                                @endforeach
+                            @endif
                         </select>
                     </div>
                     <div>
@@ -188,7 +194,7 @@
                 @empty
                     <p class="px-2 py-8 text-center text-sm text-slate-500">
                         @if (! $boardMemberId && ! $isEdit)
-                            Select a committee or Board Member chair to load open agendas.
+                            Select a committee to load open agendas (chair is selected automatically).
                         @elseif ($q !== '' || $committeeId)
                             No chairmanship agenda items matched your filter.
                         @else
