@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\ObDocument;
 use App\Models\User;
+use App\Support\UserCapability;
 
 class ObDocumentPolicy
 {
@@ -17,11 +18,15 @@ class ObDocumentPolicy
             return $document->legislativeSession?->isVisibleToBoardMembers() ?? false;
         }
 
+        if ($user->canEncode() || $user->canAdmin()) {
+            return $user->hasModuleCapability(UserCapability::ORDER_OF_BUSINESS);
+        }
+
         return true;
     }
 
     public function update(User $user, ObDocument $document): bool
     {
-        return $user->canEncode();
+        return $user->hasModuleCapability(UserCapability::ORDER_OF_BUSINESS);
     }
 }

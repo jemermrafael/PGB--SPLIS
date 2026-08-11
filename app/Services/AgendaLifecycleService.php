@@ -587,6 +587,10 @@ class AgendaLifecycleService
             'session_title' => $session->displayTitle(),
             'session_date' => $session->session_date?->format('Y-m-d'),
         ]), $userId);
+
+        if ($session->isNotifiableForObAgendaAdds()) {
+            app(ActivityLogNotifier::class)->digestSubsequentObAdds($session, 1);
+        }
     }
 
     public function logRelocatedInOb(

@@ -31,7 +31,7 @@ class StaffCommitteeReportController extends Controller
     public function index(Request $request): View
     {
         $this->authorize('viewAny', BoardMemberCommitteeReport::class);
-        abort_unless($request->user()?->canEncode(), 403);
+        abort_unless($request->user()?->hasModuleCapability(\App\Support\UserCapability::COMMITTEE_REPORTS), 403);
 
         return view('committee-reports.index', [
             'committees' => Committee::query()->active()->ordered()->get(['id', 'name']),
@@ -47,7 +47,7 @@ class StaffCommitteeReportController extends Controller
     public function search(Request $request): JsonResponse
     {
         $this->authorize('viewAny', BoardMemberCommitteeReport::class);
-        abort_unless($request->user()?->canEncode(), 403);
+        abort_unless($request->user()?->hasModuleCapability(\App\Support\UserCapability::COMMITTEE_REPORTS), 403);
 
         /** @var User $user */
         $user = $request->user();
@@ -169,7 +169,7 @@ class StaffCommitteeReportController extends Controller
     public function create(Request $request): View
     {
         $this->authorize('create', BoardMemberCommitteeReport::class);
-        abort_unless($request->user()?->canEncode(), 403);
+        abort_unless($request->user()?->hasModuleCapability(\App\Support\UserCapability::COMMITTEE_REPORTS), 403);
 
         $chairMembers = $this->chairBoardMembers();
         $selectionCommittees = $this->chairCommitteesForSelection();
@@ -213,7 +213,7 @@ class StaffCommitteeReportController extends Controller
     public function edit(Request $request, BoardMemberCommitteeReport $committeeReport): View
     {
         $this->authorize('update', $committeeReport);
-        abort_unless($request->user()?->canEncode(), 403);
+        abort_unless($request->user()?->hasModuleCapability(\App\Support\UserCapability::COMMITTEE_REPORTS), 403);
 
         $committeeReport->load(['agendaItems:id,tracking_no,title,committee_referred', 'boardMember']);
         $chairCommittees = $this->dashboard->chairCommitteesForBoardMember((int) $committeeReport->board_member_id);
@@ -248,7 +248,7 @@ class StaffCommitteeReportController extends Controller
     public function agendas(Request $request): JsonResponse
     {
         $this->authorize('create', BoardMemberCommitteeReport::class);
-        abort_unless($request->user()?->canEncode(), 403);
+        abort_unless($request->user()?->hasModuleCapability(\App\Support\UserCapability::COMMITTEE_REPORTS), 403);
 
         $boardMemberId = $request->integer('board_member_id') ?: null;
         $existingReport = null;
@@ -295,7 +295,7 @@ class StaffCommitteeReportController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $this->authorize('create', BoardMemberCommitteeReport::class);
-        abort_unless($request->user()?->canEncode(), 403);
+        abort_unless($request->user()?->hasModuleCapability(\App\Support\UserCapability::COMMITTEE_REPORTS), 403);
 
         $validated = $request->validate([
             'board_member_id' => ['required', 'integer', 'exists:board_members,id'],
@@ -325,7 +325,7 @@ class StaffCommitteeReportController extends Controller
     public function update(Request $request, BoardMemberCommitteeReport $committeeReport): RedirectResponse
     {
         $this->authorize('update', $committeeReport);
-        abort_unless($request->user()?->canEncode(), 403);
+        abort_unless($request->user()?->hasModuleCapability(\App\Support\UserCapability::COMMITTEE_REPORTS), 403);
 
         $validated = $request->validate([
             'title' => ['nullable', 'string', 'max:255'],
@@ -355,7 +355,7 @@ class StaffCommitteeReportController extends Controller
     public function destroy(Request $request, BoardMemberCommitteeReport $committeeReport): RedirectResponse
     {
         $this->authorize('delete', $committeeReport);
-        abort_unless($request->user()?->canEncode(), 403);
+        abort_unless($request->user()?->hasModuleCapability(\App\Support\UserCapability::COMMITTEE_REPORTS), 403);
 
         $this->reports->delete($request->user(), $committeeReport);
 
@@ -367,7 +367,11 @@ class StaffCommitteeReportController extends Controller
     public function pdf(Request $request, BoardMemberCommitteeReport $committeeReport): StreamedResponse
     {
         $this->authorize('view', $committeeReport);
-        abort_unless($request->user()?->canEncode() || $request->user()?->isBoardMember(), 403);
+        abort_unless(
+            $request->user()?->hasModuleCapability(\App\Support\UserCapability::COMMITTEE_REPORTS)
+                || $request->user()?->isBoardMember(),
+            403
+        );
 
         return $this->reports->streamPdf($committeeReport);
     }

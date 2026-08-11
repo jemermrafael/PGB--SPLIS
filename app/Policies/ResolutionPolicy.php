@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\Resolution;
 use App\Models\User;
 use App\Support\MunicipalRequestAccess;
+use App\Support\UserCapability;
 
 class ResolutionPolicy
 {
@@ -19,13 +20,17 @@ class ResolutionPolicy
             return false;
         }
 
+        if ($user->canEncode() || $user->canAdmin()) {
+            return $user->hasModuleCapability(UserCapability::RESOLUTIONS);
+        }
+
         return true;
     }
 
     public function view(User $user, Resolution $resolution): bool
     {
         if ($resolution->trashed()) {
-            return $user->canEncode() || $user->isSuperadmin();
+            return $user->hasModuleCapability(UserCapability::RESOLUTIONS) || $user->isSuperadmin();
         }
 
         return MunicipalRequestAccess::userCanViewResolution($user, $resolution);
@@ -43,7 +48,7 @@ class ResolutionPolicy
 
     public function delete(User $user, Resolution $resolution): bool
     {
-        return $user->canEncode() && ! $resolution->trashed();
+        return $user->hasModuleCapability(UserCapability::RESOLUTIONS) && ! $resolution->trashed();
     }
 
     public function deleteAny(User $user): bool
@@ -53,11 +58,11 @@ class ResolutionPolicy
 
     public function create(User $user): bool
     {
-        return $user->canEncode();
+        return $user->hasModuleCapability(UserCapability::RESOLUTIONS);
     }
 
     public function update(User $user, Resolution $resolution): bool
     {
-        return $user->canEncode() && ! $resolution->trashed();
+        return $user->hasModuleCapability(UserCapability::RESOLUTIONS) && ! $resolution->trashed();
     }
 }

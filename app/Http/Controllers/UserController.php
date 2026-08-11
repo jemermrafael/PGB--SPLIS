@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\BoardMember;
 use App\Models\Municipality;
 use App\Models\User;
+use App\Support\UserCapability;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -37,6 +38,8 @@ class UserController extends Controller
             'roles' => UserRole::assignable(),
             'boardMembers' => BoardMember::query()->active()->ordered()->get(),
             'municipalities' => Municipality::query()->orderBy('description')->get(),
+            'capabilityLabels' => UserCapability::labels(),
+            'capabilityDescriptions' => UserCapability::descriptions(),
         ]);
     }
 
@@ -62,6 +65,8 @@ class UserController extends Controller
             'roles' => UserRole::assignable(),
             'boardMembers' => BoardMember::query()->active()->ordered()->get(),
             'municipalities' => Municipality::query()->orderBy('description')->get(),
+            'capabilityLabels' => UserCapability::labels(),
+            'capabilityDescriptions' => UserCapability::descriptions(),
         ]);
     }
 
@@ -141,6 +146,8 @@ class UserController extends Controller
                 Rule::unique('users', 'municipality_id')->ignore($user?->id),
             ],
             'is_active' => ['sometimes', 'boolean'],
+            'capabilities' => ['nullable', 'array'],
+            'capabilities.*' => ['string', Rule::in(UserCapability::keys())],
         ]);
 
         if (($data['role'] ?? null) !== UserRole::BoardMember->value) {
@@ -149,6 +156,18 @@ class UserController extends Controller
 
         if (($data['role'] ?? null) !== UserRole::MunicipalViewer->value) {
             $data['municipality_id'] = null;
+        }
+
+        $role = UserRole::tryFrom((string) ($data['role'] ?? ''));
+        if (in_array($role, [UserRole::Encoder, UserRole::EncoderDelete], true)) {
+            $selected = collect($data['capabilities'] ?? [])
+                ->map(fn ($value) => (string) $value)
+                ->intersect(UserCapability::keys())
+                ->values()
+                ->all();
+            $data['capabilities'] = $selected;
+        } else {
+            $data['capabilities'] = null;
         }
 
         if (empty($data['password'])) {

@@ -609,6 +609,10 @@ class ObDocumentService
                             'session_date' => $session->session_date?->format('Y-m-d'),
                         ]), $placedBy);
                     }
+
+                    if ($session->isNotifiableForObAgendaAdds()) {
+                        $this->activityLogNotifier->digestSubsequentObAdds($session, $items->count());
+                    }
                 }
             }
         }

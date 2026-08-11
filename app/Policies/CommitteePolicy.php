@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Committee;
 use App\Models\User;
+use App\Support\UserCapability;
 
 class CommitteePolicy
 {
@@ -19,17 +20,17 @@ class CommitteePolicy
 
     public function create(User $user): bool
     {
-        return $user->canEncode();
+        return $user->hasModuleCapability(UserCapability::COMMITTEES);
     }
 
     public function update(User $user, Committee $committee): bool
     {
-        return $user->canEncode();
+        return $user->hasModuleCapability(UserCapability::COMMITTEES);
     }
 
     public function delete(User $user, Committee $committee): bool
     {
-        return $user->canEncode();
+        return $user->hasModuleCapability(UserCapability::COMMITTEES);
     }
 
     public function manageIcon(User $user, Committee $committee): bool

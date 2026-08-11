@@ -5,12 +5,22 @@ namespace App\Policies;
 use App\Models\AgendaItem;
 use App\Models\User;
 use App\Support\MunicipalRequestAccess;
+use App\Support\UserCapability;
 
 class AgendaItemPolicy
 {
     public function viewAny(User $user): bool
     {
-        return ! $user->isMunicipalViewer();
+        if ($user->isMunicipalViewer()) {
+            return false;
+        }
+
+        if ($user->canEncode() || $user->canAdmin()) {
+            return $user->hasModuleCapability(UserCapability::AGENDA)
+                || $user->hasModuleCapability(UserCapability::ORDER_OF_BUSINESS);
+        }
+
+        return true;
     }
 
     public function view(User $user, AgendaItem $agendaItem): bool
@@ -20,12 +30,12 @@ class AgendaItemPolicy
 
     public function create(User $user): bool
     {
-        return $user->canEncode();
+        return $user->hasModuleCapability(UserCapability::AGENDA);
     }
 
     public function update(User $user, AgendaItem $agendaItem): bool
     {
-        return $user->canEncode() && ! $agendaItem->isArchived();
+        return $user->hasModuleCapability(UserCapability::AGENDA) && ! $agendaItem->isArchived();
     }
 
     public function delete(User $user, AgendaItem $agendaItem): bool
@@ -38,7 +48,7 @@ class AgendaItemPolicy
             return true;
         }
 
-        return $user->canEncode() && ! $agendaItem->hasIncoming();
+        return $user->hasModuleCapability(UserCapability::AGENDA) && ! $agendaItem->hasIncoming();
     }
 
     public function archive(User $user, AgendaItem $agendaItem): bool
@@ -53,22 +63,22 @@ class AgendaItemPolicy
 
     public function promote(User $user, AgendaItem $agendaItem): bool
     {
-        return $user->canEncode() && ! $agendaItem->isArchived() && ! $agendaItem->hasIncoming();
+        return $user->hasModuleCapability(UserCapability::AGENDA) && ! $agendaItem->isArchived() && ! $agendaItem->hasIncoming();
     }
 
     public function unlinkIncoming(User $user, AgendaItem $agendaItem): bool
     {
-        return $user->canEncode() && ! $agendaItem->isArchived() && $agendaItem->hasIncoming();
+        return $user->hasModuleCapability(UserCapability::AGENDA) && ! $agendaItem->isArchived() && $agendaItem->hasIncoming();
     }
 
     public function unlinkResolution(User $user, AgendaItem $agendaItem): bool
     {
-        return $user->canEncode() && ! $agendaItem->isArchived() && $agendaItem->resolution_id !== null;
+        return $user->hasModuleCapability(UserCapability::AGENDA) && ! $agendaItem->isArchived() && $agendaItem->resolution_id !== null;
     }
 
     public function addToOrderOfBusiness(User $user, AgendaItem $agendaItem): bool
     {
-        return $user->canEncode()
+        return $user->hasModuleCapability(UserCapability::ORDER_OF_BUSINESS)
             && ! $agendaItem->isArchived()
             && $agendaItem->status !== AgendaItem::STATUS_DONE
             && ! $agendaItem->obPlacements()->exists();
@@ -76,11 +86,13 @@ class AgendaItemPolicy
 
     public function removeFromOrderOfBusiness(User $user, AgendaItem $agendaItem): bool
     {
-        return $user->canEncode() && ! $agendaItem->isArchived() && $agendaItem->obPlacements()->exists();
+        return $user->hasModuleCapability(UserCapability::ORDER_OF_BUSINESS)
+            && ! $agendaItem->isArchived()
+            && $agendaItem->obPlacements()->exists();
     }
 
     public function linkOutput(User $user, AgendaItem $agendaItem): bool
     {
-        return $user->canEncode() && ! $agendaItem->isArchived() && $agendaItem->needsOutputLink();
+        return $user->hasModuleCapability(UserCapability::AGENDA) && ! $agendaItem->isArchived() && $agendaItem->needsOutputLink();
     }
 }

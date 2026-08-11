@@ -150,7 +150,7 @@ class AdminActivityLogNotifierTest extends TestCase
         ]);
     }
 
-    public function test_added_to_ob_activity_notifies_when_session_scheduled_and_ob_final(): void
+    public function test_added_to_ob_activity_does_not_notify_per_agenda_when_ob_is_final(): void
     {
         $encoder = User::factory()->create(['role' => UserRole::Encoder]);
         $admin = User::factory()->create(['role' => UserRole::Admin, 'is_active' => true]);
@@ -173,14 +173,39 @@ class AdminActivityLogNotifierTest extends TestCase
             'session_date' => $session->session_date?->format('Y-m-d'),
         ]));
 
-        $this->assertDatabaseHas('user_notifications', [
+        $this->assertDatabaseMissing('user_notifications', [
             'user_id' => $admin->id,
             'type' => UserNotification::TYPE_ACTIVITY_LOG,
             'title' => 'Added to Order of Business',
         ]);
     }
 
-    public function test_deferred_added_to_ob_activity_notifies_when_ob_becomes_final(): void
+    public function test_ob_relocated_does_not_notify_admins(): void
+    {
+        $encoder = User::factory()->create(['role' => UserRole::Encoder]);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'is_active' => true]);
+
+        [$agenda, $session] = $this->agendaWithSessionOb(
+            $encoder,
+            sessionStatus: 'scheduled',
+            obStatus: ObDocument::STATUS_FINAL,
+        );
+
+        $this->actingAs($encoder);
+        ActivityLogger::log('agenda.ob_relocated', $agenda, ActivityLogger::agendaObProperties($agenda, [
+            'from_section' => 'unfinished',
+            'to_section' => 'committee_reports',
+            'session_id' => $session->id,
+            'session_title' => $session->displayTitle(),
+        ]));
+
+        $this->assertDatabaseMissing('user_notifications', [
+            'user_id' => $admin->id,
+            'type' => UserNotification::TYPE_ACTIVITY_LOG,
+        ]);
+    }
+
+    public function test_deferred_added_to_ob_activity_sends_one_finalize_digest(): void
     {
         $encoder = User::factory()->create(['role' => UserRole::Encoder]);
         $admin = User::factory()->create(['role' => UserRole::Admin, 'is_active' => true]);
@@ -191,6 +216,16 @@ class AdminActivityLogNotifierTest extends TestCase
             obStatus: ObDocument::STATUS_DRAFT,
             withDocument: true,
         );
+
+        AgendaItem::create([
+            'tracking_no' => '778',
+            'title' => 'Second CR agenda',
+            'committee_referred' => 'Tourism',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 0,
+            'committee_report_pdf_path' => 'agenda-pdfs/778/committee-report.pdf',
+            'created_by' => $encoder->id,
+        ]);
 
         app(\App\Services\ObDocumentTemplateService::class)->seedDefaultBlocks($document);
         $agenda->update([
@@ -215,11 +250,46 @@ class AdminActivityLogNotifierTest extends TestCase
             'action' => 'agenda.added_to_ob',
             'subject_id' => $agenda->id,
         ]);
-        $this->assertDatabaseHas('user_notifications', [
+
+        $digests = UserNotification::query()
+            ->where('user_id', $admin->id)
+            ->where('type', UserNotification::TYPE_ACTIVITY_LOG)
+            ->where('title', \App\Services\ActivityLogNotifier::OB_FINALIZED_TITLE)
+            ->get();
+
+        $this->assertCount(1, $digests);
+        $this->assertMatchesRegularExpression('/\d+ agendas? placed/', (string) $digests->first()->body);
+        $this->assertSame($session->id, $digests->first()->legislative_session_id);
+
+        $this->assertDatabaseMissing('user_notifications', [
             'user_id' => $admin->id,
-            'type' => UserNotification::TYPE_ACTIVITY_LOG,
             'title' => 'Added to Order of Business',
         ]);
+    }
+
+    public function test_subsequent_ob_adds_coalesce_into_one_admin_digest(): void
+    {
+        $encoder = User::factory()->create(['role' => UserRole::Encoder]);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'is_active' => true]);
+
+        [, $session] = $this->agendaWithSessionOb(
+            $encoder,
+            sessionStatus: 'scheduled',
+            obStatus: ObDocument::STATUS_FINAL,
+        );
+
+        $notifier = app(\App\Services\ActivityLogNotifier::class);
+        $notifier->digestSubsequentObAdds($session, 1);
+        $notifier->digestSubsequentObAdds($session, 2);
+
+        $digests = UserNotification::query()
+            ->where('user_id', $admin->id)
+            ->where('title', \App\Services\ActivityLogNotifier::OB_ADDED_DIGEST_TITLE)
+            ->get();
+
+        $this->assertCount(1, $digests);
+        $this->assertStringContainsString('3 agendas added', (string) $digests->first()->body);
+        $this->assertSame($session->id, $digests->first()->legislative_session_id);
     }
 
     /**

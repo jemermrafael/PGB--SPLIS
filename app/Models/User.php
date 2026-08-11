@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\UserRole;
+use App\Support\UserCapability;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'username', 'email', 'password', 'role', 'legacy_user_id', 'is_active', 'board_member_id', 'municipality_id', 'notification_preferences'])]
+#[Fillable(['name', 'username', 'email', 'password', 'role', 'legacy_user_id', 'is_active', 'board_member_id', 'municipality_id', 'notification_preferences', 'capabilities'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -27,6 +28,7 @@ class User extends Authenticatable
             'role' => UserRole::class,
             'is_active' => 'boolean',
             'notification_preferences' => 'array',
+            'capabilities' => 'array',
         ];
     }
 
@@ -70,6 +72,59 @@ class User extends Authenticatable
     public function canEncode(): bool
     {
         return $this->role->canCreate();
+    }
+
+    /**
+     * Module capabilities apply to Encoder / Encoder Delete.
+     * Admin and Superadmin always have every module.
+     * Null capabilities means all modules (legacy default).
+     *
+     * @return list<string>
+     */
+    public function effectiveCapabilities(): array
+    {
+        if ($this->canAdmin()) {
+            return UserCapability::keys();
+        }
+
+        if (! $this->canEncode()) {
+            return [];
+        }
+
+        if ($this->capabilities === null) {
+            return UserCapability::keys();
+        }
+
+        return array_values(array_intersect(
+            UserCapability::keys(),
+            array_map('strval', $this->capabilities),
+        ));
+    }
+
+    public function hasModuleCapability(string $capability): bool
+    {
+        return in_array($capability, $this->effectiveCapabilities(), true);
+    }
+
+    /**
+     * Checkbox state for the user form (null capabilities → all checked).
+     *
+     * @return array<string, bool>
+     */
+    public function capabilitySelections(): array
+    {
+        $selected = $this->capabilities === null
+            ? UserCapability::keys()
+            : $this->effectiveCapabilities();
+
+        return collect(UserCapability::keys())
+            ->mapWithKeys(fn (string $key) => [$key => in_array($key, $selected, true)])
+            ->all();
+    }
+
+    public function usesModuleCapabilities(): bool
+    {
+        return $this->hasRole(UserRole::Encoder, UserRole::EncoderDelete);
     }
 
     public function canDeleteResolutions(): bool

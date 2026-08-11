@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\CommitteeTerm;
 use App\Models\User;
+use App\Support\UserCapability;
 
 class CommitteeTermPolicy
 {
@@ -19,16 +20,16 @@ class CommitteeTermPolicy
 
     public function create(User $user): bool
     {
-        return $user->canEncode();
+        return $user->hasModuleCapability(UserCapability::COMMITTEES);
     }
 
     public function update(User $user, CommitteeTerm $committeeTerm): bool
     {
-        return $user->canEncode();
+        return $user->hasModuleCapability(UserCapability::COMMITTEES);
     }
 
     public function delete(User $user, CommitteeTerm $committeeTerm): bool
     {
-        return $user->canEncode();
+        return $user->hasModuleCapability(UserCapability::COMMITTEES);
     }
 }

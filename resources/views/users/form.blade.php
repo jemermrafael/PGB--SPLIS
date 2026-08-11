@@ -88,15 +88,53 @@
             <p class="mt-1 text-xs text-slate-500">Required for Municipal SB Viewer accounts — one login per municipality. Matches agenda sender values like Mariveles.</p>
         </div>
 
+        @php
+            $capabilityRole = old('role', $user->role?->value);
+            $showCapabilities = in_array($capabilityRole, ['encoder', 'encoder_delete'], true);
+            $capabilitySelections = old('capabilities') !== null
+                ? collect(old('capabilities', []))->mapWithKeys(fn ($key) => [(string) $key => true])->all()
+                : $user->capabilitySelections();
+        @endphp
+        <div id="capabilities-wrap" @class(['space-y-3', 'hidden' => ! $showCapabilities])>
+            <div>
+                <p class="splis-label">Module access</p>
+                <p class="mt-1 text-xs text-slate-500">Choose which modules this encoder can manage. Unchecked modules are hidden and blocked.</p>
+            </div>
+            <div class="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-600 dark:bg-slate-800/60">
+                @foreach ($capabilityLabels as $key => $label)
+                    <label class="flex items-start gap-2.5 rounded-lg px-2 py-1.5 text-sm text-slate-700 hover:bg-white/70 dark:text-slate-200 dark:hover:bg-slate-700/40">
+                        <input
+                            type="checkbox"
+                            name="capabilities[]"
+                            value="{{ $key }}"
+                            @checked(! empty($capabilitySelections[$key]))
+                            class="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                        >
+                        <span>
+                            <span class="font-medium">{{ $label }}</span>
+                            @if (! empty($capabilityDescriptions[$key]))
+                                <span class="mt-0.5 block text-xs font-normal text-slate-500 dark:text-slate-400">{{ $capabilityDescriptions[$key] }}</span>
+                            @endif
+                        </span>
+                    </label>
+                @endforeach
+            </div>
+        </div>
+
         <script>
             document.getElementById('role')?.addEventListener('change', (event) => {
                 const boardWrap = document.getElementById('board-member-link-wrap');
                 const municipalityWrap = document.getElementById('municipality-link-wrap');
+                const capabilitiesWrap = document.getElementById('capabilities-wrap');
                 if (boardWrap) {
                     boardWrap.classList.toggle('hidden', event.target.value !== 'board_member');
                 }
                 if (municipalityWrap) {
                     municipalityWrap.classList.toggle('hidden', event.target.value !== 'municipal_viewer');
+                }
+                if (capabilitiesWrap) {
+                    const show = event.target.value === 'encoder' || event.target.value === 'encoder_delete';
+                    capabilitiesWrap.classList.toggle('hidden', !show);
                 }
             });
         </script>

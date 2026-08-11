@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\BoardMember;
 use App\Models\User;
+use App\Support\UserCapability;
 
 class BoardMemberPolicy
 {
@@ -19,16 +20,16 @@ class BoardMemberPolicy
 
     public function create(User $user): bool
     {
-        return $user->canEncode();
+        return $user->hasModuleCapability(UserCapability::COMMITTEES);
     }
 
     public function update(User $user, BoardMember $boardMember): bool
     {
-        return $user->canEncode();
+        return $user->hasModuleCapability(UserCapability::COMMITTEES);
     }
 
     public function delete(User $user, BoardMember $boardMember): bool
     {
-        return $user->canEncode();
+        return $user->hasModuleCapability(UserCapability::COMMITTEES);
     }
 }

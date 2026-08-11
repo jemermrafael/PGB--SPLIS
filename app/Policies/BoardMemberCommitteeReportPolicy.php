@@ -4,22 +4,26 @@ namespace App\Policies;
 
 use App\Models\BoardMemberCommitteeReport;
 use App\Models\User;
+use App\Support\UserCapability;
 
 class BoardMemberCommitteeReportPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $this->isLinkedBoardMember($user) || $user->canEncode();
+        return $this->isLinkedBoardMember($user)
+            || $user->hasModuleCapability(UserCapability::COMMITTEE_REPORTS);
     }
 
     public function view(User $user, BoardMemberCommitteeReport $report): bool
     {
-        return $this->ownsAsBoardMember($user, $report) || $user->canEncode();
+        return $this->ownsAsBoardMember($user, $report)
+            || $user->hasModuleCapability(UserCapability::COMMITTEE_REPORTS);
     }
 
     public function create(User $user): bool
     {
-        return $this->isLinkedBoardMember($user) || $user->canEncode();
+        return $this->isLinkedBoardMember($user)
+            || $user->hasModuleCapability(UserCapability::COMMITTEE_REPORTS);
     }
 
     public function update(User $user, BoardMemberCommitteeReport $report): bool
@@ -53,7 +57,7 @@ class BoardMemberCommitteeReportPolicy
             return true;
         }
 
-        return $user->canEncode()
+        return $user->hasModuleCapability(UserCapability::COMMITTEE_REPORTS)
             && (int) $report->submitted_by === (int) $user->id;
     }
 }

@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\AppropriationOrdinance;
 use App\Models\User;
 use App\Support\MunicipalRequestAccess;
+use App\Support\UserCapability;
 
 class AppropriationOrdinancePolicy
 {
@@ -19,6 +20,10 @@ class AppropriationOrdinancePolicy
             return false;
         }
 
+        if ($user->canEncode() || $user->canAdmin()) {
+            return $user->hasModuleCapability(UserCapability::ORDINANCES);
+        }
+
         return true;
     }
 
@@ -29,16 +34,16 @@ class AppropriationOrdinancePolicy
 
     public function create(User $user): bool
     {
-        return $user->canEncode();
+        return $user->hasModuleCapability(UserCapability::ORDINANCES);
     }
 
     public function update(User $user, AppropriationOrdinance $appropriationOrdinance): bool
     {
-        return $user->canEncode();
+        return $user->hasModuleCapability(UserCapability::ORDINANCES);
     }
 
     public function delete(User $user, AppropriationOrdinance $appropriationOrdinance): bool
     {
-        return $user->canEncode();
+        return $user->hasModuleCapability(UserCapability::ORDINANCES);
     }
 }

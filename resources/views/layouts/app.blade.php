@@ -23,6 +23,14 @@
         $canAdmin = $user?->canAdmin() ?? false;
         $showNotifications = $user?->receivesInAppNotifications() ?? false;
         $incomingEnabled = config('incoming.enabled', false);
+        $canAgenda = $user?->hasModuleCapability(\App\Support\UserCapability::AGENDA) ?? false;
+        $canResolutions = $user?->hasModuleCapability(\App\Support\UserCapability::RESOLUTIONS) ?? false;
+        $canOrdinances = $user?->hasModuleCapability(\App\Support\UserCapability::ORDINANCES) ?? false;
+        $canOrderOfBusiness = $user?->hasModuleCapability(\App\Support\UserCapability::ORDER_OF_BUSINESS) ?? false;
+        $canCommitteeReports = $user?->hasModuleCapability(\App\Support\UserCapability::COMMITTEE_REPORTS) ?? false;
+        $canCommittees = $user?->hasModuleCapability(\App\Support\UserCapability::COMMITTEES) ?? false;
+        $canReferences = $user?->hasModuleCapability(\App\Support\UserCapability::REFERENCES) ?? false;
+        $canDirectory = $user?->hasModuleCapability(\App\Support\UserCapability::DIRECTORY) ?? false;
         $ordinancesNavActive = request()->routeIs('ordinances.*')
             || request()->routeIs('appropriation-ordinances.*')
             || request()->routeIs('board-member.ordinances.*');
@@ -41,10 +49,16 @@
         ];
 
         if (! $isBoardMember && ! $isMunicipalViewer) {
-            $navItems[] = ['label' => 'Agenda', 'url' => route('agenda.index'), 'active' => request()->routeIs('agenda.*'), 'icon' => 'calendar-check'];
-            $navItems[] = ['label' => 'Order of Business', 'url' => route('ob.sessions.index'), 'active' => request()->routeIs('ob.*'), 'icon' => 'calendar'];
-            $navItems[] = ['label' => 'Reference Materials', 'url' => route('references.index'), 'active' => request()->routeIs('references.*'), 'icon' => 'book'];
-            if (($user?->canEncode() ?? false) || ($user?->canAdmin() ?? false)) {
+            if ($canAgenda || $canOrderOfBusiness) {
+                $navItems[] = ['label' => 'Agenda', 'url' => route('agenda.index'), 'active' => request()->routeIs('agenda.*'), 'icon' => 'calendar-check'];
+            }
+            if ($canOrderOfBusiness) {
+                $navItems[] = ['label' => 'Order of Business', 'url' => route('ob.sessions.index'), 'active' => request()->routeIs('ob.*'), 'icon' => 'calendar'];
+            }
+            if ($canReferences) {
+                $navItems[] = ['label' => 'Reference Materials', 'url' => route('references.index'), 'active' => request()->routeIs('references.*'), 'icon' => 'book'];
+            }
+            if ($canDirectory || $canAdmin) {
                 $navItems[] = ['label' => 'Directory', 'url' => route('directory.index'), 'active' => request()->routeIs('directory.*'), 'icon' => 'notebook'];
             }
         } elseif ($isBoardMember) {
@@ -235,6 +249,7 @@
                     @endif
 
                     @if (! $isBoardMember && ! $isMunicipalViewer)
+                    @if ($canResolutions)
                     <a
                         href="{{ route('resolutions.index') }}"
                         @class([
@@ -245,6 +260,7 @@
                         <x-icon name="file-text" class="h-4 w-4 shrink-0 opacity-80" />
                         Resolutions
                     </a>
+                    @endif
                     @if ($incomingEnabled)
                         <a
                             href="{{ route('incoming.index') }}"
@@ -259,7 +275,7 @@
                     @endif
                     @endif
 
-                    @if (! $isBoardMember && ! $isMunicipalViewer)
+                    @if (! $isBoardMember && ! $isMunicipalViewer && $canOrdinances)
                     <div class="splis-nav-dropdown" data-dropdown>
                         <button
                             type="button"
@@ -329,7 +345,7 @@
                     </div>
                     @endif
 
-                    @if (! $isBoardMember && ! $isMunicipalViewer)
+                    @if (! $isBoardMember && ! $isMunicipalViewer && ($canCommittees || $canCommitteeReports || $canAdmin || ($user?->canRecordAttendance() ?? false)))
                     <div class="splis-nav-dropdown" data-dropdown>
                         <button
                             type="button"
@@ -346,6 +362,7 @@
                             <x-icon name="chevron-down" class="ml-auto h-3.5 w-3.5 shrink-0 opacity-70" stroke-width="2" />
                         </button>
                         <div class="splis-nav-dropdown-panel" data-dropdown-panel role="menu">
+                            @if ($canCommittees || $canAdmin)
                             <a
                                 href="{{ route('committees.index') }}"
                                 role="menuitem"
@@ -376,7 +393,8 @@
                             >
                                 Committee Monitoring
                             </a>
-                            @if ($user?->canEncode())
+                            @endif
+                            @if ($canCommitteeReports)
                                 <a
                                     href="{{ route('scheduled-committee-referrals.index') }}"
                                     role="menuitem"
@@ -389,6 +407,7 @@
                                 </a>
                             @endif
                             @can('viewAny', App\Models\BoardMemberCommitteeReport::class)
+                                @if ($canCommitteeReports || ($user?->isBoardMember() ?? false))
                                 <a
                                     href="{{ route('committee-reports.index') }}"
                                     role="menuitem"
@@ -399,6 +418,7 @@
                                 >
                                     Committee Reports
                                 </a>
+                                @endif
                             @endcan
                             @if ($user?->canRecordAttendance())
                                 <a href="{{ route('ob.sessions.attendance.monthly') }}" role="menuitem" @class(['splis-nav-dropdown-link', 'splis-nav-dropdown-link-active' => request()->routeIs('ob.sessions.attendance.monthly')])>Monthly Attendance</a>

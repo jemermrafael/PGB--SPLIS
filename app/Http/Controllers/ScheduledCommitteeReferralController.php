@@ -150,6 +150,6 @@ class ScheduledCommitteeReferralController extends Controller
 
     protected function authorizeEncode(Request $request): void
     {
-        abort_unless($request->user()?->canEncode() ?? false, 403);
+        abort_unless($request->user()?->hasModuleCapability(\App\Support\UserCapability::COMMITTEE_REPORTS) ?? false, 403);
     }
 }
