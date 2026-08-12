@@ -21,11 +21,25 @@ class UserController extends Controller
 
         $users = User::query()
             ->orderBy('name')
-            ->paginate(25);
+            ->get();
+
+        $groups = collect(UserRole::assignable())
+            ->map(function (UserRole $role) use ($users): array {
+                $members = $users
+                    ->filter(fn (User $user) => $user->role === $role)
+                    ->values();
+
+                return [
+                    'role' => $role,
+                    'label' => $role->label(),
+                    'users' => $members,
+                ];
+            })
+            ->filter(fn (array $group) => $group['users']->isNotEmpty())
+            ->values();
 
         return view('users.index', [
-            'users' => $users,
-            'roles' => UserRole::assignable(),
+            'groups' => $groups,
         ]);
     }
 

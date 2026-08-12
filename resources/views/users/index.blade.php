@@ -24,58 +24,60 @@
                     <th>Name</th>
                     <th>Username</th>
                     <th class="hidden md:table-cell">Email</th>
-                    <th>Role</th>
                     <th>Status</th>
                     <th class="text-right">Actions</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse ($users as $user)
-                    <tr>
-                        <td class="font-medium text-slate-900 dark:text-slate-100">{{ $user->name }}</td>
-                        <td class="whitespace-nowrap">{{ $user->username }}</td>
-                        <td class="hidden md:table-cell">{{ $user->email }}</td>
-                        <td>{{ $user->role->label() }}</td>
-                        <td>
-                            @if ($user->is_active)
-                                <span class="splis-badge-linked">Active</span>
-                            @else
-                                <span class="splis-badge-unlinked">Inactive</span>
-                            @endif
-                        </td>
-                        <td class="text-right">
-                            <div class="flex justify-end gap-2">
-                                @can('update', $user)
-                                    <a href="{{ route('users.edit', $user) }}" class="splis-btn-secondary text-sm">Edit</a>
-                                @endcan
-                                @can('delete', $user)
-                                    <form
-                                        method="POST"
-                                        action="{{ route('users.destroy', $user) }}"
-                                        data-confirm-submit
-                                        data-confirm-title="Delete user account?"
-                                        data-confirm-message="Delete this user account? This cannot be undone."
-                                        data-confirm-label="Delete"
-                                    >
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="splis-btn-ghost text-sm text-red-600">Delete</button>
-                                    </form>
-                                @endcan
-                            </div>
+                @forelse ($groups as $group)
+                    <tr class="bg-slate-50 dark:bg-slate-800/60">
+                        <td colspan="5" class="py-2.5 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                            {{ $group['label'] }}
+                            <span class="ml-1 font-normal text-slate-500">({{ $group['users']->count() }})</span>
                         </td>
                     </tr>
+                    @foreach ($group['users'] as $user)
+                        <tr>
+                            <td class="font-medium text-slate-900 dark:text-slate-100">{{ $user->name }}</td>
+                            <td class="whitespace-nowrap">{{ $user->username }}</td>
+                            <td class="hidden md:table-cell">{{ $user->email }}</td>
+                            <td>
+                                @if ($user->is_active)
+                                    <span class="splis-badge-linked">Active</span>
+                                @else
+                                    <span class="splis-badge-unlinked">Inactive</span>
+                                @endif
+                            </td>
+                            <td class="text-right">
+                                <div class="flex justify-end gap-2">
+                                    @can('update', $user)
+                                        <a href="{{ route('users.edit', $user) }}" class="splis-btn-secondary text-sm">Edit</a>
+                                    @endcan
+                                    @can('delete', $user)
+                                        <form
+                                            method="POST"
+                                            action="{{ route('users.destroy', $user) }}"
+                                            data-confirm-submit
+                                            data-confirm-title="Delete user account?"
+                                            data-confirm-message="Delete this user account? This cannot be undone."
+                                            data-confirm-label="Delete"
+                                        >
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="splis-btn-ghost text-sm text-red-600">Delete</button>
+                                        </form>
+                                    @endcan
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
                 @empty
                     <tr>
-                        <td colspan="6" class="py-12 text-center text-slate-400">No users found.</td>
+                        <td colspan="5" class="py-12 text-center text-slate-400">No users found.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
-    </div>
-
-    <div class="mt-6">
-        {{ $users->links() }}
     </div>
 </div>
 @endsection

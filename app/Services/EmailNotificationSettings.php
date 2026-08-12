@@ -66,6 +66,7 @@ class EmailNotificationSettings
                 \App\Models\UserNotification::TYPE_SESSION_CREATED,
                 \App\Models\UserNotification::TYPE_OB_DOCUMENT_CREATED,
                 \App\Models\UserNotification::TYPE_AGENDA_EXPIRING_SOON,
+                \App\Models\UserNotification::TYPE_COMMITTEE_REPORT_SUBMITTED,
             ],
             self::AUDIENCE_MUNICIPAL => [
                 \App\Models\UserNotification::TYPE_COMMITTEE_REFERRAL,
@@ -101,6 +102,7 @@ class EmailNotificationSettings
                 \App\Models\UserNotification::TYPE_SESSION_CREATED,
                 \App\Models\UserNotification::TYPE_OB_DOCUMENT_CREATED,
                 \App\Models\UserNotification::TYPE_AGENDA_EXPIRING_SOON,
+                \App\Models\UserNotification::TYPE_COMMITTEE_REPORT_SUBMITTED,
             ],
             self::AUDIENCE_MUNICIPAL => [
                 \App\Models\UserNotification::TYPE_COMMITTEE_REFERRAL,
@@ -137,7 +139,7 @@ class EmailNotificationSettings
             self::TYPE_RESOLUTION_PUBLISHED => 'Agenda was published to Resolution',
             self::TYPE_ORDINANCE_PUBLISHED => 'New Ordinance published',
             self::TYPE_APPROPRIATION_ORDINANCE_PUBLISHED => 'New Appropriation Ordinance published',
-            self::TYPE_COMMITTEE_REPORT_SUBMITTED => 'Board Member Committee Report submitted',
+            self::TYPE_COMMITTEE_REPORT_SUBMITTED => 'Committee Report submitted',
         ];
     }
 
@@ -198,6 +200,11 @@ class EmailNotificationSettings
                     'body' => "{{label}} is due on {{due_date}}{{days_left_suffix}}.\n\nPlease take action before the deadline.",
                     'action_label' => 'View Agenda',
                 ],
+                \App\Models\UserNotification::TYPE_COMMITTEE_REPORT_SUBMITTED => [
+                    'subject' => 'Committee Report submitted for your Committee',
+                    'body' => "{{submitter_name}} submitted a Committee Report for {{committee}}{{agenda_suffix}}{{session_suffix}}.\n\nOpen SPLIS for details.",
+                    'action_label' => 'View Committee Reports',
+                ],
             ],
             self::AUDIENCE_MUNICIPAL => [
                 \App\Models\UserNotification::TYPE_COMMITTEE_REFERRAL => [
@@ -216,7 +223,7 @@ class EmailNotificationSettings
                     'action_label' => 'View Request',
                 ],
                 self::TYPE_APPROPRIATION_ORDINANCE_PUBLISHED => [
-                    'subject' => 'New appropriation ordinance published',
+                    'subject' => 'New Appropriation Ordinance published',
                     'body' => "{{label}} was published as an Appropriation Ordinance{{number_suffix}}.\n\nYou can view the published Ordinance in SPLIS.",
                     'action_label' => 'View Request',
                 ],
@@ -285,6 +292,9 @@ class EmailNotificationSettings
             '{{number_suffix}}',
             '{{member_name}}',
             '{{report_title_suffix}}',
+            '{{submitter_name}}',
+            '{{agenda_suffix}}',
+            '{{session_suffix}}',
             '{{app_name}}',
         ];
     }
@@ -322,6 +332,12 @@ class EmailNotificationSettings
             'enabled' => true,
             'types' => $types,
             'templates' => $templates,
+            'branding' => [
+                'sign_off' => 'Thanks,',
+                'signature' => (string) config('app.name'),
+                'header_eyebrow' => 'Legislative Information System',
+                'header_title' => 'Sangguniang Panlalawigan',
+            ],
             'smtp' => [
                 'mailer' => (string) config('mail.default', 'log'),
                 'host' => (string) config('mail.mailers.smtp.host', '127.0.0.1'),
@@ -385,9 +401,20 @@ class EmailNotificationSettings
             }
         }
 
+        $templates = $this->migrateBoardMemberCommitteeReportTemplate($templates);
+
         $smtp = array_merge($defaults['smtp'], is_array($stored['smtp'] ?? null) ? $stored['smtp'] : []);
         $smtp['port'] = (int) ($smtp['port'] ?? $defaults['smtp']['port']);
         $smtp['password'] = (string) ($smtp['password'] ?? '');
+
+        $brandingDefaults = $defaults['branding'];
+        $storedBranding = is_array($stored['branding'] ?? null) ? $stored['branding'] : [];
+        $branding = [
+            'sign_off' => trim((string) ($storedBranding['sign_off'] ?? $brandingDefaults['sign_off'])) ?: $brandingDefaults['sign_off'],
+            'signature' => trim((string) ($storedBranding['signature'] ?? $brandingDefaults['signature'])) ?: $brandingDefaults['signature'],
+            'header_eyebrow' => trim((string) ($storedBranding['header_eyebrow'] ?? $brandingDefaults['header_eyebrow'])) ?: $brandingDefaults['header_eyebrow'],
+            'header_title' => trim((string) ($storedBranding['header_title'] ?? $brandingDefaults['header_title'])) ?: $brandingDefaults['header_title'],
+        ];
 
         return [
             'enabled' => array_key_exists('enabled', $stored)
@@ -395,6 +422,7 @@ class EmailNotificationSettings
                 : $defaults['enabled'],
             'types' => $types,
             'templates' => $templates,
+            'branding' => $branding,
             'smtp' => [
                 'mailer' => (string) ($smtp['mailer'] ?: 'log'),
                 'host' => (string) $smtp['host'],
@@ -406,6 +434,14 @@ class EmailNotificationSettings
                 'from_name' => (string) $smtp['from_name'],
             ],
         ];
+    }
+
+    /**
+     * @return array{sign_off: string, signature: string, header_eyebrow: string, header_title: string}
+     */
+    public function branding(): array
+    {
+        return $this->get()['branding'];
     }
 
     public function isEnabled(): bool
@@ -437,6 +473,7 @@ class EmailNotificationSettings
      *     enabled?: bool,
      *     types?: array<string, array<string, bool|int|string>>,
      *     templates?: array<string, array<string, array<string, mixed>>>,
+     *     branding?: array<string, mixed>,
      *     smtp?: array<string, mixed>
      * }  $values
      */
@@ -477,6 +514,17 @@ class EmailNotificationSettings
             }
         }
 
+        if (isset($values['branding']) && is_array($values['branding'])) {
+            $fallback = $this->defaults()['branding'];
+            $incoming = $values['branding'];
+            $current['branding'] = [
+                'sign_off' => trim((string) ($incoming['sign_off'] ?? $fallback['sign_off'])) ?: $fallback['sign_off'],
+                'signature' => trim((string) ($incoming['signature'] ?? $fallback['signature'])) ?: $fallback['signature'],
+                'header_eyebrow' => trim((string) ($incoming['header_eyebrow'] ?? $fallback['header_eyebrow'])) ?: $fallback['header_eyebrow'],
+                'header_title' => trim((string) ($incoming['header_title'] ?? $fallback['header_title'])) ?: $fallback['header_title'],
+            ];
+        }
+
         if (isset($values['smtp']) && is_array($values['smtp'])) {
             $smtp = $values['smtp'];
             $current['smtp']['mailer'] = (string) ($smtp['mailer'] ?? $current['smtp']['mailer']);
@@ -497,6 +545,39 @@ class EmailNotificationSettings
             $this->path(),
             json_encode($current, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
         );
+    }
+
+    /**
+     * Replace the stub BM committee-report template ({{title}}/{{body}}) with chair-facing copy.
+     *
+     * @param  array<string, array<string, array{subject: string, body: string, action_label: string}>>  $templates
+     * @return array<string, array<string, array{subject: string, body: string, action_label: string}>>
+     */
+    protected function migrateBoardMemberCommitteeReportTemplate(array $templates): array
+    {
+        $type = \App\Models\UserNotification::TYPE_COMMITTEE_REPORT_SUBMITTED;
+        $current = $templates[self::AUDIENCE_BOARD_MEMBER][$type] ?? null;
+        if (! is_array($current)) {
+            return $templates;
+        }
+
+        $subject = trim((string) ($current['subject'] ?? ''));
+        $body = trim((string) ($current['body'] ?? ''));
+        $legacyBodies = [
+            "{{body}}\n\nOpen SPLIS for details.",
+            '{{body}}<br><br>Open SPLIS for details.',
+            "{{body}}<br><br>Open SPLIS for details.",
+        ];
+        $isLegacyStub = $subject === '{{title}}' && in_array($body, $legacyBodies, true);
+
+        if ($isLegacyStub) {
+            $templates[self::AUDIENCE_BOARD_MEMBER][$type] = self::defaultTemplate(
+                self::AUDIENCE_BOARD_MEMBER,
+                $type,
+            );
+        }
+
+        return $templates;
     }
 
     /**

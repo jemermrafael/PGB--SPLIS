@@ -275,6 +275,7 @@ class EmailNotificationService
                 notificationBody: $body,
                 actionUrl: $actionUrl,
                 actionLabel: $actionLabel,
+                branding: $this->settings->branding(),
             ));
         } catch (Throwable $e) {
             Log::warning('Failed to send email notification.', array_merge($context, [

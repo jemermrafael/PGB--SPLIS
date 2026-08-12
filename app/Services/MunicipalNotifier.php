@@ -100,8 +100,8 @@ class MunicipalNotifier
         }
 
         $title = match ($emailType) {
-            EmailNotificationSettings::TYPE_RESOLUTION_PUBLISHED => 'Agenda was published to resolution',
-            EmailNotificationSettings::TYPE_APPROPRIATION_ORDINANCE_PUBLISHED => 'New appropriation ordinance published',
+            EmailNotificationSettings::TYPE_RESOLUTION_PUBLISHED => 'Agenda was published to Resolution',
+            EmailNotificationSettings::TYPE_APPROPRIATION_ORDINANCE_PUBLISHED => 'New Appropriation Ordinance published',
             default => 'New Ordinance published',
         };
 

@@ -1,8 +1,8 @@
 const SAMPLE_PLACEHOLDERS = {
-    title: 'Committee referral update',
-    body: 'Your referred agenda item needs attention before the deadline.',
+    title: 'Agenda referred to your committee',
+    body: 'Agenda #342 was referred to Committee on Finance.',
     label: 'Agenda #342',
-    committee: 'Committee on Finance',
+    committee: 'Housing and Land Use',
     target: 'Resolution',
     session: '52nd Regular Session — July 27, 2026',
     document_title: 'Approving Supplemental Budget No. 1',
@@ -11,6 +11,9 @@ const SAMPLE_PLACEHOLDERS = {
     number_suffix: ' No. 2026-323',
     member_name: 'Hon. Ma. Cristina M. Garcia',
     report_title_suffix: ': Finance Committee Report',
+    submitter_name: 'Encoder Staff',
+    agenda_suffix: ' (#502)',
+    session_suffix: ' for 1st REGULAR SESSION',
     app_name: document.querySelector('meta[name="app-name"]')?.content || 'SPLIS',
 };
 
@@ -187,6 +190,31 @@ function initPreviewModal(root) {
             const hasAction = action !== '';
             actionWrap.classList.toggle('hidden', !hasAction);
             actionEl.textContent = action || 'View details';
+        }
+
+        const brandingValue = (key, fallback) => {
+            const input = root.querySelector(`[data-email-branding="${key}"]`);
+            const value = String(input?.value ?? '').trim();
+
+            return value !== '' ? value : fallback;
+        };
+
+        const eyebrowEl = modal.querySelector('[data-email-preview-eyebrow]');
+        const headerTitleEl = modal.querySelector('[data-email-preview-header-title]');
+        const signOffEl = modal.querySelector('[data-email-preview-sign-off]');
+        const signatureEl = modal.querySelector('[data-email-preview-signature]');
+
+        if (eyebrowEl) {
+            eyebrowEl.textContent = brandingValue('header_eyebrow', 'Legislative Information System');
+        }
+        if (headerTitleEl) {
+            headerTitleEl.textContent = brandingValue('header_title', 'Sangguniang Panlalawigan');
+        }
+        if (signOffEl) {
+            signOffEl.textContent = brandingValue('sign_off', 'Thanks,');
+        }
+        if (signatureEl) {
+            signatureEl.textContent = brandingValue('signature', SAMPLE_PLACEHOLDERS.app_name);
         }
 
         openModal();

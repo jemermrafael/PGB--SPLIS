@@ -27,6 +27,7 @@ class BoardMemberCommitteeReportService
         protected AgendaLifecycleService $lifecycle,
         protected ObDocumentService $documentService,
         protected EmailNotificationService $emails,
+        protected BoardMemberNotifier $boardMemberNotifier,
     ) {}
 
     /**
@@ -85,6 +86,7 @@ class BoardMemberCommitteeReportService
         });
 
         $this->emails->notifyStaffOfCommitteeReport($report, $user);
+        $this->boardMemberNotifier->notifyCommitteeReportSubmitted($report, $user);
 
         return $report;
     }

@@ -63,6 +63,15 @@ class EmailNotificationTest extends TestCase
         $this->assertFalse($defaults['types'][EmailNotificationSettings::AUDIENCE_MUNICIPAL][EmailNotificationSettings::TYPE_APPROPRIATION_ORDINANCE_PUBLISHED]);
         $this->assertFalse($defaults['types'][EmailNotificationSettings::AUDIENCE_STAFF][UserNotification::TYPE_ACTIVITY_LOG]);
         $this->assertTrue($defaults['types'][EmailNotificationSettings::AUDIENCE_STAFF][EmailNotificationSettings::TYPE_COMMITTEE_REPORT_SUBMITTED]);
+        $this->assertTrue($defaults['types'][EmailNotificationSettings::AUDIENCE_BOARD_MEMBER][UserNotification::TYPE_COMMITTEE_REPORT_SUBMITTED]);
+        $this->assertSame(
+            'Committee Report submitted for your Committee',
+            $defaults['templates'][EmailNotificationSettings::AUDIENCE_BOARD_MEMBER][UserNotification::TYPE_COMMITTEE_REPORT_SUBMITTED]['subject'],
+        );
+        $this->assertStringContainsString(
+            '{{submitter_name}}',
+            $defaults['templates'][EmailNotificationSettings::AUDIENCE_BOARD_MEMBER][UserNotification::TYPE_COMMITTEE_REPORT_SUBMITTED]['body'],
+        );
 
         $this->actingAs($admin)
             ->put(route('admin.email-notifications.update'), [
@@ -89,6 +98,12 @@ class EmailNotificationTest extends TestCase
                         ],
                     ],
                 ],
+                'branding' => [
+                    'sign_off' => 'Best regards,',
+                    'signature' => 'PGB - SPLIS Office',
+                    'header_eyebrow' => 'Legislative Information System',
+                    'header_title' => 'Sangguniang Panlalawigan',
+                ],
                 'smtp' => [
                     'mailer' => 'log',
                     'host' => 'smtp.example.com',
@@ -110,6 +125,8 @@ class EmailNotificationTest extends TestCase
         $this->assertFalse($settings['types'][EmailNotificationSettings::AUDIENCE_BOARD_MEMBER][UserNotification::TYPE_AGENDA_PUBLISHED]);
         $this->assertTrue($settings['types'][EmailNotificationSettings::AUDIENCE_MUNICIPAL][EmailNotificationSettings::TYPE_RESOLUTION_PUBLISHED]);
         $this->assertSame('Custom resolution subject', $settings['templates'][EmailNotificationSettings::AUDIENCE_MUNICIPAL][EmailNotificationSettings::TYPE_RESOLUTION_PUBLISHED]['subject']);
+        $this->assertSame('Best regards,', $settings['branding']['sign_off']);
+        $this->assertSame('PGB - SPLIS Office', $settings['branding']['signature']);
         $this->assertSame('smtp.example.com', $settings['smtp']['host']);
         $this->assertSame('secret', $settings['smtp']['password']);
     }
@@ -163,7 +180,63 @@ class EmailNotificationTest extends TestCase
                 && str_contains($mail->notificationBody, 'Test body')
                 && str_contains($html, 'Legislative Information System')
                 && str_contains($html, 'Sangguniang Panlalawigan')
-                && str_contains($html, 'bataan-seal.png');
+                && str_contains($html, 'bataan-seal.png')
+                && str_contains($html, 'dashboard-hero-bg.png')
+                && str_contains($html, 'Thanks,')
+                && str_contains($html, config('app.name'));
+        });
+    }
+
+    public function test_email_branding_settings_are_used_in_outgoing_mail(): void
+    {
+        Mail::fake();
+
+        app(EmailNotificationSettings::class)->update([
+            'enabled' => true,
+            'branding' => [
+                'sign_off' => 'Respectfully,',
+                'signature' => 'SPLIS Admin Office',
+                'header_eyebrow' => 'Province of Bataan',
+                'header_title' => 'Sangguniang Panlalawigan ng Bataan',
+            ],
+            'types' => [
+                EmailNotificationSettings::AUDIENCE_BOARD_MEMBER => [
+                    UserNotification::TYPE_COMMITTEE_REFERRAL => true,
+                ],
+            ],
+        ]);
+
+        $user = User::factory()->create([
+            'role' => UserRole::BoardMember,
+            'email' => 'bm-branding@example.com',
+            'is_active' => true,
+        ]);
+
+        $notification = UserNotification::query()->create([
+            'user_id' => $user->id,
+            'type' => UserNotification::TYPE_COMMITTEE_REFERRAL,
+            'title' => 'Agenda referred to your committee',
+            'body' => 'Branding body',
+        ]);
+
+        app(EmailNotificationService::class)->sendForNotification(
+            $user,
+            $notification,
+            EmailNotificationSettings::AUDIENCE_BOARD_MEMBER,
+            force: true,
+        );
+
+        Mail::assertSent(SystemNotificationMail::class, function (SystemNotificationMail $mail) use ($user) {
+            $html = $mail->render();
+
+            return $mail->hasTo($user->email)
+                && $mail->branding['sign_off'] === 'Respectfully,'
+                && $mail->branding['signature'] === 'SPLIS Admin Office'
+                && str_contains($html, 'Province of Bataan')
+                && str_contains($html, 'Sangguniang Panlalawigan ng Bataan')
+                && str_contains($html, 'Respectfully,')
+                && str_contains($html, 'SPLIS Admin Office')
+                && str_contains($html, 'dashboard-hero-bg.png');
         });
     }
 

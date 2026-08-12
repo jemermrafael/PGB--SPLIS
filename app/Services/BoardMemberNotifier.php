@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\CommitteeMembershipRole;
 use App\Enums\UserRole;
 use App\Models\AgendaItem;
+use App\Models\BoardMemberCommitteeReport;
 use App\Models\CommitteeMembership;
 use App\Models\CommitteeTerm;
 use App\Models\LegislativeSession;
@@ -550,6 +551,109 @@ class BoardMemberNotifier
             ],
             route('agenda.show', $agenda),
         );
+    }
+
+    /**
+     * Notify chairs when a committee report is submitted for agendas under their committee.
+     * The submitter is excluded (e.g. a chair uploading their own report).
+     */
+    public function notifyCommitteeReportSubmitted(BoardMemberCommitteeReport $report, User $submitter): void
+    {
+        $report->loadMissing(['agendaItems', 'boardMember', 'legislativeSession']);
+
+        $recipients = $this->chairUsersForCommitteeReport($report)
+            ->reject(fn (User $user) => (int) $user->id === (int) $submitter->id)
+            ->unique('id')
+            ->values();
+
+        if ($recipients->isEmpty()) {
+            return;
+        }
+
+        $submitterName = trim((string) ($submitter->name ?: '')) ?: 'A user';
+        $committeeNames = $report->agendaItems
+            ->map(fn (AgendaItem $agenda) => trim((string) ($agenda->committee_referred ?? '')))
+            ->filter()
+            ->unique()
+            ->values();
+        $committeeLabel = $committeeNames->isNotEmpty()
+            ? $committeeNames->implode(', ')
+            : ($report->boardMember?->displayName() ?: 'your committee');
+
+        $agendaLabels = $report->agendaItems
+            ->map(fn (AgendaItem $agenda) => $agenda->displayLabel())
+            ->filter()
+            ->values();
+        $agendaSuffix = $agendaLabels->isNotEmpty()
+            ? ' ('.$agendaLabels->implode(', ').')'
+            : '';
+
+        $session = $report->legislativeSession;
+        $sessionSuffix = $session
+            ? ' for '.$session->displayTitle()
+            : '';
+
+        $title = 'Committee Report submitted for your Committee';
+        $body = sprintf(
+            '%s submitted a committee report for %s%s%s.',
+            $submitterName,
+            $committeeLabel,
+            $agendaSuffix,
+            $sessionSuffix,
+        );
+
+        $link = route('board-member.committee-reports.index', absolute: false);
+
+        foreach ($recipients as $user) {
+            $notification = $this->createFreshNotificationForUser($user, UserNotification::TYPE_COMMITTEE_REPORT_SUBMITTED, [
+                'user_id' => $user->id,
+                'legislative_session_id' => $report->legislative_session_id,
+                'agenda_item_id' => $report->agendaItems->first()?->id,
+                'title' => $title,
+                'body' => $body,
+                'link' => $link,
+            ]);
+
+            $this->sendBoardMemberEmail(
+                $user,
+                $notification,
+                UserNotification::TYPE_COMMITTEE_REPORT_SUBMITTED,
+                [
+                    'title' => $title,
+                    'body' => $body,
+                    'submitter_name' => $submitterName,
+                    'committee' => $committeeLabel,
+                    'agenda_suffix' => $agendaSuffix,
+                    'session_suffix' => $sessionSuffix,
+                ],
+                $link,
+            );
+        }
+    }
+
+    /** @return Collection<int, User> */
+    protected function chairUsersForCommitteeReport(BoardMemberCommitteeReport $report): Collection
+    {
+        $users = collect();
+
+        foreach ($report->agendaItems as $agenda) {
+            $users = $users->merge($this->usersForAgendaCommittee($agenda));
+        }
+
+        if ($users->isNotEmpty()) {
+            return $users->unique('id')->values();
+        }
+
+        $boardMemberId = (int) ($report->board_member_id ?? 0);
+        if ($boardMemberId <= 0) {
+            return collect();
+        }
+
+        return User::query()
+            ->where('board_member_id', $boardMemberId)
+            ->where('role', UserRole::BoardMember)
+            ->where('is_active', true)
+            ->get();
     }
 
     /** @return Collection<int, User> */

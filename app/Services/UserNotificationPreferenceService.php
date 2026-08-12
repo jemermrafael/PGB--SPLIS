@@ -24,6 +24,7 @@ class UserNotificationPreferenceService
             UserNotification::TYPE_SESSION_CREATED,
             UserNotification::TYPE_OB_DOCUMENT_CREATED,
             UserNotification::TYPE_AGENDA_EXPIRING_SOON,
+            UserNotification::TYPE_COMMITTEE_REPORT_SUBMITTED,
         ];
     }
 

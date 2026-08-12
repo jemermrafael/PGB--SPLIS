@@ -17,6 +17,7 @@ class UserNotification extends Model
     public const TYPE_OB_DOCUMENT_CREATED = 'ob_document_created';
     public const TYPE_AGENDA_EXPIRING_SOON = 'agenda_expiring_soon';
     public const TYPE_WATCHLIST_PUBLISHED = 'watchlist_published';
+    public const TYPE_COMMITTEE_REPORT_SUBMITTED = 'committee_report_submitted';
 
     public const RETENTION_DAYS = 30;
 
@@ -108,6 +109,7 @@ class UserNotification extends Model
             self::TYPE_OB_DOCUMENT_CREATED,
             self::TYPE_AGENDA_EXPIRING_SOON,
             self::TYPE_WATCHLIST_PUBLISHED,
+            self::TYPE_COMMITTEE_REPORT_SUBMITTED,
         ];
     }
 

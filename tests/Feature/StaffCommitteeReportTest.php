@@ -229,6 +229,85 @@ class StaffCommitteeReportTest extends TestCase
             ->assertJsonPath('data.0.can_delete', true);
     }
 
+    public function test_staff_committee_report_notifies_chair_board_member_in_app_and_email(): void
+    {
+        Storage::fake('local');
+        \Illuminate\Support\Facades\Mail::fake();
+
+        $encoder = User::factory()->create([
+            'role' => UserRole::Encoder,
+            'name' => 'Encoder Staff',
+        ]);
+        [$bmUser, $committee, , $boardMember] = $this->linkedBoardMemberWithCommittee();
+
+        $agenda = AgendaItem::query()->create([
+            'tracking_no' => '502',
+            'title' => 'Chair notifiable agenda',
+            'committee_referred' => $committee->name,
+            'status' => AgendaItem::STATUS_PENDING,
+            'date_of_referral' => now()->toDateString(),
+            'prescribed_days' => 0,
+            'created_by' => $encoder->id,
+        ]);
+
+        $this->actingAs($encoder)
+            ->post(route('committee-reports.store'), [
+                'board_member_id' => $boardMember->id,
+                'title' => 'Staff CR for chair',
+                'pdf' => UploadedFile::fake()->create('staff-cr-notify.pdf', 100, 'application/pdf'),
+                'agenda_item_ids' => [$agenda->id],
+            ])
+            ->assertRedirect(route('committee-reports.index'));
+
+        $notification = \App\Models\UserNotification::query()
+            ->where('user_id', $bmUser->id)
+            ->where('type', \App\Models\UserNotification::TYPE_COMMITTEE_REPORT_SUBMITTED)
+            ->first();
+
+        $this->assertNotNull($notification);
+        $this->assertSame('Committee Report submitted for your Committee', $notification->title);
+        $this->assertStringContainsString('Encoder Staff', $notification->body);
+        $this->assertStringContainsString($committee->name, $notification->body);
+        $this->assertStringContainsString('#502', $notification->body);
+
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\SystemNotificationMail::class, function ($mail) use ($bmUser) {
+            return $mail->hasTo($bmUser->email);
+        });
+    }
+
+    public function test_board_member_submitting_own_report_does_not_notify_themselves(): void
+    {
+        Storage::fake('local');
+        \Illuminate\Support\Facades\Mail::fake();
+
+        [$bmUser, $committee] = $this->linkedBoardMemberWithCommittee();
+
+        $agenda = AgendaItem::query()->create([
+            'tracking_no' => '503',
+            'title' => 'Self submit agenda',
+            'committee_referred' => $committee->name,
+            'status' => AgendaItem::STATUS_PENDING,
+            'date_of_referral' => now()->toDateString(),
+            'prescribed_days' => 0,
+            'created_by' => $bmUser->id,
+        ]);
+
+        $this->actingAs($bmUser)
+            ->post(route('board-member.committee-reports.store'), [
+                'pdf' => UploadedFile::fake()->create('self-cr.pdf', 80, 'application/pdf'),
+                'agenda_item_ids' => [$agenda->id],
+            ])
+            ->assertRedirect(route('board-member.committee-reports.index'));
+
+        $this->assertSame(
+            0,
+            \App\Models\UserNotification::query()
+                ->where('user_id', $bmUser->id)
+                ->where('type', \App\Models\UserNotification::TYPE_COMMITTEE_REPORT_SUBMITTED)
+                ->count()
+        );
+    }
+
     public function test_encoder_cannot_edit_or_delete_board_member_submitted_report(): void
     {
         Storage::fake('local');

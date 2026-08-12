@@ -3214,27 +3214,45 @@
     }
 
     .splis-email-message-card {
-        @apply mx-auto max-w-[570px] rounded-lg bg-white px-6 py-6 shadow-sm sm:px-8;
+        @apply mx-auto max-w-[570px] overflow-hidden rounded-lg bg-white shadow-sm;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         color: #3d4852;
         font-size: 16px;
         line-height: 1.5;
     }
 
+    .splis-email-message-body {
+        @apply px-6 py-6 sm:px-8;
+    }
+
     .splis-email-brand-header {
-        @apply mb-6 flex items-center gap-3 border-b border-[#e8e5ef] pb-4;
+        @apply mb-0 flex items-center gap-3.5 border-b border-brand-gold/35 px-6 py-5 sm:px-8;
+        background-color: #061525;
+        background-image:
+            linear-gradient(
+                100deg,
+                #061525 0%,
+                #061525 38%,
+                rgb(6 21 37 / 0.92) 52%,
+                rgb(12 35 64 / 0.55) 72%,
+                rgb(12 35 64 / 0.2) 100%
+            ),
+            url('/images/dashboard-hero-bg.png');
+        background-position: center, 72% center;
+        background-size: cover, cover;
+        background-repeat: no-repeat;
     }
 
     .splis-email-brand-seal {
-        @apply h-12 w-12 shrink-0 rounded-full object-cover;
+        @apply h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-white/25;
     }
 
     .splis-email-brand-eyebrow {
-        @apply text-[11px] font-medium uppercase tracking-wide text-slate-500;
+        @apply text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-gold;
     }
 
     .splis-email-brand-title {
-        @apply text-base font-semibold text-slate-800;
+        @apply text-base font-bold leading-snug text-slate-50;
     }
 
     .splis-email-message-heading {

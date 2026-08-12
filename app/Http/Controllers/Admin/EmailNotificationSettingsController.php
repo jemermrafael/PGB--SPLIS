@@ -38,6 +38,11 @@ class EmailNotificationSettingsController extends Controller
             'templates.*.*.subject' => ['nullable', 'string', 'max:255'],
             'templates.*.*.body' => ['nullable', 'string', 'max:30000'],
             'templates.*.*.action_label' => ['nullable', 'string', 'max:100'],
+            'branding' => ['nullable', 'array'],
+            'branding.sign_off' => ['nullable', 'string', 'max:100'],
+            'branding.signature' => ['nullable', 'string', 'max:255'],
+            'branding.header_eyebrow' => ['nullable', 'string', 'max:255'],
+            'branding.header_title' => ['nullable', 'string', 'max:255'],
             'smtp' => ['nullable', 'array'],
             'smtp.mailer' => ['required', 'string', 'in:smtp,log,sendmail'],
             'smtp.host' => ['nullable', 'string', 'max:255'],
@@ -61,6 +66,7 @@ class EmailNotificationSettingsController extends Controller
             'enabled' => $request->boolean('enabled'),
             'types' => $types,
             'templates' => $data['templates'] ?? [],
+            'branding' => $data['branding'] ?? [],
             'smtp' => $data['smtp'] ?? [],
         ]);
 
