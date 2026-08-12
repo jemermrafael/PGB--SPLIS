@@ -34,7 +34,7 @@ class DashboardController extends Controller
                 'unlinked' => $municipality === null,
                 'stats' => $municipality
                     ? $municipalRequests->statsFor($user)
-                    : ['pending' => 0, 'expiring_soon' => 0, 'due_soon' => 0, 'done' => 0, 'lapsed' => 0],
+                    : ['pending' => 0, 'expiring_soon' => 0, 'due_soon' => 0, 'done' => 0, 'lapsed' => 0, 'no_due_date' => 0],
                 'expiringSoonAgendas' => $municipality
                     ? $municipalRequests->expiringSoonRequestsFor($user)
                     : collect(),

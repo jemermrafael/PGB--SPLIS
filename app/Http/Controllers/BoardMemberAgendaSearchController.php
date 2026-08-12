@@ -9,6 +9,7 @@ use App\Services\AgendaItemRepository;
 use App\Services\BoardMemberDashboardService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class BoardMemberAgendaSearchController extends Controller
@@ -17,11 +18,16 @@ class BoardMemberAgendaSearchController extends Controller
         Request $request,
         BoardMemberDashboardService $dashboard,
         AgendaItemRepository $repository,
-    ): JsonResponse {
+    ): JsonResponse|RedirectResponse {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->isBoardMember(), 403);
         abort_unless($user->board_member_id !== null, 403);
+
+        // Browser navigation should open My Agenda UI, not raw JSON.
+        if (! $request->expectsJson()) {
+            return redirect()->route('board-member.agenda.index');
+        }
 
         $committeeId = $request->integer('committee_id') ?: null;
         $committee = null;

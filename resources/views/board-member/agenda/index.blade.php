@@ -15,7 +15,6 @@
             icon="agenda"
             page="agenda"
         />
-        <a href="{{ route('agenda.index') }}" class="splis-btn-ghost">All agenda</a>
     </div>
 
     @if ($unlinked)
@@ -83,7 +82,7 @@
         </h2>
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div>
-                <label class="splis-label">Tracking / Reso no.</label>
+                <label class="splis-label">Tracking / Agenda no.</label>
                 <input type="text" name="number" class="splis-input" placeholder="001 or 014">
             </div>
             <div class="md:col-span-2">

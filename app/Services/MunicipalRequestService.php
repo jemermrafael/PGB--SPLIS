@@ -51,13 +51,16 @@ class MunicipalRequestService
     {
         $base = $this->requestQueryFor($user);
 
-        return [
+        $stats = [
             'pending' => (clone $base)->where('status', AgendaItem::STATUS_PENDING)->count(),
             'expiring_soon' => (clone $base)->expiringSoon()->count(),
             'due_soon' => (clone $base)->dueSoon()->count(),
             'done' => (clone $base)->where('status', AgendaItem::STATUS_DONE)->count(),
             'lapsed' => (clone $base)->where('status', AgendaItem::STATUS_LAPSED)->count(),
+            'no_due_date' => (clone $base)->where('status', AgendaItem::STATUS_NO_DUE_DATE)->count(),
         ];
+
+        return $stats;
     }
 
     /**

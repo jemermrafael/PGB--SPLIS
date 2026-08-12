@@ -10,12 +10,12 @@ class BoardMemberPolicy
 {
     public function viewAny(User $user): bool
     {
-        return true;
+        return ! $user->isMunicipalViewer();
     }
 
     public function view(User $user, BoardMember $boardMember): bool
     {
-        return true;
+        return ! $user->isMunicipalViewer();
     }
 
     public function create(User $user): bool

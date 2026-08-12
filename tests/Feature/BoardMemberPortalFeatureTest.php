@@ -162,6 +162,10 @@ class BoardMemberPortalFeatureTest extends TestCase
             ->assertJsonFragment(['title' => $chairAgenda->title])
             ->assertJsonMissing(['title' => $memberAgenda->title])
             ->assertJsonPath('meta.total', 1);
+
+        $this->actingAs($user)
+            ->get(route('board-member.agenda.search'))
+            ->assertRedirect(route('board-member.agenda.index'));
     }
 
     public function test_board_member_dashboard_next_ob_lists_only_chairmanship_agendas(): void
@@ -510,15 +514,19 @@ class BoardMemberPortalFeatureTest extends TestCase
 
         $this->actingAs($chairUser)
             ->get(route('agenda.index'))
-            ->assertOk();
+            ->assertForbidden();
 
         $this->actingAs($chairUser)
             ->getJson(route('agenda.search'))
+            ->assertForbidden();
+
+        // My Agenda is chairmanship-scoped (not staff /agenda/search).
+        $this->actingAs($chairUser)
+            ->getJson(route('board-member.agenda.search'))
             ->assertOk()
             ->assertJsonFragment(['title' => $chairAgenda->title])
-            ->assertJsonFragment(['title' => $memberAgenda->title])
-            ->assertJsonPath('meta.total', 2)
-            ->assertJsonPath('stats.total', 2);
+            ->assertJsonMissing(['title' => $memberAgenda->title])
+            ->assertJsonPath('meta.total', 1);
     }
 
     /**

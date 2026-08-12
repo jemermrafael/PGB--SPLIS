@@ -10,6 +10,11 @@ class DashboardSearchController extends Controller
 {
     public function __invoke(Request $request, DashboardDocumentSearchService $search): JsonResponse
     {
+        $user = $request->user();
+
+        // Executive dashboard document search is staff-only (encoders/admins).
+        abort_unless($user && ($user->canEncode() || $user->canAdmin()), 403);
+
         $filters = $request->only([
             'number',
             'title',

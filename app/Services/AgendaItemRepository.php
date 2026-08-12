@@ -17,18 +17,28 @@ class AgendaItemRepository
 
     /**
      * Visible agenda base query for the given viewer.
-     * Regular board members see referrals for all their committee roles
+     * Municipal and unlinked board members get an empty set.
+     * Linked regular board members see referrals for all their committee roles
      * (chair / vice chair / member); Vice Governor and staff see all.
      *
      * @return Builder<AgendaItem>
      */
     public function visibleQueryFor(?User $user = null): Builder
     {
+        // Municipal viewers must use MunicipalRequestService — never the staff agenda list.
+        if ($user?->isMunicipalViewer()) {
+            return AgendaItem::query()->whereRaw('0 = 1');
+        }
+
         if (
             $user?->isBoardMember()
             && ! $user->isViceGovernorBoardMember()
-            && $user->board_member_id !== null
         ) {
+            // Unlinked BM: empty set (do not fall through to all agendas).
+            if ($user->board_member_id === null) {
+                return AgendaItem::query()->whereRaw('0 = 1');
+            }
+
             return $this->boardMemberDashboard
                 ->committeeAgendaQueryFor($user)
                 ->notArchived();

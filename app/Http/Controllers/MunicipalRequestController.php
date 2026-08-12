@@ -25,7 +25,7 @@ class MunicipalRequestController extends Controller
             'statuses' => config('agenda.statuses', []),
             'stats' => $municipality
                 ? $service->statsFor($user)
-                : ['pending' => 0, 'expiring_soon' => 0, 'due_soon' => 0, 'done' => 0, 'lapsed' => 0],
+                : ['pending' => 0, 'expiring_soon' => 0, 'due_soon' => 0, 'done' => 0, 'lapsed' => 0, 'no_due_date' => 0],
             'expiringSoonAgendas' => $municipality
                 ? $service->expiringSoonRequestsFor($user)
                 : collect(),

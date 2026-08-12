@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AgendaItem;
 use App\Services\AgendaItemRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -10,6 +11,8 @@ class AgendaSearchController extends Controller
 {
     public function __invoke(Request $request, AgendaItemRepository $repository): JsonResponse
     {
+        $this->authorize('viewAny', AgendaItem::class);
+
         $filters = $request->only([
             'number',
             'title',

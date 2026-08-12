@@ -66,10 +66,10 @@
     <form id="municipal-request-search-form" class="splis-filter-panel splis-filter-panel--accent mb-6">
         <input type="hidden" name="due_soon" id="municipal-filter-due-soon" value="">
         <input type="hidden" name="expiring_soon" id="municipal-filter-expiring-soon" value="">
-        <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">Search requests</h2>
+        <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">Search Requests</h2>
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div>
-                <label class="splis-label">Tracking / Reso no.</label>
+                <label class="splis-label">Tracking / Agenda no.</label>
                 <input type="text" name="number" class="splis-input" placeholder="001 or 014">
             </div>
             <div class="md:col-span-2">

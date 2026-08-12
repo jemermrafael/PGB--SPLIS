@@ -58,7 +58,7 @@
         <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">Search committee agenda</h2>
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div>
-                <label class="splis-label">Tracking / Reso no.</label>
+                <label class="splis-label">Tracking / Agenda no.</label>
                 <input type="text" name="number" class="splis-input" placeholder="001 or 014">
             </div>
             <div class="md:col-span-2">
