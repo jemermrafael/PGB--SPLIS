@@ -1,0 +1,2 @@
+﻿PHPUnit 12.5.30 by Sebastian Bergmann and contributors.
+Unknown option "--without-tty". Most similar options are --no-output, --list-suites, --list-tests, --teamcity, --with-telemetry

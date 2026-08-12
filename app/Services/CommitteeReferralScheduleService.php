@@ -20,6 +20,7 @@ class CommitteeReferralScheduleService
 {
     public function __construct(
         protected BoardMemberNotifier $notifier,
+        protected MunicipalNotifier $municipalNotifier,
     ) {}
 
     /**
@@ -178,15 +179,24 @@ class CommitteeReferralScheduleService
             }
 
             $sendEmail = (bool) $schedule->send_email;
+            $allRows = collect();
 
             foreach ($byChair as $entry) {
+                $chairRows = collect($entry['rows']);
+                $allRows = $allRows->merge($chairRows);
                 $this->notifier->notifyScheduledCommitteeReferralsToChair(
                     $entry['user'],
-                    collect($entry['rows']),
+                    $chairRows,
                     $session,
                     $sendEmail,
                 );
             }
+
+            $this->municipalNotifier->notifyScheduledCommitteeReferrals(
+                $allRows,
+                $session,
+                $sendEmail,
+            );
 
             $schedule->forceFill([
                 'status' => ScheduledCommitteeReferral::STATUS_SENT,
@@ -196,9 +206,8 @@ class CommitteeReferralScheduleService
     }
 
     /**
-     * Regular Unassigned agendas from the latest OB whose referrals are unlocked
-     * (2 hours after session date/time), for committees this member chairs.
-     * Does not require Schedule Committee Referral.
+     * Agendas from the latest sent Schedule Committee Referral for committees this member chairs.
+     * Time-based (session + 2h) unlock is disabled.
      *
      * @return array{agendas: Collection<int, AgendaItem>, session: ?LegislativeSession}
      */
@@ -211,38 +220,47 @@ class CommitteeReferralScheduleService
             return $empty;
         }
 
-        $sessions = LegislativeSession::query()
-            ->visibleToBoardMembers()
-            ->whereNotNull('session_date')
-            ->orderByDesc('session_date')
-            ->orderByDesc('session_time')
+        $latestSent = ScheduledCommitteeReferral::query()
+            ->where('status', ScheduledCommitteeReferral::STATUS_SENT)
+            ->whereNotNull('sent_at')
+            ->orderByDesc('sent_at')
             ->orderByDesc('id')
-            ->limit(40)
-            ->get();
+            ->first();
 
-        foreach ($sessions as $session) {
-            if (! $session->committeeReferralsAreAvailable()) {
-                continue;
-            }
-
-            $agendas = $this->previewForSession($session)
-                ->filter(fn (array $row) => ($row['chair']?->id ?? null) === $boardMemberId)
-                ->map(fn (array $row) => $row['agenda'])
-                ->filter()
-                ->unique(fn (AgendaItem $agenda) => $agenda->id)
-                ->values();
-
-            if ($agendas->isEmpty()) {
-                continue;
-            }
-
-            return [
-                'agendas' => $agendas,
-                'session' => $session,
-            ];
+        if ($latestSent === null) {
+            return $empty;
         }
 
-        return $empty;
+        $agendaIds = CommitteeReferralDelivery::query()
+            ->where('scheduled_committee_referral_id', $latestSent->id)
+            ->where('board_member_id', $boardMemberId)
+            ->pluck('agenda_item_id')
+            ->unique()
+            ->filter()
+            ->values()
+            ->all();
+
+        if ($agendaIds === []) {
+            return $empty;
+        }
+
+        $agendas = AgendaItem::query()
+            ->whereIn('id', $agendaIds)
+            ->get()
+            ->sortBy(fn (AgendaItem $agenda) => [
+                (int) preg_replace('/\D+/', '', (string) $agenda->tracking_no),
+                $agenda->id,
+            ])
+            ->values();
+
+        if ($agendas->isEmpty()) {
+            return $empty;
+        }
+
+        return [
+            'agendas' => $agendas,
+            'session' => $latestSent->legislativeSession,
+        ];
     }
 
     /**

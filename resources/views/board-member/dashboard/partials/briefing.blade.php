@@ -101,7 +101,7 @@
                         @endforeach
                     </ul>
                 @else
-                    <p class="text-sm text-slate-500">No referred agendas yet. Items appear 2 hours after the session.</p>
+                    <p class="text-sm text-slate-500">No referred agendas yet. Items appear after Schedule Committee Referral is sent.</p>
                 @endif
             </div>
         </div>
@@ -285,7 +285,7 @@
                             </details>
                         @endif
                     @else
-                        <p class="text-sm text-slate-500">No referred agendas yet. Items appear 2 hours after the session.</p>
+                        <p class="text-sm text-slate-500">No referred agendas yet. Items appear after Schedule Committee Referral is sent.</p>
                     @endif
                 </div>
             </div>

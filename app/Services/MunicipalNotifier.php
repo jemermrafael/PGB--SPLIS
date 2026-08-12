@@ -21,54 +21,127 @@ class MunicipalNotifier
 
     public function notifyCommitteeReferral(AgendaItem $agenda, ?string $previousCommittee = null): void
     {
-        $referral = trim((string) ($agenda->committee_referred ?? ''));
-        $previous = trim((string) ($previousCommittee ?? ''));
+        // Immediate per-request alerts were retired to cut noise.
+        // Municipal accounts get committee referrals via Scheduled Committee Referral digests instead.
+    }
 
-        if ($referral === '' && $previous === '') {
+    /**
+     * One in-app notification (+ optional email) per municipal viewer for agendas in a scheduled referral batch.
+     *
+     * @param  \Illuminate\Support\Collection<int, array{agenda: AgendaItem, committee: \App\Models\Committee}>  $rows
+     */
+    public function notifyScheduledCommitteeReferrals(
+        Collection $rows,
+        ?LegislativeSession $session = null,
+        bool $sendEmail = false,
+    ): void {
+        $rows = $rows
+            ->filter(fn ($row) => is_array($row)
+                && ($row['agenda'] ?? null) instanceof AgendaItem
+                && ($row['committee'] ?? null) instanceof \App\Models\Committee)
+            ->unique(fn (array $row) => $row['agenda']->id)
+            ->values();
+
+        if ($rows->isEmpty()) {
             return;
         }
 
-        $isRereferral = $previous !== ''
-            && $referral !== ''
-            && mb_strtolower($previous) !== mb_strtolower($referral);
-        $label = $agenda->displayLabel();
-        $committeeLabel = $referral !== '' ? $referral : $previous;
+        /** @var array<int, array{user: User, rows: list<array{agenda: AgendaItem, committee: \App\Models\Committee}>}> $byUser */
+        $byUser = [];
 
-        $title = $isRereferral
-            ? 'Your request was re-referred to another committee'
-            : ($referral === ''
-                ? 'Committee referral removed from your request'
-                : 'Your request was referred to a committee');
+        foreach ($rows as $row) {
+            foreach ($this->usersForAgenda($row['agenda']) as $user) {
+                $byUser[$user->id] ??= ['user' => $user, 'rows' => []];
+                $byUser[$user->id]['rows'][] = $row;
+            }
+        }
 
-        $body = match (true) {
-            $isRereferral => sprintf('%s was re-referred to %s (previously %s).', $label, $referral, $previous),
-            $referral === '' => sprintf('%s is no longer referred to %s.', $label, $previous),
-            default => sprintf('%s was referred to %s.', $label, $referral),
-        };
-
-        foreach ($this->usersForAgenda($agenda) as $user) {
-            $notification = UserNotification::query()->create([
-                'user_id' => $user->id,
-                'agenda_item_id' => $agenda->id,
-                'type' => UserNotification::TYPE_COMMITTEE_REFERRAL,
-                'title' => $title,
-                'body' => $body,
-                'link' => route('municipal.requests.show', $agenda, absolute: false),
-            ]);
-
-            $this->emails->sendForNotification(
-                $user,
-                $notification,
-                EmailNotificationSettings::AUDIENCE_MUNICIPAL,
-                vars: [
-                    'label' => $label,
-                    'committee' => $committeeLabel,
-                    'previous_committee' => $previous !== '' ? $previous : null,
-                    'title' => $title,
-                    'body' => $body,
-                ],
+        foreach ($byUser as $entry) {
+            $this->notifyScheduledCommitteeReferralsToUser(
+                $entry['user'],
+                collect($entry['rows']),
+                $session,
+                $sendEmail,
             );
         }
+    }
+
+    /**
+     * @param  Collection<int, array{agenda: AgendaItem, committee: \App\Models\Committee}>  $rows
+     */
+    protected function notifyScheduledCommitteeReferralsToUser(
+        User $user,
+        Collection $rows,
+        ?LegislativeSession $session = null,
+        bool $sendEmail = false,
+    ): void {
+        $rows = $rows
+            ->unique(fn (array $row) => $row['agenda']->id)
+            ->sortBy(fn (array $row) => [
+                (int) preg_replace('/\D+/', '', (string) $row['agenda']->tracking_no),
+                $row['agenda']->id,
+            ])
+            ->values();
+
+        if ($rows->isEmpty()) {
+            return;
+        }
+
+        $parts = $rows
+            ->map(function (array $row): string {
+                $label = $row['agenda']->displayLabel();
+                $committee = trim((string) ($row['committee']->name ?? ''));
+
+                return $committee !== ''
+                    ? sprintf('%s was referred to %s', $label, $committee)
+                    : sprintf('%s was referred to a committee', $label);
+            })
+            ->filter()
+            ->values();
+
+        if ($parts->isEmpty()) {
+            return;
+        }
+
+        $body = $parts->implode('. ').'.';
+        $title = $parts->count() === 1
+            ? 'Your request was referred to a committee'
+            : 'Your requests were referred to committees';
+        $type = UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL;
+        $singleAgenda = $rows->count() === 1 ? $rows->first()['agenda'] : null;
+        $link = $singleAgenda
+            ? route('municipal.requests.show', $singleAgenda, absolute: false)
+            : route('municipal.requests.index', absolute: false);
+
+        $notification = UserNotification::query()->create([
+            'user_id' => $user->id,
+            'agenda_item_id' => $singleAgenda?->id,
+            'legislative_session_id' => $session?->id,
+            'type' => $type,
+            'title' => $title,
+            'body' => $body,
+            'link' => $link,
+            'read_at' => null,
+        ]);
+
+        if (! $sendEmail) {
+            return;
+        }
+
+        $this->emails->sendForNotification(
+            $user,
+            $notification,
+            EmailNotificationSettings::AUDIENCE_MUNICIPAL,
+            force: true,
+            vars: [
+                'title' => $title,
+                'body' => $body,
+                'summary' => $body,
+                'email_subject' => $title,
+                'label' => $parts->implode(', '),
+            ],
+            emailType: $type,
+        );
     }
 
     public function notifyAgendaPublished(AgendaItem $agenda): void

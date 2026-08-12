@@ -42,7 +42,7 @@ class EmailNotificationTest extends TestCase
             ->assertSee('Email Notifications', false)
             ->assertSee('Board Members', false)
             ->assertSee('Municipal Accounts', false)
-            ->assertSee('Scheduled Committee Referral', false)
+            ->assertSee('Committee Referral', false)
             ->assertSee('Agenda was published to Resolution', false)
             ->assertSee('New Ordinance published', false)
             ->assertSee('New Appropriation Ordinance published', false)
@@ -79,7 +79,7 @@ class EmailNotificationTest extends TestCase
                 'active_tab' => EmailNotificationSettings::AUDIENCE_MUNICIPAL,
                 'types' => [
                     EmailNotificationSettings::AUDIENCE_BOARD_MEMBER => [
-                        UserNotification::TYPE_COMMITTEE_REFERRAL => '1',
+                        UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL => '1',
                     ],
                     EmailNotificationSettings::AUDIENCE_MUNICIPAL => [
                         EmailNotificationSettings::TYPE_RESOLUTION_PUBLISHED => '1',
@@ -121,7 +121,7 @@ class EmailNotificationTest extends TestCase
 
         $settings = app(EmailNotificationSettings::class)->get();
         $this->assertTrue($settings['enabled']);
-        $this->assertTrue($settings['types'][EmailNotificationSettings::AUDIENCE_BOARD_MEMBER][UserNotification::TYPE_COMMITTEE_REFERRAL]);
+        $this->assertTrue($settings['types'][EmailNotificationSettings::AUDIENCE_BOARD_MEMBER][UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL]);
         $this->assertFalse($settings['types'][EmailNotificationSettings::AUDIENCE_BOARD_MEMBER][UserNotification::TYPE_AGENDA_PUBLISHED]);
         $this->assertTrue($settings['types'][EmailNotificationSettings::AUDIENCE_MUNICIPAL][EmailNotificationSettings::TYPE_RESOLUTION_PUBLISHED]);
         $this->assertSame('Custom resolution subject', $settings['templates'][EmailNotificationSettings::AUDIENCE_MUNICIPAL][EmailNotificationSettings::TYPE_RESOLUTION_PUBLISHED]['subject']);
@@ -143,7 +143,7 @@ class EmailNotificationTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_board_member_referral_sends_templated_email_when_enabled(): void
+    public function test_board_member_scheduled_referral_sends_templated_email_when_enabled(): void
     {
         Mail::fake();
 
@@ -155,8 +155,8 @@ class EmailNotificationTest extends TestCase
 
         $notification = UserNotification::query()->create([
             'user_id' => $user->id,
-            'type' => UserNotification::TYPE_COMMITTEE_REFERRAL,
-            'title' => 'Agenda referred to your committee',
+            'type' => UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL,
+            'title' => 'Incoming agenda for referral',
             'body' => 'Test body',
             'link' => '/agenda/1',
         ]);
@@ -167,8 +167,8 @@ class EmailNotificationTest extends TestCase
             EmailNotificationSettings::AUDIENCE_BOARD_MEMBER,
             force: true,
             vars: [
-                'label' => 'Agenda #1',
-                'committee' => 'Ways and Means',
+                'email_subject' => 'Incoming agenda for referral',
+                'summary' => 'Test body',
             ],
         );
 
@@ -176,7 +176,7 @@ class EmailNotificationTest extends TestCase
             $html = $mail->render();
 
             return $mail->hasTo($user->email)
-                && $mail->notificationTitle === 'Agenda referred to your committee'
+                && $mail->notificationTitle === 'Incoming agenda for referral'
                 && str_contains($mail->notificationBody, 'Test body')
                 && str_contains($html, 'Legislative Information System')
                 && str_contains($html, 'Sangguniang Panlalawigan')
@@ -201,7 +201,7 @@ class EmailNotificationTest extends TestCase
             ],
             'types' => [
                 EmailNotificationSettings::AUDIENCE_BOARD_MEMBER => [
-                    UserNotification::TYPE_COMMITTEE_REFERRAL => true,
+                    UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL => true,
                 ],
             ],
         ]);
@@ -214,8 +214,8 @@ class EmailNotificationTest extends TestCase
 
         $notification = UserNotification::query()->create([
             'user_id' => $user->id,
-            'type' => UserNotification::TYPE_COMMITTEE_REFERRAL,
-            'title' => 'Agenda referred to your committee',
+            'type' => UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL,
+            'title' => 'Incoming agenda for referral',
             'body' => 'Branding body',
         ]);
 
@@ -224,6 +224,10 @@ class EmailNotificationTest extends TestCase
             $notification,
             EmailNotificationSettings::AUDIENCE_BOARD_MEMBER,
             force: true,
+            vars: [
+                'email_subject' => 'Incoming agenda for referral',
+                'summary' => 'Branding body',
+            ],
         );
 
         Mail::assertSent(SystemNotificationMail::class, function (SystemNotificationMail $mail) use ($user) {
@@ -248,7 +252,7 @@ class EmailNotificationTest extends TestCase
             'enabled' => true,
             'types' => [
                 EmailNotificationSettings::AUDIENCE_BOARD_MEMBER => [
-                    UserNotification::TYPE_COMMITTEE_REFERRAL => false,
+                    UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL => false,
                 ],
             ],
         ]);
@@ -261,8 +265,8 @@ class EmailNotificationTest extends TestCase
 
         $notification = UserNotification::query()->create([
             'user_id' => $user->id,
-            'type' => UserNotification::TYPE_COMMITTEE_REFERRAL,
-            'title' => 'Agenda referred to your committee',
+            'type' => UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL,
+            'title' => 'Incoming agenda for referral',
             'body' => 'Test body',
         ]);
 

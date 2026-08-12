@@ -98,18 +98,25 @@ class UserNotification extends Model
     }
 
     /** @return list<string> */
-    public static function boardMemberTypes(): array
+    public static function boardMemberPreferenceTypes(): array
     {
         return [
-            self::TYPE_COMMITTEE_REFERRAL,
             self::TYPE_SCHEDULED_COMMITTEE_REFERRAL,
             self::TYPE_AGENDA_PUBLISHED,
             self::TYPE_AGENDA_ADDED_TO_OB,
             self::TYPE_SESSION_CREATED,
             self::TYPE_OB_DOCUMENT_CREATED,
             self::TYPE_AGENDA_EXPIRING_SOON,
-            self::TYPE_WATCHLIST_PUBLISHED,
             self::TYPE_COMMITTEE_REPORT_SUBMITTED,
+        ];
+    }
+
+    /** @return list<string> */
+    public static function boardMemberTypes(): array
+    {
+        return [
+            ...self::boardMemberPreferenceTypes(),
+            self::TYPE_WATCHLIST_PUBLISHED,
         ];
     }
 
@@ -117,7 +124,7 @@ class UserNotification extends Model
     public static function municipalTypes(): array
     {
         return [
-            self::TYPE_COMMITTEE_REFERRAL,
+            self::TYPE_SCHEDULED_COMMITTEE_REFERRAL,
             self::TYPE_AGENDA_PUBLISHED,
             self::TYPE_AGENDA_ADDED_TO_OB,
             self::TYPE_AGENDA_EXPIRING_SOON,

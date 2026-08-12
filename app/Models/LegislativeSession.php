@@ -331,21 +331,16 @@ class LegislativeSession extends Model
     }
 
     /**
-     * When Regular Unassigned referrals become visible on BM dashboards (2 hours after session).
+     * Time-based referral unlock is disabled. Referrals surface only via Schedule Committee Referral.
      */
     public function committeeReferralAvailableAt(): ?Carbon
     {
-        return $this->sessionDateTime()?->copy()->addHours(2);
+        return null;
     }
 
     public function committeeReferralsAreAvailable(?Carbon $asOf = null): bool
     {
-        $availableAt = $this->committeeReferralAvailableAt();
-        if ($availableAt === null) {
-            return false;
-        }
-
-        return $availableAt->lte($asOf ?? now());
+        return false;
     }
 
     /**

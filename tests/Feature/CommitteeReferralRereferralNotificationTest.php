@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Enums\CommitteeMembershipRole;
 use App\Enums\UserRole;
-use App\Mail\SystemNotificationMail;
 use App\Models\AgendaItem;
 use App\Models\BoardMember;
 use App\Models\Committee;
@@ -23,7 +22,7 @@ class CommitteeReferralRereferralNotificationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_rereferral_notifies_new_chair_and_previous_chair(): void
+    public function test_board_member_no_longer_gets_immediate_committee_referral_alerts(): void
     {
         Mail::fake();
 
@@ -47,30 +46,20 @@ class CommitteeReferralRereferralNotificationTest extends TestCase
         ]);
 
         app(BoardMemberNotifier::class)->notifyCommitteeReferral($agenda);
-        Mail::fake();
-
         $agenda->update(['committee_referred' => $newCommittee->name]);
-
         app(BoardMemberNotifier::class)->notifyCommitteeReferral($agenda, $oldCommittee->name);
 
-        $this->assertDatabaseHas('user_notifications', [
-            'user_id' => $newChair->id,
-            'agenda_item_id' => $agenda->id,
-            'type' => UserNotification::TYPE_COMMITTEE_REFERRAL,
-            'title' => 'Agenda re-referred to your committee',
-        ]);
-        $this->assertDatabaseHas('user_notifications', [
-            'user_id' => $oldChair->id,
-            'agenda_item_id' => $agenda->id,
-            'type' => UserNotification::TYPE_COMMITTEE_REFERRAL,
-            'title' => 'Agenda re-referred from your committee',
-        ]);
-
-        Mail::assertSent(SystemNotificationMail::class, fn (SystemNotificationMail $mail) => $mail->hasTo($newChair->email));
-        Mail::assertSent(SystemNotificationMail::class, fn (SystemNotificationMail $mail) => $mail->hasTo($oldChair->email));
+        $this->assertSame(
+            0,
+            UserNotification::query()
+                ->whereIn('user_id', [$oldChair->id, $newChair->id])
+                ->where('type', UserNotification::TYPE_COMMITTEE_REFERRAL)
+                ->count()
+        );
+        Mail::assertNothingSent();
     }
 
-    public function test_agenda_update_only_notifies_when_committee_changes(): void
+    public function test_agenda_update_does_not_create_immediate_board_member_referral_alerts(): void
     {
         Mail::fake();
 
@@ -94,8 +83,7 @@ class CommitteeReferralRereferralNotificationTest extends TestCase
         ]);
 
         app(BoardMemberNotifier::class)->notifyCommitteeReferral($agenda);
-        $this->assertSame(1, UserNotification::query()->where('user_id', $chair->id)->count());
-        Mail::fake();
+        $this->assertSame(0, UserNotification::query()->where('user_id', $chair->id)->count());
 
         $this->actingAs($encoder)
             ->put(route('agenda.update', $agenda), [
@@ -110,11 +98,11 @@ class CommitteeReferralRereferralNotificationTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertSame(1, UserNotification::query()->where('user_id', $chair->id)->count());
+        $this->assertSame(0, UserNotification::query()->where('user_id', $chair->id)->count());
         Mail::assertNothingSent();
     }
 
-    public function test_municipal_viewer_gets_fresh_notice_on_rereferral(): void
+    public function test_municipal_viewer_no_longer_gets_immediate_committee_referral_alerts(): void
     {
         Mail::fake();
 
@@ -146,16 +134,14 @@ class CommitteeReferralRereferralNotificationTest extends TestCase
         $agenda->update(['committee_referred' => 'Health and Sanitation']);
         $notifier->notifyCommitteeReferral($agenda->fresh(), 'Tourism');
 
-        $notifications = UserNotification::query()
-            ->where('user_id', $viewer->id)
-            ->where('type', UserNotification::TYPE_COMMITTEE_REFERRAL)
-            ->orderBy('id')
-            ->get();
-
-        $this->assertCount(2, $notifications);
-        $this->assertSame('Your request was referred to a committee', $notifications[0]->title);
-        $this->assertSame('Your request was re-referred to another committee', $notifications[1]->title);
-        $this->assertStringContainsString('re-referred to Health and Sanitation', $notifications[1]->body);
+        $this->assertSame(
+            0,
+            UserNotification::query()
+                ->where('user_id', $viewer->id)
+                ->where('type', UserNotification::TYPE_COMMITTEE_REFERRAL)
+                ->count()
+        );
+        Mail::assertNothingSent();
     }
 
     /**

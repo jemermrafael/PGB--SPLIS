@@ -56,7 +56,6 @@ class EmailNotificationSettings
     {
         return [
             self::AUDIENCE_BOARD_MEMBER => [
-                \App\Models\UserNotification::TYPE_COMMITTEE_REFERRAL,
                 \App\Models\UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL,
                 \App\Models\UserNotification::TYPE_AGENDA_PUBLISHED,
                 self::TYPE_RESOLUTION_PUBLISHED,
@@ -69,7 +68,7 @@ class EmailNotificationSettings
                 \App\Models\UserNotification::TYPE_COMMITTEE_REPORT_SUBMITTED,
             ],
             self::AUDIENCE_MUNICIPAL => [
-                \App\Models\UserNotification::TYPE_COMMITTEE_REFERRAL,
+                \App\Models\UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL,
                 self::TYPE_RESOLUTION_PUBLISHED,
                 self::TYPE_ORDINANCE_PUBLISHED,
                 self::TYPE_APPROPRIATION_ORDINANCE_PUBLISHED,
@@ -95,7 +94,6 @@ class EmailNotificationSettings
     {
         return [
             self::AUDIENCE_BOARD_MEMBER => [
-                \App\Models\UserNotification::TYPE_COMMITTEE_REFERRAL,
                 \App\Models\UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL,
                 \App\Models\UserNotification::TYPE_AGENDA_PUBLISHED,
                 \App\Models\UserNotification::TYPE_AGENDA_ADDED_TO_OB,
@@ -105,7 +103,7 @@ class EmailNotificationSettings
                 \App\Models\UserNotification::TYPE_COMMITTEE_REPORT_SUBMITTED,
             ],
             self::AUDIENCE_MUNICIPAL => [
-                \App\Models\UserNotification::TYPE_COMMITTEE_REFERRAL,
+                \App\Models\UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL,
                 self::TYPE_RESOLUTION_PUBLISHED,
                 self::TYPE_ORDINANCE_PUBLISHED,
                 \App\Models\UserNotification::TYPE_AGENDA_ADDED_TO_OB,
@@ -129,7 +127,7 @@ class EmailNotificationSettings
     {
         return [
             \App\Models\UserNotification::TYPE_COMMITTEE_REFERRAL => 'Committee Referral',
-            \App\Models\UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL => 'Scheduled Committee Referral',
+            \App\Models\UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL => 'Committee Referral',
             \App\Models\UserNotification::TYPE_AGENDA_PUBLISHED => 'Agenda published (any target)',
             \App\Models\UserNotification::TYPE_AGENDA_ADDED_TO_OB => 'Agenda added to Order of Business',
             \App\Models\UserNotification::TYPE_SESSION_CREATED => 'New Session scheduled',
@@ -150,11 +148,6 @@ class EmailNotificationSettings
     {
         $defaults = [
             self::AUDIENCE_BOARD_MEMBER => [
-                \App\Models\UserNotification::TYPE_COMMITTEE_REFERRAL => [
-                    'subject' => '{{title}}',
-                    'body' => "{{body}}\n\nOpen SPLIS for details.",
-                    'action_label' => 'View Agenda',
-                ],
                 \App\Models\UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL => [
                     'subject' => '{{email_subject}}',
                     'body' => "{{summary}}\n\nOpen SPLIS for details.",
@@ -207,9 +200,9 @@ class EmailNotificationSettings
                 ],
             ],
             self::AUDIENCE_MUNICIPAL => [
-                \App\Models\UserNotification::TYPE_COMMITTEE_REFERRAL => [
-                    'subject' => '{{title}}',
-                    'body' => "{{body}}\n\nYou can track this request in SPLIS.",
+                \App\Models\UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL => [
+                    'subject' => '{{email_subject}}',
+                    'body' => "{{summary}}\n\nYou can track this request in SPLIS.",
                     'action_label' => 'View Request',
                 ],
                 self::TYPE_RESOLUTION_PUBLISHED => [
@@ -385,6 +378,8 @@ class EmailNotificationSettings
             }
         }
 
+        $types = $this->migrateMunicipalCommitteeReferralType($types, $stored);
+
         $templates = $defaults['templates'];
         foreach ($templates as $audience => $audienceTemplates) {
             foreach ($audienceTemplates as $type => $defaultTemplate) {
@@ -545,6 +540,32 @@ class EmailNotificationSettings
             $this->path(),
             json_encode($current, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
         );
+    }
+
+    /**
+     * Prefer municipal Scheduled Committee Referral when only the old per-referral toggle was stored.
+     *
+     * @param  array<string, array<string, bool>>  $types
+     * @param  array<string, mixed>  $stored
+     * @return array<string, array<string, bool>>
+     */
+    protected function migrateMunicipalCommitteeReferralType(array $types, array $stored): array
+    {
+        $scheduled = \App\Models\UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL;
+        $legacy = \App\Models\UserNotification::TYPE_COMMITTEE_REFERRAL;
+        $storedMunicipal = is_array($stored['types'][self::AUDIENCE_MUNICIPAL] ?? null)
+            ? $stored['types'][self::AUDIENCE_MUNICIPAL]
+            : [];
+
+        if (
+            array_key_exists($legacy, $storedMunicipal)
+            && ! array_key_exists($scheduled, $storedMunicipal)
+            && array_key_exists($scheduled, $types[self::AUDIENCE_MUNICIPAL] ?? [])
+        ) {
+            $types[self::AUDIENCE_MUNICIPAL][$scheduled] = (bool) $storedMunicipal[$legacy];
+        }
+
+        return $types;
     }
 
     /**

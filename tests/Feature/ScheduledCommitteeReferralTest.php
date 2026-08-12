@@ -194,17 +194,79 @@ class ScheduledCommitteeReferralTest extends TestCase
         });
     }
 
-    public function test_board_member_incoming_shows_two_hours_after_session_for_chair_only(): void
+    public function test_dispatch_sends_municipal_digest_for_matching_requests(): void
     {
+        Mail::fake();
+
+        $encoder = User::factory()->create(['role' => UserRole::Encoder, 'is_active' => true]);
+        [$chairUser, , $committee, $session, $agenda] = $this->sessionWithRegularUnassigned();
+        $agenda->forceFill(['sender' => 'Mariveles'])->save();
+
+        $municipality = \App\Models\Municipality::query()->create([
+            'description' => 'Mariveles',
+            'code' => 301,
+        ]);
+        $viewer = User::factory()->create([
+            'role' => UserRole::MunicipalViewer,
+            'municipality_id' => $municipality->id,
+            'email' => 'mariveles@example.com',
+            'is_active' => true,
+        ]);
+
+        app(EmailNotificationSettings::class)->update([
+            'enabled' => true,
+            'types' => [
+                EmailNotificationSettings::AUDIENCE_BOARD_MEMBER => [
+                    UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL => true,
+                ],
+                EmailNotificationSettings::AUDIENCE_MUNICIPAL => [
+                    UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL => true,
+                ],
+            ],
+        ]);
+
+        $this->actingAs($encoder)
+            ->post(route('scheduled-committee-referrals.store'), [
+                'legislative_session_id' => $session->id,
+                'scheduled_at' => now()->subMinute()->format('Y-m-d H:i:s'),
+                'send_email' => '1',
+            ])
+            ->assertRedirect(route('scheduled-committee-referrals.index'));
+
+        $notification = UserNotification::query()
+            ->where('user_id', $viewer->id)
+            ->where('type', UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL)
+            ->first();
+
+        $this->assertNotNull($notification);
+        $this->assertSame('Your request was referred to a committee', $notification->title);
+        $this->assertStringContainsString($agenda->displayLabel(), (string) $notification->body);
+        $this->assertStringContainsString($committee->name, (string) $notification->body);
+
+        Mail::assertSent(SystemNotificationMail::class, function (SystemNotificationMail $mail) use ($viewer, $agenda) {
+            return $mail->hasTo($viewer->email)
+                && $mail->notificationTitle === 'Your request was referred to a committee'
+                && str_contains($mail->notificationBody, $agenda->displayLabel());
+        });
+
+        $this->assertDatabaseHas('user_notifications', [
+            'user_id' => $chairUser->id,
+            'type' => UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL,
+        ]);
+    }
+
+    public function test_board_member_incoming_comes_from_sent_schedule_not_time_unlock(): void
+    {
+        $encoder = User::factory()->create(['role' => UserRole::Encoder, 'is_active' => true]);
         [$chairUser, $memberUser, $committee, $session, $agenda] = $this->sessionWithRegularUnassigned([
             'session_date' => now()->toDateString(),
-            'session_time' => now()->subHour()->format('H:i:s'),
+            'session_time' => now()->subHours(3)->format('H:i:s'),
             'status' => 'scheduled',
         ]);
 
         $referrals = app(CommitteeReferralScheduleService::class);
 
-        // Within 2 hours of session start — still locked (even though already on My Agenda / next OB).
+        // Time-based unlock is disabled even after session + 2 hours.
         $this->assertFalse($session->fresh()->committeeReferralsAreAvailable());
         $this->assertTrue($referrals->referredFromLastObForChair($chairUser)['agendas']->isEmpty());
 
@@ -212,14 +274,16 @@ class ScheduledCommitteeReferralTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertSee('Agendas Referred from last OB')
-            ->assertSee('No referred agendas yet. Items appear 2 hours after the session.');
+            ->assertSee('No referred agendas yet. Items appear after Schedule Committee Referral is sent.');
 
-        $session->forceFill([
-            'session_time' => now()->subHours(3)->format('H:i:s'),
-        ])->save();
+        $this->actingAs($encoder)
+            ->post(route('scheduled-committee-referrals.store'), [
+                'legislative_session_id' => $session->id,
+                'scheduled_at' => now()->subMinute()->format('Y-m-d H:i:s'),
+            ])
+            ->assertRedirect(route('scheduled-committee-referrals.index'));
 
         $unlocked = $referrals->referredFromLastObForChair($chairUser);
-        $this->assertTrue($session->fresh()->committeeReferralsAreAvailable());
         $this->assertTrue($unlocked['agendas']->contains(fn (AgendaItem $item) => $item->id === $agenda->id));
         $this->assertSame($session->id, $unlocked['session']?->id);
 
@@ -228,7 +292,7 @@ class ScheduledCommitteeReferralTest extends TestCase
             ->assertOk()
             ->assertSee('Agendas Referred from last OB')
             ->assertSee($agenda->title)
-            ->assertDontSee('No referred agendas yet. Items appear 2 hours after the session.');
+            ->assertDontSee('No referred agendas yet. Items appear after Schedule Committee Referral is sent.');
 
         $this->assertTrue($referrals->referredFromLastObForChair($memberUser)['agendas']->isEmpty());
     }
