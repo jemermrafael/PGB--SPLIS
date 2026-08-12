@@ -39,9 +39,6 @@
                     @foreach (($targetSessions ?? collect()) as $session)
                         <option value="{{ $session->id }}" @selected((string) old('legislative_session_id', $selectedSessionId) === (string) $session->id)>
                             {{ $session->displayTitle() }}
-                            @if ($session->session_date)
-                                — {{ $session->session_date->format('M j, Y') }}
-                            @endif
                         </option>
                     @endforeach
                 </select>

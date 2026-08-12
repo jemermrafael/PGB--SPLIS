@@ -16,7 +16,7 @@
                     <span class="splis-badge-linked">{{ $session->obDocument->statusLabel() }} OB</span>
                 @endif
             </div>
-            <h1 class="splis-page-title">{{ $session->displayTitle() }}</h1>
+            <h1 class="splis-page-title">{{ $session->sessionLabel() }}</h1>
             @if ($session->venue)
                 <p class="splis-page-subtitle">{{ $session->venue }}</p>
             @endif

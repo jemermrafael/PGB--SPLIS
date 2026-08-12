@@ -37,7 +37,7 @@
                 <h3 class="mb-1 text-sm font-semibold text-slate-900 dark:text-slate-100">Next Session</h3>
                 @if ($next)
                     <p class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ $next->session_date?->format('M j, Y') }} · {{ $next->formattedSessionTime() ?: '—' }}</p>
-                    <p class="mt-1 text-xs text-slate-500">{{ $next->displayTitle() }}</p>
+                    <p class="mt-1 text-xs text-slate-500">{{ $next->sessionLabel() }}</p>
                     <div class="mt-2 flex flex-wrap gap-2">
                         <a href="{{ route('board-member.sessions.show', $next) }}" class="splis-btn-primary !py-1.5 text-xs">Open Session Packet</a>
                         <a href="{{ route('board-member.sessions.ics', $next) }}" class="splis-btn-ghost !py-1.5 text-xs">Calendar</a>
@@ -113,7 +113,7 @@
                 <h3 class="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">Next Session</h3>
                 @if ($next)
                     <p class="font-medium text-slate-900 dark:text-slate-100">{{ $next->session_date?->format('M j, Y') }}</p>
-                    <p class="mt-1 text-sm text-slate-500">{{ $next->displayTitle() }}</p>
+                    <p class="mt-1 text-sm text-slate-500">{{ $next->sessionLabel() }}</p>
                     @if ($next->venue)
                         <p class="mt-1 text-sm text-slate-500">{{ $next->venue }}</p>
                     @endif
@@ -245,12 +245,9 @@
                     <p class="mb-3 text-xs text-slate-500">
                         Regular Unassigned Business from the last session (available 2 hours after session time) for committees you chair
                         @if ($referredSession)
-                            · {{ $referredSession->displayTitle() }}
-                            @if ($referredSession->session_date)
-                                ({{ $referredSession->session_date->format('M j, Y') }}
-                                @if ($referredSession->formattedSessionTime())
-                                    · {{ $referredSession->formattedSessionTime() }}
-                                @endif)
+                            · {{ $referredSession->sessionLabel() }}
+                            @if ($referredSession->formattedSessionTime())
+                                ({{ $referredSession->formattedSessionTime() }})
                             @endif
                         @endif
                     </p>

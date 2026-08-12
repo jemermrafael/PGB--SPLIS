@@ -6,7 +6,7 @@
 <div class="max-w-6xl">
     <x-page-header
         class="!mb-6"
-        :title="$session->displayTitle()"
+        :title="$session->sessionLabel()"
         :subtitle="$session->venue ?: 'Session packet'"
     >
         <x-slot:meta>

@@ -26,7 +26,7 @@
                 <option value="">Select a session…</option>
                 @foreach ($sessions as $session)
                     <option value="{{ $session->id }}" @selected(($selectedSession?->id ?? null) === $session->id)>
-                        {{ $session->displayTitle() }} — {{ $session->session_date?->format('M j, Y') }}
+                        {{ $session->displayTitle() }}
                     </option>
                 @endforeach
             </select>

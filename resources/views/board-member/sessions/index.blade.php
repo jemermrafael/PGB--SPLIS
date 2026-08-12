@@ -31,7 +31,7 @@
                                 <div>
                                     <p class="text-sm text-slate-500">{{ $session->session_date?->format('F j, Y') }} · {{ $session->formattedSessionTime() ?: '—' }}</p>
                                     <a href="{{ route('board-member.sessions.show', $session) }}" class="text-base font-semibold text-brand-700 hover:underline dark:text-brand-200">
-                                        {{ $session->displayTitle() }}
+                                        {{ $session->sessionLabel() }}
                                     </a>
                                     <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">{{ $session->venue ?: 'Venue not set' }}</p>
                                     @if ($session->obDocument && ! $session->obDocument->isFinal())
@@ -65,7 +65,7 @@
                                 <div>
                                     <p class="text-sm text-slate-500">{{ $session->session_date?->format('F j, Y') }} · {{ $session->formattedSessionTime() ?: '—' }}</p>
                                     <a href="{{ route('board-member.sessions.show', $session) }}" class="text-base font-semibold text-brand-700 hover:underline dark:text-brand-200">
-                                        {{ $session->displayTitle() }}
+                                        {{ $session->sessionLabel() }}
                                     </a>
                                     <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">{{ $session->venue ?: 'Venue not set' }}</p>
                                 </div>

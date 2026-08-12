@@ -108,7 +108,7 @@
             </form>
         </div>
 
-        <div class="splis-card-header flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700">
+        <div class="splis-card-header flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700" style="border-bottom-width:0 !important;">
             <p id="bm-dashboard-agenda-search-meta" class="text-sm text-slate-500 dark:text-slate-400">Loading agenda items…</p>
             @include('partials.view-toggle', ['id' => 'bm-dashboard-agenda-view-toggle'])
         </div>

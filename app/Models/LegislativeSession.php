@@ -156,10 +156,20 @@ class LegislativeSession extends Model
         });
     }
 
+    /**
+     * Session number / kind label without the date (for headings when the date is shown separately).
+     */
+    public function sessionLabel(): string
+    {
+        $number = trim((string) ($this->session_number ?? ''));
+
+        return $number !== '' ? $number : 'Legislative session #'.$this->id;
+    }
+
     public function displayTitle(): string
     {
         $parts = array_filter([
-            $this->session_number,
+            trim((string) ($this->session_number ?? '')) !== '' ? trim((string) $this->session_number) : null,
             $this->session_date?->format('F j, Y'),
         ]);
 

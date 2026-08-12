@@ -36,7 +36,7 @@
 <div class="ob-print-toolbar sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 print:hidden">
     <div>
         <p class="font-semibold text-slate-900">{{ $document->title }}</p>
-        <p class="text-sm text-slate-600">{{ $session->displayTitle() }}</p>
+        <p class="text-sm text-slate-600">{{ $session->sessionLabel() }}</p>
     </div>
     <div class="flex gap-2">
         @unless ($isEmbeddedPreview)
