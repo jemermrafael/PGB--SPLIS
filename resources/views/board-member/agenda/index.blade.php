@@ -15,6 +15,7 @@
             icon="agenda"
             page="agenda"
         />
+        <a href="{{ route('agenda.index') }}" class="splis-btn-ghost">All Agenda</a>
     </div>
 
     @if ($unlinked)

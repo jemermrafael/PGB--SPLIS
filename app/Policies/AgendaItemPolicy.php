@@ -15,11 +15,6 @@ class AgendaItemPolicy
             return false;
         }
 
-        // Regular board members use /my-agenda (scoped). Staff agenda list/search is encoder/admin/VG.
-        if ($user->isBoardMember() && ! $user->isViceGovernorBoardMember()) {
-            return false;
-        }
-
         if ($user->canEncode() || $user->canAdmin()) {
             return $user->hasModuleCapability(UserCapability::AGENDA)
                 || $user->hasModuleCapability(UserCapability::ORDER_OF_BUSINESS);

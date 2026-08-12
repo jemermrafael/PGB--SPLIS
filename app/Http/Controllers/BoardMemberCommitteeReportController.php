@@ -33,12 +33,38 @@ class BoardMemberCommitteeReportController extends Controller
 
         $reports = BoardMemberCommitteeReport::query()
             ->where('board_member_id', $user->board_member_id)
-            ->with(['agendaItems:id,tracking_no,title'])
+            ->with([
+                'agendaItems:id,tracking_no,title',
+                'legislativeSession:id,session_number,session_date,session_time,status',
+                'legislativeSession.obDocument:id,legislative_session_id,status',
+                'sessionFiles.session:id,session_number,session_date,session_time,status',
+                'sessionFiles.session.obDocument:id,legislative_session_id,status',
+            ])
             ->orderByDesc('submitted_at')
-            ->paginate(20);
+            ->get();
+
+        $reportGroups = $reports
+            ->groupBy(function (BoardMemberCommitteeReport $report) {
+                $session = $report->resolvedTargetSession();
+
+                return $session?->getKey() ?? 'reserved';
+            })
+            ->map(function (Collection $items) {
+                $session = $items->first()?->resolvedTargetSession();
+
+                return [
+                    'session' => $session,
+                    'label' => $session?->displayTitle() ?? 'Next available session / OB',
+                    'sort_at' => $session?->session_date?->timestamp
+                        ?? $items->max(fn (BoardMemberCommitteeReport $report) => $report->submitted_at?->timestamp ?? 0),
+                    'reports' => $items->values(),
+                ];
+            })
+            ->sortByDesc('sort_at')
+            ->values();
 
         return view('board-member.committee-reports.index', [
-            'reports' => $reports,
+            'reportGroups' => $reportGroups,
         ]);
     }
 

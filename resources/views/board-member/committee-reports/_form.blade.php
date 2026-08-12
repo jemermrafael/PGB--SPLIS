@@ -19,18 +19,6 @@
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div class="splis-card splis-card-body space-y-5">
             <div>
-                <label class="splis-label" for="title">Report title (optional)</label>
-                <input
-                    type="text"
-                    name="title"
-                    id="title"
-                    value="{{ old('title', $report?->title) }}"
-                    class="splis-input"
-                    placeholder="Committee Report Title"
-                >
-            </div>
-
-            <div>
                 <label class="splis-label" for="legislative_session_id">Target session / Order of Business</label>
                 <select name="legislative_session_id" id="legislative_session_id" class="splis-select">
                     <option value="" @selected($selectedSessionId === null || $selectedSessionId === '')>

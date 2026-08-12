@@ -514,13 +514,17 @@ class BoardMemberPortalFeatureTest extends TestCase
 
         $this->actingAs($chairUser)
             ->get(route('agenda.index'))
-            ->assertForbidden();
+            ->assertOk();
 
         $this->actingAs($chairUser)
             ->getJson(route('agenda.search'))
-            ->assertForbidden();
+            ->assertOk()
+            ->assertJsonFragment(['title' => $chairAgenda->title])
+            ->assertJsonFragment(['title' => $memberAgenda->title])
+            ->assertJsonPath('meta.total', 2)
+            ->assertJsonPath('stats.total', 2);
 
-        // My Agenda is chairmanship-scoped (not staff /agenda/search).
+        // My Agenda remains chairmanship-scoped.
         $this->actingAs($chairUser)
             ->getJson(route('board-member.agenda.search'))
             ->assertOk()

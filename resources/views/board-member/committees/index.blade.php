@@ -31,21 +31,18 @@
                 'title' => 'Chairmanship',
                 'assignments' => $roles['chair'],
                 'empty' => 'You are not chair of any committee this term.',
-                'badge' => 'Chair',
                 'selectedTerm' => $selectedTerm,
             ])
             @include('board-member.committees.partials.role-section', [
                 'title' => 'Vice Chairmanship',
                 'assignments' => $roles['vice_chair'],
                 'empty' => 'You are not vice chair of any committee this term.',
-                'badge' => 'Vice chair',
                 'selectedTerm' => $selectedTerm,
             ])
             @include('board-member.committees.partials.role-section', [
                 'title' => 'Membership',
                 'assignments' => $roles['member'],
                 'empty' => 'You are not a member of any committee this term.',
-                'badge' => 'Member',
                 'selectedTerm' => $selectedTerm,
             ])
         </div>

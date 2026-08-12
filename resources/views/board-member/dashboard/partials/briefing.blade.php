@@ -60,7 +60,7 @@
                         @endforeach
                     </ul>
                 @else
-                    <p class="text-sm text-slate-500">No items from committees you chair on the next Order of Business.</p>
+                    <p class="text-sm text-slate-500">No items from Committees you Chair on the next Order of Business.</p>
                 @endif
             </div>
 
@@ -168,7 +168,7 @@
                         </details>
                     @endif
                 @else
-                    <p class="text-sm text-slate-500">No items from committees you chair on the next Order of Business.</p>
+                    <p class="text-sm text-slate-500">No items from Committees you Chair on the next Order of Business.</p>
                 @endif
             </div>
         </div>
@@ -243,7 +243,7 @@
                 <div class="p-4 sm:p-5">
                     <h3 class="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">Agendas Referred from last OB</h3>
                     <p class="mb-3 text-xs text-slate-500">
-                        Regular Unassigned Business from the last session (available 2 hours after session time) for committees you chair
+                        Regular Unassigned Business from the last session
                         @if ($referredSession)
                             · {{ $referredSession->sessionLabel() }}
                             @if ($referredSession->formattedSessionTime())

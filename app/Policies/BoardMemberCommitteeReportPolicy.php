@@ -48,13 +48,13 @@ class BoardMemberCommitteeReportPolicy
     }
 
     /**
-     * Board members may mutate their own reports.
+     * Board members may mutate their own reports until the target session/OB is over or final.
      * Staff may mutate only reports they submitted (not BM-submitted reports).
      */
     protected function canMutate(User $user, BoardMemberCommitteeReport $report): bool
     {
         if ($this->ownsAsBoardMember($user, $report)) {
-            return true;
+            return ! $report->isLockedForBoardMemberMutation();
         }
 
         return $user->hasModuleCapability(UserCapability::COMMITTEE_REPORTS)

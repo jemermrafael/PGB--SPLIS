@@ -65,4 +65,76 @@ class BoardMemberCommitteeReport extends Model
     {
         return $this->hasMany(LegislativeSessionCommitteeReportFile::class);
     }
+
+    /**
+     * Session this report targets, or the newest session folder copy when reserved/auto-linked.
+     */
+    public function resolvedTargetSession(): ?LegislativeSession
+    {
+        if ($this->legislative_session_id !== null) {
+            if ($this->relationLoaded('legislativeSession')) {
+                return $this->legislativeSession;
+            }
+
+            return $this->legislativeSession()->with('obDocument')->first();
+        }
+
+        if ($this->relationLoaded('sessionFiles')) {
+            $file = $this->sessionFiles
+                ->sortByDesc(fn (LegislativeSessionCommitteeReportFile $file) => $file->id)
+                ->first();
+
+            if ($file?->relationLoaded('session')) {
+                return $file->session;
+            }
+
+            return $file?->session()->with('obDocument')->first();
+        }
+
+        $file = $this->sessionFiles()->with(['session.obDocument'])->orderByDesc('id')->first();
+
+        return $file?->session;
+    }
+
+    public function targetSessionLabel(): string
+    {
+        $session = $this->resolvedTargetSession();
+
+        return $session?->displayTitle() ?? 'Next available session / OB';
+    }
+
+    /**
+     * Board members may not edit/delete once the target session/OB is over or finalized.
+     */
+    public function isLockedForBoardMemberMutation(): bool
+    {
+        $session = $this->resolvedTargetSession();
+
+        if ($session === null) {
+            return false;
+        }
+
+        if ($session->status === 'completed') {
+            return true;
+        }
+
+        if ($session->hasFinalOrderOfBusiness()) {
+            return true;
+        }
+
+        if ($session->isPastSessionDate()) {
+            return true;
+        }
+
+        // On session day, lock after the scheduled start time (when set).
+        if (filled($session->session_time)) {
+            $startsAt = $session->sessionDateTime();
+
+            if ($startsAt !== null && $startsAt->lte(now())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

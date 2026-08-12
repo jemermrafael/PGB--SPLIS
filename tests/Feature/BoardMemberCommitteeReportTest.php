@@ -450,6 +450,100 @@ class BoardMemberCommitteeReportTest extends TestCase
         ]);
     }
 
+    public function test_board_member_cannot_edit_or_delete_report_after_session_date(): void
+    {
+        Storage::fake('local');
+
+        [$user] = $this->linkedBoardMemberWithCommittee();
+
+        $session = LegislativeSession::query()->create([
+            'session_number' => '9',
+            'session_kind' => 'regular',
+            'session_date' => now()->subDay()->toDateString(),
+            'status' => 'scheduled',
+            'created_by' => $user->id,
+        ]);
+
+        $path = 'committee-reports/bm/locked.pdf';
+        Storage::disk('local')->put($path, 'pdf');
+
+        $report = \App\Models\BoardMemberCommitteeReport::query()->create([
+            'board_member_id' => $user->board_member_id,
+            'legislative_session_id' => $session->id,
+            'title' => 'Past session report',
+            'pdf_path' => $path,
+            'original_filename' => 'locked.pdf',
+            'submitted_by' => $user->id,
+            'submitted_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('board-member.committee-reports.edit', $report))
+            ->assertForbidden();
+
+        $this->actingAs($user)
+            ->put(route('board-member.committee-reports.update', $report), [
+                'title' => 'Should not update',
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($user)
+            ->delete(route('board-member.committee-reports.destroy', $report))
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('board_member_committee_reports', ['id' => $report->id]);
+
+        $this->actingAs($user)
+            ->get(route('board-member.committee-reports.index'))
+            ->assertOk()
+            ->assertSee($session->displayTitle())
+            ->assertSee('Locked — session/OB is over')
+            ->assertDontSee(route('board-member.committee-reports.edit', $report), false);
+    }
+
+    public function test_board_member_cannot_edit_or_delete_report_when_ob_is_final(): void
+    {
+        Storage::fake('local');
+
+        [$user] = $this->linkedBoardMemberWithCommittee();
+
+        $session = LegislativeSession::query()->create([
+            'session_number' => '10th REGULAR SESSION',
+            'session_kind' => 'regular',
+            'session_date' => now()->addDays(3)->toDateString(),
+            'status' => 'scheduled',
+            'created_by' => $user->id,
+        ]);
+
+        ObDocument::query()->create([
+            'legislative_session_id' => $session->id,
+            'title' => 'Final OB',
+            'status' => ObDocument::STATUS_FINAL,
+            'created_by' => $user->id,
+        ]);
+
+        $path = 'committee-reports/bm/final-ob.pdf';
+        Storage::disk('local')->put($path, 'pdf');
+
+        $report = \App\Models\BoardMemberCommitteeReport::query()->create([
+            'board_member_id' => $user->board_member_id,
+            'legislative_session_id' => $session->id,
+            'title' => 'Final OB report',
+            'pdf_path' => $path,
+            'original_filename' => 'final-ob.pdf',
+            'submitted_by' => $user->id,
+            'submitted_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('board-member.committee-reports.edit', $report))
+            ->assertForbidden();
+
+        $this->actingAs($user)
+            ->delete(route('board-member.committee-reports.destroy', $report))
+            ->assertForbidden();
+    }
+
     public function test_board_member_cannot_tag_agenda_outside_their_committees(): void
     {
         Storage::fake('local');

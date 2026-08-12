@@ -234,6 +234,8 @@ class BoardMemberCommitteeReportService
         if ($user->isBoardMember()
             && $user->board_member_id !== null
             && (int) $report->board_member_id === (int) $user->board_member_id) {
+            abort_if($report->isLockedForBoardMemberMutation(), 403);
+
             return;
         }
 

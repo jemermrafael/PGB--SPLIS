@@ -1,4 +1,4 @@
-@props(['title', 'assignments', 'empty' => 'None', 'badge' => '', 'selectedTerm' => null])
+@props(['title', 'assignments', 'empty' => 'None', 'selectedTerm' => null])
 
 <section class="splis-card">
     <div class="splis-card-header">
@@ -17,13 +17,7 @@
                 <div class="min-w-0">
                     <a href="{{ $showUrl }}" class="inline-flex max-w-full items-center gap-2 hover:opacity-90">
                         <x-committee-meta :committee="$assignment['committee']" class="splis-list-committee--lg !normal-case tracking-normal" />
-                        @if (! empty($assignment['role_label']))
-                            <span class="shrink-0 text-sm font-medium text-slate-500 dark:text-slate-400">({{ $assignment['role_label'] }})</span>
-                        @endif
                     </a>
-                    @if ($badge)
-                        <p class="mt-1"><span class="splis-badge splis-badge--muted">{{ $badge }}</span></p>
-                    @endif
                 </div>
                 <a href="{{ $showUrl }}" class="shrink-0 text-sm text-brand-700 hover:underline dark:text-brand-300">
                     View

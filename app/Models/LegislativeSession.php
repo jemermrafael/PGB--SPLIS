@@ -510,6 +510,11 @@ class LegislativeSession extends Model
         return $this->hasFinalObDocument();
     }
 
+    public function hasFinalOrderOfBusiness(): bool
+    {
+        return $this->hasFinalObDocument();
+    }
+
     protected function hasFinalObDocument(): bool
     {
         if ($this->relationLoaded('obDocument')) {

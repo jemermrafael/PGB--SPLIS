@@ -18,21 +18,25 @@
     @include('board-member.committee-reports._form', ['report' => $report])
 
     <div class="mt-6 border-t border-slate-200 pt-6 dark:border-slate-700">
-        <form
-            method="POST"
-            action="{{ route('board-member.committee-reports.destroy', $report) }}"
-            data-confirm-submit
-            data-confirm-title="Delete committee report?"
-            data-confirm-message="Delete this uploaded committee report? Tagged agenda PDFs and related session folder copies from this submission will be removed."
-            data-confirm-label="Delete"
-        >
-            @csrf
-            @method('DELETE')
-            <button type="submit" class="splis-btn-danger inline-flex items-center gap-2">
-                <x-icon name="trash" class="h-4 w-4" />
-                Delete Report
-            </button>
-        </form>
+        @can('delete', $report)
+            <form
+                method="POST"
+                action="{{ route('board-member.committee-reports.destroy', $report) }}"
+                data-confirm-submit
+                data-confirm-title="Delete committee report?"
+                data-confirm-message="Delete this uploaded committee report? Tagged agenda PDFs and related session folder copies from this submission will be removed."
+                data-confirm-label="Delete"
+            >
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="splis-btn-danger inline-flex items-center gap-2">
+                    <x-icon name="trash" class="h-4 w-4" />
+                    Delete Report
+                </button>
+            </form>
+        @else
+            <p class="text-sm text-slate-500">This report is locked because its session / Order of Business is over.</p>
+        @endcan
     </div>
 </div>
 @endsection
