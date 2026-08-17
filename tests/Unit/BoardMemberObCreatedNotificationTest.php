@@ -8,12 +8,24 @@ use App\Models\ObDocument;
 use App\Models\User;
 use App\Models\UserNotification;
 use App\Services\BoardMemberNotifier;
+use App\Services\EmailNotificationSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class BoardMemberObCreatedNotificationTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function tearDown(): void
+    {
+        $path = app(EmailNotificationSettings::class)->path();
+        if (is_file($path)) {
+            @unlink($path);
+        }
+
+        parent::tearDown();
+    }
 
     public function test_ob_document_created_notification_is_not_emitted_for_draft_session(): void
     {
@@ -27,7 +39,7 @@ class BoardMemberObCreatedNotificationTest extends TestCase
         $document = ObDocument::query()->create([
             'legislative_session_id' => $session->id,
             'title' => 'Order of Business — July 27, 2026',
-            'status' => 'draft',
+            'status' => 'final',
         ]);
 
         app(BoardMemberNotifier::class)->notifyObDocumentCreated($session->fresh('obDocument'), $document);
@@ -41,8 +53,34 @@ class BoardMemberObCreatedNotificationTest extends TestCase
         $this->assertFalse($created);
     }
 
+    public function test_ob_document_created_notification_is_not_emitted_for_draft_ob(): void
+    {
+        $user = $this->createBoardMemberUser();
+
+        $session = LegislativeSession::query()->create([
+            'session_date' => '2026-07-27',
+            'session_kind' => 'regular',
+            'status' => 'scheduled',
+        ]);
+        $document = ObDocument::query()->create([
+            'legislative_session_id' => $session->id,
+            'title' => 'Order of Business — July 27, 2026',
+            'status' => 'draft',
+        ]);
+
+        app(BoardMemberNotifier::class)->notifyObDocumentCreated($session->fresh('obDocument'), $document);
+
+        $this->assertFalse(
+            UserNotification::query()
+                ->where('user_id', $user->id)
+                ->where('type', UserNotification::TYPE_OB_DOCUMENT_CREATED)
+                ->exists()
+        );
+    }
+
     public function test_ob_document_created_notification_is_emitted_for_scheduled_final_ob(): void
     {
+        Mail::fake();
         $user = $this->createBoardMemberUser();
 
         $session = LegislativeSession::query()->create([
@@ -62,6 +100,7 @@ class BoardMemberObCreatedNotificationTest extends TestCase
             ->where('user_id', $user->id)
             ->where('legislative_session_id', $session->id)
             ->where('type', UserNotification::TYPE_OB_DOCUMENT_CREATED)
+            ->where('title', 'Order of Business published')
             ->exists();
 
         $visible = UserNotification::query()
@@ -72,9 +111,10 @@ class BoardMemberObCreatedNotificationTest extends TestCase
 
         $this->assertTrue($created);
         $this->assertTrue($visible);
+        Mail::assertSent(\App\Mail\SystemNotificationMail::class);
     }
 
-    public function test_session_created_notification_is_hidden_when_not_scheduled_final(): void
+    public function test_session_created_notification_is_hidden_when_not_scheduled(): void
     {
         $user = $this->createBoardMemberUser();
 

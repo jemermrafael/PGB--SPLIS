@@ -38,7 +38,7 @@ class ActivityLogNotifier
         'agenda.ob_relocated',
     ];
 
-    public const OB_FINALIZED_TITLE = 'Order of Business finalized';
+    public const OB_FINALIZED_TITLE = 'Order of Business published';
 
     public const OB_ADDED_DIGEST_TITLE = 'Agendas added to Order of Business';
 

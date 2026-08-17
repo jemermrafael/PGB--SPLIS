@@ -10,12 +10,24 @@ use App\Models\UserNotification;
 use App\Policies\LegislativeSessionPolicy;
 use App\Policies\ObDocumentPolicy;
 use App\Services\BoardMemberNotifier;
+use App\Services\EmailNotificationSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class BoardMemberObVisibilityTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function tearDown(): void
+    {
+        $path = app(EmailNotificationSettings::class)->path();
+        if (is_file($path)) {
+            @unlink($path);
+        }
+
+        parent::tearDown();
+    }
 
     public function test_board_member_can_only_view_scheduled_sessions(): void
     {
@@ -82,8 +94,9 @@ class BoardMemberObVisibilityTest extends TestCase
         $this->assertTrue($policy->view($user, $completedDoc->load('legislativeSession')));
     }
 
-    public function test_session_created_notification_is_only_created_for_scheduled_session_with_final_ob(): void
+    public function test_session_created_notification_is_created_for_scheduled_session_without_final_ob(): void
     {
+        Mail::fake();
         $user = $this->createBoardMemberUser();
 
         $scheduledDraftOb = LegislativeSession::query()->create([
@@ -99,34 +112,49 @@ class BoardMemberObVisibilityTest extends TestCase
 
         app(BoardMemberNotifier::class)->notifySessionCreated($scheduledDraftOb->fresh('obDocument'));
 
-        $this->assertDatabaseMissing('user_notifications', [
+        $this->assertDatabaseHas('user_notifications', [
             'user_id' => $user->id,
             'legislative_session_id' => $scheduledDraftOb->id,
             'type' => UserNotification::TYPE_SESSION_CREATED,
+            'title' => 'New Session scheduled',
         ]);
 
-        $scheduledFinalOb = LegislativeSession::query()->create([
+        $this->assertTrue(
+            UserNotification::query()
+                ->where('user_id', $user->id)
+                ->where('type', UserNotification::TYPE_SESSION_CREATED)
+                ->visibleToRecipient($user)
+                ->exists()
+        );
+
+        Mail::assertSent(\App\Mail\SystemNotificationMail::class);
+    }
+
+    public function test_session_created_notification_is_not_created_for_draft_session(): void
+    {
+        $user = $this->createBoardMemberUser();
+
+        $draft = LegislativeSession::query()->create([
             'session_date' => '2026-08-03',
             'session_kind' => 'regular',
-            'status' => 'scheduled',
+            'status' => 'draft',
         ]);
         ObDocument::query()->create([
-            'legislative_session_id' => $scheduledFinalOb->id,
+            'legislative_session_id' => $draft->id,
             'title' => 'OB final',
             'status' => 'final',
         ]);
 
-        app(BoardMemberNotifier::class)->notifySessionCreated($scheduledFinalOb->fresh('obDocument'));
+        app(BoardMemberNotifier::class)->notifySessionCreated($draft->fresh('obDocument'));
 
-        $this->assertDatabaseHas('user_notifications', [
+        $this->assertDatabaseMissing('user_notifications', [
             'user_id' => $user->id,
-            'legislative_session_id' => $scheduledFinalOb->id,
+            'legislative_session_id' => $draft->id,
             'type' => UserNotification::TYPE_SESSION_CREATED,
-            'title' => 'New Session scheduled',
         ]);
     }
 
-    public function test_board_member_notification_query_hides_session_created_notification_when_session_is_not_currently_notifiable(): void
+    public function test_board_member_notification_query_hides_session_created_when_session_is_no_longer_scheduled(): void
     {
         $user = $this->createBoardMemberUser();
 
@@ -137,8 +165,8 @@ class BoardMemberObVisibilityTest extends TestCase
         ]);
         ObDocument::query()->create([
             'legislative_session_id' => $scheduled->id,
-            'title' => 'OB final',
-            'status' => 'final',
+            'title' => 'OB draft',
+            'status' => 'draft',
         ]);
 
         $notification = UserNotification::query()->create([
@@ -147,7 +175,7 @@ class BoardMemberObVisibilityTest extends TestCase
             'type' => UserNotification::TYPE_SESSION_CREATED,
             'title' => 'New Session scheduled',
             'body' => $scheduled->displayTitle(),
-            'link' => '/order-of-business/'.$scheduled->id,
+            'link' => '/my-sessions/'.$scheduled->id,
         ]);
 
         $this->assertTrue(
@@ -158,6 +186,47 @@ class BoardMemberObVisibilityTest extends TestCase
         );
 
         $scheduled->update(['status' => 'completed']);
+
+        $this->assertFalse(
+            UserNotification::query()
+                ->whereKey($notification->id)
+                ->visibleToRecipient($user)
+                ->exists()
+        );
+    }
+
+    public function test_ob_finalized_notification_is_hidden_when_ob_is_no_longer_final(): void
+    {
+        $user = $this->createBoardMemberUser();
+
+        $scheduled = LegislativeSession::query()->create([
+            'session_date' => '2026-07-27',
+            'session_kind' => 'regular',
+            'status' => 'scheduled',
+        ]);
+        $document = ObDocument::query()->create([
+            'legislative_session_id' => $scheduled->id,
+            'title' => 'OB final',
+            'status' => 'final',
+        ]);
+
+        $notification = UserNotification::query()->create([
+            'user_id' => $user->id,
+            'legislative_session_id' => $scheduled->id,
+            'type' => UserNotification::TYPE_OB_DOCUMENT_CREATED,
+            'title' => 'Order of Business published',
+            'body' => $document->title,
+            'link' => '/my-sessions/'.$scheduled->id,
+        ]);
+
+        $this->assertTrue(
+            UserNotification::query()
+                ->whereKey($notification->id)
+                ->visibleToRecipient($user)
+                ->exists()
+        );
+
+        $document->update(['status' => 'draft']);
 
         $this->assertFalse(
             UserNotification::query()

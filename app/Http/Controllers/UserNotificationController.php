@@ -123,7 +123,7 @@ class UserNotificationController extends Controller
             ->visibleToRecipient($user);
 
         if ($user->canAdmin()) {
-            return $query->where('type', UserNotification::TYPE_ACTIVITY_LOG);
+            return $query->whereIn('type', UserNotification::adminInAppTypes());
         }
 
         if ($user->isMunicipalViewer()) {
@@ -141,7 +141,7 @@ class UserNotificationController extends Controller
     private function ownsNotificationType(User $user, UserNotification $notification): bool
     {
         if ($user->canAdmin()) {
-            return $notification->type === UserNotification::TYPE_ACTIVITY_LOG;
+            return in_array($notification->type, UserNotification::adminInAppTypes(), true);
         }
 
         if ($user->isMunicipalViewer()) {

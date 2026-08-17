@@ -488,6 +488,14 @@ class LegislativeSession extends Model
     }
 
     /**
+     * Session-scheduled notifications (in-app + email) — does not require a final OB.
+     */
+    public function isNotifiableAsScheduledSession(): bool
+    {
+        return $this->status === 'scheduled';
+    }
+
+    /**
      * Session is scheduled and has a final Order of Business — used for
      * agenda-added-to-OB notifications (board member and municipal).
      */

@@ -72,8 +72,11 @@ class LegislativeSessionController extends Controller
 
         $sectionThreeSync->syncForSession($session->fresh(['priorSession', 'obDocument.blocks']), force: true);
 
-        $notifier->notifySessionCreated($session);
-        $notifier->notifyObDocumentCreated($session, $document);
+        // OB starts as draft — only session-scheduled notifies on create.
+        // OB-finalized notifies later when the document is first set to final.
+        if ($session->isNotifiableAsScheduledSession()) {
+            $notifier->notifySessionCreated($session);
+        }
 
         $lifecycle->syncNewSession($session, $request->user()->id);
 
@@ -112,11 +115,16 @@ class LegislativeSessionController extends Controller
         return view('order-of-business.sessions.form', $this->formData($legislativeSession));
     }
 
-    public function update(Request $request, LegislativeSession $legislativeSession, ObSectionThreeSyncService $sectionThreeSync): RedirectResponse
-    {
+    public function update(
+        Request $request,
+        LegislativeSession $legislativeSession,
+        ObSectionThreeSyncService $sectionThreeSync,
+        BoardMemberNotifier $notifier,
+    ): RedirectResponse {
         $this->authorize('update', $legislativeSession);
 
         $priorSessionChanged = (int) $request->input('prior_session_id') !== (int) $legislativeSession->prior_session_id;
+        $wasScheduled = $legislativeSession->status === 'scheduled';
 
         $validated = $this->validated($request, $legislativeSession);
 
@@ -154,6 +162,15 @@ class LegislativeSessionController extends Controller
             $legislativeSession->obDocument->update([
                 'title' => 'Order of Business — '.$legislativeSession->session_date->format('F j, Y'),
             ]);
+        }
+
+        if (! $wasScheduled && $legislativeSession->isNotifiableAsScheduledSession()) {
+            $notifier->notifySessionCreated($legislativeSession);
+
+            $document = $legislativeSession->obDocument;
+            if ($document instanceof ObDocument && $document->isFinal()) {
+                $notifier->notifyObDocumentCreated($legislativeSession, $document);
+            }
         }
 
         return redirect()

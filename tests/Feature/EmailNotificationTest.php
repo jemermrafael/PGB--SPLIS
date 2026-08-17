@@ -63,6 +63,8 @@ class EmailNotificationTest extends TestCase
         $this->assertFalse($defaults['types'][EmailNotificationSettings::AUDIENCE_MUNICIPAL][EmailNotificationSettings::TYPE_APPROPRIATION_ORDINANCE_PUBLISHED]);
         $this->assertFalse($defaults['types'][EmailNotificationSettings::AUDIENCE_STAFF][UserNotification::TYPE_ACTIVITY_LOG]);
         $this->assertTrue($defaults['types'][EmailNotificationSettings::AUDIENCE_STAFF][EmailNotificationSettings::TYPE_COMMITTEE_REPORT_SUBMITTED]);
+        $this->assertTrue($defaults['types'][EmailNotificationSettings::AUDIENCE_STAFF][UserNotification::TYPE_SESSION_CREATED]);
+        $this->assertTrue($defaults['types'][EmailNotificationSettings::AUDIENCE_STAFF][UserNotification::TYPE_OB_DOCUMENT_CREATED]);
         $this->assertTrue($defaults['types'][EmailNotificationSettings::AUDIENCE_BOARD_MEMBER][UserNotification::TYPE_COMMITTEE_REPORT_SUBMITTED]);
         $this->assertSame(
             'Committee Report submitted for your Committee',

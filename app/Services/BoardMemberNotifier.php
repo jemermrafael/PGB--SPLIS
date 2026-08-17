@@ -293,11 +293,13 @@ class BoardMemberNotifier
 
     public function notifySessionCreated(LegislativeSession $session): void
     {
-        if (! $session->isNotifiableToBoardMembers()) {
+        if (! $session->isNotifiableAsScheduledSession()) {
             return;
         }
 
         $sessionTitle = $session->displayTitle();
+        $bmLink = route('board-member.sessions.show', $session, absolute: false);
+        $staffLink = route('ob.sessions.show', $session, absolute: false);
 
         foreach ($this->allBoardMemberUsers() as $user) {
             $notification = $this->createNotificationForUser($user, UserNotification::TYPE_SESSION_CREATED, [
@@ -308,7 +310,7 @@ class BoardMemberNotifier
                 [
                     'title' => 'New Session scheduled',
                     'body' => $sessionTitle,
-                    'link' => route('ob.sessions.show', $session, absolute: false),
+                    'link' => $bmLink,
                 ],
             ]);
 
@@ -321,9 +323,16 @@ class BoardMemberNotifier
                     'title' => 'New Session scheduled',
                     'body' => $sessionTitle,
                 ],
-                route('ob.sessions.show', $session, absolute: false),
+                $bmLink,
             );
         }
+
+        $this->notifyAdminsInApp(UserNotification::TYPE_SESSION_CREATED, [
+            'legislative_session_id' => $session->id,
+            'title' => 'New Session scheduled',
+            'body' => $sessionTitle,
+            'link' => $staffLink,
+        ]);
 
         $this->emails->notifyStaff(
             UserNotification::TYPE_SESSION_CREATED,
@@ -340,9 +349,14 @@ class BoardMemberNotifier
     {
         $session->setRelation('obDocument', $document);
 
-        if (! $session->isNotifiableToBoardMembers()) {
+        if ($session->status !== 'scheduled' || ! $document->isFinal()) {
             return;
         }
+
+        $sessionTitle = $session->displayTitle();
+        $bmLink = route('board-member.sessions.show', $session, absolute: false);
+        $staffLink = route('ob.sessions.show', $session, absolute: false);
+        $title = 'Order of Business published';
 
         foreach ($this->allBoardMemberUsers() as $user) {
             $notification = $this->createNotificationForUser($user, UserNotification::TYPE_OB_DOCUMENT_CREATED, [
@@ -351,9 +365,9 @@ class BoardMemberNotifier
                     'legislative_session_id' => $session->id,
                 ],
                 [
-                    'title' => 'Order of Business created',
+                    'title' => $title,
                     'body' => $document->title,
-                    'link' => route('ob.sessions.show', $session, absolute: false),
+                    'link' => $bmLink,
                 ],
             ]);
 
@@ -363,20 +377,27 @@ class BoardMemberNotifier
                 UserNotification::TYPE_OB_DOCUMENT_CREATED,
                 [
                     'document_title' => (string) $document->title,
-                    'session' => $session->displayTitle(),
-                    'title' => 'Order of Business created',
+                    'session' => $sessionTitle,
+                    'title' => $title,
                     'body' => (string) $document->title,
                 ],
-                route('ob.sessions.show', $session, absolute: false),
+                $bmLink,
             );
         }
+
+        $this->notifyAdminsInApp(UserNotification::TYPE_OB_DOCUMENT_CREATED, [
+            'legislative_session_id' => $session->id,
+            'title' => $title,
+            'body' => (string) $document->title,
+            'link' => $staffLink,
+        ]);
 
         $this->emails->notifyStaff(
             UserNotification::TYPE_OB_DOCUMENT_CREATED,
             [
                 'document_title' => (string) $document->title,
-                'session' => $session->displayTitle(),
-                'title' => 'Order of Business created',
+                'session' => $sessionTitle,
+                'title' => $title,
                 'body' => (string) $document->title,
             ],
             route('ob.sessions.show', $session),
@@ -606,6 +627,38 @@ class BoardMemberNotifier
             ->where('role', UserRole::BoardMember)
             ->where('is_active', true)
             ->whereNotNull('board_member_id')
+            ->get();
+    }
+
+    /**
+     * In-app alerts for Admin / Superadmin (email still goes through notifyStaff).
+     *
+     * @param  array{legislative_session_id: int, title: string, body: string, link: string}  $attributes
+     */
+    protected function notifyAdminsInApp(string $type, array $attributes): void
+    {
+        foreach ($this->adminUsers() as $admin) {
+            UserNotification::query()->firstOrCreate(
+                [
+                    'user_id' => $admin->id,
+                    'legislative_session_id' => $attributes['legislative_session_id'],
+                    'type' => $type,
+                ],
+                [
+                    'title' => $attributes['title'],
+                    'body' => $attributes['body'],
+                    'link' => $attributes['link'],
+                ],
+            );
+        }
+    }
+
+    /** @return Collection<int, User> */
+    protected function adminUsers(): Collection
+    {
+        return User::query()
+            ->where('is_active', true)
+            ->whereIn('role', [UserRole::Admin, UserRole::Superadmin])
             ->get();
     }
 

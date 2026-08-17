@@ -695,7 +695,7 @@ class ObDocumentService
             $session = $document->legislativeSession;
 
             if ($session instanceof LegislativeSession) {
-                $this->boardMemberNotifier->notifySessionCreated($session);
+                // Session-scheduled alerts are separate; only OB-finalized fires here.
                 $this->boardMemberNotifier->notifyObDocumentCreated($session, $document);
             }
         }

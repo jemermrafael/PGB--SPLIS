@@ -20,6 +20,8 @@ class EmailNotificationSettings
 
     public const TYPE_APPROPRIATION_ORDINANCE_PUBLISHED = 'appropriation_ordinance_published';
 
+    public const MIGRATION_STAFF_SESSION_OB_EMAIL = 'staff_session_ob_email_v1';
+
     public function path(): string
     {
         return storage_path('app/email-notification-settings.json');
@@ -111,6 +113,8 @@ class EmailNotificationSettings
             ],
             self::AUDIENCE_STAFF => [
                 self::TYPE_COMMITTEE_REPORT_SUBMITTED,
+                \App\Models\UserNotification::TYPE_SESSION_CREATED,
+                \App\Models\UserNotification::TYPE_OB_DOCUMENT_CREATED,
             ],
         ];
     }
@@ -131,7 +135,7 @@ class EmailNotificationSettings
             \App\Models\UserNotification::TYPE_AGENDA_PUBLISHED => 'Agenda published (any target)',
             \App\Models\UserNotification::TYPE_AGENDA_ADDED_TO_OB => 'Agenda added to Order of Business',
             \App\Models\UserNotification::TYPE_SESSION_CREATED => 'New Session scheduled',
-            \App\Models\UserNotification::TYPE_OB_DOCUMENT_CREATED => 'Order of Business created',
+            \App\Models\UserNotification::TYPE_OB_DOCUMENT_CREATED => 'Order of Business published',
             \App\Models\UserNotification::TYPE_AGENDA_EXPIRING_SOON => 'Agenda deadline approaching',
             \App\Models\UserNotification::TYPE_ACTIVITY_LOG => 'Activity log events',
             self::TYPE_RESOLUTION_PUBLISHED => 'Agenda was published to Resolution',
@@ -184,8 +188,8 @@ class EmailNotificationSettings
                     'action_label' => 'View Session',
                 ],
                 \App\Models\UserNotification::TYPE_OB_DOCUMENT_CREATED => [
-                    'subject' => 'Order of Business created',
-                    'body' => "{{document_title}}\n\nThe Order of Business is now available.",
+                    'subject' => 'Order of Business published',
+                    'body' => "{{document_title}}\n\nThe Order of Business for {{session}} is now published and available.",
                     'action_label' => 'View Order of Business',
                 ],
                 \App\Models\UserNotification::TYPE_AGENDA_EXPIRING_SOON => [
@@ -248,8 +252,8 @@ class EmailNotificationSettings
                     'action_label' => 'View Session',
                 ],
                 \App\Models\UserNotification::TYPE_OB_DOCUMENT_CREATED => [
-                    'subject' => 'Order of Business created',
-                    'body' => "{{document_title}}\n\nThe Order of Business is now available.",
+                    'subject' => 'Order of Business published',
+                    'body' => "{{document_title}}\n\nThe Order of Business for {{session}} is now published and available.",
                     'action_label' => 'View Order of Business',
                 ],
                 \App\Models\UserNotification::TYPE_AGENDA_EXPIRING_SOON => [
@@ -380,6 +384,18 @@ class EmailNotificationSettings
 
         $types = $this->migrateMunicipalCommitteeReferralType($types, $stored);
 
+        $staffSessionObUpgrade = $this->shouldUpgradeStaffSessionAndObNotify($stored);
+        if ($staffSessionObUpgrade) {
+            foreach ([
+                \App\Models\UserNotification::TYPE_SESSION_CREATED,
+                \App\Models\UserNotification::TYPE_OB_DOCUMENT_CREATED,
+            ] as $type) {
+                if (array_key_exists($type, $types[self::AUDIENCE_STAFF] ?? [])) {
+                    $types[self::AUDIENCE_STAFF][$type] = true;
+                }
+            }
+        }
+
         $templates = $defaults['templates'];
         foreach ($templates as $audience => $audienceTemplates) {
             foreach ($audienceTemplates as $type => $defaultTemplate) {
@@ -411,13 +427,19 @@ class EmailNotificationSettings
             'header_title' => trim((string) ($storedBranding['header_title'] ?? $brandingDefaults['header_title'])) ?: $brandingDefaults['header_title'],
         ];
 
-        return [
+        $migrations = is_array($stored['migrations'] ?? null) ? $stored['migrations'] : [];
+        if ($staffSessionObUpgrade) {
+            $migrations[self::MIGRATION_STAFF_SESSION_OB_EMAIL] = true;
+        }
+
+        $resolved = [
             'enabled' => array_key_exists('enabled', $stored)
                 ? (bool) $stored['enabled']
                 : $defaults['enabled'],
             'types' => $types,
             'templates' => $templates,
             'branding' => $branding,
+            'migrations' => $migrations,
             'smtp' => [
                 'mailer' => (string) ($smtp['mailer'] ?: 'log'),
                 'host' => (string) $smtp['host'],
@@ -429,6 +451,12 @@ class EmailNotificationSettings
                 'from_name' => (string) $smtp['from_name'],
             ],
         ];
+
+        if ($staffSessionObUpgrade && $stored !== []) {
+            $this->writeSettingsFile($resolved);
+        }
+
+        return $resolved;
     }
 
     /**
@@ -535,11 +563,39 @@ class EmailNotificationSettings
             }
         }
 
+        $current['migrations'] = is_array($current['migrations'] ?? null) ? $current['migrations'] : [];
+        $current['migrations'][self::MIGRATION_STAFF_SESSION_OB_EMAIL] = true;
+
+        $this->writeSettingsFile($current);
+    }
+
+    /**
+     * @param  array<string, mixed>  $settings
+     */
+    protected function writeSettingsFile(array $settings): void
+    {
         File::ensureDirectoryExists(dirname($this->path()));
         File::put(
             $this->path(),
-            json_encode($current, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+            json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
         );
+    }
+
+    /**
+     * Existing settings files often stored staff session/OB emails as false (old defaults).
+     * Upgrade once; later admin toggles stick via the migration marker.
+     *
+     * @param  array<string, mixed>  $stored
+     */
+    protected function shouldUpgradeStaffSessionAndObNotify(array $stored): bool
+    {
+        if ($stored === []) {
+            return false;
+        }
+
+        $migrations = is_array($stored['migrations'] ?? null) ? $stored['migrations'] : [];
+
+        return empty($migrations[self::MIGRATION_STAFF_SESSION_OB_EMAIL]);
     }
 
     /**
