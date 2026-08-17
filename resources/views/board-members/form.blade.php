@@ -18,12 +18,13 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ $isEdit ? route('board-members.update', $boardMember) : route('board-members.store') }}" class="splis-card splis-card-body space-y-5">
+    <form method="POST" action="{{ $isEdit ? route('board-members.update', $boardMember) : route('board-members.store') }}" class="space-y-6">
         @csrf
         @if ($isEdit)
             @method('PUT')
         @endif
 
+        <div class="splis-card splis-card-body space-y-5">
         <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div>
                 <label class="splis-label" for="honorific">Honorific</label>
@@ -130,8 +131,9 @@
                 <p class="mt-1 text-xs text-slate-500">Shown under the name on the printable attendance sheet as (PCL President).</p>
             </div>
         </div>
+        </div>
 
-        <div class="flex flex-wrap gap-2 pt-2">
+        <div class="splis-form-actions">
             <button type="submit" class="splis-btn-primary">Save</button>
             @if ($isEdit)
                 <a href="{{ route('board-members.show', ['boardMember' => $boardMember, 'term' => $term->id]) }}" class="splis-btn-secondary inline-flex items-center gap-2">

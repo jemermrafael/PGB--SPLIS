@@ -100,7 +100,7 @@
             </div>
         </div>
 
-        <div class="flex flex-wrap gap-2">
+        <div class="splis-form-actions">
             <button type="submit" class="splis-btn-primary">Save changes</button>
             <a href="{{ route('dashboard') }}" class="splis-btn-ghost inline-flex items-center gap-2">
                 <x-icon name="arrow-left" class="h-4 w-4" />
@@ -149,7 +149,7 @@
                 </table>
             </div>
 
-            <div class="flex flex-wrap gap-2">
+            <div class="splis-form-actions">
                 <button type="submit" class="splis-btn-primary">Save notification preferences</button>
             </div>
         </form>

@@ -83,10 +83,11 @@
         </div>
 
         @if ($preview->isNotEmpty())
-            <form method="POST" action="{{ route('scheduled-committee-referrals.store') }}" class="splis-card p-4 sm:p-5">
+            <form method="POST" action="{{ route('scheduled-committee-referrals.store') }}" class="space-y-6">
                 @csrf
                 <input type="hidden" name="legislative_session_id" value="{{ $selectedSession->id }}">
 
+                <div class="splis-card p-4 sm:p-5 space-y-4">
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
                         <label for="scheduled_at" class="splis-label">Send date &amp; time</label>
@@ -112,7 +113,7 @@
                     </div>
                 </div>
 
-                <div class="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/40">
+                <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/40">
                     <label class="flex items-start gap-3 text-sm text-slate-800 dark:text-slate-100">
                         <input
                             type="checkbox"
@@ -133,10 +134,11 @@
                 </div>
 
                 @error('legislative_session_id')
-                    <p class="mt-3 text-sm text-rose-600">{{ $message }}</p>
+                    <p class="text-sm text-rose-600">{{ $message }}</p>
                 @enderror
+                </div>
 
-                <div class="mt-5 flex flex-wrap gap-2">
+                <div class="splis-form-actions">
                     <button type="submit" class="splis-btn-primary">Schedule Referral to Chairs</button>
                     <a href="{{ route('scheduled-committee-referrals.index') }}" class="splis-btn-ghost">Cancel</a>
                 </div>

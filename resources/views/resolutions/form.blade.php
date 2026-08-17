@@ -11,15 +11,17 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ isset($resolution) && $resolution->exists ? route('resolutions.update', $resolution) : route('resolutions.store') }}" enctype="multipart/form-data" class="splis-card splis-card-body space-y-5">
+    <form method="POST" action="{{ isset($resolution) && $resolution->exists ? route('resolutions.update', $resolution) : route('resolutions.store') }}" enctype="multipart/form-data" class="space-y-6">
         @csrf
         @if (isset($resolution) && $resolution->exists)
             @method('PUT')
         @endif
 
-        @include('resolutions._form-fields', ['resolution' => $resolution])
+        <div class="splis-card splis-card-body space-y-5">
+            @include('resolutions._form-fields', ['resolution' => $resolution])
+        </div>
 
-        <div class="flex gap-2 pt-2">
+        <div class="splis-form-actions">
             <button type="submit" class="splis-btn-primary">Save Resolution</button>
             <a href="{{ route('resolutions.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
                 <x-icon name="arrow-left" class="h-4 w-4" />

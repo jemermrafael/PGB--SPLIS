@@ -53,10 +53,11 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ route('ob.sessions.attendance.update', $session) }}" class="splis-card splis-card-body space-y-4">
+    <form method="POST" action="{{ route('ob.sessions.attendance.update', $session) }}" class="space-y-6">
         @csrf
         @method('PUT')
 
+        <div class="splis-card splis-card-body space-y-4">
         <p class="text-sm text-slate-600 dark:text-slate-400">Mark each member as Present (/), Absent (X), OB, or Excused (*).</p>
 
         <div class="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/50">
@@ -221,12 +222,17 @@
                 </div>
             </template>
         </div>
+        </div>
 
-        <div class="pt-2">
+        <div class="splis-form-actions">
             <button type="submit" class="splis-btn-primary inline-flex items-center gap-2">
                 <x-icon name="check-circle" class="h-4 w-4" />
                 Save Attendance
             </button>
+            <a href="{{ route('ob.sessions.show', $session) }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="arrow-left" class="h-4 w-4" />
+                Cancel
+            </a>
         </div>
     </form>
 </div>

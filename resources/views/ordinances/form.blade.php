@@ -16,12 +16,13 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ $isEdit ? route('ordinances.update', $ordinance) : route('ordinances.store') }}" enctype="multipart/form-data" class="splis-card splis-card-body space-y-6">
+    <form method="POST" action="{{ $isEdit ? route('ordinances.update', $ordinance) : route('ordinances.store') }}" enctype="multipart/form-data" class="space-y-6">
         @csrf
         @if ($isEdit)
             @method('PUT')
         @endif
 
+        <div class="splis-card splis-card-body space-y-6">
         <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div>
                 <label class="splis-label" for="ordinance_no">Ordinance no.</label>
@@ -233,8 +234,9 @@
                 <input type="text" name="remarks" id="remarks" value="{{ old('remarks', $ordinance->remarks) }}" class="splis-input">
             </div>
         </div>
+        </div>
 
-        <div class="flex flex-wrap gap-2 pt-2">
+        <div class="splis-form-actions">
             <button type="submit" class="splis-btn-primary">Save</button>
             @if ($isEdit)
                 <a href="{{ route('ordinances.show', $ordinance) }}" class="splis-btn-secondary inline-flex items-center gap-2">

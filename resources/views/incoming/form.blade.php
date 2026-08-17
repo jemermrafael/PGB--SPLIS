@@ -126,7 +126,7 @@
             </div>
         </div>
 
-        <div class="flex gap-2 pt-2">
+        <div class="splis-form-actions">
             <button type="submit" class="splis-btn-primary">Save</button>
             <a href="{{ isset($incoming) && $incoming->exists ? route('incoming.show', $incoming) : route('incoming.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
                 <x-icon name="arrow-left" class="h-4 w-4" />

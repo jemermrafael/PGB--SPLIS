@@ -45,7 +45,7 @@
             </label>
         </div>
 
-        <div class="flex gap-2 pt-2">
+        <div class="splis-form-actions">
             <button type="submit" class="splis-btn-primary">Save Term</button>
             <a href="{{ route('committee-terms.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
                 <x-icon name="arrow-left" class="h-4 w-4" />

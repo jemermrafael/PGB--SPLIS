@@ -339,7 +339,7 @@
             </div>
         @endunless
 
-        <div class="flex flex-wrap gap-2">
+        <div class="splis-form-actions">
             <button type="submit" class="splis-btn-primary inline-flex items-center gap-2">
                 <x-icon :name="$isEdit ? 'edit' : 'plus'" class="h-4 w-4" :stroke-width="$isEdit ? '1.75' : '2'" />
                 {{ $isEdit ? 'Save changes' : 'Create Session' }}

@@ -82,10 +82,12 @@
             </div>
         </div>
 
-        <button type="submit" class="splis-btn-primary inline-flex items-center gap-2">
-            <x-icon name="check-circle" class="h-4 w-4" />
-            Save now
-        </button>
+        <div class="splis-form-actions">
+            <button type="submit" class="splis-btn-primary inline-flex items-center gap-2">
+                <x-icon name="check-circle" class="h-4 w-4" />
+                Save now
+            </button>
+        </div>
     </form>
 </div>
 @endsection

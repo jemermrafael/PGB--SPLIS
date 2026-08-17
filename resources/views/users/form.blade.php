@@ -139,7 +139,7 @@
             });
         </script>
 
-        <div class="flex gap-2 pt-2">
+        <div class="splis-form-actions">
             <button type="submit" class="splis-btn-primary">Save user</button>
             <a href="{{ route('users.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
                 <x-icon name="arrow-left" class="h-4 w-4" />

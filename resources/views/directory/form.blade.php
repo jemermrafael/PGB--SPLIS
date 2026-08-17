@@ -67,7 +67,7 @@
             <input type="number" name="sort_order" id="sort_order" value="{{ old('sort_order', $entry->sort_order ?? 0) }}" min="0" class="splis-input w-32">
         </div>
 
-        <div class="flex gap-2 pt-2">
+        <div class="splis-form-actions">
             <button type="submit" class="splis-btn-primary">Save</button>
             <a href="{{ route('directory.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
                 <x-icon name="arrow-left" class="h-4 w-4" />

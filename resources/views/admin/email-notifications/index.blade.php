@@ -319,7 +319,7 @@
             </div>
         </div>
 
-        <div class="flex flex-wrap gap-2">
+        <div class="splis-form-actions">
             <button type="submit" class="splis-btn-primary">Save settings</button>
         </div>
     </form>

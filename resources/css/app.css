@@ -580,6 +580,11 @@
         @apply overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-md shadow-slate-300/40;
     }
 
+    /* Sticky Save/Cancel bars cannot pin inside overflow-hidden cards. */
+    .splis-card:has(.splis-form-actions) {
+        @apply overflow-visible;
+    }
+
     .splis-card-body {
         @apply p-6;
     }

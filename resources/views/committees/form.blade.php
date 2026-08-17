@@ -37,7 +37,7 @@
         </a>
     </div>
 
-    <form method="POST" action="{{ $isEdit ? route('committees.update', $committee) : route('committees.store') }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ $isEdit ? route('committees.update', $committee) : route('committees.store') }}" enctype="multipart/form-data" class="space-y-6">
         @csrf
         @if ($isEdit)
             @method('PUT')
@@ -141,104 +141,161 @@
                         Active (shown in dropdowns)
                     </label>
                 </div>
-
-                <div class="flex flex-wrap gap-2 pt-2">
-                    <button type="submit" class="splis-btn-primary">Save Committee</button>
-                    @if ($isEdit)
-                        <a href="{{ route('committees.show', ['committee' => $committee, 'term' => $term->id]) }}" class="splis-btn-secondary">View Roster</a>
-                    @endif
-                    <a href="{{ route('committees.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
-                        <x-icon name="arrow-left" class="h-4 w-4" />
-                        Cancel
-                    </a>
-                </div>
             </div>
 
             @if ($canManageIcon)
-                <aside class="splis-card splis-card-body h-fit space-y-4 lg:sticky lg:top-24">
-                    <div>
+                @php
+                    $openUpload = $hasCustomIcon || $hasDirectUpload || $errors->has('icon');
+                    $openLibrary = ! $openUpload && $selectedLibraryId !== '';
+                    $openPack = ! $openUpload && ! $openLibrary;
+                    $libraryVisibleCount = $libraryIcons->filter(fn ($icon) => $icon->existsLocally())->count();
+                @endphp
+                <aside class="splis-card h-fit overflow-hidden lg:sticky lg:top-24">
+                    <div class="border-b border-slate-200 px-4 py-4 dark:border-slate-700">
                         <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Icon</h2>
                         <p class="mt-1 text-xs text-slate-500">
-                            Icon pack ({{ count($iconKeys) }} presets)
-                            @if ($libraryIcons->isNotEmpty())
-                                · {{ $libraryIcons->count() }} library
-                            @endif
-                            . Custom upload or library icon overrides the preset.
+                            Custom upload or library icon overrides the preset.
                         </p>
                     </div>
 
-                    <div class="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3">
-                        <label class="flex cursor-pointer flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-center text-xs transition @if ($selectedIconKey === '' && $selectedLibraryId === '' && ! $hasDirectUpload) border-brand-500 bg-white ring-2 ring-brand-200 dark:bg-slate-900 @else border-slate-200 bg-white hover:border-slate-300 dark:border-slate-600 dark:bg-slate-900/40 @endif">
-                            <input type="radio" name="icon_key" value="" class="sr-only" @checked($selectedIconKey === '') onclick="document.querySelectorAll('input[name=icon_library_id]').forEach(el => el.checked = el.value === '')">
-                            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800">Auto</span>
-                            <span class="leading-tight text-slate-600 dark:text-slate-300">From name</span>
-                        </label>
-                        @foreach ($iconKeys as $key)
-                            <label class="flex cursor-pointer flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-center text-xs transition @if ($selectedIconKey === $key && $selectedLibraryId === '') border-brand-500 bg-white ring-2 ring-brand-200 dark:bg-slate-900 @else border-slate-200 bg-white hover:border-slate-300 dark:border-slate-600 dark:bg-slate-900/40 @endif" title="{{ $key }}">
-                                <input type="radio" name="icon_key" value="{{ $key }}" class="sr-only" @checked($selectedIconKey === $key && $selectedLibraryId === '') onclick="document.querySelectorAll('input[name=icon_library_id]').forEach(el => el.checked = el.value === '')">
-                                <span class="flex h-9 w-9 items-center justify-center text-brand-800 dark:text-brand-200">
-                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="{{ $iconPaths[$key] }}" />
-                                    </svg>
-                                </span>
-                                <span class="leading-tight capitalize text-slate-600 dark:text-slate-300">{{ str_replace('-', ' ', $key) }}</span>
-                            </label>
-                        @endforeach
-                    </div>
-
-                    @if ($libraryIcons->isNotEmpty())
-                        <div class="border-t border-slate-200 pt-4 dark:border-slate-600">
-                            <div class="mb-2 flex items-center justify-between gap-2">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">From library</p>
-                                <a href="{{ route('admin.icons.index') }}" class="text-xs splis-link">Manage</a>
-                            </div>
-                            <input type="radio" name="icon_library_id" value="" class="sr-only" @checked($selectedLibraryId === '')>
-                            <div class="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3">
-                                @foreach ($libraryIcons as $libraryIcon)
-                                    @continue(! $libraryIcon->existsLocally())
-                                    <label class="flex cursor-pointer flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-center text-xs transition @if ($selectedLibraryId === (string) $libraryIcon->id) border-brand-500 bg-white ring-2 ring-brand-200 dark:bg-slate-900 @else border-slate-200 bg-white hover:border-slate-300 dark:border-slate-600 dark:bg-slate-900/40 @endif" title="{{ $libraryIcon->name }}">
-                                        <input type="radio" name="icon_library_id" value="{{ $libraryIcon->id }}" class="sr-only" @checked($selectedLibraryId === (string) $libraryIcon->id)>
-                                        <span class="flex h-9 w-9 items-center justify-center">
-                                            @if ($libraryIcon->preservesOriginalColors())
-                                                <img src="{{ $libraryIcon->publicUrl() }}" alt="" class="splis-list-committee-icon-img">
-                                            @else
-                                                <span class="splis-list-committee-icon-glyph" style="--committee-icon: url('{{ $libraryIcon->publicUrl() }}')"></span>
-                                            @endif
-                                        </span>
-                                        <span class="leading-tight truncate w-full text-slate-600 dark:text-slate-300">{{ $libraryIcon->name }}</span>
-                                    </label>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endif
-
-                    <div class="border-t border-slate-200 pt-4 dark:border-slate-600">
-                        <label class="splis-label" for="icon">Upload custom (SVG / PNG)</label>
-                        <input type="file" name="icon" id="icon" accept=".png,.svg,image/png,image/svg+xml" class="splis-input">
-                        <p class="mt-1 text-xs text-slate-500">Max 512 KB. One-off for this committee. Prefer the Icon Library for reuse.</p>
-                        @error('icon')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-
-                        @if ($hasCustomIcon)
-                            @php($previewIcon = \App\Support\CommitteeIcon::customIcon($committee))
-                            <div class="mt-3 flex items-center gap-3">
-                                <div class="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white p-2 dark:border-slate-600 dark:bg-slate-900">
-                                    @if ($previewIcon && $previewIcon['preserve_colors'])
-                                        <img src="{{ $previewIcon['url'] }}" alt="" class="splis-list-committee-icon-img">
-                                    @elseif ($previewIcon)
-                                        <span class="splis-list-committee-icon-glyph" style="--committee-icon: url('{{ $previewIcon['url'] }}')"></span>
-                                    @endif
+                    <div class="divide-y divide-slate-200 dark:divide-slate-700">
+                        <details class="splis-accordion" @if ($openPack) open @endif>
+                            <summary class="splis-accordion-summary">
+                                <div class="splis-accordion-summary-top">
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-medium text-slate-900 dark:text-slate-100">Icon pack</p>
+                                        <p class="mt-0.5 text-xs text-slate-500">{{ count($iconKeys) }} presets · Auto from name</p>
+                                    </div>
+                                    <span class="flex shrink-0 items-center gap-2">
+                                        <span class="splis-accordion-count">{{ count($iconKeys) + 1 }}</span>
+                                        <svg class="splis-accordion-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </span>
                                 </div>
-                                <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                                    <input type="checkbox" name="remove_icon" value="1" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
-                                    Remove custom / library icon
-                                </label>
+                            </summary>
+                            <div class="splis-accordion-body !space-y-3">
+                                <div class="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3">
+                                    <label class="flex cursor-pointer flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-center text-xs transition @if ($selectedIconKey === '' && $selectedLibraryId === '' && ! $hasDirectUpload) border-brand-500 bg-white ring-2 ring-brand-200 dark:bg-slate-900 @else border-slate-200 bg-white hover:border-slate-300 dark:border-slate-600 dark:bg-slate-900/40 @endif">
+                                        <input type="radio" name="icon_key" value="" class="sr-only" @checked($selectedIconKey === '') onclick="document.querySelectorAll('input[name=icon_library_id]').forEach(el => el.checked = el.value === '')">
+                                        <span class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800">Auto</span>
+                                        <span class="leading-tight text-slate-600 dark:text-slate-300">From name</span>
+                                    </label>
+                                    @foreach ($iconKeys as $key)
+                                        <label class="flex cursor-pointer flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-center text-xs transition @if ($selectedIconKey === $key && $selectedLibraryId === '') border-brand-500 bg-white ring-2 ring-brand-200 dark:bg-slate-900 @else border-slate-200 bg-white hover:border-slate-300 dark:border-slate-600 dark:bg-slate-900/40 @endif" title="{{ $key }}">
+                                            <input type="radio" name="icon_key" value="{{ $key }}" class="sr-only" @checked($selectedIconKey === $key && $selectedLibraryId === '') onclick="document.querySelectorAll('input[name=icon_library_id]').forEach(el => el.checked = el.value === '')">
+                                            <span class="flex h-9 w-9 items-center justify-center text-brand-800 dark:text-brand-200">
+                                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="{{ $iconPaths[$key] }}" />
+                                                </svg>
+                                            </span>
+                                            <span class="leading-tight capitalize text-slate-600 dark:text-slate-300">{{ str_replace('-', ' ', $key) }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
                             </div>
+                        </details>
+
+                        @if ($libraryIcons->isNotEmpty())
+                            <details class="splis-accordion" @if ($openLibrary) open @endif>
+                                <summary class="splis-accordion-summary">
+                                    <div class="splis-accordion-summary-top">
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-medium text-slate-900 dark:text-slate-100">From library</p>
+                                            <p class="mt-0.5 text-xs text-slate-500">Reusable icons from the Icon Library</p>
+                                        </div>
+                                        <span class="flex shrink-0 items-center gap-2">
+                                            <a href="{{ route('admin.icons.index') }}" class="text-xs splis-link" onclick="event.stopPropagation();">Manage</a>
+                                            <span class="splis-accordion-count">{{ $libraryVisibleCount }}</span>
+                                            <svg class="splis-accordion-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </span>
+                                    </div>
+                                </summary>
+                                <div class="splis-accordion-body !space-y-3">
+                                    <input type="radio" name="icon_library_id" value="" class="sr-only" @checked($selectedLibraryId === '')>
+                                    <div class="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3">
+                                        @foreach ($libraryIcons as $libraryIcon)
+                                            @continue(! $libraryIcon->existsLocally())
+                                            <label class="flex cursor-pointer flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-center text-xs transition @if ($selectedLibraryId === (string) $libraryIcon->id) border-brand-500 bg-white ring-2 ring-brand-200 dark:bg-slate-900 @else border-slate-200 bg-white hover:border-slate-300 dark:border-slate-600 dark:bg-slate-900/40 @endif" title="{{ $libraryIcon->name }}">
+                                                <input type="radio" name="icon_library_id" value="{{ $libraryIcon->id }}" class="sr-only" @checked($selectedLibraryId === (string) $libraryIcon->id)>
+                                                <span class="flex h-9 w-9 items-center justify-center">
+                                                    @if ($libraryIcon->preservesOriginalColors())
+                                                        <img src="{{ $libraryIcon->publicUrl() }}" alt="" class="splis-list-committee-icon-img">
+                                                    @else
+                                                        <span class="splis-list-committee-icon-glyph" style="--committee-icon: url('{{ $libraryIcon->publicUrl() }}')"></span>
+                                                    @endif
+                                                </span>
+                                                <span class="leading-tight truncate w-full text-slate-600 dark:text-slate-300">{{ $libraryIcon->name }}</span>
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </details>
+                        @else
+                            <input type="radio" name="icon_library_id" value="" class="sr-only" @checked($selectedLibraryId === '')>
                         @endif
+
+                        <details class="splis-accordion" @if ($openUpload) open @endif>
+                            <summary class="splis-accordion-summary">
+                                <div class="splis-accordion-summary-top">
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-medium text-slate-900 dark:text-slate-100">Upload custom</p>
+                                        <p class="mt-0.5 text-xs text-slate-500">SVG / PNG for this committee only</p>
+                                    </div>
+                                    <span class="flex shrink-0 items-center gap-2">
+                                        @if ($hasCustomIcon)
+                                            <span class="rounded bg-brand-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-brand-800 dark:bg-brand-900/50 dark:text-brand-200">Set</span>
+                                        @endif
+                                        <svg class="splis-accordion-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </span>
+                                </div>
+                            </summary>
+                            <div class="splis-accordion-body !space-y-3">
+                                <div>
+                                    <label class="splis-label" for="icon">Upload custom (SVG / PNG)</label>
+                                    <input type="file" name="icon" id="icon" accept=".png,.svg,image/png,image/svg+xml" class="splis-input">
+                                    <p class="mt-1 text-xs text-slate-500">Max 512 KB. Prefer the Icon Library for reuse.</p>
+                                    @error('icon')
+                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                @if ($hasCustomIcon)
+                                    @php($previewIcon = \App\Support\CommitteeIcon::customIcon($committee))
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white p-2 dark:border-slate-600 dark:bg-slate-900">
+                                            @if ($previewIcon && $previewIcon['preserve_colors'])
+                                                <img src="{{ $previewIcon['url'] }}" alt="" class="splis-list-committee-icon-img">
+                                            @elseif ($previewIcon)
+                                                <span class="splis-list-committee-icon-glyph" style="--committee-icon: url('{{ $previewIcon['url'] }}')"></span>
+                                            @endif
+                                        </div>
+                                        <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                                            <input type="checkbox" name="remove_icon" value="1" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+                                            Remove custom / library icon
+                                        </label>
+                                    </div>
+                                @endif
+                            </div>
+                        </details>
                     </div>
                 </aside>
             @endif
+        </div>
+
+        <div class="splis-form-actions">
+            <button type="submit" class="splis-btn-primary">Save Committee</button>
+            @if ($isEdit)
+                <a href="{{ route('committees.show', ['committee' => $committee, 'term' => $term->id]) }}" class="splis-btn-secondary">View Roster</a>
+            @endif
+            <a href="{{ route('committees.index') }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="arrow-left" class="h-4 w-4" />
+                Cancel
+            </a>
         </div>
     </form>
 </div>

@@ -240,9 +240,25 @@
             </div>
         </div>
 
-        <div class="flex flex-wrap items-center justify-end gap-3">
-            <a href="{{ route('ob.sessions.committee-report-summary.print', $session) }}" target="_blank" class="splis-btn-secondary">
+        <div class="splis-form-actions">
+            <button
+                type="submit"
+                form="scr-maker-form"
+                class="splis-btn-primary inline-flex items-center gap-2"
+                data-scr-bottom-save
+                disabled
+                title="Save all changes (Ctrl+S)"
+            >
+                <x-icon name="check-circle" class="h-4 w-4" />
+                Save
+            </button>
+            <a href="{{ route('ob.sessions.committee-report-summary.print', $session) }}" target="_blank" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="printer" class="h-4 w-4" />
                 Open Print Page
+            </a>
+            <a href="{{ route('ob.sessions.show', $session) }}" class="splis-btn-secondary inline-flex items-center gap-2">
+                <x-icon name="arrow-left" class="h-4 w-4" />
+                Cancel
             </a>
         </div>
     </form>
