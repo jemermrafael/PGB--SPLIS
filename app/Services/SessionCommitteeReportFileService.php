@@ -6,6 +6,7 @@ use App\Models\LegislativeSession;
 use App\Models\LegislativeSessionCommitteeReportFile;
 use App\Support\MediaType;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -144,6 +145,50 @@ class SessionCommitteeReportFileService
         return $session->committeeReportFiles()
             ->get()
             ->contains(fn (LegislativeSessionCommitteeReportFile $file) => strtolower($file->original_filename) === $needle);
+    }
+
+    /**
+     * Committee-report files sorted 1 / 2 / 3 by natural filename.
+     *
+     * @param  Collection<int, LegislativeSessionCommitteeReportFile>|iterable<int, LegislativeSessionCommitteeReportFile>  $files
+     * @return Collection<int, LegislativeSessionCommitteeReportFile>
+     */
+    public function sortedForDisplay(iterable $files, bool $localOnly = false): Collection
+    {
+        return collect($files)
+            ->filter(fn ($file) => $file instanceof LegislativeSessionCommitteeReportFile)
+            ->when(
+                $localOnly,
+                fn (Collection $collection) => $collection->filter(
+                    fn (LegislativeSessionCommitteeReportFile $file) => $file->existsLocally()
+                ),
+            )
+            ->sort(function (LegislativeSessionCommitteeReportFile $a, LegislativeSessionCommitteeReportFile $b): int {
+                $byName = strnatcasecmp(
+                    (string) $a->original_filename,
+                    (string) $b->original_filename,
+                );
+
+                if ($byName !== 0) {
+                    return $byName;
+                }
+
+                $bySort = ((int) $a->sort_order) <=> ((int) $b->sort_order);
+
+                return $bySort !== 0 ? $bySort : ((int) $a->id <=> (int) $b->id);
+            })
+            ->values();
+    }
+
+    /**
+     * Local files only — for View folder popups.
+     *
+     * @param  Collection<int, LegislativeSessionCommitteeReportFile>|iterable<int, LegislativeSessionCommitteeReportFile>  $files
+     * @return Collection<int, LegislativeSessionCommitteeReportFile>
+     */
+    public function sortedLocalForDisplay(iterable $files): Collection
+    {
+        return $this->sortedForDisplay($files, localOnly: true);
     }
 
     public function delete(LegislativeSessionCommitteeReportFile $file): void

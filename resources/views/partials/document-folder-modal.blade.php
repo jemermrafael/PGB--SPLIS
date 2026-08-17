@@ -27,6 +27,7 @@
                                 @foreach ($folderFiles as $file)
                                     <li class="flex items-center justify-between gap-3 px-3 py-2.5">
                                         <span class="min-w-0 truncate text-sm text-slate-700 dark:text-slate-300" title="{{ $file->original_filename }}">
+                                            <span class="mr-1.5 tabular-nums text-slate-400">{{ $loop->iteration }}.</span>
                                             <x-icon name="file-text" class="mr-1.5 inline h-4 w-4 shrink-0 text-slate-400" />
                                             {{ $file->original_filename }}
                                         </span>
@@ -64,6 +65,7 @@
                     @foreach ($files as $file)
                         <li class="flex items-center justify-between gap-3 px-3 py-2.5">
                             <span class="min-w-0 truncate text-sm text-slate-700 dark:text-slate-300" title="{{ $file->original_filename }}">
+                                <span class="mr-1.5 tabular-nums text-slate-400">{{ $loop->iteration }}.</span>
                                 <x-icon name="file-text" class="mr-1.5 inline h-4 w-4 shrink-0 text-slate-400" />
                                 {{ $file->original_filename }}
                             </span>

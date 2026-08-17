@@ -111,13 +111,18 @@
                                 </div>
 
                                 <div class="mt-4 space-y-4">
-                                    @if ($session->committeeReportFiles->isNotEmpty())
+                                    @php
+                                        $sortedCommitteeReportFiles = app(\App\Services\SessionCommitteeReportFileService::class)
+                                            ->sortedForDisplay($session->committeeReportFiles);
+                                    @endphp
+                                    @if ($sortedCommitteeReportFiles->isNotEmpty())
                                         <div>
-                                            <p class="splis-label">Session files ({{ $session->committeeReportFiles->count() }})</p>
+                                            <p class="splis-label">Session files ({{ $sortedCommitteeReportFiles->count() }})</p>
                                             <ul class="mt-2 divide-y divide-slate-200 rounded-lg border border-slate-200 dark:divide-slate-700 dark:border-slate-700">
-                                                @foreach ($session->committeeReportFiles as $file)
+                                                @foreach ($sortedCommitteeReportFiles as $file)
                                                     <li class="flex items-center justify-between gap-3 px-3 py-2.5">
                                                         <span class="min-w-0 truncate text-sm text-slate-700 dark:text-slate-300" title="{{ $file->original_filename }}">
+                                                            <span class="mr-1.5 tabular-nums text-slate-400">{{ $loop->iteration }}.</span>
                                                             {{ $file->original_filename }}
                                                         </span>
                                                         <div class="flex shrink-0 items-center gap-2">

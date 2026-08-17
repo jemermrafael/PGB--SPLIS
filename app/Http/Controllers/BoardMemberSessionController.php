@@ -69,7 +69,8 @@ class BoardMemberSessionController extends Controller
         $myItems = $this->dashboard->myCommitteeItemsOnSession($user, $session);
         $obDocument = $session->obDocument;
         $canViewOb = $obDocument !== null && $user->can('view', $obDocument);
-        $committeeReportFiles = $session->committeeReportFiles->filter(fn ($file) => $file->existsLocally())->values();
+        $committeeReportFiles = app(\App\Services\SessionCommitteeReportFileService::class)
+            ->sortedLocalForDisplay($session->committeeReportFiles);
         $committeeReportsDriveUrl = $session->committeeReportsDriveUrl();
 
         return view('board-member.sessions.show', [

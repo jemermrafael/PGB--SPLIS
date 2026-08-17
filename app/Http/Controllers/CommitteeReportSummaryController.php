@@ -25,9 +25,8 @@ class CommitteeReportSummaryController extends Controller
         );
 
         $legislativeSession->loadMissing('committeeReportFiles');
-        $committeeReportFiles = $legislativeSession->committeeReportFiles
-            ->filter(fn ($file) => $file->existsLocally())
-            ->values();
+        $committeeReportFiles = app(\App\Services\SessionCommitteeReportFileService::class)
+            ->sortedLocalForDisplay($legislativeSession->committeeReportFiles);
 
         return view('order-of-business.committee-report-summary.maker', [
             'session' => $legislativeSession,

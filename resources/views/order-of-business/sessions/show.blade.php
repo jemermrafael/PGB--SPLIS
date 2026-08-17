@@ -127,7 +127,8 @@
 
     @php
         $sessionPdfRows = $session->sessionPdfLinkRows();
-        $committeeReportFiles = $session->committeeReportFiles->filter(fn ($file) => $file->existsLocally());
+        $committeeReportFiles = app(\App\Services\SessionCommitteeReportFileService::class)
+            ->sortedLocalForDisplay($session->committeeReportFiles);
         $committeeReportsDriveUrl = $session->committeeReportsDriveUrl();
         $hasCommitteeReportsFolder = $committeeReportFiles->isNotEmpty() || filled($committeeReportsDriveUrl);
     @endphp
