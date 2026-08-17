@@ -46,7 +46,6 @@ class ResolutionController extends Controller
             'departments' => Department::orderBy('description')->get(),
             'municipalities' => Municipality::orderBy('description')->get(),
             'seriesYears' => SeriesYear::orderByDesc('year')->pluck('year'),
-            'canBulkDelete' => auth()->user()?->can('deleteAny', Resolution::class) ?? false,
             'perPageOptions' => config('resolutions.per_page_options', [15, 25, 50, 100]),
             'defaultPerPage' => (int) config('resolutions.per_page', 15),
         ]);
