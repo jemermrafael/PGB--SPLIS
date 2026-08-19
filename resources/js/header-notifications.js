@@ -328,18 +328,11 @@ export function initHeaderNotifications() {
             return;
         }
 
-        const incomingIds = new Set();
+        items.clear();
 
         for (const notification of notifications) {
             const id = Number(notification.id);
-            incomingIds.add(id);
             items.set(id, { ...notification, id });
-        }
-
-        for (const id of [...items.keys()]) {
-            if (! incomingIds.has(id)) {
-                items.delete(id);
-            }
         }
     }
 

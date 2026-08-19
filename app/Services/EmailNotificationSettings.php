@@ -68,6 +68,7 @@ class EmailNotificationSettings
                 \App\Models\UserNotification::TYPE_OB_DOCUMENT_CREATED,
                 \App\Models\UserNotification::TYPE_AGENDA_EXPIRING_SOON,
                 \App\Models\UserNotification::TYPE_COMMITTEE_REPORT_SUBMITTED,
+                \App\Models\UserNotification::TYPE_ACTIVITY_LOG,
             ],
             self::AUDIENCE_MUNICIPAL => [
                 \App\Models\UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL,
@@ -103,6 +104,7 @@ class EmailNotificationSettings
                 \App\Models\UserNotification::TYPE_OB_DOCUMENT_CREATED,
                 \App\Models\UserNotification::TYPE_AGENDA_EXPIRING_SOON,
                 \App\Models\UserNotification::TYPE_COMMITTEE_REPORT_SUBMITTED,
+                \App\Models\UserNotification::TYPE_ACTIVITY_LOG,
             ],
             self::AUDIENCE_MUNICIPAL => [
                 \App\Models\UserNotification::TYPE_SCHEDULED_COMMITTEE_REFERRAL,
@@ -201,6 +203,11 @@ class EmailNotificationSettings
                     'subject' => 'Committee Report submitted for your Committee',
                     'body' => "{{submitter_name}} submitted a Committee Report for {{committee}}{{agenda_suffix}}{{session_suffix}}.\n\nOpen SPLIS for details.",
                     'action_label' => 'View Committee Reports',
+                ],
+                \App\Models\UserNotification::TYPE_ACTIVITY_LOG => [
+                    'subject' => '{{title}}',
+                    'body' => "{{body}}\n\nOpen SPLIS for details.",
+                    'action_label' => 'View details',
                 ],
             ],
             self::AUDIENCE_MUNICIPAL => [

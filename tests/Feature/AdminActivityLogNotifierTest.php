@@ -251,15 +251,18 @@ class AdminActivityLogNotifierTest extends TestCase
             'subject_id' => $agenda->id,
         ]);
 
-        $digests = UserNotification::query()
-            ->where('user_id', $admin->id)
-            ->where('type', UserNotification::TYPE_ACTIVITY_LOG)
-            ->where('title', \App\Services\ActivityLogNotifier::OB_FINALIZED_TITLE)
-            ->get();
+        $this->assertDatabaseHas('user_notifications', [
+            'user_id' => $admin->id,
+            'legislative_session_id' => $session->id,
+            'type' => UserNotification::TYPE_OB_DOCUMENT_CREATED,
+            'title' => \App\Services\ActivityLogNotifier::OB_FINALIZED_TITLE,
+        ]);
 
-        $this->assertCount(1, $digests);
-        $this->assertMatchesRegularExpression('/\d+ agendas? placed/', (string) $digests->first()->body);
-        $this->assertSame($session->id, $digests->first()->legislative_session_id);
+        $this->assertDatabaseMissing('user_notifications', [
+            'user_id' => $admin->id,
+            'type' => UserNotification::TYPE_ACTIVITY_LOG,
+            'title' => \App\Services\ActivityLogNotifier::OB_FINALIZED_TITLE,
+        ]);
 
         $this->assertDatabaseMissing('user_notifications', [
             'user_id' => $admin->id,

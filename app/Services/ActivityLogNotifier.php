@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\UserNotification;
 use App\Support\ActivityLogPresenter;
 use Illuminate\Support\Collection;
+use App\Services\UserNotificationPreferenceService;
 
 class ActivityLogNotifier
 {
@@ -42,11 +43,21 @@ class ActivityLogNotifier
 
     public const OB_ADDED_DIGEST_TITLE = 'Agendas added to Order of Business';
 
+    public const SESSION_EDIT_ACTIONS = [
+        'legislative_session.status_changed',
+        'legislative_session.drive_link_updated',
+        'legislative_session.pdf_uploaded',
+        'legislative_session.final_minutes_tags_updated',
+        'legislative_session.final_journal_tags_updated',
+        'committee_report_summary.updated',
+    ];
+
     /** Coalesce subsequent post-final adds into one admin notification within this window. */
     public const OB_DIGEST_COALESCE_MINUTES = 30;
 
     public function __construct(
         protected EmailNotificationService $emails,
+        protected UserNotificationPreferenceService $preferences,
     ) {}
 
     public function notify(ActivityLog $log): void
@@ -91,6 +102,48 @@ class ActivityLogNotifier
                 $admin,
                 $notification,
                 EmailNotificationSettings::AUDIENCE_STAFF,
+                vars: [
+                    'title' => $title,
+                    'body' => $body,
+                ],
+                emailType: UserNotification::TYPE_ACTIVITY_LOG,
+            );
+        }
+
+        if (in_array($log->action, self::SESSION_EDIT_ACTIONS, true)) {
+            $this->notifyBoardMembersOfSessionEdit($log, $title, $body, $link);
+        }
+    }
+
+    protected function notifyBoardMembersOfSessionEdit(ActivityLog $log, string $title, string $body, ?string $link): void
+    {
+        $boardMembers = User::query()
+            ->where('is_active', true)
+            ->where('role', UserRole::BoardMember)
+            ->get();
+
+        foreach ($boardMembers as $user) {
+            if (! $this->preferences->allowsInApp($user, UserNotification::TYPE_ACTIVITY_LOG)) {
+                continue;
+            }
+
+            $notification = UserNotification::query()->firstOrCreate(
+                [
+                    'user_id' => $user->id,
+                    'activity_log_id' => $log->id,
+                ],
+                [
+                    'type' => UserNotification::TYPE_ACTIVITY_LOG,
+                    'title' => $title,
+                    'body' => $body,
+                    'link' => $link,
+                ],
+            );
+
+            $this->emails->sendForNotification(
+                $user,
+                $notification,
+                EmailNotificationSettings::AUDIENCE_BOARD_MEMBER,
                 vars: [
                     'title' => $title,
                     'body' => $body,

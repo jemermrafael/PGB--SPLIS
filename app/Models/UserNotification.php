@@ -82,15 +82,10 @@ class UserNotification extends Model
         return $query->where(function (Builder $notification): void {
             $notification
                 ->whereNotIn('type', [self::TYPE_SESSION_CREATED, self::TYPE_OB_DOCUMENT_CREATED])
-                ->orWhere(function (Builder $sessionScheduled): void {
-                    $sessionScheduled
-                        ->where('type', self::TYPE_SESSION_CREATED)
-                        ->whereHas('legislativeSession', fn (Builder $session) => $session->where('status', 'scheduled'));
-                })
-                ->orWhere(function (Builder $obFinalized): void {
-                    $obFinalized
-                        ->where('type', self::TYPE_OB_DOCUMENT_CREATED)
-                        ->whereHas('legislativeSession', fn (Builder $session) => $session->notifiableToBoardMembers());
+                ->orWhere(function (Builder $sessionOrOb): void {
+                    $sessionOrOb
+                        ->whereIn('type', [self::TYPE_SESSION_CREATED, self::TYPE_OB_DOCUMENT_CREATED])
+                        ->whereHas('legislativeSession', fn (Builder $session) => $session->whereIn('status', ['scheduled', 'completed']));
                 });
         });
     }
@@ -123,6 +118,7 @@ class UserNotification extends Model
             self::TYPE_OB_DOCUMENT_CREATED,
             self::TYPE_AGENDA_EXPIRING_SOON,
             self::TYPE_COMMITTEE_REPORT_SUBMITTED,
+            self::TYPE_ACTIVITY_LOG,
         ];
     }
 

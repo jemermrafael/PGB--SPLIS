@@ -293,6 +293,14 @@ class BoardMemberNotifier
 
     public function notifySessionCreated(LegislativeSession $session): void
     {
+        // #region agent log
+        $this->debugLog('h1', 'notifySessionCreated.enter', [
+            'runId' => 'baseline',
+            'session_id' => $session->id,
+            'session_status' => (string) $session->status,
+            'is_notifiable' => $session->isNotifiableAsScheduledSession(),
+        ]);
+        // #endregion
         if (! $session->isNotifiableAsScheduledSession()) {
             return;
         }
@@ -301,7 +309,15 @@ class BoardMemberNotifier
         $bmLink = route('board-member.sessions.show', $session, absolute: false);
         $staffLink = route('ob.sessions.show', $session, absolute: false);
 
-        foreach ($this->allBoardMemberUsers() as $user) {
+        $boardMembers = $this->allBoardMemberUsers();
+        // #region agent log
+        $this->debugLog('h2', 'notifySessionCreated.recipients', [
+            'runId' => 'baseline',
+            'session_id' => $session->id,
+            'board_member_count' => $boardMembers->count(),
+        ]);
+        // #endregion
+        foreach ($boardMembers as $user) {
             $notification = $this->createNotificationForUser($user, UserNotification::TYPE_SESSION_CREATED, [
                 [
                     'user_id' => $user->id,
@@ -348,6 +364,15 @@ class BoardMemberNotifier
     public function notifyObDocumentCreated(LegislativeSession $session, ObDocument $document): void
     {
         $session->setRelation('obDocument', $document);
+        // #region agent log
+        $this->debugLog('h1', 'notifyObDocumentCreated.enter', [
+            'runId' => 'baseline',
+            'session_id' => $session->id,
+            'session_status' => (string) $session->status,
+            'document_status' => (string) $document->status,
+            'document_is_final' => $document->isFinal(),
+        ]);
+        // #endregion
 
         if ($session->status !== 'scheduled' || ! $document->isFinal()) {
             return;
@@ -667,14 +692,34 @@ class BoardMemberNotifier
      */
     protected function createNotificationForUser(User $user, string $type, array $payload): ?UserNotification
     {
-        if (! $this->preferences->allowsInApp($user, $type)) {
+        $allowsInApp = $this->preferences->allowsInApp($user, $type);
+        // #region agent log
+        $this->debugLog('h3', 'createNotificationForUser.preference', [
+            'runId' => 'baseline',
+            'user_id' => $user->id,
+            'type' => $type,
+            'allows_in_app' => $allowsInApp,
+        ]);
+        // #endregion
+        if (! $allowsInApp) {
             return null;
         }
 
-        return UserNotification::query()->firstOrCreate(
+        $notification = UserNotification::query()->firstOrCreate(
             array_merge($payload[0], ['type' => $type]),
             $payload[1],
         );
+        // #region agent log
+        $this->debugLog('h4', 'createNotificationForUser.persisted', [
+            'runId' => 'baseline',
+            'user_id' => $user->id,
+            'type' => $type,
+            'notification_id' => $notification->id,
+            'was_recently_created' => $notification->wasRecentlyCreated,
+        ]);
+        // #endregion
+
+        return $notification;
     }
 
     /**
@@ -723,5 +768,21 @@ class BoardMemberNotifier
             $vars,
             $link ? url($link) : null,
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    protected function debugLog(string $hypothesisId, string $message, array $data): void
+    {
+        @file_put_contents(base_path('debug-483a6b.log'), json_encode([
+            'sessionId' => '483a6b',
+            'runId' => $data['runId'] ?? 'baseline',
+            'hypothesisId' => $hypothesisId,
+            'location' => 'BoardMemberNotifier.php',
+            'message' => $message,
+            'data' => $data,
+            'timestamp' => (int) round(microtime(true) * 1000),
+        ], JSON_UNESCAPED_SLASHES).PHP_EOL, FILE_APPEND);
     }
 }

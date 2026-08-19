@@ -32,6 +32,16 @@ class EmailNotificationService
         ?string $emailType = null,
     ): void {
         if (! $force && ! $notification->wasRecentlyCreated) {
+            // #region agent log
+            $this->debugLog('h4', 'sendForNotification.skipped_existing', [
+                'runId' => 'baseline',
+                'user_id' => $user->id,
+                'audience' => $audience,
+                'type' => $emailType ?: (string) $notification->type,
+                'notification_id' => $notification->id,
+            ]);
+            // #endregion
+
             return;
         }
 
@@ -59,16 +69,47 @@ class EmailNotificationService
         array $vars = [],
         ?string $actionUrl = null,
     ): void {
-        if (! $this->settings->typeEnabled($audience, $type)) {
+        $typeEnabled = $this->settings->typeEnabled($audience, $type);
+        // #region agent log
+        $this->debugLog('h5', 'sendTemplated.gates.type_enabled', [
+            'runId' => 'baseline',
+            'user_id' => $user->id,
+            'audience' => $audience,
+            'type' => $type,
+            'type_enabled' => $typeEnabled,
+        ]);
+        // #endregion
+        if (! $typeEnabled) {
             return;
         }
 
-        if ($user->isBoardMember() && ! $this->preferences->allowsEmail($user, $type)) {
+        $boardMemberEmailAllowed = ! $user->isBoardMember() || $this->preferences->allowsEmail($user, $type);
+        // #region agent log
+        $this->debugLog('h3', 'sendTemplated.gates.preference', [
+            'runId' => 'baseline',
+            'user_id' => $user->id,
+            'type' => $type,
+            'is_board_member' => $user->isBoardMember(),
+            'board_member_email_allowed' => $boardMemberEmailAllowed,
+        ]);
+        // #endregion
+        if (! $boardMemberEmailAllowed) {
             return;
         }
 
         $email = trim((string) $user->email);
-        if ($email === '' || ! $user->is_active) {
+        $deliverableIdentity = ! ($email === '' || ! $user->is_active);
+        // #region agent log
+        $this->debugLog('h2', 'sendTemplated.gates.identity', [
+            'runId' => 'baseline',
+            'user_id' => $user->id,
+            'type' => $type,
+            'email_present' => $email !== '',
+            'is_active' => (bool) $user->is_active,
+            'deliverable_identity' => $deliverableIdentity,
+        ]);
+        // #endregion
+        if (! $deliverableIdentity) {
             return;
         }
 
@@ -268,6 +309,15 @@ class EmailNotificationService
         bool $throwOnFailure = false,
     ): void {
         $this->applyMailConfig();
+        // #region agent log
+        $this->debugLog('h5', 'deliver.attempt', [
+            'runId' => 'baseline',
+            'type' => (string) ($context['type'] ?? ''),
+            'audience' => (string) ($context['audience'] ?? ''),
+            'user_id' => (int) ($context['user_id'] ?? 0),
+            'has_action_url' => $actionUrl !== null && $actionUrl !== '',
+        ]);
+        // #endregion
 
         try {
             Mail::to($toEmail)->send(new SystemNotificationMail(
@@ -277,7 +327,24 @@ class EmailNotificationService
                 actionLabel: $actionLabel,
                 branding: $this->settings->branding(),
             ));
+            // #region agent log
+            $this->debugLog('h5', 'deliver.success', [
+                'runId' => 'baseline',
+                'type' => (string) ($context['type'] ?? ''),
+                'audience' => (string) ($context['audience'] ?? ''),
+                'user_id' => (int) ($context['user_id'] ?? 0),
+            ]);
+            // #endregion
         } catch (Throwable $e) {
+            // #region agent log
+            $this->debugLog('h5', 'deliver.failure', [
+                'runId' => 'baseline',
+                'type' => (string) ($context['type'] ?? ''),
+                'audience' => (string) ($context['audience'] ?? ''),
+                'user_id' => (int) ($context['user_id'] ?? 0),
+                'error' => $e->getMessage(),
+            ]);
+            // #endregion
             Log::warning('Failed to send email notification.', array_merge($context, [
                 'email' => $toEmail,
                 'error' => $e->getMessage(),
@@ -287,5 +354,21 @@ class EmailNotificationService
                 throw $e;
             }
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    protected function debugLog(string $hypothesisId, string $message, array $data): void
+    {
+        @file_put_contents(base_path('debug-483a6b.log'), json_encode([
+            'sessionId' => '483a6b',
+            'runId' => $data['runId'] ?? 'baseline',
+            'hypothesisId' => $hypothesisId,
+            'location' => 'EmailNotificationService.php',
+            'message' => $message,
+            'data' => $data,
+            'timestamp' => (int) round(microtime(true) * 1000),
+        ], JSON_UNESCAPED_SLASHES).PHP_EOL, FILE_APPEND);
     }
 }

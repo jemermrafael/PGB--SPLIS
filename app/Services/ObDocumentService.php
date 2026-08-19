@@ -740,8 +740,6 @@ class ObDocumentService
                     $this->municipalNotifier->notifyAgendasAddedToOb($items, $session);
                 });
         }
-
-        $this->activityLogNotifier->notifyPendingObAgendaLogsForSession($session);
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\LegislativeSession;
 use App\Services\CommitteeReportSummaryService;
+use App\Support\ActivityLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -71,6 +72,14 @@ class CommitteeReportSummaryController extends Controller
         ]);
 
         $summary = $this->summaries->update($summary, $validated);
+
+        ActivityLogger::log(
+            'committee_report_summary.updated',
+            $legislativeSession,
+            [
+                'session_title' => $legislativeSession->displayTitle(),
+            ],
+        );
 
         if ($request->expectsJson()) {
             return response()->json([

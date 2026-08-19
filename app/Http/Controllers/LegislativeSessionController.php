@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\ActivityLogger;
 use App\Support\TrashActivity;
 use App\Models\LegislativeSession;
 use App\Models\ObDocument;
@@ -124,7 +125,16 @@ class LegislativeSessionController extends Controller
         $this->authorize('update', $legislativeSession);
 
         $priorSessionChanged = (int) $request->input('prior_session_id') !== (int) $legislativeSession->prior_session_id;
+        $oldStatus = $legislativeSession->status;
         $wasScheduled = $legislativeSession->status === 'scheduled';
+
+        $oldDriveLinks = [];
+        foreach (SessionPdfSlot::externalLinkOnly() as $slot) {
+            $oldDriveLinks[$slot] = (string) $legislativeSession->{$slot};
+        }
+
+        $oldMinutesTags = $legislativeSession->finalMinutesAgendaItems()->pluck('agenda_items.id')->map(fn ($id) => (int) $id)->sort()->values()->all();
+        $oldJournalTags = $legislativeSession->finalJournalAgendaItems()->pluck('agenda_items.id')->map(fn ($id) => (int) $id)->sort()->values()->all();
 
         $validated = $this->validated($request, $legislativeSession);
 
@@ -162,6 +172,74 @@ class LegislativeSessionController extends Controller
             $legislativeSession->obDocument->update([
                 'title' => 'Order of Business — '.$legislativeSession->session_date->format('F j, Y'),
             ]);
+        }
+
+        $sessionTitle = $legislativeSession->displayTitle();
+
+        foreach (SessionPdfSlot::externalLinkOnly() as $slot) {
+            $newVal = (string) $legislativeSession->{$slot};
+            if ($newVal !== ($oldDriveLinks[$slot] ?? '')) {
+                ActivityLogger::log(
+                    'legislative_session.drive_link_updated',
+                    $legislativeSession,
+                    [
+                        'session_title' => $sessionTitle,
+                        'slot_label' => SessionPdfSlot::config($slot)['label'],
+                    ],
+                );
+            }
+        }
+
+        foreach (SessionPdfSlot::mirrorable() as $slot) {
+            $field = SessionPdfSlot::config($slot)['upload'];
+            if ($request->hasFile($field)) {
+                ActivityLogger::log(
+                    'legislative_session.pdf_uploaded',
+                    $legislativeSession,
+                    [
+                        'session_title' => $sessionTitle,
+                        'slot_label' => SessionPdfSlot::config($slot)['label'],
+                    ],
+                );
+            }
+        }
+
+        $newMinutesTags = $legislativeSession->finalMinutesAgendaItems()->pluck('agenda_items.id')->map(fn ($id) => (int) $id)->sort()->values()->all();
+        $newJournalTags = $legislativeSession->finalJournalAgendaItems()->pluck('agenda_items.id')->map(fn ($id) => (int) $id)->sort()->values()->all();
+
+        if ($oldMinutesTags !== $newMinutesTags) {
+            ActivityLogger::log(
+                'legislative_session.final_minutes_tags_updated',
+                $legislativeSession,
+                [
+                    'session_title' => $sessionTitle,
+                    'tagged_count' => count($newMinutesTags),
+                ],
+            );
+        }
+
+        if ($oldJournalTags !== $newJournalTags) {
+            ActivityLogger::log(
+                'legislative_session.final_journal_tags_updated',
+                $legislativeSession,
+                [
+                    'session_title' => $sessionTitle,
+                    'tagged_count' => count($newJournalTags),
+                ],
+            );
+        }
+
+        $newStatus = $legislativeSession->status;
+        if ($oldStatus !== $newStatus) {
+            ActivityLogger::log(
+                'legislative_session.status_changed',
+                $legislativeSession,
+                [
+                    'session_title' => $sessionTitle,
+                    'from_status' => $oldStatus,
+                    'to_status' => $newStatus,
+                ],
+            );
         }
 
         if (! $wasScheduled && $legislativeSession->isNotifiableAsScheduledSession()) {

@@ -6,6 +6,7 @@ use App\Models\ActivityLog;
 use App\Models\AgendaItem;
 use App\Models\AppropriationOrdinance;
 use App\Models\IncomingDocument;
+use App\Models\LegislativeSession;
 use App\Models\Ordinance;
 use App\Models\ReferenceMaterial;
 use App\Models\Resolution;
@@ -46,6 +47,12 @@ class ActivityLogPresenter
         'agenda.added_to_ob' => 'Added to Order of Business',
         'agenda.removed_from_ob' => 'Removed from Order of Business',
         'agenda.ob_relocated' => 'Moved in Order of Business',
+        'legislative_session.status_changed' => 'Session status changed',
+        'legislative_session.drive_link_updated' => 'Session Drive link updated',
+        'legislative_session.pdf_uploaded' => 'Session PDF uploaded',
+        'legislative_session.final_minutes_tags_updated' => 'Final Minutes agendas updated',
+        'legislative_session.final_journal_tags_updated' => 'Final Journal agendas updated',
+        'committee_report_summary.updated' => 'Committee Report Summary updated',
     ];
 
     public static function label(string|ActivityLog $actionOrLog): string
@@ -136,6 +143,19 @@ class ActivityLogPresenter
             $details[] = $log->properties['session_title'];
         }
 
+        if (! empty($log->properties['from_status']) && ! empty($log->properties['to_status'])) {
+            $details[] = ucfirst($log->properties['from_status']).' → '.ucfirst($log->properties['to_status']);
+        }
+
+        if (! empty($log->properties['slot_label'])) {
+            $details[] = $log->properties['slot_label'];
+        }
+
+        if (! empty($log->properties['tagged_count'])) {
+            $count = (int) $log->properties['tagged_count'];
+            $details[] = $count.' '.($count === 1 ? 'agenda' : 'agendas').' tagged';
+        }
+
         if ($details === []) {
             return $actor;
         }
@@ -173,6 +193,12 @@ class ActivityLogPresenter
             return $model ? route('appropriation-ordinances.show', $model, absolute: false) : null;
         }
 
+        if ($log->subject_type === LegislativeSession::class) {
+            $model = LegislativeSession::withTrashed()->find($log->subject_id);
+
+            return $model ? route('ob.sessions.show', $model, absolute: false) : null;
+        }
+
         return match ($log->subject_type) {
             IncomingDocument::class => route('incoming.show', $log->subject_id, absolute: false),
             ReferenceMaterial::class => route('references.show', $log->subject_id, absolute: false),
@@ -201,6 +227,7 @@ class ActivityLogPresenter
             Ordinance::class => 'View Ordinance',
             AppropriationOrdinance::class => 'View Appropriation Ordinance',
             ReferenceMaterial::class => 'View Reference',
+            LegislativeSession::class => 'View Session',
             default => 'View details',
         };
     }

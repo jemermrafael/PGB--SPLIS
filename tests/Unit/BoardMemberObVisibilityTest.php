@@ -154,7 +154,7 @@ class BoardMemberObVisibilityTest extends TestCase
         ]);
     }
 
-    public function test_board_member_notification_query_hides_session_created_when_session_is_no_longer_scheduled(): void
+    public function test_board_member_notification_stays_visible_when_session_becomes_completed(): void
     {
         $user = $this->createBoardMemberUser();
 
@@ -187,36 +187,37 @@ class BoardMemberObVisibilityTest extends TestCase
 
         $scheduled->update(['status' => 'completed']);
 
-        $this->assertFalse(
+        $this->assertTrue(
             UserNotification::query()
                 ->whereKey($notification->id)
                 ->visibleToRecipient($user)
-                ->exists()
+                ->exists(),
+            'Session/OB notifications should remain visible after session completes.'
         );
     }
 
-    public function test_ob_finalized_notification_is_hidden_when_ob_is_no_longer_final(): void
+    public function test_board_member_notification_hidden_when_session_reverts_to_draft(): void
     {
         $user = $this->createBoardMemberUser();
 
-        $scheduled = LegislativeSession::query()->create([
+        $session = LegislativeSession::query()->create([
             'session_date' => '2026-07-27',
             'session_kind' => 'regular',
             'status' => 'scheduled',
         ]);
-        $document = ObDocument::query()->create([
-            'legislative_session_id' => $scheduled->id,
+        ObDocument::query()->create([
+            'legislative_session_id' => $session->id,
             'title' => 'OB final',
             'status' => 'final',
         ]);
 
         $notification = UserNotification::query()->create([
             'user_id' => $user->id,
-            'legislative_session_id' => $scheduled->id,
+            'legislative_session_id' => $session->id,
             'type' => UserNotification::TYPE_OB_DOCUMENT_CREATED,
             'title' => 'Order of Business published',
-            'body' => $document->title,
-            'link' => '/my-sessions/'.$scheduled->id,
+            'body' => 'test',
+            'link' => '/my-sessions/'.$session->id,
         ]);
 
         $this->assertTrue(
@@ -226,13 +227,14 @@ class BoardMemberObVisibilityTest extends TestCase
                 ->exists()
         );
 
-        $document->update(['status' => 'draft']);
+        $session->update(['status' => 'draft']);
 
         $this->assertFalse(
             UserNotification::query()
                 ->whereKey($notification->id)
                 ->visibleToRecipient($user)
-                ->exists()
+                ->exists(),
+            'Session/OB notifications should hide when session reverts to draft.'
         );
     }
 
