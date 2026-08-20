@@ -130,6 +130,10 @@ class UserNotificationController extends Controller
             return $query->whereIn('type', UserNotification::municipalTypes());
         }
 
+        if ($user->isBoardMember()) {
+            return $query->whereIn('type', UserNotification::boardMemberTypes());
+        }
+
         return $query->where('type', '!=', UserNotification::TYPE_ACTIVITY_LOG);
     }
 
@@ -146,6 +150,10 @@ class UserNotificationController extends Controller
 
         if ($user->isMunicipalViewer()) {
             return in_array($notification->type, UserNotification::municipalTypes(), true);
+        }
+
+        if ($user->isBoardMember()) {
+            return in_array($notification->type, UserNotification::boardMemberTypes(), true);
         }
 
         return $notification->type !== UserNotification::TYPE_ACTIVITY_LOG;

@@ -295,6 +295,68 @@ class AdminActivityLogNotifierTest extends TestCase
         $this->assertSame($session->id, $digests->first()->legislative_session_id);
     }
 
+    public function test_session_edits_coalesce_into_one_digest_for_admins_and_board_members(): void
+    {
+        $encoder = User::factory()->create(['role' => UserRole::Encoder, 'name' => 'Ada Encoder']);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'is_active' => true]);
+        $boardMember = User::factory()->create(['role' => UserRole::BoardMember, 'is_active' => true]);
+
+        $session = LegislativeSession::query()->create([
+            'session_number' => '53rd',
+            'session_kind' => 'regular',
+            'session_date' => now()->toDateString(),
+            'status' => 'scheduled',
+            'created_by' => $encoder->id,
+        ]);
+
+        $this->actingAs($encoder);
+
+        ActivityLogger::log('legislative_session.drive_link_updated', $session, [
+            'session_title' => $session->displayTitle(),
+            'slot_label' => 'Draft Journal',
+        ]);
+        ActivityLogger::log('legislative_session.pdf_uploaded', $session, [
+            'session_title' => $session->displayTitle(),
+            'slot_label' => 'Final Minutes',
+        ]);
+        ActivityLogger::log('legislative_session.status_changed', $session, [
+            'session_title' => $session->displayTitle(),
+            'from_status' => 'scheduled',
+            'to_status' => 'cancelled',
+        ]);
+        ActivityLogger::log('committee_report_summary.updated', $session, [
+            'session_title' => $session->displayTitle(),
+        ]);
+
+        foreach ([$admin->id, $boardMember->id] as $userId) {
+            $digests = UserNotification::query()
+                ->where('user_id', $userId)
+                ->where('type', UserNotification::TYPE_ACTIVITY_LOG)
+                ->where('title', \App\Services\ActivityLogNotifier::SESSION_EDIT_DIGEST_TITLE)
+                ->get();
+
+            $this->assertCount(1, $digests);
+            $this->assertSame($session->id, $digests->first()->legislative_session_id);
+            $this->assertStringContainsString('Draft Journal updated', (string) $digests->first()->body);
+            $this->assertStringContainsString('Final Minutes uploaded', (string) $digests->first()->body);
+            $this->assertStringContainsString('Status: Scheduled → Cancelled', (string) $digests->first()->body);
+            $this->assertStringContainsString('Committee Report Summary saved', (string) $digests->first()->body);
+        }
+
+        $this->assertDatabaseMissing('user_notifications', [
+            'title' => 'Session Drive link updated',
+        ]);
+        $this->assertDatabaseMissing('user_notifications', [
+            'title' => 'Session PDF uploaded',
+        ]);
+        $this->assertDatabaseMissing('user_notifications', [
+            'title' => 'Session status changed',
+        ]);
+        $this->assertDatabaseMissing('user_notifications', [
+            'title' => 'Committee Report Summary updated',
+        ]);
+    }
+
     /**
      * @return array{0: AgendaItem, 1: LegislativeSession, 2?: ObDocument}
      */

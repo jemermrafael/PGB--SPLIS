@@ -8,8 +8,8 @@ use App\Models\LegislativeSession;
 use App\Models\User;
 use App\Models\UserNotification;
 use App\Support\ActivityLogPresenter;
-use Illuminate\Support\Collection;
 use App\Services\UserNotificationPreferenceService;
+use Illuminate\Support\Collection;
 
 class ActivityLogNotifier
 {
@@ -52,8 +52,13 @@ class ActivityLogNotifier
         'committee_report_summary.updated',
     ];
 
+    public const SESSION_EDIT_DIGEST_TITLE = 'Session updated';
+
     /** Coalesce subsequent post-final adds into one admin notification within this window. */
     public const OB_DIGEST_COALESCE_MINUTES = 30;
+
+    /** Merge session-edit pings for the same session into one inbox item. */
+    public const SESSION_EDIT_DIGEST_COALESCE_MINUTES = 30;
 
     public function __construct(
         protected EmailNotificationService $emails,
@@ -69,6 +74,12 @@ class ActivityLogNotifier
         // OB placement: keep History, but never ping admins per agenda / move / remove.
         // Finalize and subsequent-add digests are sent via dedicated methods.
         if ($this->isObAgendaAction($log->action)) {
+            return;
+        }
+
+        if (in_array($log->action, self::SESSION_EDIT_ACTIONS, true)) {
+            $this->digestSessionEdit($log);
+
             return;
         }
 
@@ -109,48 +120,146 @@ class ActivityLogNotifier
                 emailType: UserNotification::TYPE_ACTIVITY_LOG,
             );
         }
+    }
 
-        if (in_array($log->action, self::SESSION_EDIT_ACTIONS, true)) {
-            $this->notifyBoardMembersOfSessionEdit($log, $title, $body, $link);
+    /**
+     * Keep per-edit History rows, but fold inbox alerts into one "Session updated" item.
+     */
+    protected function digestSessionEdit(ActivityLog $log): void
+    {
+        $session = $this->sessionFromLog($log);
+
+        if ($session === null) {
+            return;
+        }
+
+        $title = self::SESSION_EDIT_DIGEST_TITLE;
+        $body = $this->sessionEditDigestBody($session);
+        $link = route('ob.sessions.show', $session, absolute: false);
+
+        foreach ($this->sessionEditRecipients() as $user) {
+            $this->upsertSessionEditDigest($user, $session, $title, $body, $link);
         }
     }
 
-    protected function notifyBoardMembersOfSessionEdit(ActivityLog $log, string $title, string $body, ?string $link): void
+    /**
+     * @return Collection<int, User>
+     */
+    protected function sessionEditRecipients(): Collection
     {
+        $admins = $this->activeAdmins();
+
         $boardMembers = User::query()
             ->where('is_active', true)
             ->where('role', UserRole::BoardMember)
+            ->get()
+            ->filter(fn (User $user) => $this->preferences->allowsInApp($user, UserNotification::TYPE_ACTIVITY_LOG));
+
+        return $admins->concat($boardMembers)->unique('id')->values();
+    }
+
+    protected function upsertSessionEditDigest(
+        User $user,
+        LegislativeSession $session,
+        string $title,
+        string $body,
+        string $link,
+    ): void {
+        $existing = UserNotification::query()
+            ->where('user_id', $user->id)
+            ->where('type', UserNotification::TYPE_ACTIVITY_LOG)
+            ->where('legislative_session_id', $session->id)
+            ->where('title', $title)
+            ->where('created_at', '>=', now()->subMinutes(self::SESSION_EDIT_DIGEST_COALESCE_MINUTES))
+            ->orderByDesc('id')
+            ->first();
+
+        if ($existing !== null) {
+            $existing->forceFill([
+                'body' => $body,
+                'link' => $link,
+                'read_at' => null,
+                'created_at' => now(),
+            ])->save();
+
+            return;
+        }
+
+        $notification = UserNotification::query()->create([
+            'user_id' => $user->id,
+            'type' => UserNotification::TYPE_ACTIVITY_LOG,
+            'title' => $title,
+            'body' => $body,
+            'link' => $link,
+            'legislative_session_id' => $session->id,
+            'activity_log_id' => null,
+        ]);
+
+        $audience = $user->isBoardMember()
+            ? EmailNotificationSettings::AUDIENCE_BOARD_MEMBER
+            : EmailNotificationSettings::AUDIENCE_STAFF;
+
+        $this->emails->sendForNotification(
+            $user,
+            $notification,
+            $audience,
+            vars: [
+                'title' => $title,
+                'body' => $body,
+            ],
+            emailType: UserNotification::TYPE_ACTIVITY_LOG,
+        );
+    }
+
+    protected function sessionFromLog(ActivityLog $log): ?LegislativeSession
+    {
+        if ($log->subject_type !== LegislativeSession::class || $log->subject_id === null) {
+            return null;
+        }
+
+        return LegislativeSession::withTrashed()->find($log->subject_id);
+    }
+
+    protected function sessionEditDigestBody(LegislativeSession $session): string
+    {
+        $logs = ActivityLog::query()
+            ->with('user')
+            ->whereIn('action', self::SESSION_EDIT_ACTIONS)
+            ->where('subject_type', LegislativeSession::class)
+            ->where('subject_id', $session->id)
+            ->where('created_at', '>=', now()->subMinutes(self::SESSION_EDIT_DIGEST_COALESCE_MINUTES))
+            ->orderBy('id')
             ->get();
 
-        foreach ($boardMembers as $user) {
-            if (! $this->preferences->allowsInApp($user, UserNotification::TYPE_ACTIVITY_LOG)) {
-                continue;
-            }
+        $labels = $logs
+            ->map(fn (ActivityLog $item) => $this->sessionEditChangeLabel($item))
+            ->filter()
+            ->unique()
+            ->values();
 
-            $notification = UserNotification::query()->firstOrCreate(
-                [
-                    'user_id' => $user->id,
-                    'activity_log_id' => $log->id,
-                ],
-                [
-                    'type' => UserNotification::TYPE_ACTIVITY_LOG,
-                    'title' => $title,
-                    'body' => $body,
-                    'link' => $link,
-                ],
-            );
+        $actor = $logs->last()?->user?->name ?? 'System';
+        $details = $labels->isEmpty() ? ['Session details updated'] : $labels->all();
 
-            $this->emails->sendForNotification(
-                $user,
-                $notification,
-                EmailNotificationSettings::AUDIENCE_BOARD_MEMBER,
-                vars: [
-                    'title' => $title,
-                    'body' => $body,
-                ],
-                emailType: UserNotification::TYPE_ACTIVITY_LOG,
-            );
-        }
+        return $actor.' · '.$session->displayTitle().' · '.implode(', ', $details);
+    }
+
+    protected function sessionEditChangeLabel(ActivityLog $log): string
+    {
+        $properties = $log->properties ?? [];
+
+        return match ($log->action) {
+            'legislative_session.status_changed' => trim(sprintf(
+                'Status: %s → %s',
+                ucfirst((string) ($properties['from_status'] ?? '')),
+                ucfirst((string) ($properties['to_status'] ?? '')),
+            )),
+            'legislative_session.drive_link_updated' => trim((string) ($properties['slot_label'] ?? 'Drive link')).' updated',
+            'legislative_session.pdf_uploaded' => trim((string) ($properties['slot_label'] ?? 'PDF')).' uploaded',
+            'legislative_session.final_minutes_tags_updated' => 'Final Minutes agendas tagged',
+            'legislative_session.final_journal_tags_updated' => 'Final Journal agendas tagged',
+            'committee_report_summary.updated' => 'Committee Report Summary saved',
+            default => ActivityLogPresenter::label($log),
+        };
     }
 
     /**
