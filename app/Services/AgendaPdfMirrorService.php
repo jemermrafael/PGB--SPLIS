@@ -14,6 +14,7 @@ class AgendaPdfMirrorService
         protected GoogleDrivePdfDownloader $downloader,
         protected AgendaPdfService $pdfs,
         protected AgendaItemRequestFileService $requestFiles,
+        protected AgendaDrivePdfShareService $shares,
     ) {}
 
     /**
@@ -50,6 +51,19 @@ class AgendaPdfMirrorService
             return [
                 'ok' => false,
                 'message' => 'Request PDF URL is a Drive folder — use the request packet mirror.',
+                'slot' => $slot,
+            ];
+        }
+
+        $sharedPath = $this->shares->findExistingLocalPath($url, $slot, (int) $agenda->id);
+
+        if ($sharedPath !== null) {
+            $this->shares->attachSharedPath($agenda, $slot, $sharedPath);
+
+            return [
+                'ok' => true,
+                'message' => $config['label'].' reused existing local file '.$sharedPath,
+                'path' => $sharedPath,
                 'slot' => $slot,
             ];
         }

@@ -202,6 +202,57 @@
         </form>
     </div>
 
+    <div class="mb-6 rounded-lg border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-900/40">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0">
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Shared agenda Drive links</h3>
+                <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                    When several agendas use the same Google Drive file URL (especially committee reports), keep one local file and point the others to it.
+                    Currently <strong>{{ $agendaDriveDuplicateCount }}</strong> shared URL group(s) detected.
+                </p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <form method="POST" action="{{ route('admin.data-sync.agenda-drive-pdfs.dedupe') }}">
+                    @csrf
+                    <input type="hidden" name="dry_run" value="1">
+                    <button type="submit" class="splis-btn-secondary">Preview dedupe</button>
+                </form>
+                <form method="POST" action="{{ route('admin.data-sync.agenda-drive-pdfs.dedupe') }}">
+                    @csrf
+                    <button type="submit" class="splis-btn-primary">Dedupe &amp; purge duplicates</button>
+                </form>
+            </div>
+        </div>
+
+        @if (! empty($agendaDriveDuplicateGroups))
+            <div class="mt-4 max-h-64 overflow-auto rounded-md border border-slate-200 dark:border-slate-700">
+                <table class="min-w-full text-xs">
+                    <thead class="sticky top-0 bg-white dark:bg-slate-900">
+                        <tr class="border-b border-slate-200 text-left uppercase tracking-wide text-slate-500 dark:border-slate-700">
+                            <th class="px-3 py-2">Document</th>
+                            <th class="px-3 py-2">Agendas</th>
+                            <th class="px-3 py-2">Local paths</th>
+                            <th class="px-3 py-2">Drive URL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (array_slice($agendaDriveDuplicateGroups, 0, 25) as $group)
+                            <tr class="border-b border-slate-100 dark:border-slate-800">
+                                <td class="px-3 py-2">{{ \App\Support\AgendaPdfSlot::config($group['slot'])['label'] }}</td>
+                                <td class="px-3 py-2">{{ $group['agenda_count'] }}</td>
+                                <td class="px-3 py-2">{{ count($group['distinct_paths']) }}</td>
+                                <td class="px-3 py-2 break-all text-slate-600 dark:text-slate-300">{{ \Illuminate\Support\Str::limit($group['sample_url'], 90) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @if ($agendaDriveDuplicateCount > 25)
+                <p class="mt-2 text-xs text-slate-500">Showing first 25 of {{ $agendaDriveDuplicateCount }} groups. Use <code>php artisan agenda:dedupe-shared-drive-pdfs --report</code> for the full list.</p>
+            @endif
+        @endif
+    </div>
+
     @if ($driveMirrorItems->isNotEmpty())
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">

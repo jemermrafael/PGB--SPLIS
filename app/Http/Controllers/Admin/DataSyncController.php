@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Services\AgendaCsvImporter;
+use App\Services\AgendaDrivePdfShareService;
 use App\Services\DataSyncCsvStorage;
 use App\Services\DriveFileMirrorQueueService;
 use App\Services\DriveMirrorQueueSettings;
@@ -22,6 +23,7 @@ class DataSyncController extends Controller
     public function index(
         DriveFileMirrorQueueService $driveMirrorQueue,
         DriveMirrorQueueSettings $driveMirrorSettings,
+        AgendaDrivePdfShareService $agendaDriveShares,
     ): View {
         $recentLogs = ActivityLog::query()
             ->whereIn('action', [
@@ -34,11 +36,14 @@ class DataSyncController extends Controller
                 'data_sync.drive_mirror_rebuild',
                 'data_sync.drive_mirror_process',
                 'data_sync.drive_mirror_auto',
+                'data_sync.agenda_drive_pdf_dedupe',
             ])
             ->with('user')
             ->latest('created_at')
             ->limit(10)
             ->get();
+
+        $agendaDriveDuplicateGroups = $agendaDriveShares->duplicateGroups();
 
         return view('admin.data-sync.index', [
             'recentLogs' => $recentLogs,
@@ -47,6 +52,8 @@ class DataSyncController extends Controller
             'driveMirrorFailedItems' => $driveMirrorQueue->failedItems(50),
             'driveMirrorAutoEnabled' => $driveMirrorSettings->isAutoEnabled(),
             'driveMirrorPerMinute' => $driveMirrorSettings->perMinute(),
+            'agendaDriveDuplicateGroups' => $agendaDriveDuplicateGroups,
+            'agendaDriveDuplicateCount' => count($agendaDriveDuplicateGroups),
         ]);
     }
 
@@ -361,6 +368,37 @@ class DataSyncController extends Controller
         return back()->with('status', $enabled
             ? 'Automatic Drive PDF mirror started — up to 5 PDFs per minute while the Laravel scheduler is running. Stop anytime from this page.'
             : 'Automatic Drive PDF mirror stopped. Pending items remain in the queue.');
+    }
+
+    public function dedupeAgendaDrivePdfs(
+        Request $request,
+        AgendaDrivePdfShareService $shares,
+    ): RedirectResponse {
+        $request->validate([
+            'dry_run' => ['nullable', 'boolean'],
+        ]);
+
+        $dryRun = $request->boolean('dry_run');
+        $result = $shares->dedupe(dryRun: $dryRun);
+
+        if (! $dryRun) {
+            ActivityLogger::log('data_sync.agenda_drive_pdf_dedupe', null, [
+                'groups' => $result['groups'],
+                'linked' => $result['linked'],
+                'purged' => $result['purged'],
+                'kept_paths' => $result['kept_paths'],
+            ]);
+        }
+
+        $prefix = $dryRun ? '[Dry run] ' : '';
+
+        return back()->with('status', sprintf(
+            '%sShared agenda Drive PDFs — %d duplicate URL group(s), %d agenda(s) relinked to one file, %d duplicate file(s) purged.',
+            $prefix,
+            $result['groups'],
+            $result['linked'],
+            $result['purged'],
+        ));
     }
 
     protected function storeUpload(?UploadedFile $file, DataSyncCsvStorage $uploads): ?string

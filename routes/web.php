@@ -376,6 +376,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/data-sync/drive-mirror/rebuild', [DataSyncController::class, 'rebuildDriveMirrorQueue'])->name('data-sync.drive-mirror.rebuild');
         Route::post('/data-sync/drive-mirror/process', [DataSyncController::class, 'processDriveMirrorQueue'])->name('data-sync.drive-mirror.process');
         Route::post('/data-sync/drive-mirror/auto', [DataSyncController::class, 'updateDriveMirrorAuto'])->name('data-sync.drive-mirror.auto');
+        Route::post('/data-sync/agenda-drive-pdfs/dedupe', [DataSyncController::class, 'dedupeAgendaDrivePdfs'])->name('data-sync.agenda-drive-pdfs.dedupe');
 
         Route::get('/backups', [DatabaseBackupController::class, 'index'])->name('backups.index');
         Route::post('/backups/settings', [DatabaseBackupController::class, 'updateSettings'])->name('backups.settings');

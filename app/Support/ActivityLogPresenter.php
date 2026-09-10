@@ -53,6 +53,7 @@ class ActivityLogPresenter
         'legislative_session.final_minutes_tags_updated' => 'Final Minutes agendas updated',
         'legislative_session.final_journal_tags_updated' => 'Final Journal agendas updated',
         'committee_report_summary.updated' => 'Committee Report Summary updated',
+        'data_sync.agenda_drive_pdf_dedupe' => 'Agenda Drive PDF dedupe',
     ];
 
     public static function label(string|ActivityLog $actionOrLog): string
