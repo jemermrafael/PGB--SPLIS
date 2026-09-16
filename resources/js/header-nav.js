@@ -1,3 +1,39 @@
+export function initHeaderClock() {
+    const dateEl = document.querySelector('[data-header-date]');
+    const timeEl = document.querySelector('[data-header-time]');
+
+    if (! dateEl && ! timeEl) {
+        return;
+    }
+
+    const formatDate = (date) => date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    });
+
+    const formatTime = (date) => date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+    });
+
+    const tick = () => {
+        const now = new Date();
+
+        if (dateEl) {
+            dateEl.textContent = formatDate(now);
+        }
+
+        if (timeEl) {
+            timeEl.textContent = formatTime(now);
+        }
+    };
+
+    tick();
+    window.setInterval(tick, 1000);
+}
+
 export function initHeaderNav() {
     const toggle = document.getElementById('splis-nav-toggle');
     const nav = document.getElementById('splis-main-nav');

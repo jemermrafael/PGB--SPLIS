@@ -95,7 +95,10 @@
                     </a>
 
                     <div class="splis-header-actions">
-                        <span class="splis-header-date hidden lg:inline">{{ now()->format('M j, Y') }}</span>
+                        <div class="splis-header-datetime hidden lg:flex" aria-live="off">
+                            <span class="splis-header-date" data-header-date>{{ now()->format('M j, Y') }}</span>
+                            <span class="splis-header-time" data-header-time>{{ now()->format('g:i A') }}</span>
+                        </div>
 
                         <button
                             type="button"

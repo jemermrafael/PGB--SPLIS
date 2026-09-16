@@ -17,7 +17,7 @@ import { initAppropriationOrdinancesSearch } from './appropriation-ordinances-se
 import { initResolutionsSearch } from './resolutions-search';
 
 import { initAgendaVersionCompare, initAppropriationOrdinanceVersionCompare, initResolutionVersionCompare } from './agenda-version-compare';
-import { initHeaderNav } from './header-nav';
+import { initHeaderClock, initHeaderNav } from './header-nav';
 import { initHeaderNotifications } from './header-notifications';
 import { initNotificationsFeed } from './notifications-feed';
 import { initBoardMemberOrdinancesTable } from './board-member-ordinances';
@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initCommitteeReportSummaryMaker();
     initMonthlyAttendanceMaker();
     initDropdowns();
+    initHeaderClock();
     initHeaderNav();
     initAccessibility();
     initComboboxes();

@@ -102,8 +102,16 @@
         max-height: 2.5rem;
     }
 
+    .splis-header-datetime {
+        @apply flex-col items-end justify-center gap-0.5 leading-tight;
+    }
+
     .splis-header-date {
         @apply text-xs text-slate-300;
+    }
+
+    .splis-header-time {
+        @apply text-[11px] tabular-nums text-slate-400;
     }
 
     .splis-btn-new-measure {
