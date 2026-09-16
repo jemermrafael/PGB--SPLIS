@@ -200,10 +200,17 @@
                         </div>
                     @endif
                 </div>
-                <div class="md:col-span-2">
-                    <label class="splis-label" for="committee_report_url">Committee report link (fallback)</label>
-                    <input type="url" name="committee_report_url" id="committee_report_url" value="{{ old('committee_report_url', $agenda->committee_report_url) }}" class="splis-input">
-                </div>
+                @if ($isEdit && $agenda->hasLocalPdfFor(App\Support\AgendaPdfSlot::COMMITTEE_REPORT))
+                    <input type="hidden" name="committee_report_url" value="{{ old('committee_report_url', $agenda->committee_report_url) }}">
+                    <p class="md:col-span-2 text-xs text-slate-500 dark:text-slate-400">
+                        Drive fallback link is hidden because a local committee report file is already available. Viewing uses the local file.
+                    </p>
+                @else
+                    <div class="md:col-span-2">
+                        <label class="splis-label" for="committee_report_url">Committee report link (fallback)</label>
+                        <input type="url" name="committee_report_url" id="committee_report_url" value="{{ old('committee_report_url', $agenda->committee_report_url) }}" class="splis-input">
+                    </div>
+                @endif
             </div>
         </div>
 

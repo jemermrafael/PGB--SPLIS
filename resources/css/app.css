@@ -779,7 +779,87 @@
     }
 
     .splis-agenda-row {
-        @apply cursor-pointer transition hover:bg-slate-50;
+        @apply cursor-pointer transition hover:bg-slate-50 dark:hover:bg-slate-800/60;
+    }
+
+    .splis-agenda-row--accomplished {
+        @apply bg-emerald-50/80 dark:bg-emerald-950/35;
+    }
+
+    .splis-agenda-row--accomplished:hover {
+        @apply bg-emerald-50 dark:bg-emerald-950/50;
+    }
+
+    .splis-agenda-row--urgent {
+        @apply bg-amber-50/80 dark:bg-amber-950/30;
+    }
+
+    .splis-agenda-row--urgent:hover {
+        @apply bg-amber-50 dark:bg-amber-950/45;
+    }
+
+    .splis-agenda-row--overdue {
+        @apply bg-rose-50/80 dark:bg-rose-950/30;
+    }
+
+    .splis-agenda-row--overdue:hover {
+        @apply bg-rose-50 dark:bg-rose-950/45;
+    }
+
+    .splis-agenda-row--lapsed {
+        @apply bg-orange-50/70 dark:bg-orange-950/30;
+    }
+
+    .splis-agenda-row--lapsed:hover {
+        @apply bg-orange-50 dark:bg-orange-950/45;
+    }
+
+    .splis-agenda-table tbody .splis-agenda-row--accomplished .splis-agenda-sticky-col {
+        @apply bg-emerald-50/80 dark:bg-emerald-950/35;
+    }
+
+    .splis-agenda-table tbody .splis-agenda-row--accomplished:hover .splis-agenda-sticky-col {
+        @apply bg-emerald-50 dark:bg-emerald-950/50;
+    }
+
+    .splis-agenda-table tbody .splis-agenda-row--urgent .splis-agenda-sticky-col {
+        @apply bg-amber-50/80 dark:bg-amber-950/30;
+    }
+
+    .splis-agenda-table tbody .splis-agenda-row--urgent:hover .splis-agenda-sticky-col {
+        @apply bg-amber-50 dark:bg-amber-950/45;
+    }
+
+    .splis-agenda-table tbody .splis-agenda-row--overdue .splis-agenda-sticky-col {
+        @apply bg-rose-50/80 dark:bg-rose-950/30;
+    }
+
+    .splis-agenda-table tbody .splis-agenda-row--overdue:hover .splis-agenda-sticky-col {
+        @apply bg-rose-50 dark:bg-rose-950/45;
+    }
+
+    .splis-agenda-table tbody .splis-agenda-row--lapsed .splis-agenda-sticky-col {
+        @apply bg-orange-50/70 dark:bg-orange-950/30;
+    }
+
+    .splis-agenda-table tbody .splis-agenda-row--lapsed:hover .splis-agenda-sticky-col {
+        @apply bg-orange-50 dark:bg-orange-950/45;
+    }
+
+    .splis-doc-card--accomplished {
+        @apply border-emerald-200/80 bg-emerald-50/50 dark:border-emerald-900 dark:bg-emerald-950/25;
+    }
+
+    .splis-doc-card--urgent {
+        @apply border-amber-200/80 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20;
+    }
+
+    .splis-doc-card--overdue {
+        @apply border-rose-200/80 bg-rose-50/50 dark:border-rose-900 dark:bg-rose-950/20;
+    }
+
+    .splis-doc-card--lapsed {
+        @apply border-orange-200/80 bg-orange-50/40 dark:border-orange-900 dark:bg-orange-950/20;
     }
 
     .splis-agenda-timeline-list {

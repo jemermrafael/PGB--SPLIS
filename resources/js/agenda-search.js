@@ -56,9 +56,25 @@ function renderListNumberLink(item, { className = 'splis-doc-list-link' } = {}) 
     return `<a href="${escapeHtml(item.url)}" class="${escapeHtml(className)}">${number}</a>`;
 }
 
+function rowToneClass(tone) {
+    if (! tone || tone === 'none' || tone === 'ok') {
+        return '';
+    }
+
+    return ` splis-agenda-row--${escapeHtml(tone)}`;
+}
+
+function cardToneClass(tone) {
+    if (! tone || tone === 'none' || tone === 'ok') {
+        return '';
+    }
+
+    return ` splis-doc-card--${escapeHtml(tone)}`;
+}
+
 function renderListItem(item) {
     return `
-        <tr class="splis-agenda-row" data-href="${escapeHtml(item.url)}">
+        <tr class="splis-agenda-row${rowToneClass(item.days_left_tone)}" data-href="${escapeHtml(item.url)}">
             <td class="splis-agenda-sticky-col whitespace-nowrap font-semibold">
                 ${renderListNumberLink(item)}
             </td>
@@ -80,7 +96,7 @@ function renderGridItem(item) {
     const toneClass = item.days_left_tone ? ` splis-agenda-days--${escapeHtml(item.days_left_tone)}` : '';
 
     return `
-        <article class="splis-doc-card flex flex-col gap-3">
+        <article class="splis-doc-card flex flex-col gap-3${cardToneClass(item.days_left_tone)}">
             <div class="flex items-start justify-between gap-2">
                 ${renderListNumberLink(item, { className: 'splis-doc-card-number' })}
                 ${renderStatusBadge(item.status, item.status_label)}
