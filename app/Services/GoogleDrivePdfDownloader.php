@@ -371,6 +371,8 @@ class GoogleDrivePdfDownloader
      */
     protected function downloadDirect(string $url): array
     {
+        $this->assertSafeRemoteUrl($url);
+
         $response = $this->httpClient()->get($url);
 
         if (! $response->successful()) {
@@ -391,6 +393,69 @@ class GoogleDrivePdfDownloader
         ];
     }
 
+    /**
+     * Block SSRF to loopback / private / link-local / reserved targets (and non-http(s) schemes).
+     */
+    protected function assertSafeRemoteUrl(string $url): void
+    {
+        $parts = parse_url($url);
+
+        if ($parts === false) {
+            throw new RuntimeException('Invalid file URL.');
+        }
+
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+
+        if (! in_array($scheme, ['http', 'https'], true)) {
+            throw new RuntimeException('Only http and https file URLs are allowed.');
+        }
+
+        $host = strtolower(trim((string) ($parts['host'] ?? ''), '[]'));
+
+        if ($host === '') {
+            throw new RuntimeException('File URL is missing a host.');
+        }
+
+        if ($this->isBlockedHost($host)) {
+            throw new RuntimeException('File URL host is not allowed.');
+        }
+    }
+
+    protected function isBlockedHost(string $host): bool
+    {
+        if (
+            $host === 'localhost'
+            || $host === 'metadata.google.internal'
+            || str_ends_with($host, '.localhost')
+            || str_ends_with($host, '.local')
+            || str_ends_with($host, '.internal')
+        ) {
+            return true;
+        }
+
+        if (filter_var($host, FILTER_VALIDATE_IP)) {
+            return $this->isBlockedIp($host);
+        }
+
+        $resolved = gethostbyname($host);
+
+        if ($resolved !== $host && filter_var($resolved, FILTER_VALIDATE_IP)) {
+            return $this->isBlockedIp($resolved);
+        }
+
+        return false;
+    }
+
+    protected function isBlockedIp(string $ip): bool
+    {
+        // Reject private, reserved, and link-local ranges (incl. 127.0.0.0/8 and 169.254.0.0/16).
+        return filter_var(
+            $ip,
+            FILTER_VALIDATE_IP,
+            FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE,
+        ) === false;
+    }
+
     protected function httpClient(): PendingRequest
     {
         return Http::withHeaders([
@@ -399,7 +464,13 @@ class GoogleDrivePdfDownloader
         ])
             ->timeout(120)
             ->withOptions([
-                'allow_redirects' => true,
+                'allow_redirects' => [
+                    'max' => 5,
+                    'protocols' => ['http', 'https'],
+                    'on_redirect' => function ($request, $response, $uri): void {
+                        $this->assertSafeRemoteUrl((string) $uri);
+                    },
+                ],
             ]);
     }
 

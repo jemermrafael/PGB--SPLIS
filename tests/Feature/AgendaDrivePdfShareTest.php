@@ -7,6 +7,7 @@ use App\Models\AgendaItem;
 use App\Models\User;
 use App\Services\AgendaDrivePdfShareService;
 use App\Services\AgendaPdfMirrorService;
+use App\Services\AgendaPdfService;
 use App\Support\AgendaPdfSlot;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -137,5 +138,82 @@ class AgendaDrivePdfShareTest extends TestCase
             ->assertSessionHas('status');
 
         $this->assertFalse(Storage::disk('local')->exists($duplicate));
+    }
+
+    public function test_store_bytes_on_keeper_rehomes_shared_path_for_other_agendas(): void
+    {
+        Storage::fake('local');
+
+        $encoder = User::factory()->create(['role' => UserRole::Encoder]);
+
+        $a = AgendaItem::create([
+            'tracking_no' => '400',
+            'title' => 'Keeper',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 0,
+            'committee_report_url' => 'https://drive.google.com/file/d/REHOME1/view',
+            'created_by' => $encoder->id,
+        ]);
+
+        $keeper = 'agenda/'.$a->id.'/committee-report.pdf';
+        Storage::disk('local')->put($keeper, '%PDF-1.4 shared-original');
+        $a->forceFill(['committee_report_pdf_path' => $keeper])->save();
+
+        $b = AgendaItem::create([
+            'tracking_no' => '401',
+            'title' => 'Sharer',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 0,
+            'committee_report_url' => 'https://drive.google.com/file/d/REHOME1/view',
+            'committee_report_pdf_path' => $keeper,
+            'created_by' => $encoder->id,
+        ]);
+
+        $path = app(AgendaPdfService::class)->storeBytes('%PDF-1.4 new-for-keeper', $a->fresh(), AgendaPdfSlot::COMMITTEE_REPORT, 'pdf');
+
+        $this->assertSame($keeper, $path);
+        $this->assertSame('%PDF-1.4 new-for-keeper', Storage::disk('local')->get($keeper));
+
+        $bPath = $b->fresh()->committee_report_pdf_path;
+        $this->assertSame('agenda/'.$b->id.'/committee-report.pdf', $bPath);
+        $this->assertTrue(Storage::disk('local')->exists($bPath));
+        $this->assertSame('%PDF-1.4 shared-original', Storage::disk('local')->get($bPath));
+    }
+
+    public function test_store_bytes_sibling_delete_keeps_shared_pdf_for_other_agenda(): void
+    {
+        Storage::fake('local');
+
+        $encoder = User::factory()->create(['role' => UserRole::Encoder]);
+
+        $a = AgendaItem::create([
+            'tracking_no' => '410',
+            'title' => 'Keeper',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 0,
+            'created_by' => $encoder->id,
+        ]);
+
+        $sharedPdf = 'agenda/'.$a->id.'/committee-report.pdf';
+        Storage::disk('local')->put($sharedPdf, '%PDF-1.4 keep-me');
+        $a->forceFill(['committee_report_pdf_path' => $sharedPdf])->save();
+
+        $b = AgendaItem::create([
+            'tracking_no' => '411',
+            'title' => 'Sharer',
+            'status' => AgendaItem::STATUS_PENDING,
+            'prescribed_days' => 0,
+            'committee_report_pdf_path' => $sharedPdf,
+            'created_by' => $encoder->id,
+        ]);
+
+        app(AgendaPdfService::class)->storeBytes('fake-image-bytes', $a->fresh(), AgendaPdfSlot::COMMITTEE_REPORT, 'jpg');
+
+        $bPath = $b->fresh()->committee_report_pdf_path;
+        $this->assertSame('agenda/'.$b->id.'/committee-report.pdf', $bPath);
+        $this->assertTrue(Storage::disk('local')->exists($bPath));
+        $this->assertSame('%PDF-1.4 keep-me', Storage::disk('local')->get($bPath));
+        $this->assertTrue(Storage::disk('local')->exists('agenda/'.$a->id.'/committee-report.jpg'));
+        $this->assertNotSame($sharedPdf, $bPath);
     }
 }

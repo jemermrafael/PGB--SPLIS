@@ -282,9 +282,69 @@ class AgendaDrivePdfShareService
     }
 
     /**
+     * Before overwriting or deleting files under an agenda slot directory, copy any
+     * shared path still referenced by other agendas onto those agendas' own paths.
+     */
+    public function rehomeSharedSlotPaths(AgendaItem $agenda, string $slot): void
+    {
+        if (! AgendaPdfSlot::isValid($slot)) {
+            return;
+        }
+
+        foreach (['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp'] as $extension) {
+            $candidate = $this->pdfs->storageRelativePath((int) $agenda->id, $slot, $extension);
+
+            if (! Storage::disk('local')->exists($candidate)) {
+                continue;
+            }
+
+            if (! $this->pathIsReferenced($candidate, [(int) $agenda->id])) {
+                continue;
+            }
+
+            $this->rehomePathCopies($candidate, (int) $agenda->id);
+        }
+    }
+
+    /**
+     * Give every other agenda that points at $path its own copy, then leave $path for the keeper.
+     */
+    public function rehomePathCopies(string $path, int $exceptAgendaId): void
+    {
+        if (! Storage::disk('local')->exists($path)) {
+            return;
+        }
+
+        $contents = (string) Storage::disk('local')->get($path);
+        $extension = pathinfo($path, PATHINFO_EXTENSION) ?: 'pdf';
+
+        foreach (AgendaPdfSlot::all() as $slot) {
+            $column = AgendaPdfSlot::config($slot)['path'];
+
+            $agendas = AgendaItem::query()
+                ->where($column, $path)
+                ->whereKeyNot($exceptAgendaId)
+                ->orderBy('id')
+                ->get();
+
+            foreach ($agendas as $agenda) {
+                $exclusive = $this->pdfs->storageRelativePath((int) $agenda->id, $slot, $extension);
+
+                if ($exclusive === $path) {
+                    continue;
+                }
+
+                Storage::disk('local')->makeDirectory(dirname($exclusive));
+                Storage::disk('local')->put($exclusive, $contents);
+                $agenda->forceFill([$column => $exclusive])->save();
+            }
+        }
+    }
+
+    /**
      * @param  list<int>  $ignoreAgendaIds
      */
-    protected function pathIsReferenced(string $path, array $ignoreAgendaIds = []): bool
+    public function pathIsReferenced(string $path, array $ignoreAgendaIds = []): bool
     {
         foreach (AgendaPdfSlot::all() as $slot) {
             $column = AgendaPdfSlot::config($slot)['path'];

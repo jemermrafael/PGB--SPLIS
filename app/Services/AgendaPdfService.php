@@ -119,6 +119,9 @@ class AgendaPdfService
     {
         $relative = $this->storageRelativePath((int) $agenda->id, $slot, $extension);
 
+        // Shared Drive/dedupe paths: copy other agendas off this slot dir before overwrite/delete.
+        app(AgendaDrivePdfShareService::class)->rehomeSharedSlotPaths($agenda, $slot);
+
         Storage::disk('local')->makeDirectory(dirname($relative));
         Storage::disk('local')->put($relative, $contents);
 
@@ -192,6 +195,8 @@ class AgendaPdfService
 
     protected function deleteSiblingVariants(int $agendaId, string $slot, string $keepExtension): void
     {
+        $shares = app(AgendaDrivePdfShareService::class);
+
         foreach (['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp'] as $extension) {
             if ($extension === $keepExtension) {
                 continue;
@@ -199,9 +204,16 @@ class AgendaPdfService
 
             $relative = $this->storageRelativePath($agendaId, $slot, $extension);
 
-            if (Storage::disk('local')->exists($relative)) {
-                Storage::disk('local')->delete($relative);
+            if (! Storage::disk('local')->exists($relative)) {
+                continue;
             }
+
+            // Never delete a file still referenced by another agenda / BM / session CR.
+            if ($shares->pathIsReferenced($relative, [$agendaId])) {
+                continue;
+            }
+
+            Storage::disk('local')->delete($relative);
         }
     }
 }

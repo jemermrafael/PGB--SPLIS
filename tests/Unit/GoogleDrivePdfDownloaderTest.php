@@ -121,4 +121,55 @@ class GoogleDrivePdfDownloaderTest extends TestCase
         $this->assertSame('FOR RECOGNITION', $nested['relative_folder']);
         $this->assertSame('1. BATAAN PENINSULA TOUR GUIDES.pdf', $nested['name']);
     }
+
+    public function test_direct_download_blocks_loopback_and_link_local_hosts(): void
+    {
+        Http::fake([
+            '*' => Http::response('%PDF-1.4 should-not-fetch', 200, [
+                'Content-Type' => 'application/pdf',
+            ]),
+        ]);
+
+        $downloader = app(GoogleDrivePdfDownloader::class);
+
+        try {
+            $downloader->downloadFile('http://127.0.0.1/latest/meta-data');
+            $this->fail('Expected loopback URL to be rejected.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('not allowed', $e->getMessage());
+        }
+
+        try {
+            $downloader->downloadFile('http://169.254.169.254/latest/meta-data');
+            $this->fail('Expected link-local metadata URL to be rejected.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('not allowed', $e->getMessage());
+        }
+
+        try {
+            $downloader->downloadFile('http://localhost/secret.pdf');
+            $this->fail('Expected localhost URL to be rejected.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('not allowed', $e->getMessage());
+        }
+
+        Http::assertNothingSent();
+    }
+
+    public function test_direct_download_allows_public_https_pdf(): void
+    {
+        Http::fake([
+            'https://93.184.216.34/*' => Http::response('%PDF-1.4 public', 200, [
+                'Content-Type' => 'application/pdf',
+            ]),
+        ]);
+
+        $result = app(GoogleDrivePdfDownloader::class)->downloadFile(
+            'https://93.184.216.34/docs/report.pdf',
+        );
+
+        $this->assertSame('%PDF-1.4 public', $result['contents']);
+        $this->assertSame('pdf', $result['extension']);
+        Http::assertSent(fn ($request) => $request->url() === 'https://93.184.216.34/docs/report.pdf');
+    }
 }

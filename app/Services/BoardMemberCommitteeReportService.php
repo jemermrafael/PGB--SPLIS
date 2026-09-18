@@ -682,18 +682,34 @@ class BoardMemberCommitteeReportService
         }
 
         $agendas = AgendaItem::query()->whereIn('id', $agendaItemIds)->get();
+        $candidateDeletes = [];
 
         foreach ($agendas as $agenda) {
             $path = $agenda->committee_report_pdf_path;
 
-            // Only delete per-agenda copies; shared BM report files are owned by the report record.
-            if ($deleteSharedFile && filled($path) && $this->isAgendaOwnedPdfPath($path) && Storage::disk('local')->exists($path)) {
-                Storage::disk('local')->delete($path);
+            if ($deleteSharedFile && filled($path) && $this->isAgendaOwnedPdfPath($path)) {
+                $candidateDeletes[(string) $path] = true;
             }
 
             $agenda->forceFill([
                 'committee_report_pdf_path' => null,
             ])->save();
+        }
+
+        if (! $deleteSharedFile || $candidateDeletes === []) {
+            return;
+        }
+
+        $shares = app(AgendaDrivePdfShareService::class);
+
+        foreach (array_keys($candidateDeletes) as $path) {
+            if ($shares->pathIsReferenced($path)) {
+                continue;
+            }
+
+            if (Storage::disk('local')->exists($path)) {
+                Storage::disk('local')->delete($path);
+            }
         }
     }
 
