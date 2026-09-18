@@ -256,22 +256,23 @@
             <div class="splis-card p-6">
                 <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
                     <div>
-                        <p class="text-base font-semibold text-slate-900 dark:text-slate-100">SMTP settings</p>
-                        <p class="mt-1 text-sm text-slate-500">These override <code class="text-xs">.env</code> mail settings when sending notification emails. Leave password blank to keep the current value.</p>
+                        <p class="text-base font-semibold text-slate-900 dark:text-slate-100">SMTP connection details</p>
+                        <p class="mt-1 text-sm text-slate-500">Standard SMTP auth for your mail server (Postal, Microsoft 365, Gmail, etc.). These override <code class="text-xs">.env</code> when sending notification emails. Leave password blank to keep the current value.</p>
                     </div>
                     <button type="button" class="splis-btn-secondary text-sm" data-smtp-preset="gmail">
-                        Use Gmail preset
+                        Gmail preset
                     </button>
                 </div>
 
                 <div class="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
-                    <p class="font-medium text-slate-700 dark:text-slate-300">Gmail App Password</p>
+                    <p class="font-medium text-slate-700 dark:text-slate-300">How to connect</p>
                     <ol class="mt-2 list-decimal space-y-1 pl-5">
-                        <li>Enable 2-Step Verification on the Google account.</li>
-                        <li>Create an App Password (Google Account → Security → App passwords).</li>
-                        <li>Click <strong>Use Gmail preset</strong>, then enter your full Gmail address as username and the 16-character app password.</li>
-                        <li>Set From address to the same Gmail (or a verified send-as address), save, then send a test.</li>
+                        <li>Set Mailer to <strong>SMTP</strong>.</li>
+                        <li>Enter your server host (e.g. <code class="text-xs">mx.bataan.gov.ph</code>), port, and encryption (TLS on 587 is common; SSL on 465).</li>
+                        <li>Use the mailbox username and password from your mail server (Postal credentials, not a Gmail app password unless you chose Gmail).</li>
+                        <li>Set From address to a mailbox/domain allowed by that server, save, then send a test.</li>
                     </ol>
+                    <p class="mt-2 text-xs text-slate-500">Optional: <strong>Gmail preset</strong> fills smtp.gmail.com / 587 / TLS — then use a Google App Password as the password.</p>
                 </div>
 
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -284,32 +285,57 @@
                         </select>
                     </div>
                     <div>
-                        <label class="splis-label" for="smtp_encryption">Encryption</label>
+                        <label class="splis-label" for="smtp_encryption">Security</label>
                         <select name="smtp[encryption]" id="smtp_encryption" class="splis-input mt-1">
                             <option value="" @selected(old('smtp.encryption', $settings['smtp']['encryption']) === '')>None</option>
-                            <option value="tls" @selected(old('smtp.encryption', $settings['smtp']['encryption']) === 'tls')>TLS (port 587)</option>
-                            <option value="ssl" @selected(old('smtp.encryption', $settings['smtp']['encryption']) === 'ssl')>SSL (port 465)</option>
+                            <option value="tls" @selected(old('smtp.encryption', $settings['smtp']['encryption']) === 'tls')>TLS (usually port 587)</option>
+                            <option value="ssl" @selected(old('smtp.encryption', $settings['smtp']['encryption']) === 'ssl')>SSL (usually port 465)</option>
                         </select>
                     </div>
                     <div>
-                        <label class="splis-label" for="smtp_host">Host</label>
-                        <input type="text" name="smtp[host]" id="smtp_host" class="splis-input mt-1" value="{{ old('smtp.host', $settings['smtp']['host']) }}" placeholder="smtp.gmail.com">
+                        <label class="splis-label" for="smtp_host">SMTP server</label>
+                        <input type="text" name="smtp[host]" id="smtp_host" class="splis-input mt-1" value="{{ old('smtp.host', $settings['smtp']['host']) }}" placeholder="mx.bataan.gov.ph" autocomplete="off">
                     </div>
                     <div>
                         <label class="splis-label" for="smtp_port">Port</label>
                         <input type="number" name="smtp[port]" id="smtp_port" class="splis-input mt-1" value="{{ old('smtp.port', $settings['smtp']['port']) }}" min="1" max="65535">
+                        <div class="mt-2 flex flex-wrap gap-1.5">
+                            @foreach ([25, 2525, 465, 587] as $portPreset)
+                                <button
+                                    type="button"
+                                    class="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-xs font-medium text-slate-600 transition hover:border-brand-300 hover:text-brand-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                                    data-smtp-port="{{ $portPreset }}"
+                                >{{ $portPreset }}</button>
+                            @endforeach
+                        </div>
                     </div>
                     <div>
                         <label class="splis-label" for="smtp_username">Username</label>
-                        <input type="text" name="smtp[username]" id="smtp_username" class="splis-input mt-1" value="{{ old('smtp.username', $settings['smtp']['username']) }}" placeholder="you@gmail.com" autocomplete="off">
+                        <input type="text" name="smtp[username]" id="smtp_username" class="splis-input mt-1" value="{{ old('smtp.username', $settings['smtp']['username']) }}" placeholder="admin@mx.bataan.gov.ph" autocomplete="off">
                     </div>
                     <div>
-                        <label class="splis-label" for="smtp_password">App password</label>
-                        <input type="password" name="smtp[password]" id="smtp_password" class="splis-input mt-1" value="" placeholder="{{ filled($settings['smtp']['password']) ? '••••••••' : '16-character Gmail app password' }}" autocomplete="new-password">
+                        <label class="splis-label" for="smtp_password">Password</label>
+                        <div class="relative mt-1">
+                            <input type="password" name="smtp[password]" id="smtp_password" class="splis-input pr-10" value="" placeholder="{{ filled($settings['smtp']['password']) ? '•••••••• (leave blank to keep)' : 'SMTP password' }}" autocomplete="new-password">
+                            <button
+                                type="button"
+                                class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600"
+                                data-smtp-password-toggle
+                                aria-label="Show password"
+                            >
+                                <svg class="h-4 w-4" data-smtp-password-icon="show" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                <svg class="hidden h-4 w-4" data-smtp-password-icon="hide" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                     <div>
-                        <label class="splis-label" for="smtp_from_address">From address</label>
-                        <input type="email" name="smtp[from_address]" id="smtp_from_address" class="splis-input mt-1" value="{{ old('smtp.from_address', $settings['smtp']['from_address']) }}" placeholder="you@gmail.com">
+                        <label class="splis-label" for="smtp_from_address">From email address</label>
+                        <input type="email" name="smtp[from_address]" id="smtp_from_address" class="splis-input mt-1" value="{{ old('smtp.from_address', $settings['smtp']['from_address']) }}" placeholder="noreply@bataan.gov.ph">
                     </div>
                     <div>
                         <label class="splis-label" for="smtp_from_name">From name</label>

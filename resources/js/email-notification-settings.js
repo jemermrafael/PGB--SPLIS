@@ -270,6 +270,38 @@ export function initEmailNotificationSettings() {
         tab.addEventListener('click', () => activate(tab.dataset.emailTab));
     });
 
+    root.querySelectorAll('[data-smtp-port]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const port = btn.getAttribute('data-smtp-port');
+            const portInput = document.getElementById('smtp_port');
+            const encryption = document.getElementById('smtp_encryption');
+            if (portInput && port) {
+                portInput.value = port;
+            }
+            if (encryption && port === '465') {
+                encryption.value = 'ssl';
+            } else if (encryption && (port === '587' || port === '2525')) {
+                encryption.value = 'tls';
+            }
+        });
+    });
+
+    root.querySelector('[data-smtp-password-toggle]')?.addEventListener('click', () => {
+        const input = document.getElementById('smtp_password');
+        const toggle = root.querySelector('[data-smtp-password-toggle]');
+        const showIcon = root.querySelector('[data-smtp-password-icon="show"]');
+        const hideIcon = root.querySelector('[data-smtp-password-icon="hide"]');
+        if (! input || ! toggle) {
+            return;
+        }
+
+        const showing = input.type === 'text';
+        input.type = showing ? 'password' : 'text';
+        toggle.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+        showIcon?.classList.toggle('hidden', ! showing);
+        hideIcon?.classList.toggle('hidden', showing);
+    });
+
     root.querySelector('[data-smtp-preset="gmail"]')?.addEventListener('click', () => {
         const setValue = (id, value) => {
             const el = document.getElementById(id);
@@ -285,10 +317,10 @@ export function initEmailNotificationSettings() {
 
         const username = document.getElementById('smtp_username');
         const fromAddress = document.getElementById('smtp_from_address');
-        if (username && !username.value.trim()) {
+        if (username && ! username.value.trim()) {
             username.focus();
         }
-        if (fromAddress && username?.value.trim() && !fromAddress.value.trim()) {
+        if (fromAddress && username?.value.trim() && ! fromAddress.value.trim()) {
             fromAddress.value = username.value.trim();
         }
 
