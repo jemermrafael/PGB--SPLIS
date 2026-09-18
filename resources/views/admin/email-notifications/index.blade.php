@@ -341,6 +341,22 @@
                         <label class="splis-label" for="smtp_from_name">From name</label>
                         <input type="text" name="smtp[from_name]" id="smtp_from_name" class="splis-input mt-1" value="{{ old('smtp.from_name', $settings['smtp']['from_name']) }}" placeholder="SPLIS">
                     </div>
+                    <div class="sm:col-span-2">
+                        <label class="inline-flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
+                            <input
+                                type="checkbox"
+                                name="smtp[verify_peer]"
+                                id="smtp_verify_peer"
+                                value="1"
+                                class="mt-0.5"
+                                @checked(old('smtp.verify_peer', $settings['smtp']['verify_peer'] ?? true))
+                            >
+                            <span>
+                                <span class="font-medium">Verify TLS certificate</span>
+                                <span class="mt-0.5 block text-xs text-slate-500">Turn off only if Postal/Coolify uses a self-signed or mismatched certificate (online SMTP testers may still succeed).</span>
+                            </span>
+                        </label>
+                    </div>
                 </div>
             </div>
         </div>

@@ -235,22 +235,43 @@ class EmailNotificationService
 
         if ($mailer === 'smtp') {
             $encryption = strtolower(trim((string) ($smtp['encryption'] ?? '')));
-            // Laravel/Symfony: port 465 => smtps, otherwise smtp (STARTTLS). Do not pass "tls"/"ssl" as scheme.
+            $port = (int) $smtp['port'];
+
+            // Laravel/Symfony: 465 => smtps (implicit TLS). 587/25/2525 => smtp + STARTTLS when requested.
             $scheme = match ($encryption) {
                 'ssl' => 'smtps',
                 'tls' => 'smtp',
-                default => null,
+                default => $port === 465 ? 'smtps' : 'smtp',
             };
 
-            $password = (string) ($smtp['password'] ?? '');
-            // Gmail app passwords are often copied with spaces.
-            $password = preg_replace('/\s+/', '', $password) ?? $password;
+            // Opportunistic TLS breaks on servers that advertise STARTTLS with a bad/mismatched cert.
+            // Only enable auto-TLS when the admin explicitly chose TLS/SSL (or port 465).
+            $autoTls = in_array($encryption, ['tls', 'ssl'], true) || $port === 465;
 
+            $password = (string) ($smtp['password'] ?? '');
+            // Gmail app passwords are often copied with spaces (xxxx xxxx xxxx xxxx).
+            if (preg_match('/^([a-z0-9]{4}\s+){3}[a-z0-9]{4}$/i', trim($password))) {
+                $password = preg_replace('/\s+/', '', $password) ?? $password;
+            }
+
+            $fromHost = parse_url('http://'.ltrim((string) ($smtp['from_address'] ?: $smtp['host']), '/'), PHP_URL_HOST);
+            $localDomain = is_string($fromHost) && $fromHost !== ''
+                ? $fromHost
+                : (parse_url((string) config('app.url'), PHP_URL_HOST) ?: 'localhost');
+
+            // Avoid a stale MAIL_URL from .env overriding host/port/credentials.
+            Config::set('mail.mailers.smtp.url', null);
+            Config::set('mail.mailers.smtp.transport', 'smtp');
             Config::set('mail.mailers.smtp.host', $smtp['host']);
-            Config::set('mail.mailers.smtp.port', $smtp['port']);
+            Config::set('mail.mailers.smtp.port', $port);
             Config::set('mail.mailers.smtp.username', $smtp['username'] !== '' ? $smtp['username'] : null);
             Config::set('mail.mailers.smtp.password', $password !== '' ? $password : null);
             Config::set('mail.mailers.smtp.scheme', $scheme);
+            Config::set('mail.mailers.smtp.timeout', 30);
+            Config::set('mail.mailers.smtp.local_domain', $localDomain);
+            Config::set('mail.mailers.smtp.auto_tls', $autoTls);
+            Config::set('mail.mailers.smtp.require_tls', $encryption === 'tls');
+            Config::set('mail.mailers.smtp.verify_peer', (bool) ($smtp['verify_peer'] ?? true));
         }
 
         if ($mailer === 'smtp' && app()->bound('mail.manager')) {

@@ -348,7 +348,12 @@ class EmailNotificationSettings
                 'port' => (int) config('mail.mailers.smtp.port', 2525),
                 'username' => (string) config('mail.mailers.smtp.username', ''),
                 'password' => (string) config('mail.mailers.smtp.password', ''),
-                'encryption' => (string) (config('mail.mailers.smtp.scheme') ?: ''),
+                'encryption' => match (strtolower((string) (config('mail.mailers.smtp.scheme') ?: ''))) {
+                    'smtps', 'ssl' => 'ssl',
+                    'smtp', 'tls' => 'tls',
+                    default => '',
+                },
+                'verify_peer' => true,
                 'from_address' => (string) config('mail.from.address', ''),
                 'from_name' => (string) config('mail.from.name', config('app.name')),
             ],
@@ -453,7 +458,14 @@ class EmailNotificationSettings
                 'port' => (int) $smtp['port'],
                 'username' => (string) $smtp['username'],
                 'password' => (string) $smtp['password'],
-                'encryption' => (string) ($smtp['encryption'] ?? ''),
+                'encryption' => match (strtolower((string) ($smtp['encryption'] ?? ''))) {
+                    'smtps', 'ssl' => 'ssl',
+                    'smtp', 'tls' => 'tls',
+                    default => '',
+                },
+                'verify_peer' => array_key_exists('verify_peer', $smtp)
+                    ? (bool) $smtp['verify_peer']
+                    : true,
                 'from_address' => (string) $smtp['from_address'],
                 'from_name' => (string) $smtp['from_name'],
             ],
@@ -562,6 +574,9 @@ class EmailNotificationSettings
             $current['smtp']['port'] = (int) ($smtp['port'] ?? $current['smtp']['port']);
             $current['smtp']['username'] = (string) ($smtp['username'] ?? $current['smtp']['username']);
             $current['smtp']['encryption'] = (string) ($smtp['encryption'] ?? $current['smtp']['encryption']);
+            $current['smtp']['verify_peer'] = array_key_exists('verify_peer', $smtp)
+                ? (bool) $smtp['verify_peer']
+                : (bool) ($current['smtp']['verify_peer'] ?? true);
             $current['smtp']['from_address'] = (string) ($smtp['from_address'] ?? $current['smtp']['from_address']);
             $current['smtp']['from_name'] = (string) ($smtp['from_name'] ?? $current['smtp']['from_name']);
 

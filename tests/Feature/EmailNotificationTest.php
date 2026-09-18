@@ -361,4 +361,75 @@ class EmailNotificationTest extends TestCase
 
         Mail::assertNothingSent();
     }
+
+    public function test_smtp_test_failure_shows_underlying_error_message(): void
+    {
+        $superadmin = User::factory()->create(['role' => UserRole::Superadmin, 'is_active' => true]);
+
+        $this->mock(EmailNotificationService::class, function ($mock) {
+            $mock->shouldReceive('sendTest')
+                ->once()
+                ->andThrow(new \RuntimeException('Connection could not be established with host "mx.bataan.gov.ph"'));
+        });
+
+        $this->actingAs($superadmin)
+            ->from(route('admin.email-notifications.index', ['tab' => 'smtp']))
+            ->post(route('admin.email-notifications.test'), [
+                'test_email' => 'rafael.jemer@gmail.com',
+                'active_tab' => 'smtp',
+            ])
+            ->assertRedirect(route('admin.email-notifications.index', ['tab' => 'smtp']))
+            ->assertSessionHasErrors([
+                'test_email' => 'Could not send test email: Connection could not be established with host "mx.bataan.gov.ph"',
+            ]);
+    }
+
+    public function test_apply_mail_config_disables_auto_tls_when_security_is_none(): void
+    {
+        app(EmailNotificationSettings::class)->update([
+            'smtp' => [
+                'mailer' => 'smtp',
+                'host' => 'mx.bataan.gov.ph',
+                'port' => 587,
+                'username' => 'admin@mx.bataan.gov.ph',
+                'password' => 'secret',
+                'encryption' => '',
+                'verify_peer' => true,
+                'from_address' => 'admin@mx.bataan.gov.ph',
+                'from_name' => 'SPLIS',
+            ],
+        ]);
+
+        app(EmailNotificationService::class)->applyMailConfig();
+
+        $this->assertSame('smtp', config('mail.default'));
+        $this->assertSame('smtp', config('mail.mailers.smtp.scheme'));
+        $this->assertFalse(config('mail.mailers.smtp.auto_tls'));
+        $this->assertNull(config('mail.mailers.smtp.url'));
+        $this->assertSame('mx.bataan.gov.ph', config('mail.mailers.smtp.local_domain'));
+    }
+
+    public function test_apply_mail_config_requires_starttls_when_security_is_tls(): void
+    {
+        app(EmailNotificationSettings::class)->update([
+            'smtp' => [
+                'mailer' => 'smtp',
+                'host' => 'mx.bataan.gov.ph',
+                'port' => 587,
+                'username' => 'admin@mx.bataan.gov.ph',
+                'password' => 'secret',
+                'encryption' => 'tls',
+                'verify_peer' => false,
+                'from_address' => 'noreply@bataan.gov.ph',
+                'from_name' => 'SPLIS',
+            ],
+        ]);
+
+        app(EmailNotificationService::class)->applyMailConfig();
+
+        $this->assertTrue(config('mail.mailers.smtp.auto_tls'));
+        $this->assertTrue(config('mail.mailers.smtp.require_tls'));
+        $this->assertFalse(config('mail.mailers.smtp.verify_peer'));
+        $this->assertSame('bataan.gov.ph', config('mail.mailers.smtp.local_domain'));
+    }
 }

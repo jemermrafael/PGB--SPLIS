@@ -50,6 +50,7 @@ class EmailNotificationSettingsController extends Controller
             'smtp.username' => ['nullable', 'string', 'max:255'],
             'smtp.password' => ['nullable', 'string', 'max:255'],
             'smtp.encryption' => ['nullable', 'string', 'in:tls,ssl,'],
+            'smtp.verify_peer' => ['nullable', 'boolean'],
             'smtp.from_address' => ['nullable', 'email', 'max:255'],
             'smtp.from_name' => ['nullable', 'string', 'max:255'],
             'active_tab' => ['nullable', 'string', 'max:50'],
@@ -62,12 +63,15 @@ class EmailNotificationSettingsController extends Controller
             }
         }
 
+        $smtp = $data['smtp'] ?? [];
+        $smtp['verify_peer'] = $request->boolean('smtp.verify_peer');
+
         $settings->update([
             'enabled' => $request->boolean('enabled'),
             'types' => $types,
             'templates' => $data['templates'] ?? [],
             'branding' => $data['branding'] ?? [],
-            'smtp' => $data['smtp'] ?? [],
+            'smtp' => $smtp,
         ]);
 
         $tab = $data['active_tab'] ?? EmailNotificationSettings::AUDIENCE_BOARD_MEMBER;
@@ -93,10 +97,21 @@ class EmailNotificationSettingsController extends Controller
                 'This is a test message from SPLIS email notification settings. If you received this, mail delivery is working.',
                 route('admin.email-notifications.index'),
             );
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            report($e);
+
+            $detail = trim($e->getMessage());
+            if (strlen($detail) > 300) {
+                $detail = substr($detail, 0, 297).'...';
+            }
+
             return redirect()
                 ->route('admin.email-notifications.index', ['tab' => $data['active_tab'] ?? 'smtp'])
-                ->withErrors(['test_email' => 'Could not send test email. Check SMTP settings and try again.']);
+                ->withErrors([
+                    'test_email' => $detail !== ''
+                        ? 'Could not send test email: '.$detail
+                        : 'Could not send test email. Check SMTP settings and try again.',
+                ]);
         }
 
         return redirect()
