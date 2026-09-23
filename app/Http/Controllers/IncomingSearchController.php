@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\IncomingDocument;
 use App\Services\IncomingDocumentRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -10,6 +11,8 @@ class IncomingSearchController extends Controller
 {
     public function __invoke(Request $request, IncomingDocumentRepository $repository): JsonResponse
     {
+        $this->authorize('viewAny', IncomingDocument::class);
+
         $filters = $request->only([
             'number',
             'title',

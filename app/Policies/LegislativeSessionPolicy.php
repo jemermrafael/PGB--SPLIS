@@ -18,7 +18,7 @@ class LegislativeSessionPolicy
             return $user->hasModuleCapability(UserCapability::ORDER_OF_BUSINESS);
         }
 
-        return true;
+        return $user->isBoardMember();
     }
 
     public function view(User $user, LegislativeSession $session): bool
@@ -35,7 +35,7 @@ class LegislativeSessionPolicy
             return $user->hasModuleCapability(UserCapability::ORDER_OF_BUSINESS);
         }
 
-        return true;
+        return false;
     }
 
     public function create(User $user): bool

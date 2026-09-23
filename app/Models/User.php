@@ -158,6 +158,11 @@ class User extends Authenticatable
         return $this->canAdmin();
     }
 
+    public function isGuest(): bool
+    {
+        return $this->role === UserRole::Guest;
+    }
+
     public function isBoardMember(): bool
     {
         return $this->role === UserRole::BoardMember;

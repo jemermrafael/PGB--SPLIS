@@ -15,7 +15,7 @@ class OrdinancePolicy
             return $user->hasModuleCapability(UserCapability::ORDINANCES);
         }
 
-        return true;
+        return $user->isBoardMember() || $user->isMunicipalViewer();
     }
 
     public function view(User $user, Ordinance $ordinance): bool

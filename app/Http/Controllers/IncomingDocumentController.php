@@ -33,6 +33,8 @@ class IncomingDocumentController extends Controller
 
     public function index(): View
     {
+        $this->authorize('viewAny', IncomingDocument::class);
+
         return view('incoming.index', [
             'categories' => Category::forSelect(),
             'departments' => Department::orderBy('description')->get(),
@@ -75,6 +77,8 @@ class IncomingDocumentController extends Controller
 
     public function show(IncomingDocument $incoming): View
     {
+        $this->authorize('view', $incoming);
+
         $incoming->load(['resolution', 'creator', 'agendaItem']);
 
         return view('incoming.show', [
@@ -207,6 +211,8 @@ class IncomingDocumentController extends Controller
 
     public function searchResolutions(Request $request, ResolutionLinkSearch $search): JsonResponse
     {
+        $this->authorize('viewAny', IncomingDocument::class);
+
         $term = trim((string) $request->input('q', ''));
         $series = $request->filled('series') ? (int) $request->input('series') : null;
 

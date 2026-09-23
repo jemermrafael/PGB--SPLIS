@@ -24,7 +24,7 @@ class AppropriationOrdinancePolicy
             return $user->hasModuleCapability(UserCapability::ORDINANCES);
         }
 
-        return true;
+        return $user->isViceGovernorBoardMember();
     }
 
     public function view(User $user, AppropriationOrdinance $appropriationOrdinance): bool

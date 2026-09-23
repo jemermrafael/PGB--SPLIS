@@ -368,11 +368,13 @@ class BoardMemberPortalFeatureTest extends TestCase
 
     public function test_board_member_can_toggle_watchlist(): void
     {
-        [$user] = $this->linkedBoardMemberWithCommittee();
+        [$user, $committee] = $this->linkedBoardMemberWithCommittee();
 
         $agenda = AgendaItem::query()->create([
             'title' => 'Watch me',
+            'committee_referred' => $committee->name,
             'status' => AgendaItem::STATUS_PENDING,
+            'date_of_referral' => now()->toDateString(),
             'prescribed_days' => 0,
             'created_by' => $user->id,
         ]);

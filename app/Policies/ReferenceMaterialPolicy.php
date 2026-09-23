@@ -14,7 +14,8 @@ class ReferenceMaterialPolicy
             return $user->hasModuleCapability(UserCapability::REFERENCES);
         }
 
-        return true;
+        // Municipal viewers may browse references; Guest has no documented read access.
+        return $user->isMunicipalViewer();
     }
 
     public function view(User $user, ReferenceMaterial $referenceMaterial): bool
@@ -23,7 +24,7 @@ class ReferenceMaterialPolicy
             return $user->hasModuleCapability(UserCapability::REFERENCES);
         }
 
-        return true;
+        return $user->isMunicipalViewer();
     }
 
     public function create(User $user): bool

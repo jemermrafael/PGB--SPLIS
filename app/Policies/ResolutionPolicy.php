@@ -24,7 +24,7 @@ class ResolutionPolicy
             return $user->hasModuleCapability(UserCapability::RESOLUTIONS);
         }
 
-        return true;
+        return $user->isViceGovernorBoardMember();
     }
 
     public function view(User $user, Resolution $resolution): bool

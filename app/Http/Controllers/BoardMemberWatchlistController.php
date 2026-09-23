@@ -46,6 +46,8 @@ class BoardMemberWatchlistController extends Controller
             'ordinance' => Ordinance::query()->findOrFail($validated['watchable_id']),
         };
 
+        $this->authorize('view', $watchable);
+
         $isWatching = $this->watchlist->toggle($user, $watchable);
 
         return back()->with('status', $isWatching

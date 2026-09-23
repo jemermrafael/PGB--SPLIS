@@ -20,7 +20,7 @@ class AgendaItemPolicy
                 || $user->hasModuleCapability(UserCapability::ORDER_OF_BUSINESS);
         }
 
-        return true;
+        return $user->isBoardMember();
     }
 
     public function view(User $user, AgendaItem $agendaItem): bool

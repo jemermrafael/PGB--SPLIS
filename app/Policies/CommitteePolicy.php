@@ -10,12 +10,12 @@ class CommitteePolicy
 {
     public function viewAny(User $user): bool
     {
-        return true;
+        return ! $user->isGuest() && ! $user->isMunicipalViewer();
     }
 
     public function view(User $user, Committee $committee): bool
     {
-        return true;
+        return ! $user->isGuest() && ! $user->isMunicipalViewer();
     }
 
     public function create(User $user): bool

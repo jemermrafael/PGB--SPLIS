@@ -22,7 +22,7 @@ class ObDocumentPolicy
             return $user->hasModuleCapability(UserCapability::ORDER_OF_BUSINESS);
         }
 
-        return true;
+        return false;
     }
 
     public function update(User $user, ObDocument $document): bool

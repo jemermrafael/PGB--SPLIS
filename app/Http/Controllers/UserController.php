@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Support\UserCapability;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
@@ -99,7 +100,12 @@ class UserController extends Controller
         }
 
         $data = $this->validated($request, $user);
+        $wasActive = (bool) $user->is_active;
         $user->update($data);
+
+        if ($wasActive && ! (bool) $user->is_active) {
+            $this->revokeAccess($user);
+        }
 
         return redirect()
             ->route('users.index')
@@ -110,6 +116,7 @@ class UserController extends Controller
     {
         $this->authorize('delete', $user);
 
+        $this->revokeAccess($user);
         $user->delete();
 
         return redirect()
@@ -191,5 +198,20 @@ class UserController extends Controller
         $data['is_active'] = $request->boolean('is_active');
 
         return $data;
+    }
+
+    /**
+     * Drop remember tokens and persisted sessions so deactivated/deleted
+     * accounts cannot keep using an existing cookie.
+     */
+    protected function revokeAccess(User $user): void
+    {
+        $user->forceFill(['remember_token' => null])->saveQuietly();
+
+        if (config('session.driver') === 'database') {
+            DB::table(config('session.table', 'sessions'))
+                ->where('user_id', $user->id)
+                ->delete();
+        }
     }
 }

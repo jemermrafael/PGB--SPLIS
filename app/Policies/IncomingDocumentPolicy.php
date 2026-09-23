@@ -9,12 +9,12 @@ class IncomingDocumentPolicy
 {
     public function viewAny(User $user): bool
     {
-        return ! $user->isMunicipalViewer();
+        return $user->canEncode();
     }
 
     public function view(User $user, IncomingDocument $incomingDocument): bool
     {
-        return ! $user->isMunicipalViewer();
+        return $user->canEncode();
     }
 
     public function create(User $user): bool

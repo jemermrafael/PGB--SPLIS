@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureIncomingEnabled;
+use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\EnsureUserRole;
 use App\Http\Middleware\RedirectToCanonicalPermalink;
 use Illuminate\Foundation\Application;
@@ -25,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: [
             RedirectToCanonicalPermalink::class,
+            EnsureUserIsActive::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
